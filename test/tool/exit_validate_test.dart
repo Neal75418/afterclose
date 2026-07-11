@@ -2,11 +2,25 @@
 // (docs/plans/2026-07-11-exit-validate-gate-plan.md Task 2)
 //
 // 合成序列手算對照：平坦 100 基底，指定位置覆寫製造觸發情境。
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 
 import 'package:afterclose/core/constants/exit_params.dart';
+import 'package:afterclose/core/constants/reason_type.dart';
+import 'package:afterclose/core/constants/rule_enums.dart';
+import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/domain/models/models.dart';
+import 'package:afterclose/domain/services/analysis_service.dart';
+import 'package:afterclose/domain/services/rule_engine.dart';
+import 'package:afterclose/domain/services/rules/stock_rules.dart';
 
 import '../../tool/exit_validate.dart';
+import '../../tool/replay_calibrator.dart';
+
+class _MockAnalysisService extends Mock implements AnalysisService {}
+
+class _MockRuleEngine extends Mock implements RuleEngine {}
 
 /// 平坦 100 序列，指定位置覆寫
 List<double?> flat(int len, {Map<int, double?> overrides = const {}}) => [
@@ -116,6 +130,185 @@ void main() {
       final r = simulateExit(closes: closes, t0Index: 70, enabled: all)!;
       expect(r.exitMddPct, closeTo(-10.0, 0.01));
       expect(r.holdMddPct, closeTo(-20.0, 0.01));
+    });
+  });
+
+  group('ExitValidator — 樣本蒐集與模擬 pipeline', () {
+    late AppDatabase db;
+    late _MockAnalysisService mockAnalysis;
+    late _MockRuleEngine mockRuleEngine;
+
+    setUpAll(() {
+      registerFallbackValue(
+        AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
+          trendState: TrendState.up,
+        ),
+      );
+      registerFallbackValue(const StockData(symbol: '', prices: []));
+      registerFallbackValue(
+        const AnalysisResult(
+          trendState: TrendState.up,
+          reversalState: ReversalState.none,
+          supportLevel: 0,
+          resistanceLevel: 0,
+        ),
+      );
+      registerFallbackValue(<DailyPriceEntry>[]);
+    });
+
+    setUp(() {
+      db = AppDatabase.forTesting();
+      mockAnalysis = _MockAnalysisService();
+      mockRuleEngine = _MockRuleEngine();
+      when(() => mockAnalysis.analyzeStock(any())).thenReturn(
+        const AnalysisResult(
+          trendState: TrendState.up,
+          reversalState: ReversalState.none,
+          supportLevel: 100,
+          resistanceLevel: 120,
+        ),
+      );
+      when(
+        () => mockAnalysis.buildContext(
+          any(),
+          priceHistory: any(named: 'priceHistory'),
+          marketData: any(named: 'marketData'),
+          evaluationTime: any(named: 'evaluationTime'),
+        ),
+      ).thenReturn(
+        AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
+          trendState: TrendState.up,
+        ),
+      );
+      // 每天觸發一條 pullback 主訊號 +15 ≥ 門檻 12 → 每個評估日都是樣本候選
+      when(() => mockRuleEngine.evaluateStock(any(), any())).thenReturn(const [
+        TriggeredReason(
+          type: ReasonType.pullbackToMa20,
+          score: 15,
+          description: 'x',
+        ),
+      ]);
+    });
+
+    tearDown(() async {
+      await db.close();
+    });
+
+    Future<void> seedStockWithNullAt(
+      String symbol, {
+      required int priceDays,
+      required int nullIndex,
+    }) async {
+      await db.upsertStocks([
+        StockMasterCompanion.insert(
+          symbol: symbol,
+          name: 'T$symbol',
+          market: 'TWSE',
+        ),
+      ]);
+      final first = DateTime(2024, 1, 1);
+      await db.insertPrices([
+        for (var i = 0; i < priceDays; i++)
+          DailyPriceCompanion.insert(
+            symbol: symbol,
+            date: first.add(Duration(days: i)),
+            close: i == nullIndex ? const Value(null) : Value(100.0 + i * 0.1),
+            volume: const Value(1000000),
+          ),
+      ]);
+    }
+
+    Future<void> seedStock(String symbol, {required int priceDays}) async {
+      await db.upsertStocks([
+        StockMasterCompanion.insert(
+          symbol: symbol,
+          name: 'T$symbol',
+          market: 'TWSE',
+        ),
+      ]);
+      final first = DateTime(2024, 1, 1);
+      await db.insertPrices([
+        for (var i = 0; i < priceDays; i++)
+          DailyPriceCompanion.insert(
+            symbol: symbol,
+            date: first.add(Duration(days: i)),
+            close: Value(100.0 + i * 0.1),
+            volume: const Value(1000000),
+          ),
+      ]);
+    }
+
+    test('蒐集 pullback 樣本、同 symbol 不重疊窗、產出 4 變體結果', () async {
+      await seedStock('AAAA', priceDays: 250);
+      await seedStock('BBBB', priceDays: 250);
+
+      final validator = ExitValidator(
+        db: db,
+        replayConfig: const ReplayConfig(
+          dbPath: ':memory:',
+          minHistoryDays: 20,
+          minUniverseSymbols: 2,
+        ),
+        analysisService: mockAnalysis,
+        ruleEngine: mockRuleEngine,
+        logger: (_) {},
+      );
+      final result = await validator.run();
+
+      // pullback mode 有樣本；momentum/strength 無（mock 只觸發 pullback 規則）
+      final pullbackSamples = result.samples
+          .where((s) => s.mode == 'pullback')
+          .toList();
+      expect(pullbackSamples, isNotEmpty);
+      expect(result.samples.where((s) => s.mode == 'momentum'), isEmpty);
+
+      // 不重疊窗：每檔 250 天、評估窗約 250-20-60=170 天，若不去重會有
+      // ~170 樣本/檔；去重後每檔最多 ceil(170/61)≈3 筆
+      final perSymbol = pullbackSamples.where((s) => s.symbol == 'AAAA').length;
+      expect(perSymbol, lessThanOrEqualTo(4));
+      expect(perSymbol, greaterThanOrEqualTo(1));
+
+      // 4 個變體都有結果（全開 + 三單條）
+      expect(result.variantResults.keys.length, 4);
+      for (final entry in result.variantResults.entries) {
+        expect(
+          entry.value.length,
+          pullbackSamples.length +
+              result.samples.length -
+              pullbackSamples.length,
+          reason: '每個樣本在每個變體都有一筆模擬（或計入 survivorship）',
+        );
+      }
+    });
+
+    test('T+1 停牌（null close）樣本進 survivorship counter、不進結果', () async {
+      // replay 層已排除尾端無 60D forward 的日子（i+60 >= len break），
+      // 尾端不會成為樣本——真實的 survivorship 情境是 T+1 停牌：
+      // 首個評估日 t0=20 的 T+1（index 21）收盤為 null → simulateExit 回
+      // null → 必須計數。
+      await seedStockWithNullAt('CCCC', priceDays: 250, nullIndex: 21);
+      await seedStock('DDDD', priceDays: 250);
+
+      final validator = ExitValidator(
+        db: db,
+        replayConfig: const ReplayConfig(
+          dbPath: ':memory:',
+          minHistoryDays: 20,
+          minUniverseSymbols: 2,
+        ),
+        analysisService: mockAnalysis,
+        ruleEngine: mockRuleEngine,
+        logger: (_) {},
+      );
+      final result = await validator.run();
+
+      expect(
+        result.skippedNoWindow,
+        greaterThan(0),
+        reason: '尾端窗不足樣本必須被計數、不得靜默消失',
+      );
     });
   });
 }
