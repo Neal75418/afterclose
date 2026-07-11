@@ -441,6 +441,39 @@ void main() {
         expect(inserted, equals(2));
       });
 
+      test('response 日期 ≠ 請求日期（端點忽略 date 參數）→ 丟棄、回 0、不寫 DB', () async {
+        // TWSE 2026-06 起 STOCK_DAY_ALL 忽略 date 參數、永遠回最新交易日。
+        // 寫入這批資料會讓 per-day backfill 誤以為有進展（實際是同一天
+        // 反覆重寫）→ 必須按請求日期過濾。
+        final requested = DateTime(2025, 9, 10);
+        final latest = DateTime(2026, 7, 9); // 端點實際回的日子
+        when(
+          () => mockTwseClient.getAllDailyPrices(date: requested),
+        ).thenAnswer(
+          (_) async => [
+            TwseDailyPrice(
+              date: latest,
+              code: '2330',
+              name: '台積電',
+              open: 500.0,
+              high: 510.0,
+              low: 495.0,
+              close: 505.0,
+              volume: 30000,
+              change: 5.0,
+            ),
+          ],
+        );
+
+        final inserted = await repository.backfillTwsePricesByDate(
+          date: requested,
+          targetSymbols: {'2330'},
+        );
+
+        expect(inserted, 0);
+        verifyNever(() => mockDb.insertPrices(any()));
+      });
+
       test('returns 0 when batch response is empty', () async {
         final testDate = DateTime(2026, 1, 1);
         when(
@@ -551,6 +584,36 @@ void main() {
     // - RateLimit / Network exception 必須 rethrow（讓 backfill abort）
     // ============================================================
     group('backfillTpexPricesByDate', () {
+      test('response 日期 ≠ 請求日期 → 丟棄、回 0、不寫 DB（與 TWSE 對稱）', () async {
+        final requested = DateTime(2025, 9, 10);
+        final latest = DateTime(2026, 7, 9);
+        when(
+          () => mockTpexClient.getAllDailyPrices(date: requested),
+        ).thenAnswer(
+          (_) async => [
+            TpexDailyPrice(
+              date: latest,
+              code: '5347',
+              name: '世界',
+              open: 100.0,
+              high: 102.0,
+              low: 99.0,
+              close: 101.0,
+              volume: 5000,
+              change: 1.0,
+            ),
+          ],
+        );
+
+        final inserted = await repository.backfillTpexPricesByDate(
+          date: requested,
+          targetSymbols: {'5347'},
+        );
+
+        expect(inserted, 0);
+        verifyNever(() => mockDb.insertPrices(any()));
+      });
+
       test('fetches batch from TpexClient (no FinMind call), filters to '
           'targetSymbols, inserts only matching rows', () async {
         final testDate = DateTime(2026, 5, 1);

@@ -59,6 +59,7 @@ import 'dart:io';
 
 import 'package:drift/drift.dart' show Value;
 
+import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/clock.dart';
@@ -255,10 +256,16 @@ class Backfiller {
     }
 
     // 日期範圍 — 優先用明確的 start/end override，否則回退 years-based
-    final endDate = config.endDateOverride ?? DateTime.now();
-    final startDate =
-        config.startDateOverride ??
-        endDate.subtract(Duration(days: config.years * 365));
+    // 正規化到午夜：DateTime.now() 的時間分量若洩漏進 day-loop，
+    // countPricesByDateAndMarket 的 TEXT 等值比對永遠 miss → skip-guard 全滅、
+    // 每輪 retry 從頭重抓（2026-07-10 燒掉 26 輪的教訓之一）。
+    final endDate = DateContext.normalize(
+      config.endDateOverride ?? DateTime.now(),
+    );
+    final startDate = DateContext.normalize(
+      config.startDateOverride ??
+          endDate.subtract(Duration(days: config.years * 365)),
+    );
     _log('📅 Date range: ${_formatDate(startDate)} → ${_formatDate(endDate)}');
 
     // Phase 1: prices — TWSE 上市 / TPEx 上櫃皆走 per-day batch
@@ -566,6 +573,17 @@ class Backfiller {
     );
   }
 
+  /// 連續 N 個交易日 fetch 回 0 rows 即 abort 該 phase。
+  ///
+  /// 正常交易日全市場批次不可能連續多天 0 筆（假日已被 TaiwanCalendar
+  /// 濾掉）——連續 0 的唯一合理解釋是端點失效（如 TWSE 2026-06 起
+  /// STOCK_DAY_ALL 忽略 date 參數、repository 按請求日過濾後回 0）。
+  /// fail-fast 免得每輪 retry 燒 3 小時 API 額度在死迴圈上。
+  ///
+  /// 注意：小 whitelist（少數冷門股）連續停牌數日可能誤觸發——phase 提早
+  /// 結束但 per-symbol FinMind phase 仍會補該些候選股，影響有限。
+  static const int _maxConsecutiveZeroDays = 3;
+
   /// TWSE 上市股票價格 batch backfill
   ///
   /// 對日期範圍內每個交易日呼叫 [IPriceRepository.backfillTwsePricesByDate]，
@@ -586,6 +604,7 @@ class Backfiller {
     var rowsInserted = 0;
     var daysProcessed = 0;
     var daysSucceeded = 0;
+    var consecutiveZeroDays = 0;
     var lastLogAt = DateTime.now();
 
     final totalCalendarDays = endDate.difference(startDate).inDays;
@@ -622,6 +641,20 @@ class Backfiller {
         );
         rowsInserted += count;
         daysSucceeded++;
+        if (count == 0) {
+          consecutiveZeroDays++;
+          if (consecutiveZeroDays >= _maxConsecutiveZeroDays) {
+            _log(
+              '⛔ Phase [prices:twse] 連續 $_maxConsecutiveZeroDays 個交易日 0 rows'
+              '（最後: $dayStr）— abort phase。疑似端點失效 / date 參數被忽略'
+              '（TWSE 2026-06 起 STOCK_DAY_ALL 已知不支援歷史查詢）',
+            );
+            failedDays.add('$dayStr(consecutive-zero-abort)');
+            break;
+          }
+        } else {
+          consecutiveZeroDays = 0;
+        }
       } on RateLimitException catch (e) {
         _log('⛔ Phase [prices:twse] $dayStr 觸發 API rate limit — abort: $e');
         rethrow;
@@ -693,6 +726,7 @@ class Backfiller {
     var rowsInserted = 0;
     var daysProcessed = 0;
     var daysSucceeded = 0;
+    var consecutiveZeroDays = 0;
     var lastLogAt = DateTime.now();
 
     final totalCalendarDays = endDate.difference(startDate).inDays;
@@ -725,6 +759,20 @@ class Backfiller {
         );
         rowsInserted += count;
         daysSucceeded++;
+        if (count == 0) {
+          consecutiveZeroDays++;
+          if (consecutiveZeroDays >= _maxConsecutiveZeroDays) {
+            _log(
+              '⛔ Phase [prices:tpex] 連續 $_maxConsecutiveZeroDays 個交易日 0 rows'
+              '（最後: $dayStr）— abort phase。疑似端點失效 / date 參數被忽略'
+              '（TWSE 2026-06 起 STOCK_DAY_ALL 已知不支援歷史查詢）',
+            );
+            failedDays.add('$dayStr(consecutive-zero-abort)');
+            break;
+          }
+        } else {
+          consecutiveZeroDays = 0;
+        }
       } on RateLimitException catch (e) {
         _log('⛔ Phase [prices:tpex] $dayStr 觸發 API rate limit — abort: $e');
         rethrow;

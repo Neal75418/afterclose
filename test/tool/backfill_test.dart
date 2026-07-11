@@ -132,6 +132,7 @@ void main() {
   BackfillConfig makeConfig({
     List<String>? symbols = const ['2330', '2317', '2454'],
     bool dryRun = false,
+    DateTime? endDateOverride,
   }) {
     return BackfillConfig(
       dbPath: ':memory:', // not actually opened in unit test
@@ -139,6 +140,7 @@ void main() {
       finMindToken: 'test-token',
       symbolsWhitelist: symbols,
       dryRun: dryRun,
+      endDateOverride: endDateOverride,
       skipStockListSync: true, // 避免 unit test 呼叫 stock master sync
       // 跳過 inter-day delay：500 trading days × 1.5s 預設會讓單測 timeout
       interDayDelayMs: 0,
@@ -195,12 +197,14 @@ void main() {
       //   financial      8/symbol × 3 = 24
       //   valuation    500/symbol × 3 = 1500
       // Per-day batch phases (預設 stub 回 0 rows)：
-      //   prices:twse   0 (Phase 1.5 後改 batch)
+      //   prices:twse   0 → 連續 0 rows 觸發 fail-fast abort（見下）
       //   prices:tpex   0 (no TPEx symbols)
       //   institutional 0 (Phase 2 改 batch)
       // Total: 72 + 24 + 1500 = 1596
       expect(result.totalRows, 1596);
-      expect(result.hasFailures, isFalse);
+      // 2026-07-11 起：price batch phase 連續 0 rows 視為端點失效 abort，
+      // 會記進 failedSymbols → hasFailures 為 true（可稽核、非靜默）。
+      expect(result.hasFailures, isTrue);
     });
 
     test('passes consistent startDate/endDate across all phases', () async {
@@ -725,6 +729,43 @@ void main() {
           endDate: any(named: 'endDate'),
         ),
       );
+    });
+  });
+
+  group('Backfiller per-day 日期正規化 + 端點失效 fail-fast', () {
+    test('guard 與 API 呼叫的日期都是午夜（now 帶時間分量不得洩漏）', () async {
+      // endDate 預設 DateTime.now() 帶時間分量；不正規化的話
+      // countPricesByDateAndMarket 的 TEXT 等值比對永遠 miss → skip-guard 全滅
+      final backfiller = makeBackfiller(
+        makeConfig(endDateOverride: DateTime(2026, 7, 10, 13, 36, 19, 123)),
+      );
+      await backfiller.run();
+
+      final guardDates = verify(
+        () => db.countPricesByDateAndMarket(captureAny(), any()),
+      ).captured.cast<DateTime>();
+      expect(guardDates, isNotEmpty);
+      for (final d in guardDates) {
+        expect(
+          (d.hour, d.minute, d.second, d.millisecond),
+          (0, 0, 0, 0),
+          reason: 'guard 日期必須正規化到午夜（實得 $d）',
+        );
+      }
+    });
+
+    test('連續多個交易日回 0 rows → abort phase（端點忽略 date 參數 fail-fast）', () async {
+      // 預設 stub 每天回 0 → 2 年 ~500 個交易日不該全打一遍
+      final backfiller = makeBackfiller(makeConfig());
+      await backfiller.run();
+
+      verify(
+        () => priceRepo.backfillTwsePricesByDate(
+          date: any(named: 'date'),
+          targetSymbols: any(named: 'targetSymbols'),
+        ),
+      ).called(lessThanOrEqualTo(5));
+      expect(logs.join('\n'), contains('連續'), reason: 'abort 時要留下可診斷的訊息');
     });
   });
 

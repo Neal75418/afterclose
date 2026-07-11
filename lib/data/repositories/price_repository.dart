@@ -216,8 +216,16 @@ class PriceRepository implements IPriceRepository {
 
       final processed = _twseSource.processDailyPrices(prices);
 
+      // 端點失效防護：TWSE 2026-06 起 STOCK_DAY_ALL 忽略 date 參數、永遠回
+      // 最新交易日。只保留「請求日期」的 rows —— 寫入別的日子會讓 per-day
+      // backfill 誤以為有進展（實際是同一天反覆重寫、歷史永遠補不滿）。
+      final requestedDay = DateContext.normalize(date);
       final filtered = processed.priceEntries
-          .where((entry) => targetSymbols.contains(entry.symbol.value))
+          .where(
+            (entry) =>
+                targetSymbols.contains(entry.symbol.value) &&
+                DateContext.normalize(entry.date.value) == requestedDay,
+          )
           .toList();
 
       if (filtered.isEmpty) return 0;
@@ -255,10 +263,13 @@ class PriceRepository implements IPriceRepository {
       // processDailyPrices 已處理 StockPatterns.isValidCode 過濾。
       final processed = _tpexSource.processDailyPrices(prices);
 
+      // 同 backfillTwsePricesByDate：只保留請求日期的 rows（端點失效防護）。
+      final requestedDay = DateContext.normalize(date);
       final filtered = processed.priceEntries.where((entry) {
         // DailyPriceCompanion 的 symbol 為 Value<String>；present 後比對
         final symbol = entry.symbol.value;
-        return targetSymbols.contains(symbol);
+        return targetSymbols.contains(symbol) &&
+            DateContext.normalize(entry.date.value) == requestedDay;
       }).toList();
 
       if (filtered.isEmpty) return 0;
