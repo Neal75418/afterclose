@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "version": "2026-06-08",
-  "generated_at": "2026-06-08T15:53:26.272418Z",
+  "version": "2026-07-11",
+  "generated_at": "2026-07-11T00:00:00.000Z",
   "short": {
     "url": "https://cdn.jsdelivr.net/gh/Neal75418/afterclose@main/assets/rule_scores_calibrated_short.json",
-    "sha256": "ce0e6897917dcad40bb9079a47b2bbd53e5c4dd68ceb4664dea85c84b1ad4934",
+    "sha256": "0351f7e4c547f8602165d5ce139c87284576de39f779f7cd07ab3ae4277de486",
     "rule_count": 40,
     "filename": "rule_scores_calibrated_short.json"
   },

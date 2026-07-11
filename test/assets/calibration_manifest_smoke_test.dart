@@ -8,6 +8,8 @@
 // constructor 繞過 main.dart wiring，所以那層測試不會抓到 bundled manifest
 // 跟 pubspec 失準的問題。
 import 'dart:convert';
+
+import 'package:crypto/crypto.dart';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -73,6 +75,29 @@ void main() {
             '與 bundled manifest `$bundledMin` 不一致，下次跑 recalibrate '
             '產出的 candidate 會把 minimum 推回 $toolMin。',
       );
+    });
+    test('manifest sha256 與 bundled JSON 內容一致（手動改檔防漂移）', () {
+      // OTA client 以 manifest.sha256 驗證下載的 JSON；bundled manifest 與
+      // bundled JSON 不同步時，OTA 端會 integrity mismatch 靜默跳過更新。
+      // 手動 patch production JSON（如 2026-07-11 TECH_BREAKDOWN 語意修正）
+      // 必須同步重算 manifest hash —— 這個測試就是那條保險絲。
+      final manifest =
+          jsonDecode(
+                File('assets/calibration_manifest.json').readAsStringSync(),
+              )
+              as Map<String, dynamic>;
+      for (final horizon in ['short', 'long']) {
+        final entry = manifest[horizon] as Map<String, dynamic>;
+        final jsonStr = File('assets/${entry['filename']}').readAsStringSync();
+        final actual = sha256.convert(utf8.encode(jsonStr)).toString();
+        expect(
+          actual,
+          entry['sha256'],
+          reason:
+              '$horizon JSON 內容 hash 與 manifest 不符 — 改了 JSON 要同步 '
+              'manifest（可用 tool/recalibrate.dart 重產或手動重算）',
+        );
+      }
     });
   });
 }

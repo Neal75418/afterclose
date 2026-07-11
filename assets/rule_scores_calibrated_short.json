@@ -208,12 +208,13 @@
       "cut_reason": "t_stat_below_threshold"
     },
     "TECH_BREAKDOWN": {
-      "score": 22,
+      "score": 0,
       "hit_rate": 0.5591,
       "avg_return": 2.381,
       "samples": 6992,
       "t_stat": 9.9479,
-      "active": true
+      "active": false,
+      "cut_reason": "manual_cut_design_semantic_conflict"
     },
     "PATTERN_DOJI": {
       "score": 0,
