@@ -12,7 +12,7 @@ import 'package:afterclose/core/utils/price_limit.dart';
 import 'package:afterclose/core/constants/reason_type.dart';
 import 'package:afterclose/presentation/widgets/reason_tags.dart';
 import 'package:afterclose/presentation/widgets/risk_badge_cluster.dart';
-import 'package:afterclose/presentation/widgets/score_ring.dart';
+import 'package:afterclose/presentation/widgets/score_tier_badge.dart';
 import 'package:afterclose/presentation/widgets/stock_card_price.dart';
 import 'package:afterclose/presentation/widgets/stock_card_sparkline.dart';
 import 'package:afterclose/presentation/widgets/warning_badge.dart';
@@ -342,13 +342,13 @@ class _StockCardState extends State<StockCard> {
         ),
         if (widget.dualScore != null) ...[
           const SizedBox(width: 6),
-          _DualScoreChip(
+          ScoreTierBadge.dual(
             shortScore: widget.dualScore!.$1,
             longScore: widget.dualScore!.$2,
           ),
         ] else if (widget.score != null && widget.score! > 0) ...[
           const SizedBox(width: 6),
-          ScoreRing(score: widget.score!, size: ScoreRingSize.small),
+          ScoreTierBadge(score: widget.score!.toDouble()),
         ],
       ],
     );
@@ -458,95 +458,6 @@ class _StockCardState extends State<StockCard> {
           splashRadius: compact ? 18 : 20,
         ),
       ),
-    );
-  }
-}
-
-/// 雙 horizon score 顯示 — 5D 跟 60D 並排或智能 collapse
-///
-/// 為 Today screen Mode tab 設計：user 一眼看到該檔在兩個 timeframe 強度
-/// 對比。color coding：正分綠、負分紅、0 灰。
-///
-/// ## 2026-06-19 智能 collapse（D-1）
-///
-/// 當 `shortScore == longScore` 時自動 collapse 成單一 chip（無 horizon 標籤）。
-/// 動機：pre-launch calibration 還沒成熟、95%+ 規則 calibrated 為 0 都
-/// fallback 到 hardcoded（單一值），導致 5D = 60D 必然相等 — 強行雙 chip 是
-/// UX noise（user 觀感「為何兩個一樣的數字並排？」）。
-///
-/// 等 calibration 累積 forward data、部分規則對 5D / 60D 分化後，自然恢復
-/// 雙 chip 顯示（差別自動 surface）。不需動 code、純資料變化。
-class _DualScoreChip extends StatelessWidget {
-  const _DualScoreChip({required this.shortScore, required this.longScore});
-
-  final double shortScore;
-  final double longScore;
-
-  @override
-  Widget build(BuildContext context) {
-    // D-1: 兩個 horizon 一樣 → collapse 成單 chip、不顯示 horizon 標籤
-    if (shortScore == longScore) {
-      return _scoreBox(context, null, shortScore);
-    }
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _scoreBox(context, '5D', shortScore),
-        const SizedBox(width: 4),
-        _scoreBox(context, '60D', longScore),
-      ],
-    );
-  }
-
-  /// [label] null 時 render 單 chip（沒 horizon 標籤）
-  Widget _scoreBox(BuildContext context, String? label, double score) {
-    final theme = Theme.of(context);
-    final Color color;
-    if (score > 0) {
-      color = Colors.green.shade600;
-    } else if (score < 0) {
-      color = Colors.red.shade600;
-    } else {
-      color = theme.colorScheme.onSurfaceVariant;
-    }
-
-    final scoreText = Text(
-      score.toStringAsFixed(0),
-      style: theme.textTheme.titleSmall?.copyWith(
-        color: color,
-        fontWeight: FontWeight.bold,
-        fontSize: 13,
-        height: 1,
-      ),
-    );
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: label == null
-          // collapsed 模式：只顯示分數、垂直 padding 一致
-          ? Padding(
-              padding: const EdgeInsets.symmetric(vertical: 2),
-              child: scoreText,
-            )
-          : Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  label,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: color.withValues(alpha: 0.8),
-                    fontSize: 9,
-                    height: 1,
-                  ),
-                ),
-                const SizedBox(height: 1),
-                scoreText,
-              ],
-            ),
     );
   }
 }

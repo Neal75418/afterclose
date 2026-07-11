@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/theme/indicator_colors.dart';
 import 'package:afterclose/presentation/widgets/stock_card.dart';
 
 import '../../helpers/widget_test_helpers.dart';
@@ -197,42 +197,49 @@ void main() {
       expect(find.text('reasons.breakout'), findsNothing);
     });
 
-    group('score badge colors', () {
-      /// 取 ScoreRing 中央分數文字的實際顏色（由 AppTheme.getScoreColor 決定）
-      Color? scoreTextColor(WidgetTester tester, String scoreText) {
-        return tester.widget<Text>(find.text(scoreText)).style?.color;
+    group('score tier badge（評分改進 #5：分級為主視覺、數字退小字）', () {
+      /// 取徽章標籤文字（.tr() 在測試環境回傳 i18n key）的實際顏色
+      Color? tierLabelColor(WidgetTester tester, String key) {
+        return tester.widget<Text>(find.text(key)).style?.color;
       }
 
-      testWidgets('up color for score >= 50', (tester) async {
+      testWidgets('score >= 45 → 「強」徽章（ratingStrong 色）', (tester) async {
         await tester.pumpWidget(
           buildTestApp(const StockCard(symbol: '2330', score: 55.0)),
         );
-
-        expect(scoreTextColor(tester, '55'), AppTheme.upColor);
+        expect(
+          tierLabelColor(tester, 'score.tier.strong'),
+          IndicatorColors.ratingStrong,
+        );
+        // 確切分數退為小字、中性色（不再暗示假精確度）
+        expect(find.text('55'), findsOneWidget);
       });
 
-      testWidgets('warning color for score >= 35', (tester) async {
+      testWidgets('score [25,45) → 「中」徽章', (tester) async {
         await tester.pumpWidget(
           buildTestApp(const StockCard(symbol: '2330', score: 40.0)),
         );
-
-        expect(scoreTextColor(tester, '40'), AppTheme.warningColor);
-      });
-
-      testWidgets('caution color for score >= 20', (tester) async {
-        await tester.pumpWidget(
-          buildTestApp(const StockCard(symbol: '2330', score: 25.0)),
+        expect(
+          tierLabelColor(tester, 'score.tier.medium'),
+          IndicatorColors.ratingBullish,
         );
-
-        expect(scoreTextColor(tester, '25'), AppTheme.cautionColor);
       });
 
-      testWidgets('neutral color for score < 20', (tester) async {
+      testWidgets('score [12,25) → 「弱」徽章', (tester) async {
         await tester.pumpWidget(
           buildTestApp(const StockCard(symbol: '2330', score: 15.0)),
         );
+        expect(
+          tierLabelColor(tester, 'score.tier.weak'),
+          IndicatorColors.ratingNeutral,
+        );
+      });
 
-        expect(scoreTextColor(tester, '15'), AppTheme.neutralColor);
+      testWidgets('score < 12 → 「觀察」徽章（觀察區列）', (tester) async {
+        await tester.pumpWidget(
+          buildTestApp(const StockCard(symbol: '2330', score: 9.0)),
+        );
+        expect(find.text('score.tier.observation'), findsOneWidget);
       });
     });
   });

@@ -494,7 +494,16 @@
     "insiderTransfer": "近期轉讓申報",
     "transferSharesLabel": "轉讓 {} 股",
     "validPeriod": "有效期間",
-    "noRecentTransfers": "近期無轉讓申報"
+    "noRecentTransfers": "近期無轉讓申報",
+    "dataMissing": "資料缺漏：{domains}（分數可能因此偏低）",
+    "domain": {
+      "price": "價量",
+      "institutional": "法人",
+      "revenue": "營收",
+      "eps": "EPS",
+      "valuation": "估值",
+      "distribution": "籌碼分佈"
+    }
   },
   "score": {
     "label": "推薦評分",
@@ -502,7 +511,13 @@
     "watch": "值得關注",
     "normal": "一般",
     "wait": "觀望",
-    "points": "分"
+    "points": "分",
+    "tier": {
+      "strong": "強",
+      "medium": "中",
+      "weak": "弱",
+      "observation": "觀察"
+    }
   },
   "trend": {
     "up": "上升趨勢",

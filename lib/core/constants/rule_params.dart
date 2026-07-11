@@ -75,7 +75,9 @@ abstract final class RuleParams {
 
   /// 候選股最低成交額（3000 萬台幣）
   ///
-  /// 過濾低流動性股票，確保候選池品質。
+  /// 過濾低流動性股票，確保候選池品質。`LiquidityChecker` 在 scoring 層
+  /// 對**最新單日**套用；候選層另有 20 日中位數版
+  /// [liquidityMinMedianTurnoverNtd]（防單日爆量假通過），兩者互補。
   static const double minCandidateTurnover = 30000000;
 
   /// 候選股最低成交量（1000 張 = 1,000,000 股）
@@ -220,6 +222,10 @@ abstract final class RuleParams {
   /// 門檻依 2026-07-11 本機 DB 實測：全市場 P50 = 1,930 萬，3,000 萬
   /// 砍掉 56% 無效運算、訊號股僅損失 7%（被砍者皆為日成交千萬級以下）；
   /// 5,000 萬會誤傷 14% 訊號股（過嚴）。**自選清單豁免**（使用者主動追蹤）。
+  ///
+  /// 與 [minCandidateTurnover]（`LiquidityChecker`，scoring 層**單日**同額
+  /// 門檻）互補而非重複：單日檢查擋不住「殭屍股單日爆量」（處置/新聞日
+  /// 衝過 3,000 萬就進訊號區）——中位數窗正是補這個洞。兩者刻意同值。
   static const double liquidityMinMedianTurnoverNtd = 30000000;
 
   /// 中位成交值的計算窗（交易日）。中位數而非平均：單日爆量（處置、
@@ -229,6 +235,18 @@ abstract final class RuleParams {
   /// 判定流動性所需的最少有效資料天數。不足（新上市 / 資料缺漏）視為
   /// 無法判定 → permissive 放行（無資料 ≠ 低流動性）。
   static const int liquidityMinDataDays = 10;
+
+  // ==================================================
+  // 分數分級（呈現層，2026-07 評分改進 #5）
+  // ==================================================
+
+  /// 「強」級下限。分數 76 vs 79 無統計意義（score-報酬 IC ≈ 0.17），
+  /// UI 以分級呈現、數字退為輔助。邊界依 2026-07-11 本機 DB 訊號區
+  /// 分佈：P75 ≈ 41 → 45 取整，「強」≈ 訊號區前 ~19%。
+  static const int tierStrongThreshold = 45;
+
+  /// 「中」級下限（P50 ≈ 28 → 25 取整）。[minScoreThreshold, 此值) 為「弱」。
+  static const int tierMediumThreshold = 25;
 
   // ==================================================
   // 雜項

@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/constants/market_codes.dart';
+import 'package:afterclose/core/constants/stock_patterns.dart';
 import 'package:afterclose/core/extensions/trend_state_extension.dart';
 import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/core/utils/date_context.dart';
@@ -25,6 +26,7 @@ class StockHeaderData {
     this.reasons = const [],
     this.dataDate,
     this.hasDataMismatch = false,
+    this.missingDomains = const [],
   });
 
   final String? stockName;
@@ -39,6 +41,11 @@ class StockHeaderData {
   final DateTime? dataDate;
   final bool hasDataMismatch;
 
+  /// 缺漏的資料 domain（i18n keys）。「無資料 ≈ 無訊號」的混淆解方：
+  /// 基本面/籌碼缺漏的股票分數天然偏低，UI 必須提示「偏低可能因資料
+  /// 缺漏、非真的弱」。空 = 齊全、不顯示（零噪音）。
+  final List<String> missingDomains;
+
   /// 從完整 StockDetailState 投影
   factory StockHeaderData.fromState(StockDetailState s) => StockHeaderData(
     stockName: s.stockName,
@@ -52,7 +59,33 @@ class StockHeaderData {
     reasons: s.reasons.map((r) => r.reasonType).toList(),
     dataDate: s.dataDate,
     hasDataMismatch: s.hasDataMismatch,
+    // 載入中不判定缺漏（避免非同步子狀態未到位時閃現假提示）
+    missingDomains: _computeMissingDomains(s),
   );
+
+  /// 缺漏 domain 判定。ETF（00 開頭）天生無財報——營收/EPS/估值三個
+  /// domain 對 ETF 豁免（比照 `FundamentalSyncer` 的 isEtfCode 跳過邏輯），
+  /// 否則提示會對所有 ETF 永久誤報。
+  static List<String> _computeMissingDomains(StockDetailState s) {
+    if (s.loading.isLoading ||
+        s.loading.isLoadingFundamentals ||
+        s.loading.isLoadingChip) {
+      return const [];
+    }
+    final symbol = s.price.stock?.symbol ?? '';
+    final isEtf = StockPatterns.isEtfCode(symbol);
+    return [
+      if (s.price.priceHistory.isEmpty) 'stockDetail.domain.price',
+      if (s.chip.institutionalHistory.isEmpty)
+        'stockDetail.domain.institutional',
+      if (!isEtf && s.fundamentals.revenueHistory.isEmpty)
+        'stockDetail.domain.revenue',
+      if (!isEtf && s.fundamentals.epsHistory.isEmpty) 'stockDetail.domain.eps',
+      if (!isEtf && s.fundamentals.latestPER == null)
+        'stockDetail.domain.valuation',
+      if (s.chip.holdingDistribution.isEmpty) 'stockDetail.domain.distribution',
+    ];
+  }
 
   @override
   bool operator ==(Object other) =>
@@ -68,7 +101,8 @@ class StockHeaderData {
           resistance == other.resistance &&
           listEquals(reasons, other.reasons) &&
           dataDate == other.dataDate &&
-          hasDataMismatch == other.hasDataMismatch;
+          hasDataMismatch == other.hasDataMismatch &&
+          listEquals(missingDomains, other.missingDomains);
 
   @override
   int get hashCode => Object.hash(
@@ -79,6 +113,7 @@ class StockHeaderData {
     trendState,
     dataDate,
     hasDataMismatch,
+    Object.hashAll(missingDomains),
   );
 }
 
@@ -343,6 +378,39 @@ class StockDetailHeader extends StatelessWidget {
                     color: data.hasDataMismatch
                         ? theme.colorScheme.error
                         : theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        // 資料完整度提示（評分改進 #8）：缺漏 domain 的股票分數天然偏低，
+        // 不提示會讓「無資料」被誤讀成「訊號弱」。齊全時零噪音。
+        if (data.missingDomains.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: DesignTokens.spacing4),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  size: 12,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: DesignTokens.spacing4),
+                Flexible(
+                  child: Text(
+                    'stockDetail.dataMissing'.tr(
+                      namedArgs: {
+                        'domains': data.missingDomains
+                            .map((k) => k.tr())
+                            .join('、'),
+                      },
+                    ),
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],

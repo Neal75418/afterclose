@@ -494,7 +494,16 @@
     "insiderTransfer": "Recent Transfer Filings",
     "transferSharesLabel": "Transfer {} shares",
     "validPeriod": "Valid Period",
-    "noRecentTransfers": "No recent transfer filings"
+    "noRecentTransfers": "No recent transfer filings",
+    "dataMissing": "Missing data: {domains} (score may be understated)",
+    "domain": {
+      "price": "Price",
+      "institutional": "Institutional",
+      "revenue": "Revenue",
+      "eps": "EPS",
+      "valuation": "Valuation",
+      "distribution": "Distribution"
+    }
   },
   "score": {
     "label": "Rating Score",
@@ -502,7 +511,13 @@
     "watch": "Worth Watching",
     "normal": "Normal",
     "wait": "Wait & See",
-    "points": "pts"
+    "points": "pts",
+    "tier": {
+      "strong": "Strong",
+      "medium": "Med",
+      "weak": "Weak",
+      "observation": "Watch"
+    }
   },
   "trend": {
     "up": "Uptrend",

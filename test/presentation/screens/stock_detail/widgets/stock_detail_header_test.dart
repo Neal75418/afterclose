@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/presentation/providers/stock_detail_state.dart';
 import 'package:afterclose/presentation/screens/stock_detail/widgets/stock_detail_header.dart';
 
 import '../../../../helpers/widget_test_helpers.dart';
@@ -174,4 +175,85 @@ void main() {
       expect(find.text('600.00'), findsOneWidget);
     });
   });
+
+  group('資料完整度提示（評分改進 #8）', () {
+    testWidgets('有缺漏 domain → 顯示 dataMissing 提示（含缺漏項）', (tester) async {
+      widenViewport(tester);
+      final state = createHeaderData().copyWithMissing(const [
+        'stockDetail.domain.revenue',
+        'stockDetail.domain.eps',
+      ]);
+
+      await tester.pumpWidget(
+        buildTestApp(StockDetailHeader(data: state, symbol: '2330')),
+      );
+
+      // 測試環境 .tr() 回 key：提示文字以 dataMissing key 呈現
+      expect(
+        find.textContaining('stockDetail.dataMissing'),
+        findsOneWidget,
+        reason: '缺漏時要提示使用者「分數偏低可能因資料缺漏、非真的弱」',
+      );
+    });
+
+    test('fromState：ETF（00 開頭）豁免財報類 domain（ETF 無財報非缺漏）', () {
+      final state = StockDetailState(
+        price: StockPriceState(
+          stock: StockMasterEntry(
+            symbol: '0050',
+            name: '元大台灣50',
+            market: 'TWSE',
+            isActive: true,
+            updatedAt: defaultDate,
+          ),
+          priceHistory: [
+            DailyPriceEntry(symbol: '0050', date: defaultDate, close: 180.0),
+          ],
+        ),
+        // fundamentals 全空 —— 對 ETF 是常態、不是缺漏
+      );
+
+      final data = StockHeaderData.fromState(state);
+      expect(
+        data.missingDomains,
+        isNot(contains('stockDetail.domain.revenue')),
+      );
+      expect(data.missingDomains, isNot(contains('stockDetail.domain.eps')));
+      expect(
+        data.missingDomains,
+        isNot(contains('stockDetail.domain.valuation')),
+      );
+      // 非財報 domain 照常判定
+      expect(data.missingDomains, contains('stockDetail.domain.institutional'));
+    });
+
+    testWidgets('資料齊全 → 不顯示提示（零噪音）', (tester) async {
+      widenViewport(tester);
+      final state = createHeaderData(); // missingDomains 預設空
+
+      await tester.pumpWidget(
+        buildTestApp(StockDetailHeader(data: state, symbol: '2330')),
+      );
+
+      expect(find.textContaining('stockDetail.dataMissing'), findsNothing);
+    });
+  });
+}
+
+extension on StockHeaderData {
+  /// 測試用：帶缺漏 domain 的複本
+  StockHeaderData copyWithMissing(List<String> missing) => StockHeaderData(
+    stockName: stockName,
+    stockMarket: stockMarket,
+    stockIndustry: stockIndustry,
+    latestClose: latestClose,
+    priceChange: priceChange,
+    trendState: trendState,
+    support: support,
+    resistance: resistance,
+    reasons: reasons,
+    dataDate: dataDate,
+    hasDataMismatch: hasDataMismatch,
+    missingDomains: missing,
+  );
 }
