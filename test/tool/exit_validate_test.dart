@@ -311,4 +311,86 @@ void main() {
       );
     });
   });
+
+  group('buildReport — mode × 年 × 變體聚合', () {
+    ExitSample sample(String symbol, int year, String mode) =>
+        (symbol: symbol, date: DateTime(year, 6, 15), mode: mode);
+
+    ExitSimResult sim({
+      required double exitRet,
+      required double holdRet,
+      ExitReason? reason,
+    }) => (
+      exitReturnPct: exitRet,
+      holdReturnPct: holdRet,
+      holdingDays: reason == null ? 60 : 10,
+      reason: reason,
+      exitMddPct: -5.0,
+      holdMddPct: -12.0,
+    );
+
+    test('cell 統計 + 樣本不足標灰 + survivorship + 方法論警語', () {
+      // pullback 2022 兩筆（出場贏一輸一）；momentum 2023 一筆（< 30 標灰）
+      final rows = <ExitVariantRow>[
+        (
+          sample: sample('A', 2022, 'pullback'),
+          sim: sim(exitRet: -8.0, holdRet: -20.0, reason: ExitReason.hardStop),
+        ),
+        (
+          sample: sample('B', 2022, 'pullback'),
+          sim: sim(exitRet: -8.0, holdRet: 5.0, reason: ExitReason.hardStop),
+        ),
+        (
+          sample: sample('C', 2023, 'momentum'),
+          sim: sim(exitRet: 3.0, holdRet: 3.0),
+        ),
+      ];
+      final result = ExitValidationResult(
+        samples: rows.map((r) => r.sample).toList(),
+        variantResults: {
+          for (final name in ExitValidator.variants.keys) name: rows,
+        },
+        skippedNoWindow: 7,
+        limitFlaggedT0: 2,
+      );
+
+      final report = buildReport(result);
+
+      // cell 標灰（n=2 與 n=1 皆 < 30）
+      expect(report, contains('樣本不足'));
+      // 出場 vs 持有差：pullback 2022 平均 exit -8、hold -7.5 → diff -0.5
+      expect(report, contains('pullback'));
+      expect(report, contains('2022'));
+      // survivorship 與漲跌停必印
+      expect(report, contains('7'));
+      expect(report, contains('漲跌停'));
+      // 方法論警語（spec §3 原文關鍵句）
+      expect(report, contains('不等於「紀律沒用」'));
+      // 4 變體段落
+      for (final name in ExitValidator.variants.keys) {
+        expect(report, contains(name));
+      }
+    });
+
+    test('勝率 = 出場報酬 ≥ 持有報酬的比例', () {
+      final rows = <ExitVariantRow>[
+        (
+          sample: sample('A', 2022, 'pullback'),
+          sim: sim(exitRet: -8.0, holdRet: -20.0, reason: ExitReason.hardStop),
+        ),
+        (
+          sample: sample('B', 2022, 'pullback'),
+          sim: sim(exitRet: -8.0, holdRet: 5.0, reason: ExitReason.hardStop),
+        ),
+      ];
+      final result = ExitValidationResult(
+        samples: rows.map((r) => r.sample).toList(),
+        variantResults: {'all': rows},
+        skippedNoWindow: 0,
+        limitFlaggedT0: 0,
+      );
+      final report = buildReport(result);
+      expect(report, contains('50')); // 勝率 1/2 = 50%
+    });
+  });
 }

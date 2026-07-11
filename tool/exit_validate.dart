@@ -20,6 +20,8 @@
 // - 出場後以 0% 報酬計（不含資金再部署效益）→ gate 系統性低估出場紀律
 //   的實務價值；「沒 edge」= 單筆訊號品質無差異，不等於「紀律沒用」。
 
+import 'dart:io';
+
 import 'package:afterclose/core/constants/exit_params.dart';
 import 'package:afterclose/core/utils/price_limit.dart';
 import 'package:afterclose/data/database/app_database.dart';
@@ -325,4 +327,118 @@ class ExitValidator {
       limitFlaggedT0: limitFlaggedT0,
     );
   }
+}
+
+// ============================================================================
+// 報告聚合（mode × 年 × 變體）
+// ============================================================================
+
+/// 產出 gate 報告（markdown 文字）。
+///
+/// 每個變體一段，段內按 (mode × 年) cell 列：n、出場/持有平均報酬與差、
+/// 勝率（出場 ≥ 持有比例）、平均持有日、兩臂平均 MDD。
+/// n < [ExitParams.minCellSample] 的 cell 標「(樣本不足)」不計入結論。
+String buildReport(ExitValidationResult result) {
+  final buf = StringBuffer();
+  buf.writeln('# 出場條件 Replay Gate 報告');
+  buf.writeln();
+  buf.writeln('- 樣本（去重後）: ${result.samples.length}');
+  buf.writeln(
+    '- Survivorship 排除（T+1 停牌 / 窗不完整）: ${result.skippedNoWindow} — '
+    '這些樣本無 exit price，若比例高則報酬有存活者偏差、結論須保守解讀',
+  );
+  buf.writeln('- T0 為漲跌停的樣本: ${result.limitFlaggedT0}（v1 只觀察不特殊處理）');
+  buf.writeln();
+  buf.writeln('> **方法論限制**：出場後以 0% 報酬計＝不含資金再部署效益，');
+  buf.writeln('> gate 系統性低估出場紀律的實務價值——「沒 edge」應解讀為');
+  buf.writeln('> 「單筆訊號品質無差異」，不等於「紀律沒用」。');
+  buf.writeln();
+
+  for (final entry in result.variantResults.entries) {
+    final variant = entry.key;
+    final rows = entry.value;
+    buf.writeln('## 變體: $variant');
+    buf.writeln();
+    buf.writeln(
+      '| mode | 年 | n | 出場均報酬% | 持有均報酬% | 差(出場-持有) | 勝率% | 均持有日 | 出場MDD% | 持有MDD% | 觸發率% |',
+    );
+    buf.writeln('|---|---|---|---|---|---|---|---|---|---|---|');
+
+    // (mode, year) 分組
+    final cells = <String, List<ExitVariantRow>>{};
+    for (final row in rows) {
+      final key = '${row.sample.mode}|${row.sample.date.year}';
+      cells.putIfAbsent(key, () => []).add(row);
+    }
+    final keys = cells.keys.toList()..sort();
+    for (final key in keys) {
+      final cellRows = cells[key]!;
+      final parts = key.split('|');
+      final n = cellRows.length;
+      double avg(Iterable<double> xs) =>
+          xs.isEmpty ? 0 : xs.reduce((a, b) => a + b) / xs.length;
+      final exitAvg = avg(cellRows.map((r) => r.sim.exitReturnPct));
+      final holdAvg = avg(cellRows.map((r) => r.sim.holdReturnPct));
+      final winRate =
+          cellRows
+              .where((r) => r.sim.exitReturnPct >= r.sim.holdReturnPct)
+              .length /
+          n *
+          100;
+      final avgDays = avg(cellRows.map((r) => r.sim.holdingDays.toDouble()));
+      final exitMdd = avg(cellRows.map((r) => r.sim.exitMddPct));
+      final holdMdd = avg(cellRows.map((r) => r.sim.holdMddPct));
+      final triggerRate =
+          cellRows.where((r) => r.sim.reason != null).length / n * 100;
+      final grey = n < ExitParams.minCellSample ? ' (樣本不足)' : '';
+      buf.writeln(
+        '| ${parts[0]} | ${parts[1]} | $n$grey '
+        '| ${exitAvg.toStringAsFixed(2)} | ${holdAvg.toStringAsFixed(2)} '
+        '| ${(exitAvg - holdAvg).toStringAsFixed(2)} '
+        '| ${winRate.toStringAsFixed(0)} | ${avgDays.toStringAsFixed(0)} '
+        '| ${exitMdd.toStringAsFixed(2)} | ${holdMdd.toStringAsFixed(2)} '
+        '| ${triggerRate.toStringAsFixed(0)} |',
+      );
+    }
+    buf.writeln();
+  }
+  return buf.toString();
+}
+
+// ============================================================================
+// CLI entry（經 flutter test wrapper 執行，見 test/tool/run_exit_validate.dart）
+// ============================================================================
+
+/// 不呼叫 exit() 的入口。exit codes：0 = 成功、2 = DB 不存在。
+Future<int> runExitValidateCli(List<String> args) async {
+  var dbPath = 'tool/calibration.db';
+  for (var i = 0; i < args.length; i++) {
+    if (args[i] == '--db' && i + 1 < args.length) dbPath = args[++i];
+  }
+  if (!File(dbPath).existsSync()) {
+    stderr.writeln('❌ DB 檔案不存在: $dbPath（先跑 backfill）');
+    return 2;
+  }
+
+  print('📦 開啟 calibration DB: $dbPath');
+  final db = AppDatabase.forToolFile(dbPath);
+  try {
+    final validator = ExitValidator(
+      db: db,
+      replayConfig: ReplayConfig(dbPath: dbPath),
+    );
+    final result = await validator.run();
+    final report = buildReport(result);
+    print(report);
+    const outPath = 'tool/exit-validate-report.md';
+    File(outPath).writeAsStringSync(report);
+    print('📄 報告已寫入 $outPath');
+    return 0;
+  } finally {
+    await db.close();
+  }
+}
+
+Future<void> main(List<String> args) async {
+  exit(await runExitValidateCli(args));
 }
