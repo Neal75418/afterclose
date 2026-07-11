@@ -270,6 +270,10 @@ void main() {
       expect(perSymbol, lessThanOrEqualTo(4));
       expect(perSymbol, greaterThanOrEqualTo(1));
 
+      // 單調上漲 fixture（+0.1/日）無漲跌停日
+      expect(result.limitFlaggedT0, 0);
+      expect(result.limitFlaggedExit, 0);
+
       // 4 個變體都有結果（全開 + 三單條）
       expect(result.variantResults.keys.length, 4);
       for (final entry in result.variantResults.entries) {
@@ -352,6 +356,7 @@ void main() {
         },
         skippedNoWindow: 7,
         limitFlaggedT0: 2,
+        limitFlaggedExit: 3,
       );
 
       final report = buildReport(result);
@@ -361,9 +366,10 @@ void main() {
       // 出場 vs 持有差：pullback 2022 平均 exit -8、hold -7.5 → diff -0.5
       expect(report, contains('pullback'));
       expect(report, contains('2022'));
-      // survivorship 與漲跌停必印
+      // survivorship 與漲跌停（T0 + 觸發日兩個計數）必印
       expect(report, contains('7'));
       expect(report, contains('漲跌停'));
+      expect(report, contains('出場觸發日為漲跌停的樣本: 3'));
       // 方法論警語（spec §3 原文關鍵句）
       expect(report, contains('不等於「紀律沒用」'));
       // 4 變體段落
@@ -388,6 +394,7 @@ void main() {
         variantResults: {'all': rows},
         skippedNoWindow: 0,
         limitFlaggedT0: 0,
+        limitFlaggedExit: 0,
       );
       final report = buildReport(result);
       expect(report, contains('50')); // 勝率 1/2 = 50%

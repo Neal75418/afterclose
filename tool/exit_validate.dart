@@ -84,7 +84,10 @@ ExitSimResult? simulateExit({
   var exitIndex = endIndex; // 未觸發 = 持有到 horizon 末
   for (var d = entryIndex; d <= endIndex; d++) {
     final c = closes[d];
-    if (c == null) continue; // 停牌日跳過（timeStop 以 index 差計數）
+    // 停牌 null 列跳過判定。timeStop 以 index 差（=價格列數）計數，與
+    // spec §2「以價格列數計」一致；TWSE 停牌通常為缺列 → 倒數自然凍結，
+    // 若資料含 null-close 列則該列仍計入 40 日窗（已知資料語意相依）。
+    if (c == null) continue;
     if (c > ref) everAboveRef = true;
 
     // 同日 tie-break：照 ExitReason 宣告序（hardStop > trendBreak > timeStop）
@@ -158,6 +161,7 @@ class ExitValidationResult {
     required this.variantResults,
     required this.skippedNoWindow,
     required this.limitFlaggedT0,
+    required this.limitFlaggedExit,
   });
 
   /// 通過去重與窗檢查、實際進入模擬的樣本
@@ -172,6 +176,11 @@ class ExitValidationResult {
 
   /// T0 為漲/跌停的樣本數（v1 只觀察不特殊處理，spec §3）
   final int limitFlaggedT0;
+
+  /// 出場觸發日為漲/跌停的樣本數（all 變體）。跌停鎖死日的收盤價實務上
+  /// 常無法成交——此計數揭露「多少出場價可能樂觀不可成交」，供 gate
+  /// 決策保守解讀（spec §3：釘選日**或觸發日**皆須標記）。
+  final int limitFlaggedExit;
 }
 
 /// 出場條件 gate 驗證器
@@ -265,6 +274,7 @@ class ExitValidator {
     };
     var skippedNoWindow = 0;
     var limitFlaggedT0 = 0;
+    var limitFlaggedExit = 0;
     final lastWindowEnd = <String, int>{}; // '$symbol|$mode' → 窗末 index
 
     for (final sample in raw) {
@@ -303,21 +313,32 @@ class ExitValidator {
         variantResults[name]!.add((sample: sample, sim: sim!));
       }
 
-      // T0 漲跌停 flag（v1 只觀察）：以前一日收盤推漲跌幅
-      final prev = t0 > 0 ? closes[t0 - 1] : null;
-      final cur = closes[t0];
-      if (prev != null && prev > 0 && cur != null) {
-        final changePct = (cur / prev - 1) * 100;
-        if (PriceLimit.isLimitUp(changePct) ||
-            PriceLimit.isLimitDown(changePct)) {
-          limitFlaggedT0++;
+      // 漲跌停 flag（v1 只觀察）：以前一非 null 收盤推漲跌幅
+      bool isLimitDay(int idx) {
+        final cur = closes[idx];
+        if (cur == null) return false;
+        var p = idx - 1;
+        while (p >= 0 && closes[p] == null) {
+          p--;
         }
+        final prev = p >= 0 ? closes[p] : null;
+        if (prev == null || prev <= 0) return false;
+        final changePct = (cur / prev - 1) * 100;
+        return PriceLimit.isLimitUp(changePct) ||
+            PriceLimit.isLimitDown(changePct);
+      }
+
+      if (isLimitDay(t0)) limitFlaggedT0++;
+      // 觸發日（僅 all 變體有觸發時）：exitIndex = entry + holdingDays
+      if (allSim.reason != null && isLimitDay(t0 + 1 + allSim.holdingDays)) {
+        limitFlaggedExit++;
       }
     }
 
     _log(
       '✅ 樣本 ${samples.length} 筆（去重後）、'
-      'survivorship 排除 $skippedNoWindow、T0 漲跌停 $limitFlaggedT0',
+      'survivorship 排除 $skippedNoWindow、'
+      'T0 漲跌停 $limitFlaggedT0、觸發日漲跌停 $limitFlaggedExit',
     );
 
     return ExitValidationResult(
@@ -325,6 +346,7 @@ class ExitValidator {
       variantResults: variantResults,
       skippedNoWindow: skippedNoWindow,
       limitFlaggedT0: limitFlaggedT0,
+      limitFlaggedExit: limitFlaggedExit,
     );
   }
 }
@@ -348,6 +370,10 @@ String buildReport(ExitValidationResult result) {
     '這些樣本無 exit price，若比例高則報酬有存活者偏差、結論須保守解讀',
   );
   buf.writeln('- T0 為漲跌停的樣本: ${result.limitFlaggedT0}（v1 只觀察不特殊處理）');
+  buf.writeln(
+    '- 出場觸發日為漲跌停的樣本: ${result.limitFlaggedExit} — '
+    '鎖死日收盤價可能不可成交，比例高則出場報酬偏樂觀',
+  );
   buf.writeln();
   buf.writeln('> **方法論限制**：出場後以 0% 報酬計＝不含資金再部署效益，');
   buf.writeln('> gate 系統性低估出場紀律的實務價值——「沒 edge」應解讀為');
