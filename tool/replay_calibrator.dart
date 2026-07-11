@@ -121,6 +121,7 @@ class ReplayConfig {
 /// 三模式各自規則的分數加總（供「訊號 vs 同池基準」分模式驗證）。
 /// [shortReturn]/[longReturn] 隨 replay 模式為絕對或超額報酬。
 typedef ScoreSample = ({
+  String symbol,
   double score,
   double rawScore,
   double volatility,
@@ -533,6 +534,7 @@ class ReplayCalibrator {
           }
         }
         _scoreSink((
+          symbol: symbol,
           score: clamped,
           rawScore: raw,
           volatility: volatility,
