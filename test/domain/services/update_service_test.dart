@@ -88,6 +88,14 @@ void main() {
         endDate: any(named: 'endDate'),
       ),
     ).thenAnswer((_) async => []);
+    // 流動性下限：無成交值資料 → 全部 permissive 放行
+    when(
+      () => mockDb.getMedianTurnoverBatch(
+        endDate: any(named: 'endDate'),
+        windowDays: any(named: 'windowDays'),
+        minDataDays: any(named: 'minDataDays'),
+      ),
+    ).thenAnswer((_) async => {});
     when(() => mockDb.getStocksBatch(any())).thenAnswer((_) async => {});
     when(
       () => mockPriceRepo.syncStockPrices(

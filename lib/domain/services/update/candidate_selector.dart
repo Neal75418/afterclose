@@ -43,10 +43,23 @@ class CandidateSelector {
     final watchlist = await _db.getWatchlist();
     final watchlistSymbols = watchlist.map((w) => w.symbol).toSet();
 
+    // 流動性下限（評分改進 #4）：訊號必須可交易，薄流動性股的滑價會吃掉
+    // edge。map 內沒有的 symbol = 資料不足無法判定 → permissive 放行。
+    final medianTurnover = await _db.getMedianTurnoverBatch(
+      endDate: date,
+      windowDays: RuleParams.liquidityMedianWindowDays,
+      minDataDays: RuleParams.liquidityMinDataDays,
+    );
+    bool isLiquid(String symbol) {
+      final median = medianTurnover[symbol];
+      return median == null ||
+          median >= RuleParams.liquidityMinMedianTurnoverNtd;
+    }
+
     final allAnalyzableSet = allAnalyzable.toSet();
     final orderedCandidates = <String>{};
 
-    // 1. 自選清單優先
+    // 1. 自選清單優先（豁免流動性過濾 — 使用者主動追蹤）
     for (final symbol in watchlistSymbols) {
       if (allAnalyzableSet.contains(symbol)) {
         orderedCandidates.add(symbol);
@@ -55,24 +68,31 @@ class CandidateSelector {
 
     // 2. 熱門股第二
     for (final symbol in _popularStocks) {
-      if (allAnalyzableSet.contains(symbol)) {
+      if (allAnalyzableSet.contains(symbol) && isLiquid(symbol)) {
         orderedCandidates.add(symbol);
       }
     }
 
     // 3. 市場候選股第三
     for (final symbol in marketCandidates) {
-      if (allAnalyzableSet.contains(symbol)) {
+      if (allAnalyzableSet.contains(symbol) && isLiquid(symbol)) {
         orderedCandidates.add(symbol);
       }
     }
 
-    // 4. 其餘可分析股票
+    // 4. 其餘可分析股票（Set 成員性已保住前三類，含豁免的自選股）
     for (final symbol in allAnalyzableSet) {
-      orderedCandidates.add(symbol);
+      if (isLiquid(symbol)) {
+        orderedCandidates.add(symbol);
+      }
     }
 
-    AppLogger.info('CandidateSelector', '篩選 ${orderedCandidates.length} 檔候選股');
+    final dropped = allAnalyzableSet.length - orderedCandidates.length;
+    AppLogger.info(
+      'CandidateSelector',
+      '篩選 ${orderedCandidates.length} 檔候選股'
+          '（流動性下限濾除 ~$dropped 檔）',
+    );
     return orderedCandidates.toList();
   }
 }

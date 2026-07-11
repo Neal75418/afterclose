@@ -274,6 +274,63 @@ mixin PriceDaoMixin on $AppDatabase {
     return result.read<int>('cnt');
   }
 
+  /// 批次計算每檔股票「近 [windowDays] 個交易日」的中位成交值（volume × close）。
+  ///
+  /// 候選層流動性下限用（`RuleParams.liquidityMinMedianTurnoverNtd`）。
+  /// 交易日窗以**全市場第 [windowDays] 新的日期**為界（個股停牌日自然缺席）。
+  /// 有效資料（volume 與 close 皆非 null）天數 < [minDataDays] 的股票不出現
+  /// 在結果中 —— caller 應視為「無法判定」而 permissive 放行。
+  Future<Map<String, double>> getMedianTurnoverBatch({
+    required DateTime endDate,
+    required int windowDays,
+    required int minDataDays,
+  }) async {
+    // 全市場第 windowDays 新的交易日（含 endDate 以前）
+    final cutoffRow = await customSelect(
+      '''
+      SELECT DISTINCT date FROM daily_price
+      WHERE date <= ? ORDER BY date DESC LIMIT 1 OFFSET ?
+      ''',
+      variables: [
+        Variable.withDateTime(endDate),
+        Variable.withInt(windowDays - 1),
+      ],
+    ).getSingleOrNull();
+    if (cutoffRow == null) return const {};
+    final cutoff = cutoffRow.read<DateTime>('date');
+
+    final rows = await customSelect(
+      '''
+      SELECT symbol, volume * close AS turnover FROM daily_price
+      WHERE date >= ? AND date <= ?
+        AND volume IS NOT NULL AND close IS NOT NULL
+      ''',
+      variables: [
+        Variable.withDateTime(cutoff),
+        Variable.withDateTime(endDate),
+      ],
+    ).get();
+
+    final bySymbol = <String, List<double>>{};
+    for (final row in rows) {
+      bySymbol
+          .putIfAbsent(row.read<String>('symbol'), () => [])
+          .add(row.read<double>('turnover'));
+    }
+
+    final result = <String, double>{};
+    for (final entry in bySymbol.entries) {
+      final values = entry.value;
+      if (values.length < minDataDays) continue;
+      values.sort();
+      final mid = values.length ~/ 2;
+      result[entry.key] = values.length.isOdd
+          ? values[mid]
+          : (values[mid - 1] + values[mid]) / 2;
+    }
+    return result;
+  }
+
   /// 取得候選股票歷史資料完成度
   ///
   /// 回傳 (已完成檔數, 總檔數)
