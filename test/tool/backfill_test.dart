@@ -764,7 +764,7 @@ void main() {
           date: any(named: 'date'),
           targetSymbols: any(named: 'targetSymbols'),
         ),
-      ).called(lessThanOrEqualTo(5));
+      ).called(lessThanOrEqualTo(12)); // 閾值 10 + 邊際
       expect(logs.join('\n'), contains('連續'), reason: 'abort 時要留下可診斷的訊息');
     });
   });

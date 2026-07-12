@@ -573,16 +573,18 @@ class Backfiller {
     );
   }
 
-  /// 連續 N 個交易日 fetch 回 0 rows 即 abort 該 phase。
+  /// 連續 N 個「日曆判定為交易日」fetch 回 0 rows 即 abort 該 phase。
   ///
-  /// 正常交易日全市場批次不可能連續多天 0 筆（假日已被 TaiwanCalendar
-  /// 濾掉）——連續 0 的唯一合理解釋是端點失效（如 TWSE 2026-06 起
-  /// STOCK_DAY_ALL 忽略 date 參數、repository 按請求日過濾後回 0）。
-  /// fail-fast 免得每輪 retry 燒 3 小時 API 額度在死迴圈上。
+  /// 連續 0 的兩種可能：(a) 端點失效（TWSE 2026-06 起 STOCK_DAY_ALL
+  /// 忽略 date 參數、repository 按請求日過濾後回 0）——fail-fast 的目標；
+  /// (b) **TaiwanCalendar 不認識的舊年度假日群集**（實測 2021 春節
+  /// 2/8–2/16 連續 7 個平日休市、被當交易日去抓、API 正確回無資料）。
   ///
-  /// 注意：小 whitelist（少數冷門股）連續停牌數日可能誤觸發——phase 提早
-  /// 結束但 per-symbol FinMind phase 仍會補該些候選股，影響有限。
-  static const int _maxConsecutiveZeroDays = 3;
+  /// 閾值必須 > 台股最長休市群集（春節 ~8 個平日），取 10：假日群集
+  /// 最多浪費 ~10 次 API 呼叫後自行恢復；端點真失效仍會在 ~1 分鐘內
+  /// abort（vs 死迴圈燒 3 小時）。2026-07-12 曾因閾值 3 在 2021 春節
+  /// 誤殺 TWSE phase。
+  static const int _maxConsecutiveZeroDays = 10;
 
   /// TWSE 上市股票價格 batch backfill
   ///
