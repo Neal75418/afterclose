@@ -211,7 +211,8 @@ class PriceRepository implements IPriceRepository {
     required Set<String> targetSymbols,
   }) async {
     try {
-      final prices = await _twseSource.fetchAllDailyPrices(date: date);
+      // 歷史回補走 MI_INDEX（STOCK_DAY_ALL 自 2026-06 起忽略 date 參數）
+      final prices = await _twseSource.fetchAllDailyPricesHistorical(date);
       if (prices.isEmpty) return 0;
 
       final processed = _twseSource.processDailyPrices(prices);
@@ -257,7 +258,8 @@ class PriceRepository implements IPriceRepository {
     required Set<String> targetSymbols,
   }) async {
     try {
-      final prices = await _tpexSource.fetchAllDailyPrices(date: date);
+      // 歷史回補走新版 afterTrading/otc（舊端點同樣忽略 date 參數）
+      final prices = await _tpexSource.fetchAllDailyPricesHistorical(date);
       if (prices.isEmpty) return 0;
 
       // processDailyPrices 已處理 StockPatterns.isValidCode 過濾。

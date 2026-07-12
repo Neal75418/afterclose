@@ -106,6 +106,11 @@ class TwsePriceSource {
     return _client.getAllDailyPrices(date: date);
   }
 
+  /// 歷史全市場行情（MI_INDEX；backfill 用——STOCK_DAY_ALL 不支援歷史）
+  Future<List<TwseDailyPrice>> fetchAllDailyPricesHistorical(DateTime date) {
+    return _client.getAllDailyPricesHistorical(date);
+  }
+
   /// 將原始上市股票資料轉換為 DB 格式（價格 + 股票主檔 + 候選股）
   ({
     List<DailyPriceCompanion> priceEntries,

@@ -77,6 +77,11 @@ class TpexPriceSource {
     return _client.getAllDailyPrices(date: date);
   }
 
+  /// 歷史全市場行情（新版 afterTrading/otc；backfill 用）
+  Future<List<TpexDailyPrice>> fetchAllDailyPricesHistorical(DateTime date) {
+    return _client.getAllDailyPricesHistorical(date);
+  }
+
   /// 將原始上櫃股票資料轉換為 DB 格式（價格 + 股票主檔 + 候選股）
   ({
     List<DailyPriceCompanion> priceEntries,

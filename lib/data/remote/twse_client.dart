@@ -97,6 +97,116 @@ class TwseClient {
     });
   }
 
+  /// MI_INDEX（每日收盤行情全部）→ [TwseDailyPrice] 列表。
+  ///
+  /// **歷史回補替代端點**：STOCK_DAY_ALL 自 2026-06 CSV 化後忽略 date
+  /// 參數；MI_INDEX?date=yyyyMMdd&type=ALLBUT0999 經 2026-07-12 活體驗證
+  /// 支援歷史日期。回應為多表結構，收盤行情表以 fields 首欄「證券代號」
+  /// 辨識（不依賴表序）。
+  ///
+  /// row 佈局：[代號, 名稱, 成交股數, 成交筆數, 成交金額, 開, 高, 低, 收,
+  /// 漲跌(+/-)(html), 漲跌價差, ...]。漲跌號從 html 取正負、乘上價差。
+  /// 回應日期 ≠ [requestedDate] → 回空（端點失效防護）。public 供測試。
+  static List<TwseDailyPrice> parseMiIndexDailyPrices(
+    Map<dynamic, dynamic> json,
+    DateTime requestedDate,
+  ) {
+    final expected =
+        '${requestedDate.year.toString().padLeft(4, '0')}'
+        '${requestedDate.month.toString().padLeft(2, '0')}'
+        '${requestedDate.day.toString().padLeft(2, '0')}';
+    if (json['date']?.toString() != expected) return const [];
+
+    final tables = json['tables'];
+    if (tables is! List) return const [];
+
+    List<dynamic>? rows;
+    for (final table in tables) {
+      if (table is! Map) continue;
+      final fields = table['fields'];
+      if (fields is List &&
+          fields.isNotEmpty &&
+          fields.first.toString().contains('證券代號')) {
+        rows = table['data'] as List<dynamic>?;
+        break;
+      }
+    }
+    if (rows == null) return const [];
+
+    final result = <TwseDailyPrice>[];
+    for (final raw in rows) {
+      if (raw is! List || raw.length < 11) continue;
+      final code = raw[0]?.toString().trim() ?? '';
+      if (code.isEmpty) continue;
+
+      final changeAbs = TwParseUtils.parseFormattedDouble(raw[10]?.toString());
+      final signHtml = raw[9]?.toString() ?? '';
+      double? change;
+      if (changeAbs != null) {
+        if (signHtml.contains('-')) {
+          change = -changeAbs;
+        } else if (signHtml.contains('+')) {
+          change = changeAbs;
+        } else {
+          change = 0.0;
+        }
+      }
+
+      result.add(
+        TwseDailyPrice(
+          date: requestedDate,
+          code: code,
+          name: raw[1]?.toString().trim() ?? '',
+          open: TwParseUtils.parseFormattedDouble(raw[5]?.toString()),
+          high: TwParseUtils.parseFormattedDouble(raw[6]?.toString()),
+          low: TwParseUtils.parseFormattedDouble(raw[7]?.toString()),
+          close: TwParseUtils.parseFormattedDouble(raw[8]?.toString()),
+          volume: TwParseUtils.parseFormattedDouble(raw[2]?.toString()),
+          change: change,
+        ),
+      );
+    }
+    return result;
+  }
+
+  /// 歷史全市場行情（MI_INDEX 端點；backfill 用）。
+  ///
+  /// 與 [getAllDailyPrices]（STOCK_DAY_ALL、僅最新日）分工：每日同步走
+  /// 舊端點，歷史回補走本方法。
+  Future<List<TwseDailyPrice>> getAllDailyPricesHistorical(DateTime date) {
+    return MarketClientMixin.executeRequest(_tag, '歷史全市場價格', () async {
+      final dateStr = TwParseUtils.formatDateCompact(date);
+      final cacheKey = 'miIndexDaily:$dateStr';
+      final cached = _cache.get(cacheKey) as List<TwseDailyPrice>?;
+      if (cached != null) return cached;
+
+      final response = await _dio.get(
+        '/rwd/zh/afterTrading/MI_INDEX',
+        queryParameters: {
+          'date': dateStr,
+          'type': 'ALLBUT0999',
+          'response': 'json',
+        },
+      );
+      if (response.statusCode != 200) {
+        throw ApiException(
+          '$_tag API error: ${response.statusCode}',
+          response.statusCode,
+        );
+      }
+      final data = MarketClientMixin.decodeResponseData(
+        response.data,
+        _tag,
+        '歷史全市場價格',
+      );
+      if (data == null) return <TwseDailyPrice>[];
+
+      final result = parseMiIndexDailyPrices(data, date);
+      _cache.put(cacheKey, result);
+      return result;
+    });
+  }
+
   /// 解析每日價格資料列
   ///
   /// 列格式: [代號, 名稱, 成交股數, 成交金額, 開盤價, 最高價, 最低價, 收盤價, 漲跌價差, 成交筆數]

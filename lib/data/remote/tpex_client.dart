@@ -40,6 +40,88 @@ class TpexClient {
   /// 回傳所有上櫃股票的 OHLCV 資料。
   ///
   /// 端點: /web/stock/aftertrading/otc_quotes_no1430/stk_wn1430_result.php
+  /// 新版 afterTrading/otc（歷史回補替代端點）→ [TpexDailyPrice] 列表。
+  ///
+  /// 舊 daily_close_quotes 端點自 2026-06 起忽略歷史 date（永遠回最新日，
+  /// 與 TWSE STOCK_DAY_ALL 同症狀）；/www/zh-tw/afterTrading/otc?type=EW
+  /// 經 2026-07-12 活體驗證支援歷史日期。
+  ///
+  /// row 佈局：[代號, 名稱, 收盤, 漲跌(帶號、可為「除息」等非數字), 開,
+  /// 高, 低, 成交股數, 成交金額, 成交筆數, ...]。
+  /// 回應日期 ≠ [requestedDate] → 回空（端點失效防護）。public 供測試。
+  static List<TpexDailyPrice> parseAfterTradingOtcDailyPrices(
+    Map<dynamic, dynamic> json,
+    DateTime requestedDate,
+  ) {
+    final expected =
+        '${requestedDate.year.toString().padLeft(4, '0')}'
+        '${requestedDate.month.toString().padLeft(2, '0')}'
+        '${requestedDate.day.toString().padLeft(2, '0')}';
+    if (json['date']?.toString() != expected) return const [];
+
+    final tables = json['tables'];
+    if (tables is! List || tables.isEmpty) return const [];
+    final first = tables.first;
+    if (first is! Map) return const [];
+    final rows = first['data'];
+    if (rows is! List) return const [];
+
+    final result = <TpexDailyPrice>[];
+    for (final raw in rows) {
+      if (raw is! List || raw.length < 8) continue;
+      final code = raw[0]?.toString().trim() ?? '';
+      if (code.isEmpty) continue;
+      result.add(
+        TpexDailyPrice(
+          date: requestedDate,
+          code: code,
+          name: raw[1]?.toString().trim() ?? '',
+          close: TwParseUtils.parseFormattedDouble(raw[2]?.toString()),
+          change: TwParseUtils.parseFormattedDouble(raw[3]?.toString()),
+          open: TwParseUtils.parseFormattedDouble(raw[4]?.toString()),
+          high: TwParseUtils.parseFormattedDouble(raw[5]?.toString()),
+          low: TwParseUtils.parseFormattedDouble(raw[6]?.toString()),
+          volume: TwParseUtils.parseFormattedDouble(raw[7]?.toString()),
+        ),
+      );
+    }
+    return result;
+  }
+
+  /// 歷史全市場行情（新版 afterTrading/otc；backfill 用）。
+  Future<List<TpexDailyPrice>> getAllDailyPricesHistorical(DateTime date) {
+    return MarketClientMixin.executeRequest(_tag, '歷史全市場價格', () async {
+      final dateStr =
+          '${date.year.toString().padLeft(4, '0')}/'
+          '${date.month.toString().padLeft(2, '0')}/'
+          '${date.day.toString().padLeft(2, '0')}';
+      final cacheKey = 'otcDailyHist:$dateStr';
+      final cached = _cache.get(cacheKey) as List<TpexDailyPrice>?;
+      if (cached != null) return cached;
+
+      final response = await _dio.get(
+        '/www/zh-tw/afterTrading/otc',
+        queryParameters: {'date': dateStr, 'type': 'EW', 'response': 'json'},
+      );
+      if (response.statusCode != 200) {
+        throw ApiException(
+          '$_tag API error: ${response.statusCode}',
+          response.statusCode,
+        );
+      }
+      final data = MarketClientMixin.decodeResponseData(
+        response.data,
+        _tag,
+        '歷史全市場價格',
+      );
+      if (data == null) return <TpexDailyPrice>[];
+
+      final result = parseAfterTradingOtcDailyPrices(data, date);
+      _cache.put(cacheKey, result);
+      return result;
+    });
+  }
+
   Future<List<TpexDailyPrice>> getAllDailyPrices({DateTime? date}) {
     return MarketClientMixin.executeRequest(_tag, '全市場價格', () async {
       final cacheKey = date != null

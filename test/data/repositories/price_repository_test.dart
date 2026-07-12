@@ -418,7 +418,7 @@ void main() {
         ];
 
         when(
-          () => mockTwseClient.getAllDailyPrices(date: testDate),
+          () => mockTwseClient.getAllDailyPricesHistorical(testDate),
         ).thenAnswer((_) async => batchResponse);
         when(() => mockDb.insertPrices(any())).thenAnswer((_) async {});
 
@@ -429,7 +429,7 @@ void main() {
 
         // 核心不變式：date 參數真的有傳到 client（不是抓今日預設）
         verify(
-          () => mockTwseClient.getAllDailyPrices(date: testDate),
+          () => mockTwseClient.getAllDailyPricesHistorical(testDate),
         ).called(1);
 
         final captured =
@@ -448,7 +448,7 @@ void main() {
         final requested = DateTime(2025, 9, 10);
         final latest = DateTime(2026, 7, 9); // 端點實際回的日子
         when(
-          () => mockTwseClient.getAllDailyPrices(date: requested),
+          () => mockTwseClient.getAllDailyPricesHistorical(requested),
         ).thenAnswer(
           (_) async => [
             TwseDailyPrice(
@@ -477,7 +477,7 @@ void main() {
       test('returns 0 when batch response is empty', () async {
         final testDate = DateTime(2026, 1, 1);
         when(
-          () => mockTwseClient.getAllDailyPrices(date: testDate),
+          () => mockTwseClient.getAllDailyPricesHistorical(testDate),
         ).thenAnswer((_) async => []);
 
         final inserted = await repository.backfillTwsePricesByDate(
@@ -491,7 +491,9 @@ void main() {
 
       test('returns 0 when no batch rows match targetSymbols', () async {
         final testDate = DateTime(2026, 5, 1);
-        when(() => mockTwseClient.getAllDailyPrices(date: testDate)).thenAnswer(
+        when(
+          () => mockTwseClient.getAllDailyPricesHistorical(testDate),
+        ).thenAnswer(
           (_) async => [
             TwseDailyPrice(
               date: testDate,
@@ -519,7 +521,7 @@ void main() {
       test('rethrows RateLimitException without wrapping', () async {
         final testDate = DateTime(2026, 5, 1);
         when(
-          () => mockTwseClient.getAllDailyPrices(date: testDate),
+          () => mockTwseClient.getAllDailyPricesHistorical(testDate),
         ).thenThrow(const RateLimitException());
 
         await expectLater(
@@ -534,7 +536,7 @@ void main() {
       test('rethrows NetworkException without wrapping', () async {
         final testDate = DateTime(2026, 5, 1);
         when(
-          () => mockTwseClient.getAllDailyPrices(date: testDate),
+          () => mockTwseClient.getAllDailyPricesHistorical(testDate),
         ).thenThrow(const NetworkException('connection refused'));
 
         await expectLater(
@@ -548,7 +550,9 @@ void main() {
 
       test('wraps generic exception in DatabaseException', () async {
         final testDate = DateTime(2026, 5, 1);
-        when(() => mockTwseClient.getAllDailyPrices(date: testDate)).thenAnswer(
+        when(
+          () => mockTwseClient.getAllDailyPricesHistorical(testDate),
+        ).thenAnswer(
           (_) async => [
             TwseDailyPrice(
               date: testDate,
@@ -588,7 +592,7 @@ void main() {
         final requested = DateTime(2025, 9, 10);
         final latest = DateTime(2026, 7, 9);
         when(
-          () => mockTpexClient.getAllDailyPrices(date: requested),
+          () => mockTpexClient.getAllDailyPricesHistorical(requested),
         ).thenAnswer(
           (_) async => [
             TpexDailyPrice(
@@ -657,7 +661,7 @@ void main() {
         ];
 
         when(
-          () => mockTpexClient.getAllDailyPrices(date: testDate),
+          () => mockTpexClient.getAllDailyPricesHistorical(testDate),
         ).thenAnswer((_) async => batchResponse);
         when(() => mockDb.insertPrices(any())).thenAnswer((_) async {});
 
@@ -678,7 +682,7 @@ void main() {
 
         // batch endpoint 只被呼叫一次
         verify(
-          () => mockTpexClient.getAllDailyPrices(date: testDate),
+          () => mockTpexClient.getAllDailyPricesHistorical(testDate),
         ).called(1);
 
         // 確認過濾正確：插入的只有 6488 + 8905
@@ -697,7 +701,7 @@ void main() {
           final testDate = DateTime(2026, 1, 1); // 假設非交易日
 
           when(
-            () => mockTpexClient.getAllDailyPrices(date: testDate),
+            () => mockTpexClient.getAllDailyPricesHistorical(testDate),
           ).thenAnswer((_) async => []);
 
           final inserted = await repository.backfillTpexPricesByDate(
@@ -717,7 +721,7 @@ void main() {
         () async {
           final testDate = DateTime(2026, 5, 1);
           when(
-            () => mockTpexClient.getAllDailyPrices(date: testDate),
+            () => mockTpexClient.getAllDailyPricesHistorical(testDate),
           ).thenAnswer(
             (_) async => [
               TpexDailyPrice(
@@ -748,7 +752,7 @@ void main() {
       test('rethrows RateLimitException without wrapping', () async {
         final testDate = DateTime(2026, 5, 1);
         when(
-          () => mockTpexClient.getAllDailyPrices(date: testDate),
+          () => mockTpexClient.getAllDailyPricesHistorical(testDate),
         ).thenThrow(const RateLimitException('API rate limit', null));
 
         await expectLater(
@@ -763,7 +767,7 @@ void main() {
       test('rethrows NetworkException without wrapping', () async {
         final testDate = DateTime(2026, 5, 1);
         when(
-          () => mockTpexClient.getAllDailyPrices(date: testDate),
+          () => mockTpexClient.getAllDailyPricesHistorical(testDate),
         ).thenThrow(const NetworkException('connection timeout', null));
 
         await expectLater(
@@ -777,7 +781,9 @@ void main() {
 
       test('wraps generic exception in DatabaseException', () async {
         final testDate = DateTime(2026, 5, 1);
-        when(() => mockTpexClient.getAllDailyPrices(date: testDate)).thenAnswer(
+        when(
+          () => mockTpexClient.getAllDailyPricesHistorical(testDate),
+        ).thenAnswer(
           (_) async => [
             TpexDailyPrice(
               date: testDate,
