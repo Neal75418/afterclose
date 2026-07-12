@@ -127,6 +127,8 @@ void main() {
     when(
       () => db.countPricesByDateAndMarket(any(), any()),
     ).thenAnswer((_) async => 0);
+    // Default: 該日尚無既有法人 rows → 不觸發 institutional per-day skip
+    when(() => db.countInstitutionalByDate(any())).thenAnswer((_) async => 0);
   });
 
   BackfillConfig makeConfig({
