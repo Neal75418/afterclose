@@ -635,6 +635,10 @@ class Backfiller {
       if (existing >= targetSet.length * 0.5) {
         daysSucceeded++;
         daysProcessed++;
+        // skip = 該日已完整 → 歸零連零計數：假日群集（曆表不含的舊年度
+        // 春節）之間被完整日隔開，不得跨年累積誤觸 abort（2026-07-13
+        // 實測 2022+2023 春節零日跨過一年 skip 疊加到 10 的教訓）。
+        consecutiveZeroDays = 0;
         current = current.add(const Duration(days: 1));
         continue;
       }
@@ -753,6 +757,10 @@ class Backfiller {
       if (existing >= targetSet.length * 0.5) {
         daysSucceeded++;
         daysProcessed++;
+        // skip = 該日已完整 → 歸零連零計數：假日群集（曆表不含的舊年度
+        // 春節）之間被完整日隔開，不得跨年累積誤觸 abort（2026-07-13
+        // 實測 2022+2023 春節零日跨過一年 skip 疊加到 10 的教訓）。
+        consecutiveZeroDays = 0;
         current = current.add(const Duration(days: 1));
         continue;
       }
