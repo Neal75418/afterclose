@@ -776,7 +776,7 @@
     "autoUpdateFailed": "自動更新排程設定失敗，請稍後再試"
   },
   "alert": {
-    "title": "價格提醒",
+    "title": "警示",
     "create": "新增提醒",
     "edit": "編輯提醒",
     "editSuccess": "提醒已更新",
@@ -1458,6 +1458,8 @@
     "cancel": "取消釘選",
     "archive": "封存",
     "pinTooltip": "釘選論點",
-    "noPrice": "—"
+    "noPrice": "—",
+    "summaryActive": "{n} 追蹤中",
+    "summaryInvalidated": "{n} 已失效"
   }
 }

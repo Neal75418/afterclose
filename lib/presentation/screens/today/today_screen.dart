@@ -290,10 +290,24 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                     onPressed: _runUpdate,
                     tooltip: S.todayUpdateData,
                   ),
-                IconButton(
-                  icon: const Icon(Icons.notifications_outlined),
-                  onPressed: () => context.push(AppRoutes.alerts),
-                  tooltip: S.todayPriceAlert,
+                // 鈴鐺 badge = 未封存的論點失效數（稀有事件的事件驅動提醒）
+                Consumer(
+                  builder: (context, ref, _) {
+                    final invalidatedCount = ref.watch(
+                      pinnedThesisProvider.select(
+                        (s) => s.value?.invalidated.length ?? 0,
+                      ),
+                    );
+                    return IconButton(
+                      icon: Badge(
+                        isLabelVisible: invalidatedCount > 0,
+                        label: Text('$invalidatedCount'),
+                        child: const Icon(Icons.notifications_outlined),
+                      ),
+                      onPressed: () => context.push(AppRoutes.alerts),
+                      tooltip: S.todayPriceAlert,
+                    );
+                  },
                 ),
                 PopupMenuButton<String>(
                   icon: const Icon(Icons.more_vert),
@@ -526,6 +540,10 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
           },
         ),
 
+        // 釘選論點追蹤區（出場層）：一行摘要 strip、失效時轉紅自動展開。
+        // 置於推薦標題前——你的下注單優先於今日候選，但平日只佔一行。
+        const SliverToBoxAdapter(child: PinnedThesisSection()),
+
         // 推薦清單 header — 動態顯示「今日推薦 (N 檔)」
         //
         // **2026-06-20**：N 跟著該 mode tab 通過 eligibility filter 的清單長度走、
@@ -645,9 +663,6 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
             );
           },
         ),
-
-        // 釘選論點追蹤區（出場層 Phase 2）——空狀態零噪音
-        const SliverToBoxAdapter(child: PinnedThesisSection()),
 
         // 底部間距
         const SliverToBoxAdapter(child: SizedBox(height: 80)),

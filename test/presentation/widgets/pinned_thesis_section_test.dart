@@ -58,20 +58,39 @@ void main() {
     expect(find.textContaining('thesis.sectionTitle'), findsNothing);
   });
 
-  testWidgets('ACTIVE 釘選 → 卡片顯示 symbol/狀態/參考價現價、取消鈕物理刪除', (tester) async {
+  testWidgets('僅 ACTIVE → 預設收合成一行 strip、點擊展開後可取消', (tester) async {
     await pin();
     await tester.pumpWidget(wrap(const PinnedThesisSection()));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('thesis.sectionTitle'), findsOneWidget);
+    // 摘要 strip（無失效 → 預設收合、卡片不渲染）
+    expect(find.textContaining('thesis.summaryActive'), findsOneWidget);
+    expect(find.text('2330'), findsNothing, reason: '平日收合、不佔推薦版面');
+
+    // 點 strip 展開
+    await tester.tap(find.textContaining('thesis.summaryActive'));
+    await tester.pumpAndSettle();
     expect(find.text('2330'), findsOneWidget);
     expect(find.text('thesis.statusActive'), findsOneWidget);
-    // 參考價 1000 → 現價 1005（+0.5%）—— .tr() 回 key，斷言 key 存在
     expect(find.textContaining('thesis.refVsCurrent'), findsOneWidget);
 
     await tester.tap(find.byIcon(Icons.close));
     await tester.pumpAndSettle();
     expect(find.text('2330'), findsNothing, reason: '取消 = 物理刪除、離開追蹤區');
+  });
+
+  testWidgets('有失效 → strip 自動展開（事件驅動顯眼度）', (tester) async {
+    final id = await pin();
+    await db.invalidateThesis(
+      id,
+      invalidatedDate: DateTime(2026, 7, 10),
+      reason: ExitReason.timeStop.name,
+    );
+    await tester.pumpWidget(wrap(const PinnedThesisSection()));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('thesis.summaryInvalidated'), findsOneWidget);
+    expect(find.text('2330'), findsOneWidget, reason: '失效 = 稀有關鍵事件、無需點擊即可見');
   });
 
   testWidgets('invalidatedOnly：只列 INVALIDATED、封存後離開', (tester) async {

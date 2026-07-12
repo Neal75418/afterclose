@@ -6,52 +6,102 @@ import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/providers/pinned_thesis_provider.dart';
 
-/// 釘選論點追蹤區（出場層 Phase 2，今日頁下方 / 警示頁共用卡片）
+/// 釘選論點追蹤區（出場層 Phase 2，今日頁頂部 / 警示頁共用）
 ///
 /// 空狀態渲染 nothing（零噪音）。[invalidatedOnly] = 警示頁模式：
-/// 只列 INVALIDATED、動作為封存。
-class PinnedThesisSection extends ConsumerWidget {
+/// 只列 INVALIDATED、動作為封存、恆展開。
+///
+/// 今日頁模式 = **一行摘要 strip + 可收合卡片**：失效是稀有事件
+/// （gate 實測 60 日觸發率 8-15%），按變化頻率分層——平日收合一行
+/// 不佔推薦版面；**有失效時 strip 轉紅並自動展開**（事件驅動顯眼度）。
+class PinnedThesisSection extends ConsumerStatefulWidget {
   const PinnedThesisSection({super.key, this.invalidatedOnly = false});
 
   final bool invalidatedOnly;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PinnedThesisSection> createState() =>
+      _PinnedThesisSectionState();
+}
+
+class _PinnedThesisSectionState extends ConsumerState<PinnedThesisSection> {
+  /// 使用者手動展開/收合的覆寫；null = 跟隨預設（有失效 → 展開）
+  bool? _expandedOverride;
+
+  @override
+  Widget build(BuildContext context) {
     final async = ref.watch(pinnedThesisProvider);
     final state = async.value;
     if (state == null) return const SizedBox.shrink();
 
-    final theses = invalidatedOnly
+    final theses = widget.invalidatedOnly
         ? state.invalidated
         : [...state.active, ...state.invalidated];
     if (theses.isEmpty) return const SizedBox.shrink();
 
     final theme = Theme.of(context);
-    final title = invalidatedOnly
-        ? 'thesis.alertSectionTitle'.tr()
-        : 'thesis.sectionTitle'.tr();
+    final hasInvalidated = state.invalidated.isNotEmpty;
+    // 警示頁恆展開；今日頁預設「有失效才展開」、可手動覆寫
+    final expanded =
+        widget.invalidatedOnly || (_expandedOverride ?? hasInvalidated);
+    final stripColor = hasInvalidated && !widget.invalidatedOnly
+        ? theme.colorScheme.error
+        : theme.colorScheme.onSurfaceVariant;
+
+    final summaryParts = [
+      if (!widget.invalidatedOnly && state.active.isNotEmpty)
+        'thesis.summaryActive'.tr(
+          namedArgs: {'n': state.active.length.toString()},
+        ),
+      if (hasInvalidated)
+        'thesis.summaryInvalidated'.tr(
+          namedArgs: {'n': state.invalidated.length.toString()},
+        ),
+    ];
+    final title = widget.invalidatedOnly
+        ? '${'thesis.alertSectionTitle'.tr()} (${theses.length})'
+        : '📌 ${summaryParts.join(' · ')}';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: DesignTokens.spacing16,
-            vertical: DesignTokens.spacing8,
-          ),
-          child: Text(
-            '$title (${theses.length})',
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.bold,
+        InkWell(
+          onTap: widget.invalidatedOnly
+              ? null
+              : () => setState(() => _expandedOverride = !expanded),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: DesignTokens.spacing16,
+              vertical: DesignTokens.spacing8,
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    title,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: stripColor,
+                    ),
+                  ),
+                ),
+                if (!widget.invalidatedOnly)
+                  Icon(
+                    expanded ? Icons.expand_less : Icons.expand_more,
+                    size: 18,
+                    color: stripColor,
+                  ),
+              ],
             ),
           ),
         ),
-        for (final thesis in theses)
-          _ThesisCard(
-            thesis: thesis,
-            currentClose: state.currentCloses[thesis.symbol],
-            isDelisted: state.inactiveSymbols.contains(thesis.symbol),
-          ),
+        if (expanded)
+          for (final thesis in theses)
+            _ThesisCard(
+              thesis: thesis,
+              currentClose: state.currentCloses[thesis.symbol],
+              isDelisted: state.inactiveSymbols.contains(thesis.symbol),
+            ),
       ],
     );
   }

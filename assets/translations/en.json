@@ -776,7 +776,7 @@
     "autoUpdateFailed": "Failed to schedule auto-update. Please try again later."
   },
   "alert": {
-    "title": "Price Alerts",
+    "title": "Alerts",
     "create": "Create Alert",
     "edit": "Edit Alert",
     "editSuccess": "Alert updated",
@@ -1458,6 +1458,8 @@
     "cancel": "Unpin",
     "archive": "Archive",
     "pinTooltip": "Pin thesis",
-    "noPrice": "—"
+    "noPrice": "—",
+    "summaryActive": "{n} tracking",
+    "summaryInvalidated": "{n} invalidated"
   }
 }
