@@ -322,6 +322,7 @@ class AppDatabase extends $AppDatabase
   /// `onUpgrade` migration。此 whitelist fix 只是**避免 pre-launch 期間自
   /// 己 dogfooding 時被洗掉資料**的權宜之計。
   static const Set<String> _userInputTableNames = {
+    'pinned_thesis', // 釘選論點（含 INVALIDATED/ARCHIVED 歷史——凍結紀錄不可洗）
     'portfolio_position',
     'portfolio_transaction',
     'watchlist',

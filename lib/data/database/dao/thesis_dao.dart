@@ -20,24 +20,32 @@ mixin ThesisDaoMixin on $AppDatabase {
     required String triggeredRules,
     required double scoreShort,
     required double scoreLong,
-  }) async {
-    final existing = await (select(
-      _thesis,
-    )..where((t) => t.symbol.equals(symbol) & t.status.equals('ACTIVE'))).get();
-    if (existing.isNotEmpty) {
-      throw StateError('symbol $symbol 已有 ACTIVE 釘選（id=${existing.first.id}）');
-    }
-    return into(_thesis).insert(
-      PinnedThesisCompanion.insert(
-        symbol: symbol,
-        pinnedDate: pinnedDate,
-        referencePrice: referencePrice,
-        mode: mode,
-        triggeredRules: triggeredRules,
-        scoreShort: scoreShort,
-        scoreLong: scoreLong,
-      ),
-    );
+  }) {
+    // transaction 包 check+insert：快速雙擊（兩個 pin() 交錯）不會產生
+    // 兩筆 ACTIVE 破壞 invariant
+    return transaction(() async {
+      final existing =
+          await (select(_thesis)..where(
+                (t) => t.symbol.equals(symbol) & t.status.equals('ACTIVE'),
+              ))
+              .get();
+      if (existing.isNotEmpty) {
+        throw StateError(
+          'symbol $symbol 已有 ACTIVE 釘選（id=${existing.first.id}）',
+        );
+      }
+      return into(_thesis).insert(
+        PinnedThesisCompanion.insert(
+          symbol: symbol,
+          pinnedDate: pinnedDate,
+          referencePrice: referencePrice,
+          mode: mode,
+          triggeredRules: triggeredRules,
+          scoreShort: scoreShort,
+          scoreLong: scoreLong,
+        ),
+      );
+    });
   }
 
   /// 全部 ACTIVE 釘選（monitor 與追蹤區用）
