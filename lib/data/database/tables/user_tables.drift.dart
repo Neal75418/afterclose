@@ -1761,6 +1761,538 @@ typedef $$ScreeningStrategyTableTableProcessedTableManager =
       i1.ScreeningStrategyEntry,
       i0.PrefetchHooks Function()
     >;
+typedef $$PinnedThesisTableCreateCompanionBuilder =
+    i1.PinnedThesisCompanion Function({
+      i0.Value<int> id,
+      required String symbol,
+      required DateTime pinnedDate,
+      required double referencePrice,
+      required String mode,
+      required String triggeredRules,
+      required double scoreShort,
+      required double scoreLong,
+      i0.Value<String> status,
+      i0.Value<DateTime?> invalidatedDate,
+      i0.Value<String?> invalidatedReason,
+      i0.Value<DateTime?> lastCheckedDate,
+      i0.Value<DateTime> createdAt,
+      i0.Value<DateTime> updatedAt,
+    });
+typedef $$PinnedThesisTableUpdateCompanionBuilder =
+    i1.PinnedThesisCompanion Function({
+      i0.Value<int> id,
+      i0.Value<String> symbol,
+      i0.Value<DateTime> pinnedDate,
+      i0.Value<double> referencePrice,
+      i0.Value<String> mode,
+      i0.Value<String> triggeredRules,
+      i0.Value<double> scoreShort,
+      i0.Value<double> scoreLong,
+      i0.Value<String> status,
+      i0.Value<DateTime?> invalidatedDate,
+      i0.Value<String?> invalidatedReason,
+      i0.Value<DateTime?> lastCheckedDate,
+      i0.Value<DateTime> createdAt,
+      i0.Value<DateTime> updatedAt,
+    });
+
+final class $$PinnedThesisTableReferences
+    extends
+        i0.BaseReferences<
+          i0.GeneratedDatabase,
+          i1.$PinnedThesisTable,
+          i1.PinnedThesisEntry
+        > {
+  $$PinnedThesisTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static i5.$StockMasterTable _symbolTable(i0.GeneratedDatabase db) =>
+      i4.ReadDatabaseContainer(db)
+          .resultSet<i5.$StockMasterTable>('stock_master')
+          .createAlias(
+            i0.$_aliasNameGenerator(
+              i4.ReadDatabaseContainer(
+                db,
+              ).resultSet<i1.$PinnedThesisTable>('pinned_thesis').symbol,
+              i4.ReadDatabaseContainer(
+                db,
+              ).resultSet<i5.$StockMasterTable>('stock_master').symbol,
+            ),
+          );
+
+  i5.$$StockMasterTableProcessedTableManager get symbol {
+    final $_column = $_itemColumn<String>('symbol')!;
+
+    final manager = i5
+        .$$StockMasterTableTableManager(
+          $_db,
+          i4.ReadDatabaseContainer(
+            $_db,
+          ).resultSet<i5.$StockMasterTable>('stock_master'),
+        )
+        .filter((f) => f.symbol.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_symbolTable($_db));
+    if (item == null) return manager;
+    return i0.ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$PinnedThesisTableFilterComposer
+    extends i0.Composer<i0.GeneratedDatabase, i1.$PinnedThesisTable> {
+  $$PinnedThesisTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  i0.ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => i0.ColumnFilters(column),
+  );
+
+  i0.ColumnFilters<DateTime> get pinnedDate => $composableBuilder(
+    column: $table.pinnedDate,
+    builder: (column) => i0.ColumnFilters(column),
+  );
+
+  i0.ColumnFilters<double> get referencePrice => $composableBuilder(
+    column: $table.referencePrice,
+    builder: (column) => i0.ColumnFilters(column),
+  );
+
+  i0.ColumnFilters<String> get mode => $composableBuilder(
+    column: $table.mode,
+    builder: (column) => i0.ColumnFilters(column),
+  );
+
+  i0.ColumnFilters<String> get triggeredRules => $composableBuilder(
+    column: $table.triggeredRules,
+    builder: (column) => i0.ColumnFilters(column),
+  );
+
+  i0.ColumnFilters<double> get scoreShort => $composableBuilder(
+    column: $table.scoreShort,
+    builder: (column) => i0.ColumnFilters(column),
+  );
+
+  i0.ColumnFilters<double> get scoreLong => $composableBuilder(
+    column: $table.scoreLong,
+    builder: (column) => i0.ColumnFilters(column),
+  );
+
+  i0.ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => i0.ColumnFilters(column),
+  );
+
+  i0.ColumnFilters<DateTime> get invalidatedDate => $composableBuilder(
+    column: $table.invalidatedDate,
+    builder: (column) => i0.ColumnFilters(column),
+  );
+
+  i0.ColumnFilters<String> get invalidatedReason => $composableBuilder(
+    column: $table.invalidatedReason,
+    builder: (column) => i0.ColumnFilters(column),
+  );
+
+  i0.ColumnFilters<DateTime> get lastCheckedDate => $composableBuilder(
+    column: $table.lastCheckedDate,
+    builder: (column) => i0.ColumnFilters(column),
+  );
+
+  i0.ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => i0.ColumnFilters(column),
+  );
+
+  i0.ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => i0.ColumnFilters(column),
+  );
+
+  i5.$$StockMasterTableFilterComposer get symbol {
+    final i5.$$StockMasterTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: i4.ReadDatabaseContainer(
+        $db,
+      ).resultSet<i5.$StockMasterTable>('stock_master'),
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => i5.$$StockMasterTableFilterComposer(
+            $db: $db,
+            $table: i4.ReadDatabaseContainer(
+              $db,
+            ).resultSet<i5.$StockMasterTable>('stock_master'),
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PinnedThesisTableOrderingComposer
+    extends i0.Composer<i0.GeneratedDatabase, i1.$PinnedThesisTable> {
+  $$PinnedThesisTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  i0.ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => i0.ColumnOrderings(column),
+  );
+
+  i0.ColumnOrderings<DateTime> get pinnedDate => $composableBuilder(
+    column: $table.pinnedDate,
+    builder: (column) => i0.ColumnOrderings(column),
+  );
+
+  i0.ColumnOrderings<double> get referencePrice => $composableBuilder(
+    column: $table.referencePrice,
+    builder: (column) => i0.ColumnOrderings(column),
+  );
+
+  i0.ColumnOrderings<String> get mode => $composableBuilder(
+    column: $table.mode,
+    builder: (column) => i0.ColumnOrderings(column),
+  );
+
+  i0.ColumnOrderings<String> get triggeredRules => $composableBuilder(
+    column: $table.triggeredRules,
+    builder: (column) => i0.ColumnOrderings(column),
+  );
+
+  i0.ColumnOrderings<double> get scoreShort => $composableBuilder(
+    column: $table.scoreShort,
+    builder: (column) => i0.ColumnOrderings(column),
+  );
+
+  i0.ColumnOrderings<double> get scoreLong => $composableBuilder(
+    column: $table.scoreLong,
+    builder: (column) => i0.ColumnOrderings(column),
+  );
+
+  i0.ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => i0.ColumnOrderings(column),
+  );
+
+  i0.ColumnOrderings<DateTime> get invalidatedDate => $composableBuilder(
+    column: $table.invalidatedDate,
+    builder: (column) => i0.ColumnOrderings(column),
+  );
+
+  i0.ColumnOrderings<String> get invalidatedReason => $composableBuilder(
+    column: $table.invalidatedReason,
+    builder: (column) => i0.ColumnOrderings(column),
+  );
+
+  i0.ColumnOrderings<DateTime> get lastCheckedDate => $composableBuilder(
+    column: $table.lastCheckedDate,
+    builder: (column) => i0.ColumnOrderings(column),
+  );
+
+  i0.ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => i0.ColumnOrderings(column),
+  );
+
+  i0.ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => i0.ColumnOrderings(column),
+  );
+
+  i5.$$StockMasterTableOrderingComposer get symbol {
+    final i5.$$StockMasterTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: i4.ReadDatabaseContainer(
+        $db,
+      ).resultSet<i5.$StockMasterTable>('stock_master'),
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => i5.$$StockMasterTableOrderingComposer(
+            $db: $db,
+            $table: i4.ReadDatabaseContainer(
+              $db,
+            ).resultSet<i5.$StockMasterTable>('stock_master'),
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PinnedThesisTableAnnotationComposer
+    extends i0.Composer<i0.GeneratedDatabase, i1.$PinnedThesisTable> {
+  $$PinnedThesisTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  i0.GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  i0.GeneratedColumn<DateTime> get pinnedDate => $composableBuilder(
+    column: $table.pinnedDate,
+    builder: (column) => column,
+  );
+
+  i0.GeneratedColumn<double> get referencePrice => $composableBuilder(
+    column: $table.referencePrice,
+    builder: (column) => column,
+  );
+
+  i0.GeneratedColumn<String> get mode =>
+      $composableBuilder(column: $table.mode, builder: (column) => column);
+
+  i0.GeneratedColumn<String> get triggeredRules => $composableBuilder(
+    column: $table.triggeredRules,
+    builder: (column) => column,
+  );
+
+  i0.GeneratedColumn<double> get scoreShort => $composableBuilder(
+    column: $table.scoreShort,
+    builder: (column) => column,
+  );
+
+  i0.GeneratedColumn<double> get scoreLong =>
+      $composableBuilder(column: $table.scoreLong, builder: (column) => column);
+
+  i0.GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  i0.GeneratedColumn<DateTime> get invalidatedDate => $composableBuilder(
+    column: $table.invalidatedDate,
+    builder: (column) => column,
+  );
+
+  i0.GeneratedColumn<String> get invalidatedReason => $composableBuilder(
+    column: $table.invalidatedReason,
+    builder: (column) => column,
+  );
+
+  i0.GeneratedColumn<DateTime> get lastCheckedDate => $composableBuilder(
+    column: $table.lastCheckedDate,
+    builder: (column) => column,
+  );
+
+  i0.GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  i0.GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  i5.$$StockMasterTableAnnotationComposer get symbol {
+    final i5.$$StockMasterTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: i4.ReadDatabaseContainer(
+        $db,
+      ).resultSet<i5.$StockMasterTable>('stock_master'),
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => i5.$$StockMasterTableAnnotationComposer(
+            $db: $db,
+            $table: i4.ReadDatabaseContainer(
+              $db,
+            ).resultSet<i5.$StockMasterTable>('stock_master'),
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PinnedThesisTableTableManager
+    extends
+        i0.RootTableManager<
+          i0.GeneratedDatabase,
+          i1.$PinnedThesisTable,
+          i1.PinnedThesisEntry,
+          i1.$$PinnedThesisTableFilterComposer,
+          i1.$$PinnedThesisTableOrderingComposer,
+          i1.$$PinnedThesisTableAnnotationComposer,
+          $$PinnedThesisTableCreateCompanionBuilder,
+          $$PinnedThesisTableUpdateCompanionBuilder,
+          (i1.PinnedThesisEntry, i1.$$PinnedThesisTableReferences),
+          i1.PinnedThesisEntry,
+          i0.PrefetchHooks Function({bool symbol})
+        > {
+  $$PinnedThesisTableTableManager(
+    i0.GeneratedDatabase db,
+    i1.$PinnedThesisTable table,
+  ) : super(
+        i0.TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              i1.$$PinnedThesisTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              i1.$$PinnedThesisTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              i1.$$PinnedThesisTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                i0.Value<int> id = const i0.Value.absent(),
+                i0.Value<String> symbol = const i0.Value.absent(),
+                i0.Value<DateTime> pinnedDate = const i0.Value.absent(),
+                i0.Value<double> referencePrice = const i0.Value.absent(),
+                i0.Value<String> mode = const i0.Value.absent(),
+                i0.Value<String> triggeredRules = const i0.Value.absent(),
+                i0.Value<double> scoreShort = const i0.Value.absent(),
+                i0.Value<double> scoreLong = const i0.Value.absent(),
+                i0.Value<String> status = const i0.Value.absent(),
+                i0.Value<DateTime?> invalidatedDate = const i0.Value.absent(),
+                i0.Value<String?> invalidatedReason = const i0.Value.absent(),
+                i0.Value<DateTime?> lastCheckedDate = const i0.Value.absent(),
+                i0.Value<DateTime> createdAt = const i0.Value.absent(),
+                i0.Value<DateTime> updatedAt = const i0.Value.absent(),
+              }) => i1.PinnedThesisCompanion(
+                id: id,
+                symbol: symbol,
+                pinnedDate: pinnedDate,
+                referencePrice: referencePrice,
+                mode: mode,
+                triggeredRules: triggeredRules,
+                scoreShort: scoreShort,
+                scoreLong: scoreLong,
+                status: status,
+                invalidatedDate: invalidatedDate,
+                invalidatedReason: invalidatedReason,
+                lastCheckedDate: lastCheckedDate,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+              ),
+          createCompanionCallback:
+              ({
+                i0.Value<int> id = const i0.Value.absent(),
+                required String symbol,
+                required DateTime pinnedDate,
+                required double referencePrice,
+                required String mode,
+                required String triggeredRules,
+                required double scoreShort,
+                required double scoreLong,
+                i0.Value<String> status = const i0.Value.absent(),
+                i0.Value<DateTime?> invalidatedDate = const i0.Value.absent(),
+                i0.Value<String?> invalidatedReason = const i0.Value.absent(),
+                i0.Value<DateTime?> lastCheckedDate = const i0.Value.absent(),
+                i0.Value<DateTime> createdAt = const i0.Value.absent(),
+                i0.Value<DateTime> updatedAt = const i0.Value.absent(),
+              }) => i1.PinnedThesisCompanion.insert(
+                id: id,
+                symbol: symbol,
+                pinnedDate: pinnedDate,
+                referencePrice: referencePrice,
+                mode: mode,
+                triggeredRules: triggeredRules,
+                scoreShort: scoreShort,
+                scoreLong: scoreLong,
+                status: status,
+                invalidatedDate: invalidatedDate,
+                invalidatedReason: invalidatedReason,
+                lastCheckedDate: lastCheckedDate,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  i1.$$PinnedThesisTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({symbol = false}) {
+            return i0.PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends i0.TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (symbol) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.symbol,
+                                referencedTable: i1
+                                    .$$PinnedThesisTableReferences
+                                    ._symbolTable(db),
+                                referencedColumn: i1
+                                    .$$PinnedThesisTableReferences
+                                    ._symbolTable(db)
+                                    .symbol,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$PinnedThesisTableProcessedTableManager =
+    i0.ProcessedTableManager<
+      i0.GeneratedDatabase,
+      i1.$PinnedThesisTable,
+      i1.PinnedThesisEntry,
+      i1.$$PinnedThesisTableFilterComposer,
+      i1.$$PinnedThesisTableOrderingComposer,
+      i1.$$PinnedThesisTableAnnotationComposer,
+      $$PinnedThesisTableCreateCompanionBuilder,
+      $$PinnedThesisTableUpdateCompanionBuilder,
+      (i1.PinnedThesisEntry, i1.$$PinnedThesisTableReferences),
+      i1.PinnedThesisEntry,
+      i0.PrefetchHooks Function({bool symbol})
+    >;
 
 class $WatchlistGroupsTable extends i2.WatchlistGroups
     with i0.TableInfo<$WatchlistGroupsTable, i1.WatchlistGroupEntry> {
@@ -3948,6 +4480,853 @@ class ScreeningStrategyTableCompanion
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('conditionsJson: $conditionsJson, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $PinnedThesisTable extends i2.PinnedThesis
+    with i0.TableInfo<$PinnedThesisTable, i1.PinnedThesisEntry> {
+  @override
+  final i0.GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PinnedThesisTable(this.attachedDatabase, [this._alias]);
+  static const i0.VerificationMeta _idMeta = const i0.VerificationMeta('id');
+  @override
+  late final i0.GeneratedColumn<int> id = i0.GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: i0.DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: i0.GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const i0.VerificationMeta _symbolMeta = const i0.VerificationMeta(
+    'symbol',
+  );
+  @override
+  late final i0.GeneratedColumn<String> symbol = i0.GeneratedColumn<String>(
+    'symbol',
+    aliasedName,
+    false,
+    type: i0.DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: i0.GeneratedColumn.constraintIsAlways(
+      'REFERENCES stock_master (symbol)',
+    ),
+  );
+  static const i0.VerificationMeta _pinnedDateMeta = const i0.VerificationMeta(
+    'pinnedDate',
+  );
+  @override
+  late final i0.GeneratedColumn<DateTime> pinnedDate =
+      i0.GeneratedColumn<DateTime>(
+        'pinned_date',
+        aliasedName,
+        false,
+        type: i0.DriftSqlType.dateTime,
+        requiredDuringInsert: true,
+      );
+  static const i0.VerificationMeta _referencePriceMeta =
+      const i0.VerificationMeta('referencePrice');
+  @override
+  late final i0.GeneratedColumn<double> referencePrice =
+      i0.GeneratedColumn<double>(
+        'reference_price',
+        aliasedName,
+        false,
+        type: i0.DriftSqlType.double,
+        requiredDuringInsert: true,
+      );
+  static const i0.VerificationMeta _modeMeta = const i0.VerificationMeta(
+    'mode',
+  );
+  @override
+  late final i0.GeneratedColumn<String> mode = i0.GeneratedColumn<String>(
+    'mode',
+    aliasedName,
+    false,
+    type: i0.DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const i0.VerificationMeta _triggeredRulesMeta =
+      const i0.VerificationMeta('triggeredRules');
+  @override
+  late final i0.GeneratedColumn<String> triggeredRules =
+      i0.GeneratedColumn<String>(
+        'triggered_rules',
+        aliasedName,
+        false,
+        type: i0.DriftSqlType.string,
+        requiredDuringInsert: true,
+      );
+  static const i0.VerificationMeta _scoreShortMeta = const i0.VerificationMeta(
+    'scoreShort',
+  );
+  @override
+  late final i0.GeneratedColumn<double> scoreShort = i0.GeneratedColumn<double>(
+    'score_short',
+    aliasedName,
+    false,
+    type: i0.DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const i0.VerificationMeta _scoreLongMeta = const i0.VerificationMeta(
+    'scoreLong',
+  );
+  @override
+  late final i0.GeneratedColumn<double> scoreLong = i0.GeneratedColumn<double>(
+    'score_long',
+    aliasedName,
+    false,
+    type: i0.DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const i0.VerificationMeta _statusMeta = const i0.VerificationMeta(
+    'status',
+  );
+  @override
+  late final i0.GeneratedColumn<String> status = i0.GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: i0.DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const i3.Constant('ACTIVE'),
+  );
+  static const i0.VerificationMeta _invalidatedDateMeta =
+      const i0.VerificationMeta('invalidatedDate');
+  @override
+  late final i0.GeneratedColumn<DateTime> invalidatedDate =
+      i0.GeneratedColumn<DateTime>(
+        'invalidated_date',
+        aliasedName,
+        true,
+        type: i0.DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const i0.VerificationMeta _invalidatedReasonMeta =
+      const i0.VerificationMeta('invalidatedReason');
+  @override
+  late final i0.GeneratedColumn<String> invalidatedReason =
+      i0.GeneratedColumn<String>(
+        'invalidated_reason',
+        aliasedName,
+        true,
+        type: i0.DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const i0.VerificationMeta _lastCheckedDateMeta =
+      const i0.VerificationMeta('lastCheckedDate');
+  @override
+  late final i0.GeneratedColumn<DateTime> lastCheckedDate =
+      i0.GeneratedColumn<DateTime>(
+        'last_checked_date',
+        aliasedName,
+        true,
+        type: i0.DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const i0.VerificationMeta _createdAtMeta = const i0.VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final i0.GeneratedColumn<DateTime> createdAt =
+      i0.GeneratedColumn<DateTime>(
+        'created_at',
+        aliasedName,
+        false,
+        type: i0.DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+        defaultValue: i3.currentDateAndTime,
+      );
+  static const i0.VerificationMeta _updatedAtMeta = const i0.VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final i0.GeneratedColumn<DateTime> updatedAt =
+      i0.GeneratedColumn<DateTime>(
+        'updated_at',
+        aliasedName,
+        false,
+        type: i0.DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+        defaultValue: i3.currentDateAndTime,
+      );
+  @override
+  List<i0.GeneratedColumn> get $columns => [
+    id,
+    symbol,
+    pinnedDate,
+    referencePrice,
+    mode,
+    triggeredRules,
+    scoreShort,
+    scoreLong,
+    status,
+    invalidatedDate,
+    invalidatedReason,
+    lastCheckedDate,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'pinned_thesis';
+  @override
+  i0.VerificationContext validateIntegrity(
+    i0.Insertable<i1.PinnedThesisEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = i0.VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('symbol')) {
+      context.handle(
+        _symbolMeta,
+        symbol.isAcceptableOrUnknown(data['symbol']!, _symbolMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_symbolMeta);
+    }
+    if (data.containsKey('pinned_date')) {
+      context.handle(
+        _pinnedDateMeta,
+        pinnedDate.isAcceptableOrUnknown(data['pinned_date']!, _pinnedDateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_pinnedDateMeta);
+    }
+    if (data.containsKey('reference_price')) {
+      context.handle(
+        _referencePriceMeta,
+        referencePrice.isAcceptableOrUnknown(
+          data['reference_price']!,
+          _referencePriceMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_referencePriceMeta);
+    }
+    if (data.containsKey('mode')) {
+      context.handle(
+        _modeMeta,
+        mode.isAcceptableOrUnknown(data['mode']!, _modeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_modeMeta);
+    }
+    if (data.containsKey('triggered_rules')) {
+      context.handle(
+        _triggeredRulesMeta,
+        triggeredRules.isAcceptableOrUnknown(
+          data['triggered_rules']!,
+          _triggeredRulesMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_triggeredRulesMeta);
+    }
+    if (data.containsKey('score_short')) {
+      context.handle(
+        _scoreShortMeta,
+        scoreShort.isAcceptableOrUnknown(data['score_short']!, _scoreShortMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_scoreShortMeta);
+    }
+    if (data.containsKey('score_long')) {
+      context.handle(
+        _scoreLongMeta,
+        scoreLong.isAcceptableOrUnknown(data['score_long']!, _scoreLongMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_scoreLongMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
+    if (data.containsKey('invalidated_date')) {
+      context.handle(
+        _invalidatedDateMeta,
+        invalidatedDate.isAcceptableOrUnknown(
+          data['invalidated_date']!,
+          _invalidatedDateMeta,
+        ),
+      );
+    }
+    if (data.containsKey('invalidated_reason')) {
+      context.handle(
+        _invalidatedReasonMeta,
+        invalidatedReason.isAcceptableOrUnknown(
+          data['invalidated_reason']!,
+          _invalidatedReasonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_checked_date')) {
+      context.handle(
+        _lastCheckedDateMeta,
+        lastCheckedDate.isAcceptableOrUnknown(
+          data['last_checked_date']!,
+          _lastCheckedDateMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<i0.GeneratedColumn> get $primaryKey => {id};
+  @override
+  i1.PinnedThesisEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return i1.PinnedThesisEntry(
+      id: attachedDatabase.typeMapping.read(
+        i0.DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      symbol: attachedDatabase.typeMapping.read(
+        i0.DriftSqlType.string,
+        data['${effectivePrefix}symbol'],
+      )!,
+      pinnedDate: attachedDatabase.typeMapping.read(
+        i0.DriftSqlType.dateTime,
+        data['${effectivePrefix}pinned_date'],
+      )!,
+      referencePrice: attachedDatabase.typeMapping.read(
+        i0.DriftSqlType.double,
+        data['${effectivePrefix}reference_price'],
+      )!,
+      mode: attachedDatabase.typeMapping.read(
+        i0.DriftSqlType.string,
+        data['${effectivePrefix}mode'],
+      )!,
+      triggeredRules: attachedDatabase.typeMapping.read(
+        i0.DriftSqlType.string,
+        data['${effectivePrefix}triggered_rules'],
+      )!,
+      scoreShort: attachedDatabase.typeMapping.read(
+        i0.DriftSqlType.double,
+        data['${effectivePrefix}score_short'],
+      )!,
+      scoreLong: attachedDatabase.typeMapping.read(
+        i0.DriftSqlType.double,
+        data['${effectivePrefix}score_long'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        i0.DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      invalidatedDate: attachedDatabase.typeMapping.read(
+        i0.DriftSqlType.dateTime,
+        data['${effectivePrefix}invalidated_date'],
+      ),
+      invalidatedReason: attachedDatabase.typeMapping.read(
+        i0.DriftSqlType.string,
+        data['${effectivePrefix}invalidated_reason'],
+      ),
+      lastCheckedDate: attachedDatabase.typeMapping.read(
+        i0.DriftSqlType.dateTime,
+        data['${effectivePrefix}last_checked_date'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        i0.DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        i0.DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $PinnedThesisTable createAlias(String alias) {
+    return $PinnedThesisTable(attachedDatabase, alias);
+  }
+}
+
+class PinnedThesisEntry extends i0.DataClass
+    implements i0.Insertable<i1.PinnedThesisEntry> {
+  final int id;
+  final String symbol;
+
+  /// 快照**資料日**（dataDate，非點擊時刻）
+  final DateTime pinnedDate;
+
+  /// 釘選資料日收盤——僅供顯示與 timeStop 基準，不代表可成交價
+  final double referencePrice;
+
+  /// 釘選當下路由 mode（momentum / strength / pullback）
+  final String mode;
+
+  /// 當日觸發規則碼快照（JSON array；v1 不顯示、留回溯用）
+  final String triggeredRules;
+  final double scoreShort;
+  final double scoreLong;
+
+  /// ACTIVE / INVALIDATED / ARCHIVED
+  final String status;
+  final DateTime? invalidatedDate;
+
+  /// ExitReason.name（現值域僅 timeStop——gate 砍掉 hardStop/trendBreak）
+  final String? invalidatedReason;
+
+  /// monitor 每次跑必更新（staleness 顯示用）
+  final DateTime? lastCheckedDate;
+  final DateTime createdAt;
+
+  /// 僅於 status 實際變更時更新
+  final DateTime updatedAt;
+  const PinnedThesisEntry({
+    required this.id,
+    required this.symbol,
+    required this.pinnedDate,
+    required this.referencePrice,
+    required this.mode,
+    required this.triggeredRules,
+    required this.scoreShort,
+    required this.scoreLong,
+    required this.status,
+    this.invalidatedDate,
+    this.invalidatedReason,
+    this.lastCheckedDate,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, i0.Expression> toColumns(bool nullToAbsent) {
+    final map = <String, i0.Expression>{};
+    map['id'] = i0.Variable<int>(id);
+    map['symbol'] = i0.Variable<String>(symbol);
+    map['pinned_date'] = i0.Variable<DateTime>(pinnedDate);
+    map['reference_price'] = i0.Variable<double>(referencePrice);
+    map['mode'] = i0.Variable<String>(mode);
+    map['triggered_rules'] = i0.Variable<String>(triggeredRules);
+    map['score_short'] = i0.Variable<double>(scoreShort);
+    map['score_long'] = i0.Variable<double>(scoreLong);
+    map['status'] = i0.Variable<String>(status);
+    if (!nullToAbsent || invalidatedDate != null) {
+      map['invalidated_date'] = i0.Variable<DateTime>(invalidatedDate);
+    }
+    if (!nullToAbsent || invalidatedReason != null) {
+      map['invalidated_reason'] = i0.Variable<String>(invalidatedReason);
+    }
+    if (!nullToAbsent || lastCheckedDate != null) {
+      map['last_checked_date'] = i0.Variable<DateTime>(lastCheckedDate);
+    }
+    map['created_at'] = i0.Variable<DateTime>(createdAt);
+    map['updated_at'] = i0.Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  i1.PinnedThesisCompanion toCompanion(bool nullToAbsent) {
+    return i1.PinnedThesisCompanion(
+      id: i0.Value(id),
+      symbol: i0.Value(symbol),
+      pinnedDate: i0.Value(pinnedDate),
+      referencePrice: i0.Value(referencePrice),
+      mode: i0.Value(mode),
+      triggeredRules: i0.Value(triggeredRules),
+      scoreShort: i0.Value(scoreShort),
+      scoreLong: i0.Value(scoreLong),
+      status: i0.Value(status),
+      invalidatedDate: invalidatedDate == null && nullToAbsent
+          ? const i0.Value.absent()
+          : i0.Value(invalidatedDate),
+      invalidatedReason: invalidatedReason == null && nullToAbsent
+          ? const i0.Value.absent()
+          : i0.Value(invalidatedReason),
+      lastCheckedDate: lastCheckedDate == null && nullToAbsent
+          ? const i0.Value.absent()
+          : i0.Value(lastCheckedDate),
+      createdAt: i0.Value(createdAt),
+      updatedAt: i0.Value(updatedAt),
+    );
+  }
+
+  factory PinnedThesisEntry.fromJson(
+    Map<String, dynamic> json, {
+    i0.ValueSerializer? serializer,
+  }) {
+    serializer ??= i0.driftRuntimeOptions.defaultSerializer;
+    return PinnedThesisEntry(
+      id: serializer.fromJson<int>(json['id']),
+      symbol: serializer.fromJson<String>(json['symbol']),
+      pinnedDate: serializer.fromJson<DateTime>(json['pinnedDate']),
+      referencePrice: serializer.fromJson<double>(json['referencePrice']),
+      mode: serializer.fromJson<String>(json['mode']),
+      triggeredRules: serializer.fromJson<String>(json['triggeredRules']),
+      scoreShort: serializer.fromJson<double>(json['scoreShort']),
+      scoreLong: serializer.fromJson<double>(json['scoreLong']),
+      status: serializer.fromJson<String>(json['status']),
+      invalidatedDate: serializer.fromJson<DateTime?>(json['invalidatedDate']),
+      invalidatedReason: serializer.fromJson<String?>(
+        json['invalidatedReason'],
+      ),
+      lastCheckedDate: serializer.fromJson<DateTime?>(json['lastCheckedDate']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({i0.ValueSerializer? serializer}) {
+    serializer ??= i0.driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'symbol': serializer.toJson<String>(symbol),
+      'pinnedDate': serializer.toJson<DateTime>(pinnedDate),
+      'referencePrice': serializer.toJson<double>(referencePrice),
+      'mode': serializer.toJson<String>(mode),
+      'triggeredRules': serializer.toJson<String>(triggeredRules),
+      'scoreShort': serializer.toJson<double>(scoreShort),
+      'scoreLong': serializer.toJson<double>(scoreLong),
+      'status': serializer.toJson<String>(status),
+      'invalidatedDate': serializer.toJson<DateTime?>(invalidatedDate),
+      'invalidatedReason': serializer.toJson<String?>(invalidatedReason),
+      'lastCheckedDate': serializer.toJson<DateTime?>(lastCheckedDate),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  i1.PinnedThesisEntry copyWith({
+    int? id,
+    String? symbol,
+    DateTime? pinnedDate,
+    double? referencePrice,
+    String? mode,
+    String? triggeredRules,
+    double? scoreShort,
+    double? scoreLong,
+    String? status,
+    i0.Value<DateTime?> invalidatedDate = const i0.Value.absent(),
+    i0.Value<String?> invalidatedReason = const i0.Value.absent(),
+    i0.Value<DateTime?> lastCheckedDate = const i0.Value.absent(),
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => i1.PinnedThesisEntry(
+    id: id ?? this.id,
+    symbol: symbol ?? this.symbol,
+    pinnedDate: pinnedDate ?? this.pinnedDate,
+    referencePrice: referencePrice ?? this.referencePrice,
+    mode: mode ?? this.mode,
+    triggeredRules: triggeredRules ?? this.triggeredRules,
+    scoreShort: scoreShort ?? this.scoreShort,
+    scoreLong: scoreLong ?? this.scoreLong,
+    status: status ?? this.status,
+    invalidatedDate: invalidatedDate.present
+        ? invalidatedDate.value
+        : this.invalidatedDate,
+    invalidatedReason: invalidatedReason.present
+        ? invalidatedReason.value
+        : this.invalidatedReason,
+    lastCheckedDate: lastCheckedDate.present
+        ? lastCheckedDate.value
+        : this.lastCheckedDate,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  PinnedThesisEntry copyWithCompanion(i1.PinnedThesisCompanion data) {
+    return PinnedThesisEntry(
+      id: data.id.present ? data.id.value : this.id,
+      symbol: data.symbol.present ? data.symbol.value : this.symbol,
+      pinnedDate: data.pinnedDate.present
+          ? data.pinnedDate.value
+          : this.pinnedDate,
+      referencePrice: data.referencePrice.present
+          ? data.referencePrice.value
+          : this.referencePrice,
+      mode: data.mode.present ? data.mode.value : this.mode,
+      triggeredRules: data.triggeredRules.present
+          ? data.triggeredRules.value
+          : this.triggeredRules,
+      scoreShort: data.scoreShort.present
+          ? data.scoreShort.value
+          : this.scoreShort,
+      scoreLong: data.scoreLong.present ? data.scoreLong.value : this.scoreLong,
+      status: data.status.present ? data.status.value : this.status,
+      invalidatedDate: data.invalidatedDate.present
+          ? data.invalidatedDate.value
+          : this.invalidatedDate,
+      invalidatedReason: data.invalidatedReason.present
+          ? data.invalidatedReason.value
+          : this.invalidatedReason,
+      lastCheckedDate: data.lastCheckedDate.present
+          ? data.lastCheckedDate.value
+          : this.lastCheckedDate,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PinnedThesisEntry(')
+          ..write('id: $id, ')
+          ..write('symbol: $symbol, ')
+          ..write('pinnedDate: $pinnedDate, ')
+          ..write('referencePrice: $referencePrice, ')
+          ..write('mode: $mode, ')
+          ..write('triggeredRules: $triggeredRules, ')
+          ..write('scoreShort: $scoreShort, ')
+          ..write('scoreLong: $scoreLong, ')
+          ..write('status: $status, ')
+          ..write('invalidatedDate: $invalidatedDate, ')
+          ..write('invalidatedReason: $invalidatedReason, ')
+          ..write('lastCheckedDate: $lastCheckedDate, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    symbol,
+    pinnedDate,
+    referencePrice,
+    mode,
+    triggeredRules,
+    scoreShort,
+    scoreLong,
+    status,
+    invalidatedDate,
+    invalidatedReason,
+    lastCheckedDate,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is i1.PinnedThesisEntry &&
+          other.id == this.id &&
+          other.symbol == this.symbol &&
+          other.pinnedDate == this.pinnedDate &&
+          other.referencePrice == this.referencePrice &&
+          other.mode == this.mode &&
+          other.triggeredRules == this.triggeredRules &&
+          other.scoreShort == this.scoreShort &&
+          other.scoreLong == this.scoreLong &&
+          other.status == this.status &&
+          other.invalidatedDate == this.invalidatedDate &&
+          other.invalidatedReason == this.invalidatedReason &&
+          other.lastCheckedDate == this.lastCheckedDate &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class PinnedThesisCompanion extends i0.UpdateCompanion<i1.PinnedThesisEntry> {
+  final i0.Value<int> id;
+  final i0.Value<String> symbol;
+  final i0.Value<DateTime> pinnedDate;
+  final i0.Value<double> referencePrice;
+  final i0.Value<String> mode;
+  final i0.Value<String> triggeredRules;
+  final i0.Value<double> scoreShort;
+  final i0.Value<double> scoreLong;
+  final i0.Value<String> status;
+  final i0.Value<DateTime?> invalidatedDate;
+  final i0.Value<String?> invalidatedReason;
+  final i0.Value<DateTime?> lastCheckedDate;
+  final i0.Value<DateTime> createdAt;
+  final i0.Value<DateTime> updatedAt;
+  const PinnedThesisCompanion({
+    this.id = const i0.Value.absent(),
+    this.symbol = const i0.Value.absent(),
+    this.pinnedDate = const i0.Value.absent(),
+    this.referencePrice = const i0.Value.absent(),
+    this.mode = const i0.Value.absent(),
+    this.triggeredRules = const i0.Value.absent(),
+    this.scoreShort = const i0.Value.absent(),
+    this.scoreLong = const i0.Value.absent(),
+    this.status = const i0.Value.absent(),
+    this.invalidatedDate = const i0.Value.absent(),
+    this.invalidatedReason = const i0.Value.absent(),
+    this.lastCheckedDate = const i0.Value.absent(),
+    this.createdAt = const i0.Value.absent(),
+    this.updatedAt = const i0.Value.absent(),
+  });
+  PinnedThesisCompanion.insert({
+    this.id = const i0.Value.absent(),
+    required String symbol,
+    required DateTime pinnedDate,
+    required double referencePrice,
+    required String mode,
+    required String triggeredRules,
+    required double scoreShort,
+    required double scoreLong,
+    this.status = const i0.Value.absent(),
+    this.invalidatedDate = const i0.Value.absent(),
+    this.invalidatedReason = const i0.Value.absent(),
+    this.lastCheckedDate = const i0.Value.absent(),
+    this.createdAt = const i0.Value.absent(),
+    this.updatedAt = const i0.Value.absent(),
+  }) : symbol = i0.Value(symbol),
+       pinnedDate = i0.Value(pinnedDate),
+       referencePrice = i0.Value(referencePrice),
+       mode = i0.Value(mode),
+       triggeredRules = i0.Value(triggeredRules),
+       scoreShort = i0.Value(scoreShort),
+       scoreLong = i0.Value(scoreLong);
+  static i0.Insertable<i1.PinnedThesisEntry> custom({
+    i0.Expression<int>? id,
+    i0.Expression<String>? symbol,
+    i0.Expression<DateTime>? pinnedDate,
+    i0.Expression<double>? referencePrice,
+    i0.Expression<String>? mode,
+    i0.Expression<String>? triggeredRules,
+    i0.Expression<double>? scoreShort,
+    i0.Expression<double>? scoreLong,
+    i0.Expression<String>? status,
+    i0.Expression<DateTime>? invalidatedDate,
+    i0.Expression<String>? invalidatedReason,
+    i0.Expression<DateTime>? lastCheckedDate,
+    i0.Expression<DateTime>? createdAt,
+    i0.Expression<DateTime>? updatedAt,
+  }) {
+    return i0.RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (symbol != null) 'symbol': symbol,
+      if (pinnedDate != null) 'pinned_date': pinnedDate,
+      if (referencePrice != null) 'reference_price': referencePrice,
+      if (mode != null) 'mode': mode,
+      if (triggeredRules != null) 'triggered_rules': triggeredRules,
+      if (scoreShort != null) 'score_short': scoreShort,
+      if (scoreLong != null) 'score_long': scoreLong,
+      if (status != null) 'status': status,
+      if (invalidatedDate != null) 'invalidated_date': invalidatedDate,
+      if (invalidatedReason != null) 'invalidated_reason': invalidatedReason,
+      if (lastCheckedDate != null) 'last_checked_date': lastCheckedDate,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  i1.PinnedThesisCompanion copyWith({
+    i0.Value<int>? id,
+    i0.Value<String>? symbol,
+    i0.Value<DateTime>? pinnedDate,
+    i0.Value<double>? referencePrice,
+    i0.Value<String>? mode,
+    i0.Value<String>? triggeredRules,
+    i0.Value<double>? scoreShort,
+    i0.Value<double>? scoreLong,
+    i0.Value<String>? status,
+    i0.Value<DateTime?>? invalidatedDate,
+    i0.Value<String?>? invalidatedReason,
+    i0.Value<DateTime?>? lastCheckedDate,
+    i0.Value<DateTime>? createdAt,
+    i0.Value<DateTime>? updatedAt,
+  }) {
+    return i1.PinnedThesisCompanion(
+      id: id ?? this.id,
+      symbol: symbol ?? this.symbol,
+      pinnedDate: pinnedDate ?? this.pinnedDate,
+      referencePrice: referencePrice ?? this.referencePrice,
+      mode: mode ?? this.mode,
+      triggeredRules: triggeredRules ?? this.triggeredRules,
+      scoreShort: scoreShort ?? this.scoreShort,
+      scoreLong: scoreLong ?? this.scoreLong,
+      status: status ?? this.status,
+      invalidatedDate: invalidatedDate ?? this.invalidatedDate,
+      invalidatedReason: invalidatedReason ?? this.invalidatedReason,
+      lastCheckedDate: lastCheckedDate ?? this.lastCheckedDate,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, i0.Expression> toColumns(bool nullToAbsent) {
+    final map = <String, i0.Expression>{};
+    if (id.present) {
+      map['id'] = i0.Variable<int>(id.value);
+    }
+    if (symbol.present) {
+      map['symbol'] = i0.Variable<String>(symbol.value);
+    }
+    if (pinnedDate.present) {
+      map['pinned_date'] = i0.Variable<DateTime>(pinnedDate.value);
+    }
+    if (referencePrice.present) {
+      map['reference_price'] = i0.Variable<double>(referencePrice.value);
+    }
+    if (mode.present) {
+      map['mode'] = i0.Variable<String>(mode.value);
+    }
+    if (triggeredRules.present) {
+      map['triggered_rules'] = i0.Variable<String>(triggeredRules.value);
+    }
+    if (scoreShort.present) {
+      map['score_short'] = i0.Variable<double>(scoreShort.value);
+    }
+    if (scoreLong.present) {
+      map['score_long'] = i0.Variable<double>(scoreLong.value);
+    }
+    if (status.present) {
+      map['status'] = i0.Variable<String>(status.value);
+    }
+    if (invalidatedDate.present) {
+      map['invalidated_date'] = i0.Variable<DateTime>(invalidatedDate.value);
+    }
+    if (invalidatedReason.present) {
+      map['invalidated_reason'] = i0.Variable<String>(invalidatedReason.value);
+    }
+    if (lastCheckedDate.present) {
+      map['last_checked_date'] = i0.Variable<DateTime>(lastCheckedDate.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = i0.Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = i0.Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PinnedThesisCompanion(')
+          ..write('id: $id, ')
+          ..write('symbol: $symbol, ')
+          ..write('pinnedDate: $pinnedDate, ')
+          ..write('referencePrice: $referencePrice, ')
+          ..write('mode: $mode, ')
+          ..write('triggeredRules: $triggeredRules, ')
+          ..write('scoreShort: $scoreShort, ')
+          ..write('scoreLong: $scoreLong, ')
+          ..write('status: $status, ')
+          ..write('invalidatedDate: $invalidatedDate, ')
+          ..write('invalidatedReason: $invalidatedReason, ')
+          ..write('lastCheckedDate: $lastCheckedDate, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))

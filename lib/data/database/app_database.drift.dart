@@ -41,6 +41,7 @@ abstract class $AppDatabase extends i0.GeneratedDatabase {
   late final i6.$UpdateRunTable updateRun = i6.$UpdateRunTable(this);
   late final i6.$AppSettingsTable appSettings = i6.$AppSettingsTable(this);
   late final i6.$PriceAlertTable priceAlert = i6.$PriceAlertTable(this);
+  late final i6.$PinnedThesisTable pinnedThesis = i6.$PinnedThesisTable(this);
   late final i7.$ShareholdingTable shareholding = i7.$ShareholdingTable(this);
   late final i7.$DayTradingTable dayTrading = i7.$DayTradingTable(this);
   late final i7.$FinancialDataTable financialData = i7.$FinancialDataTable(
@@ -95,6 +96,7 @@ abstract class $AppDatabase extends i0.GeneratedDatabase {
     updateRun,
     appSettings,
     priceAlert,
+    pinnedThesis,
     shareholding,
     dayTrading,
     financialData,
@@ -387,6 +389,8 @@ class $AppDatabaseManager {
       i6.$$AppSettingsTableTableManager(_db, _db.appSettings);
   i6.$$PriceAlertTableTableManager get priceAlert =>
       i6.$$PriceAlertTableTableManager(_db, _db.priceAlert);
+  i6.$$PinnedThesisTableTableManager get pinnedThesis =>
+      i6.$$PinnedThesisTableTableManager(_db, _db.pinnedThesis);
   i7.$$ShareholdingTableTableManager get shareholding =>
       i7.$$ShareholdingTableTableManager(_db, _db.shareholding);
   i7.$$DayTradingTableTableManager get dayTrading =>

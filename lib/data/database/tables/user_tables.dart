@@ -135,3 +135,48 @@ class ScreeningStrategyTable extends Table {
   /// 最後更新時間
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 }
+
+/// 釘選論點 Table（出場層，評分改進 #3 Phase 2）
+///
+/// 把「推薦」升級為可追蹤的「論點」：釘選當日快照 + 每日失效檢查。
+/// 語意（spec docs/plans/2026-07-11-exit-thesis-invalidation-design.md §4）：
+/// - 一 symbol 同時只允許一筆 ACTIVE（service 層 enforcement）
+/// - INVALIDATED 凍結不復活；重新看多請重新釘選（新記錄）
+/// - 取消（誤觸）= 物理刪除；封存 = ARCHIVED 保留紀錄
+@DataClassName('PinnedThesisEntry')
+class PinnedThesis extends Table {
+  IntColumn get id => integer().autoIncrement()();
+
+  TextColumn get symbol => text().references(StockMaster, #symbol)();
+
+  /// 快照**資料日**（dataDate，非點擊時刻）
+  DateTimeColumn get pinnedDate => dateTime()();
+
+  /// 釘選資料日收盤——僅供顯示與 timeStop 基準，不代表可成交價
+  RealColumn get referencePrice => real()();
+
+  /// 釘選當下路由 mode（momentum / strength / pullback）
+  TextColumn get mode => text()();
+
+  /// 當日觸發規則碼快照（JSON array；v1 不顯示、留回溯用）
+  TextColumn get triggeredRules => text()();
+
+  RealColumn get scoreShort => real()();
+  RealColumn get scoreLong => real()();
+
+  /// ACTIVE / INVALIDATED / ARCHIVED
+  TextColumn get status => text().withDefault(const Constant('ACTIVE'))();
+
+  DateTimeColumn get invalidatedDate => dateTime().nullable()();
+
+  /// ExitReason.name（現值域僅 timeStop——gate 砍掉 hardStop/trendBreak）
+  TextColumn get invalidatedReason => text().nullable()();
+
+  /// monitor 每次跑必更新（staleness 顯示用）
+  DateTimeColumn get lastCheckedDate => dateTime().nullable()();
+
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+
+  /// 僅於 status 實際變更時更新
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+}

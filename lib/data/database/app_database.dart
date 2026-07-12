@@ -53,6 +53,7 @@ import 'package:afterclose/data/database/dao/revenue_dao.dart';
 import 'package:afterclose/data/database/dao/shareholding_dao.dart';
 import 'package:afterclose/data/database/dao/stock_dao.dart';
 import 'package:afterclose/data/database/dao/trading_warning_dao.dart';
+import 'package:afterclose/data/database/dao/thesis_dao.dart';
 import 'package:afterclose/data/database/dao/user_dao.dart';
 import 'package:afterclose/data/database/dao/valuation_dao.dart';
 
@@ -81,6 +82,7 @@ import 'package:afterclose/data/database/dao/valuation_dao.dart';
     UpdateRun,
     AppSettings,
     PriceAlert,
+    PinnedThesis,
     // 擴充市場資料（Phase 1）
     Shareholding,
     DayTrading,
@@ -113,6 +115,7 @@ class AppDatabase extends $AppDatabase
     with
         StockDaoMixin,
         PriceDaoMixin,
+        ThesisDaoMixin,
         AnalysisDaoMixin,
         InstitutionalDaoMixin,
         UserDaoMixin,
@@ -185,9 +188,18 @@ class AppDatabase extends $AppDatabase
       await _ensureSchemaFingerprint();
       await _ensureDealerSelfNetColumn();
       await _ensureWatchlistGroupsSchema();
+      await _ensurePinnedThesisSchema();
       await customStatement('PRAGMA foreign_keys = ON');
     },
   );
+
+  /// Pre-launch idempotent 建表：為既有 DB 補上 `pinned_thesis`（出場層
+  /// Phase 2），零資料損失、可安全重跑——沿用 [_ensureWatchlistGroupsSchema]
+  /// 的先例（Drift [Migrator.createTable] 內建 CREATE TABLE IF NOT EXISTS，
+  /// 既有 DB 已建過 no-op、全新安裝由 createAll 先建好這裡也 no-op）。
+  Future<void> _ensurePinnedThesisSchema() async {
+    await Migrator(this).createTable(pinnedThesis);
+  }
 
   /// Pre-launch idempotent 加欄：在「不」bump schema fingerprint（不 wipe 既有
   /// derived 資料）的前提下，為既有 DB 補上 `daily_institutional.dealer_self_net`。
