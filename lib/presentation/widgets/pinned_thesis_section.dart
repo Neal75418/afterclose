@@ -97,16 +97,85 @@ class _PinnedThesisSectionState extends ConsumerState<PinnedThesisSection> {
             ),
           ),
         ),
-        if (expanded)
+        if (expanded) ...[
           for (final thesis in theses)
             _ThesisCard(
               thesis: thesis,
               currentClose: state.currentCloses[thesis.symbol],
               isDelisted: state.inactiveSymbols.contains(thesis.symbol),
             ),
+          // 封存歷史入口（僅今日頁模式）：紙上驗證的複盤出口——
+          // 封存不等於消失
+          if (!widget.invalidatedOnly)
+            Align(
+              alignment: Alignment.centerRight,
+              child: Padding(
+                padding: const EdgeInsets.only(right: DesignTokens.spacing16),
+                child: TextButton.icon(
+                  onPressed: () => _showArchiveSheet(context),
+                  icon: const Icon(Icons.history, size: 16),
+                  label: Text('thesis.history'.tr()),
+                ),
+              ),
+            ),
+        ],
       ],
     );
   }
+
+  Future<void> _showArchiveSheet(BuildContext context) async {
+    final archived = await ref
+        .read(pinnedThesisProvider.notifier)
+        .archivedTheses();
+    if (!context.mounted) return;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        final theme = Theme.of(sheetContext);
+        if (archived.isEmpty) {
+          return SizedBox(
+            height: 160,
+            child: Center(child: Text('thesis.historyEmpty'.tr())),
+          );
+        }
+        return ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.all(DesignTokens.spacing16),
+          children: [
+            Text(
+              '${'thesis.history'.tr()} (${archived.length})',
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: DesignTokens.spacing8),
+            for (final thesis in archived)
+              ListTile(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                title: Text(
+                  '${thesis.symbol}　${thesis.referencePrice.toStringAsFixed(2)}',
+                ),
+                subtitle: Text(
+                  '${_fmtDateStatic(thesis.pinnedDate)} → '
+                  '${thesis.invalidatedDate != null ? _fmtDateStatic(thesis.invalidatedDate!) : '—'}'
+                  '　${'thesis.reasonTimeStop'.tr()}',
+                ),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  context.push(AppRoutes.stockDetail(thesis.symbol));
+                },
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  static String _fmtDateStatic(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 }
 
 class _ThesisCard extends ConsumerWidget {

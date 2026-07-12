@@ -137,6 +137,10 @@ class PinnedThesisNotifier extends AsyncNotifier<PinnedThesisState> {
   /// 更新完成後由畫面呼叫重載（monitor 可能剛標了失效）
   Future<void> refresh() => _reload();
 
+  /// 封存紀錄（歷史複盤 sheet 用；on-demand、不進常駐 state）
+  Future<List<PinnedThesisEntry>> archivedTheses() =>
+      _db.getThesesByStatus('ARCHIVED');
+
   /// 觸發規則的 dominant scoringMode → mode 字串。
   /// 以 max(short, long) 分數加總比較；全 neutral 時 fallback 'strength'
   /// （最泛用的觀察語意）。

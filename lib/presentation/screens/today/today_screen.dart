@@ -32,6 +32,7 @@ import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
 import 'package:afterclose/presentation/providers/pinned_thesis_provider.dart';
 import 'package:afterclose/presentation/widgets/pinned_thesis_section.dart';
 import 'package:afterclose/presentation/widgets/stock_card.dart';
+import 'package:afterclose/presentation/widgets/stock_search_delegate.dart';
 import 'package:afterclose/presentation/widgets/stock_preview_sheet.dart';
 import 'package:afterclose/presentation/widgets/themed_refresh_indicator.dart';
 import 'package:afterclose/presentation/widgets/update_progress_banner.dart';
@@ -290,6 +291,20 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                     onPressed: _runUpdate,
                     tooltip: S.todayUpdateData,
                   ),
+                // 全域搜尋（動線審查：「隨手查一檔」是高頻動作，
+                // 不該只有掃描頁有入口）
+                IconButton(
+                  icon: const Icon(Icons.search),
+                  tooltip: 'scan.searchHint'.tr(),
+                  onPressed: () async {
+                    final symbol = await showSearch<String?>(
+                      context: context,
+                      delegate: StockSearchDelegate(ref),
+                    );
+                    if (symbol == null || !context.mounted) return;
+                    context.push(AppRoutes.stockDetail(symbol));
+                  },
+                ),
                 // 鈴鐺 badge = 未封存的論點失效數（稀有事件的事件驅動提醒）
                 Consumer(
                   builder: (context, ref, _) {

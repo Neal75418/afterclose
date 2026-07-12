@@ -113,4 +113,30 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('2330'), findsNothing, reason: '封存後離開警示 section');
   });
+
+  testWidgets('展開後有「封存紀錄」入口、開 sheet 顯示封存清單', (tester) async {
+    // 正規生命週期建歷史：釘選 → 失效 → 封存 → 重新釘選（新 ACTIVE）
+    final firstId = await pin(); // ref 1000
+    await db.invalidateThesis(
+      firstId,
+      invalidatedDate: DateTime(2026, 7, 5),
+      reason: ExitReason.timeStop.name,
+    );
+    await db.archiveThesis(firstId);
+    await pin(); // 重新釘一筆 ACTIVE（section 才會顯示）
+
+    await tester.pumpWidget(wrap(const PinnedThesisSection()));
+    await tester.pumpAndSettle();
+
+    // 展開 strip
+    await tester.tap(find.textContaining('thesis.summaryActive'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('thesis.history'), findsOneWidget);
+
+    await tester.tap(find.textContaining('thesis.history'));
+    await tester.pumpAndSettle();
+    // sheet 內：封存那筆（symbol + 參考價字面渲染；卡片區的價格走
+    // i18n namedArgs、測試環境不插值，不會誤中）
+    expect(find.textContaining('1000.00'), findsOneWidget);
+  });
 }

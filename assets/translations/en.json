@@ -1460,6 +1460,9 @@
     "pinTooltip": "Pin thesis",
     "noPrice": "—",
     "summaryActive": "{n} tracking",
-    "summaryInvalidated": "{n} invalidated"
+    "summaryInvalidated": "{n} invalidated",
+    "history": "Archive",
+    "historyEmpty": "No archived theses",
+    "archivedOn": "Archived"
   }
 }
