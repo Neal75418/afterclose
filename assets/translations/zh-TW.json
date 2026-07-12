@@ -1462,7 +1462,6 @@
     "summaryActive": "{n} 追蹤中",
     "summaryInvalidated": "{n} 已失效",
     "history": "封存紀錄",
-    "historyEmpty": "尚無封存紀錄",
-    "archivedOn": "封存"
+    "historyEmpty": "尚無封存紀錄"
   }
 }

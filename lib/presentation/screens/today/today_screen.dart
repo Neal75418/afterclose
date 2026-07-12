@@ -159,52 +159,56 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
 
     final card = RepaintBoundary(
       key: ValueKey('${rec.symbol}_$isInWatchlist'),
-      child: StockCard(
-        symbol: rec.symbol,
-        stockName: rec.stockName,
-        market: rec.market,
-        latestClose: rec.latestClose,
-        priceChange: rec.priceChange,
-        // primary score 給 fallback / preview sheet 用（StockCard 內 dualScore
-        // 不為 null 時會優先顯示雙 column）
-        score: rec.modeScoreShort,
-        dualScore: (rec.modeScoreShort, rec.modeScoreLong),
-        reasons: rec.reasonTypes,
-        warningReasons: rec.warningReasons,
-        trendState: rec.trendState,
-        recentPrices: rec.recentPrices,
-        isInWatchlist: isInWatchlist,
-        showLimitMarkers: showLimitMarkers,
-        pinned: ref.watch(
-          pinnedThesisProvider.select(
-            (s) => s.value?.isPinned(rec.symbol) ?? false,
-          ),
-        ),
-        onPinToggle: () => _togglePin(rec.symbol),
-        onTap: () {
-          HapticFeedback.lightImpact();
-          context.push(AppRoutes.stockDetail(rec.symbol));
-        },
-        onLongPress: () {
-          showStockPreviewSheet(
-            context: context,
-            data: StockPreviewData(
-              symbol: rec.symbol,
-              stockName: rec.stockName,
-              latestClose: rec.latestClose,
-              priceChange: rec.priceChange,
-              score: rec.modeScoreShort,
-              trendState: rec.trendState,
-              reasons: rec.reasonTypes,
-              isInWatchlist: isInWatchlist,
+      // Consumer 隔離 pinned 狀態：釘選 toggle 只重建這張卡，
+      // 不 mark 整個 TodayScreen dirty（今日頁既有慣例，:258 同模式）
+      child: Consumer(
+        builder: (context, cardRef, _) => StockCard(
+          symbol: rec.symbol,
+          stockName: rec.stockName,
+          market: rec.market,
+          latestClose: rec.latestClose,
+          priceChange: rec.priceChange,
+          // primary score 給 fallback / preview sheet 用（StockCard 內 dualScore
+          // 不為 null 時會優先顯示雙 column）
+          score: rec.modeScoreShort,
+          dualScore: (rec.modeScoreShort, rec.modeScoreLong),
+          reasons: rec.reasonTypes,
+          warningReasons: rec.warningReasons,
+          trendState: rec.trendState,
+          recentPrices: rec.recentPrices,
+          isInWatchlist: isInWatchlist,
+          showLimitMarkers: showLimitMarkers,
+          pinned: cardRef.watch(
+            pinnedThesisProvider.select(
+              (s) => s.value?.isPinned(rec.symbol) ?? false,
             ),
-            onViewDetails: () =>
-                context.push(AppRoutes.stockDetail(rec.symbol)),
-            onToggleWatchlist: () =>
-                _toggleWatchlist(rec.symbol, isInWatchlist),
-          );
-        },
-        onWatchlistTap: () => _toggleWatchlist(rec.symbol, isInWatchlist),
+          ),
+          onPinToggle: () => _togglePin(rec.symbol),
+          onTap: () {
+            HapticFeedback.lightImpact();
+            context.push(AppRoutes.stockDetail(rec.symbol));
+          },
+          onLongPress: () {
+            showStockPreviewSheet(
+              context: context,
+              data: StockPreviewData(
+                symbol: rec.symbol,
+                stockName: rec.stockName,
+                latestClose: rec.latestClose,
+                priceChange: rec.priceChange,
+                score: rec.modeScoreShort,
+                trendState: rec.trendState,
+                reasons: rec.reasonTypes,
+                isInWatchlist: isInWatchlist,
+              ),
+              onViewDetails: () =>
+                  context.push(AppRoutes.stockDetail(rec.symbol)),
+              onToggleWatchlist: () =>
+                  _toggleWatchlist(rec.symbol, isInWatchlist),
+            );
+          },
+          onWatchlistTap: () => _toggleWatchlist(rec.symbol, isInWatchlist),
+        ),
       ),
     );
 
@@ -295,7 +299,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                 // 不該只有掃描頁有入口）
                 IconButton(
                   icon: const Icon(Icons.search),
-                  tooltip: 'scan.searchHint'.tr(),
+                  tooltip: 'stockSearch.tooltip'.tr(),
                   onPressed: () async {
                     final symbol = await showSearch<String?>(
                       context: context,

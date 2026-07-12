@@ -1462,7 +1462,6 @@
     "summaryActive": "{n} tracking",
     "summaryInvalidated": "{n} invalidated",
     "history": "Archive",
-    "historyEmpty": "No archived theses",
-    "archivedOn": "Archived"
+    "historyEmpty": "No archived theses"
   }
 }

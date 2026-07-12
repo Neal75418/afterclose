@@ -615,53 +615,59 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     bool showLimitMarkers, {
     required bool isGrid,
   }) {
-    return StockCard(
-      symbol: stock.symbol,
-      stockName: stock.stockName,
-      market: stock.market,
-      latestClose: stock.latestClose,
-      priceChange: stock.priceChange,
-      score: stock.score,
-      reasons: stock.reasonTypes,
-      trendState: stock.trendState,
-      isInWatchlist: stock.isInWatchlist,
-      recentPrices: stock.recentPrices,
-      showLimitMarkers: showLimitMarkers,
-      // 釘選入口（掃描頁是發現訊號的主場）；mode 由 provider 以當日
-      // dominant scoringMode 推斷
-      pinned: ref.watch(
-        pinnedThesisProvider.select(
-          (s) => s.value?.isPinned(stock.symbol) ?? false,
+    // Consumer 隔離 pinned 狀態：釘選 toggle 只重建這張卡，不 mark 整個
+    // ScanScreen dirty（比照 today_screen 的 Consumer 隔離慣例）
+    return Consumer(
+      builder: (context, cardRef, _) => StockCard(
+        symbol: stock.symbol,
+        stockName: stock.stockName,
+        market: stock.market,
+        latestClose: stock.latestClose,
+        priceChange: stock.priceChange,
+        score: stock.score,
+        reasons: stock.reasonTypes,
+        trendState: stock.trendState,
+        isInWatchlist: stock.isInWatchlist,
+        recentPrices: stock.recentPrices,
+        showLimitMarkers: showLimitMarkers,
+        // 釘選入口（掃描頁是發現訊號的主場）；mode 由 provider 以當日
+        // dominant scoringMode 推斷
+        pinned: cardRef.watch(
+          pinnedThesisProvider.select(
+            (s) => s.value?.isPinned(stock.symbol) ?? false,
+          ),
         ),
+        onPinToggle: () => _togglePin(stock.symbol),
+        onTap: () => context.push(AppRoutes.stockDetail(stock.symbol)),
+        onLongPress: isGrid
+            ? () => _showStockContextMenu(context, stock)
+            : () {
+                showStockPreviewSheet(
+                  context: context,
+                  data: StockPreviewData(
+                    symbol: stock.symbol,
+                    stockName: stock.stockName,
+                    latestClose: stock.latestClose,
+                    priceChange: stock.priceChange,
+                    score: stock.score,
+                    trendState: stock.trendState,
+                    reasons: stock.reasonTypes,
+                    isInWatchlist: stock.isInWatchlist,
+                  ),
+                  onViewDetails: () =>
+                      context.push(AppRoutes.stockDetail(stock.symbol)),
+                  onToggleWatchlist: () {
+                    ref
+                        .read(scanProvider.notifier)
+                        .toggleWatchlist(stock.symbol);
+                  },
+                );
+              },
+        onWatchlistTap: () {
+          HapticFeedback.lightImpact();
+          ref.read(scanProvider.notifier).toggleWatchlist(stock.symbol);
+        },
       ),
-      onPinToggle: () => _togglePin(stock.symbol),
-      onTap: () => context.push(AppRoutes.stockDetail(stock.symbol)),
-      onLongPress: isGrid
-          ? () => _showStockContextMenu(context, stock)
-          : () {
-              showStockPreviewSheet(
-                context: context,
-                data: StockPreviewData(
-                  symbol: stock.symbol,
-                  stockName: stock.stockName,
-                  latestClose: stock.latestClose,
-                  priceChange: stock.priceChange,
-                  score: stock.score,
-                  trendState: stock.trendState,
-                  reasons: stock.reasonTypes,
-                  isInWatchlist: stock.isInWatchlist,
-                ),
-                onViewDetails: () =>
-                    context.push(AppRoutes.stockDetail(stock.symbol)),
-                onToggleWatchlist: () {
-                  ref.read(scanProvider.notifier).toggleWatchlist(stock.symbol);
-                },
-              );
-            },
-      onWatchlistTap: () {
-        HapticFeedback.lightImpact();
-        ref.read(scanProvider.notifier).toggleWatchlist(stock.symbol);
-      },
     );
   }
 
