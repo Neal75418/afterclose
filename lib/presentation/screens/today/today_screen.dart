@@ -29,6 +29,8 @@ import 'package:afterclose/presentation/widgets/update_history_sheet.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/market_dashboard.dart';
 import 'package:afterclose/presentation/widgets/section_header.dart';
 import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
+import 'package:afterclose/presentation/providers/pinned_thesis_provider.dart';
+import 'package:afterclose/presentation/widgets/pinned_thesis_section.dart';
 import 'package:afterclose/presentation/widgets/stock_card.dart';
 import 'package:afterclose/presentation/widgets/stock_preview_sheet.dart';
 import 'package:afterclose/presentation/widgets/themed_refresh_indicator.dart';
@@ -172,6 +174,12 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
         recentPrices: rec.recentPrices,
         isInWatchlist: isInWatchlist,
         showLimitMarkers: showLimitMarkers,
+        pinned: ref.watch(
+          pinnedThesisProvider.select(
+            (s) => s.value?.isPinned(rec.symbol) ?? false,
+          ),
+        ),
+        onPinToggle: () => _togglePin(rec.symbol),
         onTap: () {
           HapticFeedback.lightImpact();
           context.push(AppRoutes.stockDetail(rec.symbol));
@@ -638,10 +646,37 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
           },
         ),
 
+        // 釘選論點追蹤區（出場層 Phase 2）——空狀態零噪音
+        const SliverToBoxAdapter(child: PinnedThesisSection()),
+
         // 底部間距
         const SliverToBoxAdapter(child: SizedBox(height: 80)),
       ],
     );
+  }
+
+  /// 釘選/取消釘選論點（出場層 Phase 2）。mode 用當前 tab。
+  Future<void> _togglePin(String symbol) async {
+    HapticFeedback.lightImpact();
+    final notifier = ref.read(pinnedThesisProvider.notifier);
+    final state = ref.read(pinnedThesisProvider).value;
+    final existing = state?.active.where((t) => t.symbol == symbol).toList();
+
+    try {
+      if (existing != null && existing.isNotEmpty) {
+        await notifier.cancel(existing.first.id);
+      } else {
+        final mode = switch (ref.read(selectedModeProvider)) {
+          ScoringMode.momentumEntry => 'momentum',
+          ScoringMode.weaknessObserve => 'pullback',
+          _ => 'strength',
+        };
+        await notifier.pin(symbol, mode: mode);
+      }
+    } on StateError catch (e) {
+      if (!mounted) return;
+      _showSnackBar(e.message, isError: true);
+    }
   }
 
   Future<void> _toggleWatchlist(

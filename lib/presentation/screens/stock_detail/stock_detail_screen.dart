@@ -7,6 +7,7 @@ import 'package:afterclose/core/constants/app_routes.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/utils/error_display.dart';
+import 'package:afterclose/presentation/providers/pinned_thesis_provider.dart';
 import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/alerts_tab.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/chip_tab.dart';
@@ -132,6 +133,45 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
                       ],
                     ),
                     actions: [
+                      // 釘選論點（出場層 Phase 2）：mode 由 dominant 規則推斷
+                      Consumer(
+                        builder: (context, ref, _) {
+                          final pinned = ref.watch(
+                            pinnedThesisProvider.select(
+                              (s) => s.value?.isPinned(widget.symbol) ?? false,
+                            ),
+                          );
+                          return IconButton(
+                            tooltip: 'thesis.pinTooltip'.tr(),
+                            icon: Icon(
+                              pinned ? Icons.push_pin : Icons.push_pin_outlined,
+                            ),
+                            onPressed: () async {
+                              final notifier = ref.read(
+                                pinnedThesisProvider.notifier,
+                              );
+                              final active = ref
+                                  .read(pinnedThesisProvider)
+                                  .value
+                                  ?.active
+                                  .where((t) => t.symbol == widget.symbol)
+                                  .toList();
+                              try {
+                                if (active != null && active.isNotEmpty) {
+                                  await notifier.cancel(active.first.id);
+                                } else {
+                                  await notifier.pin(widget.symbol);
+                                }
+                              } on StateError catch (e) {
+                                if (!context.mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text(e.message)),
+                                );
+                              }
+                            },
+                          );
+                        },
+                      ),
                       IconButton(
                         icon: const Icon(Icons.compare_arrows),
                         onPressed: () {

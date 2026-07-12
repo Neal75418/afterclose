@@ -7,6 +7,7 @@ import 'package:afterclose/core/constants/reason_type.dart';
 import 'package:afterclose/core/constants/scoring_mode.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/presentation/providers/data_update_epoch_provider.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 
 /// 釘選論點畫面狀態（出場層 Phase 2）
@@ -43,7 +44,11 @@ class PinnedThesisNotifier extends AsyncNotifier<PinnedThesisState> {
   AppDatabase get _db => ref.read(databaseProvider);
 
   @override
-  Future<PinnedThesisState> build() => _load();
+  Future<PinnedThesisState> build() {
+    // 更新完成（monitor 可能剛標失效）→ epoch bump → 自動重載
+    ref.watch(dataUpdateEpochProvider);
+    return _load();
+  }
 
   Future<PinnedThesisState> _load() async {
     final active = await _db.getActiveTheses();

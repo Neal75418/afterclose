@@ -243,4 +243,45 @@ void main() {
       });
     });
   });
+
+  group('釘選鈕（出場層 Phase 2）', () {
+    testWidgets('onPinToggle 提供時顯示 outline 圖示、點擊觸發 callback', (tester) async {
+      var toggled = 0;
+      await tester.pumpWidget(
+        buildTestApp(
+          StockCard(
+            symbol: '2330',
+            score: 30.0,
+            pinned: false,
+            onPinToggle: () => toggled++,
+          ),
+        ),
+      );
+      expect(find.byIcon(Icons.push_pin_outlined), findsOneWidget);
+      await tester.tap(find.byIcon(Icons.push_pin_outlined));
+      expect(toggled, 1);
+    });
+
+    testWidgets('pinned = true 顯示實心圖示', (tester) async {
+      await tester.pumpWidget(
+        buildTestApp(
+          StockCard(
+            symbol: '2330',
+            score: 30.0,
+            pinned: true,
+            onPinToggle: () {},
+          ),
+        ),
+      );
+      expect(find.byIcon(Icons.push_pin), findsOneWidget);
+    });
+
+    testWidgets('未提供 onPinToggle → 不顯示釘選鈕（scan 頁不受影響）', (tester) async {
+      await tester.pumpWidget(
+        buildTestApp(const StockCard(symbol: '2330', score: 30.0)),
+      );
+      expect(find.byIcon(Icons.push_pin_outlined), findsNothing);
+      expect(find.byIcon(Icons.push_pin), findsNothing);
+    });
+  });
 }

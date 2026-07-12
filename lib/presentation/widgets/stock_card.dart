@@ -42,6 +42,8 @@ class StockCard extends StatefulWidget {
     this.onTap,
     this.onLongPress,
     this.onWatchlistTap,
+    this.pinned,
+    this.onPinToggle,
     this.recentPrices,
     this.warningType,
     this.warningReasons = const [],
@@ -58,6 +60,13 @@ class StockCard extends StatefulWidget {
 
   /// 單一 score（fallback）— 當 [dualScore] 為 null 時使用 ScoreRing
   final double? score;
+
+  /// 釘選狀態（出場層 Phase 2）。null = 不顯示釘選鈕（掃描頁等不提供
+  /// 釘選入口的清單）；[onPinToggle] 提供時才渲染。
+  final bool? pinned;
+
+  /// 點擊釘選鈕 callback（今日頁推薦卡入口）
+  final VoidCallback? onPinToggle;
 
   /// 雙 horizon score (5D, 60D) — 給 Today screen Mode tab 用
   ///
@@ -349,6 +358,26 @@ class _StockCardState extends State<StockCard> {
         ] else if (widget.score != null && widget.score! > 0) ...[
           const SizedBox(width: 6),
           ScoreTierBadge(score: widget.score!.toDouble()),
+        ],
+        if (widget.onPinToggle != null) ...[
+          const Spacer(),
+          // 釘選論點（出場層）：outline = 未釘選、filled = 已釘選
+          InkWell(
+            onTap: widget.onPinToggle,
+            borderRadius: BorderRadius.circular(DesignTokens.radiusXs),
+            child: Padding(
+              padding: const EdgeInsets.all(2),
+              child: Icon(
+                (widget.pinned ?? false)
+                    ? Icons.push_pin
+                    : Icons.push_pin_outlined,
+                size: 16,
+                color: (widget.pinned ?? false)
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
         ],
       ],
     );

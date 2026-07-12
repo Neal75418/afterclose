@@ -1444,5 +1444,20 @@
     "openHistoryHint": "點擊查看更新紀錄",
     "durationSeconds": "{}秒",
     "durationMinutesSeconds": "{}分{}秒"
+  },
+  "thesis": {
+    "sectionTitle": "釘選追蹤",
+    "alertSectionTitle": "論點失效",
+    "statusActive": "追蹤中",
+    "statusInvalidated": "已失效",
+    "reasonTimeStop": "40 日論點未實現",
+    "refVsCurrent": "參考 {ref} → 現價 {current}（{diff}%）",
+    "pinnedOn": "釘選於 {date}",
+    "lastChecked": "最後檢查 {date}",
+    "delisted": "已下市，價格未更新",
+    "cancel": "取消釘選",
+    "archive": "封存",
+    "pinTooltip": "釘選論點",
+    "noPrice": "—"
   }
 }

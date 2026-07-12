@@ -1444,5 +1444,20 @@
     "openHistoryHint": "Open update history",
     "durationSeconds": "{}s",
     "durationMinutesSeconds": "{}m {}s"
+  },
+  "thesis": {
+    "sectionTitle": "Pinned Theses",
+    "alertSectionTitle": "Thesis Invalidated",
+    "statusActive": "Tracking",
+    "statusInvalidated": "Invalidated",
+    "reasonTimeStop": "Unrealized in 40 days",
+    "refVsCurrent": "Ref {ref} → Now {current} ({diff}%)",
+    "pinnedOn": "Pinned {date}",
+    "lastChecked": "Checked {date}",
+    "delisted": "Delisted — price frozen",
+    "cancel": "Unpin",
+    "archive": "Archive",
+    "pinTooltip": "Pin thesis",
+    "noPrice": "—"
   }
 }

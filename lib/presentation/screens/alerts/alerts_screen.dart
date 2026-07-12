@@ -10,6 +10,7 @@ import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/utils/responsive_helper.dart';
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/presentation/widgets/pinned_thesis_section.dart';
 import 'package:afterclose/presentation/providers/price_alert_provider.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
@@ -42,49 +43,60 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
 
     return Scaffold(
       appBar: AppBar(title: Text('alert.title'.tr())),
-      body: state.isLoading && state.alerts.isEmpty
-          ? const GenericListShimmer(itemCount: 5)
-          : state.error != null && state.alerts.isEmpty
-          ? ErrorDisplay.isNetworkError(state.error!)
-                ? EmptyStates.networkError(
-                    onRetry: () =>
-                        ref.read(priceAlertProvider.notifier).loadAlerts(),
-                  )
-                : EmptyStates.error(
-                    message: state.error!,
-                    onRetry: () =>
-                        ref.read(priceAlertProvider.notifier).loadAlerts(),
-                  )
-          : state.alerts.isEmpty
-          ? _buildEmptyState()
-          : Column(
-              children: [
-                if (state.error != null)
-                  MaterialBanner(
-                    content: Text(state.error!),
-                    leading: const Icon(Icons.error_outline),
-                    actions: [
-                      TextButton(
-                        onPressed: () =>
-                            ref.read(priceAlertProvider.notifier).loadAlerts(),
-                        child: Text('common.retry'.tr()),
-                      ),
-                      TextButton(
-                        onPressed: () =>
-                            ref.read(priceAlertProvider.notifier).clearError(),
-                        child: Text('common.dismiss'.tr()),
-                      ),
-                    ],
-                  ),
-                Expanded(child: _buildAlertsList(state.alerts, theme)),
-              ],
-            ),
+      // 論點失效 section（出場層 Phase 2）置頂：與價格警示獨立的資料源，
+      // 價格警示空/載入中也要能看到失效通知；空狀態自身零噪音。
+      body: Column(
+        children: [
+          const PinnedThesisSection(invalidatedOnly: true),
+          Expanded(child: _buildAlertBody(state, theme)),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddAlertDialog(context),
         tooltip: 'alert.create'.tr(),
         child: const Icon(Icons.add),
       ),
     );
+  }
+
+  Widget _buildAlertBody(PriceAlertState state, ThemeData theme) {
+    return state.isLoading && state.alerts.isEmpty
+        ? const GenericListShimmer(itemCount: 5)
+        : state.error != null && state.alerts.isEmpty
+        ? ErrorDisplay.isNetworkError(state.error!)
+              ? EmptyStates.networkError(
+                  onRetry: () =>
+                      ref.read(priceAlertProvider.notifier).loadAlerts(),
+                )
+              : EmptyStates.error(
+                  message: state.error!,
+                  onRetry: () =>
+                      ref.read(priceAlertProvider.notifier).loadAlerts(),
+                )
+        : state.alerts.isEmpty
+        ? _buildEmptyState()
+        : Column(
+            children: [
+              if (state.error != null)
+                MaterialBanner(
+                  content: Text(state.error!),
+                  leading: const Icon(Icons.error_outline),
+                  actions: [
+                    TextButton(
+                      onPressed: () =>
+                          ref.read(priceAlertProvider.notifier).loadAlerts(),
+                      child: Text('common.retry'.tr()),
+                    ),
+                    TextButton(
+                      onPressed: () =>
+                          ref.read(priceAlertProvider.notifier).clearError(),
+                      child: Text('common.dismiss'.tr()),
+                    ),
+                  ],
+                ),
+              Expanded(child: _buildAlertsList(state.alerts, theme)),
+            ],
+          );
   }
 
   Widget _buildEmptyState() {
