@@ -103,13 +103,14 @@ for i in $(seq 1 "$MAX_RETRIES"); do
   # 記錄當前 log 行數（用來只 grep 這輪新增的部分）
   start_lines=$(wc -l < "$CALIBRATE_LOG" 2>/dev/null || echo 0)
 
-  if ./scripts/calibrate.sh; then
+  # 不用 `if cmd; then`：那會讓後面的 $? 變成 if 構句的 0 而非真實 exit code
+  ./scripts/calibrate.sh
+  exit_code=$?
+  if [ "$exit_code" -eq 0 ]; then
     echo ""
     echo "[$(date)] attempt $i: ✅ PIPELINE COMPLETE"
     exit 0
   fi
-
-  exit_code=$?
 
   # 只 grep 這輪新增的 log 行
   new_lines=$(tail -n +$((start_lines + 1)) "$CALIBRATE_LOG" 2>/dev/null || echo "")
