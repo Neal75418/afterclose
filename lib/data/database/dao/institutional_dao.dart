@@ -95,4 +95,15 @@ mixin InstitutionalDaoMixin on $AppDatabase {
   Future<int> clearAllInstitutionalData() async {
     return await (delete(dailyInstitutional)).go();
   }
+
+  /// 計算某交易日已寫入的法人資料筆數（backfill per-day resume 判斷用，
+  /// 與 [PriceDaoMixin.countPricesByDateAndMarket] 同模式；法人 phase
+  /// 兩市場一起跑，故不分市場、比對全市場總數）。
+  Future<int> countInstitutionalByDate(DateTime date) async {
+    final result = await customSelect(
+      'SELECT COUNT(*) AS cnt FROM daily_institutional WHERE date = ?',
+      variables: [Variable.withDateTime(date)],
+    ).getSingle();
+    return result.read<int>('cnt');
+  }
 }

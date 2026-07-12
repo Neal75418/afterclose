@@ -516,6 +516,18 @@ class Backfiller {
       }
 
       final dayStr = _formatDate(current);
+
+      // Resume：該日已有足量法人 rows（≥50% target，同 price phase 門檻
+      // 語意）→ 跳過。法人 phase 無此 guard 時，每輪 retry 要重抓 ~2 小時
+      // 才能走到後面的 FinMind phase（2026-07-13 rate-limit 輪迴實測）。
+      final existingInst = await deps.db.countInstitutionalByDate(current);
+      if (existingInst >= targetSet.length * 0.5) {
+        daysSucceeded++;
+        daysProcessed++;
+        current = current.add(const Duration(days: 1));
+        continue;
+      }
+
       try {
         final count = await deps.institutionalRepo.backfillInstitutionalByDate(
           date: current,
