@@ -13,6 +13,7 @@ import 'package:afterclose/domain/repositories/analysis_repository.dart';
 import 'package:afterclose/domain/repositories/price_repository.dart';
 import 'package:afterclose/domain/services/analysis_service.dart';
 import 'package:afterclose/domain/services/rule_accuracy_service.dart';
+import 'package:afterclose/domain/services/thesis/thesis_monitor_service.dart';
 import 'package:afterclose/domain/services/rule_engine.dart';
 import 'package:afterclose/domain/services/scoring_service.dart';
 import 'package:afterclose/domain/services/update/update.dart';
@@ -41,6 +42,7 @@ class UpdateService {
   }) : _db = database,
        _clock = clock,
        _ruleAccuracyService = services.ruleAccuracy,
+       _thesisMonitorService = services.thesisMonitor,
        _priceRepo = repositories.price,
        _analysisRepo = repositories.analysis,
        _analysisService = services.analysis ?? AnalysisService(),
@@ -123,6 +125,7 @@ class UpdateService {
   final RuleEngine _ruleEngine;
   final ScoringService? _scoringService;
   final RuleAccuracyService? _ruleAccuracyService;
+  final ThesisMonitorService? _thesisMonitorService;
   final List<String> _popularStocks;
 
   // 專責 updater / loader
@@ -287,6 +290,7 @@ class UpdateService {
       // 路徑若不 await，isolate 可能在統計更新跑完前被 OS 殺掉。所以維持 await
       // 是 by-design，docstring 同步澄清。
       await _updateRuleAccuracyStatsFailSafe();
+      await _checkPinnedThesesFailSafe(ctx);
 
       return result;
     } catch (e) {
@@ -838,6 +842,20 @@ class UpdateService {
       AppLogger.info('UpdateService', '步驟 10+: 規則準確度統計更新完成');
     } catch (e, stack) {
       AppLogger.error('UpdateService', '規則準確度統計更新失敗（fail-safe）', e, stack);
+    }
+  }
+
+  /// 釘選論點失效檢查（出場層 Phase 2）。**fail-safe**：失敗只 log、
+  /// 不影響 update result（與 [_updateRuleAccuracyStatsFailSafe] 同模式）。
+  Future<void> _checkPinnedThesesFailSafe(_UpdateContext ctx) async {
+    final service = _thesisMonitorService;
+    if (service == null) return;
+
+    try {
+      final n = await service.checkActiveTheses(asOf: ctx.normalizedDate);
+      AppLogger.info('UpdateService', '步驟 10+: 釘選論點檢查完成（失效 $n 筆）');
+    } catch (e, stack) {
+      AppLogger.error('UpdateService', '釘選論點檢查失敗（fail-safe）', e, stack);
     }
   }
 

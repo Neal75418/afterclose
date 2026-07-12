@@ -16,6 +16,7 @@ import 'package:afterclose/data/remote/twse_client.dart';
 import 'package:afterclose/domain/services/analysis_service.dart';
 import 'package:afterclose/domain/services/rule_engine.dart';
 import 'package:afterclose/domain/services/rule_accuracy_service.dart';
+import 'package:afterclose/domain/services/thesis/thesis_monitor_service.dart';
 import 'package:afterclose/domain/services/scoring_service.dart';
 
 /// [UpdateService] 的 Repository 依賴群組
@@ -64,10 +65,14 @@ class UpdateServices {
     this.ruleEngine,
     this.scoring,
     this.ruleAccuracy,
+    this.thesisMonitor,
   });
 
   final AnalysisService? analysis;
   final RuleEngine? ruleEngine;
   final ScoringService? scoring;
   final RuleAccuracyService? ruleAccuracy;
+
+  /// 釘選論點監控（出場層 Phase 2）。null = 不檢查（測試預設）。
+  final ThesisMonitorService? thesisMonitor;
 }
