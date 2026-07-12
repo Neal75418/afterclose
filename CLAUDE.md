@@ -62,6 +62,7 @@ dart format .                                                  # 格式化 (pre-
 | `lib/data/database/tables/`                      | Drift 資料表定義                                    |
 | `lib/data/database/dao/batch_query_mixin.dart`   | 批次查詢共享工具 (groupBySymbol)                       |
 | `lib/domain/services/rule_accuracy_service.dart` | 推薦績效回測引擎 (多週期驗證)                               |
+| `lib/domain/services/thesis/`                    | 釘選論點失效（timeStop；hardStop/trendBreak 被 gate 砍）  |
 
 ---
 
