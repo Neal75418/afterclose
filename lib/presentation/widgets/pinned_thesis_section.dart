@@ -1,7 +1,9 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import 'package:afterclose/core/constants/app_routes.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/providers/pinned_thesis_provider.dart';
@@ -138,111 +140,119 @@ class _ThesisCard extends ConsumerWidget {
         horizontal: DesignTokens.spacing16,
         vertical: DesignTokens.spacing4,
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(DesignTokens.spacing12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(
-                  thesis.symbol,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(width: DesignTokens.spacing8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(DesignTokens.radiusXs),
-                    border: Border.all(
-                      color: statusColor.withValues(alpha: 0.5),
-                    ),
-                  ),
-                  child: Text(
-                    isActive
-                        ? 'thesis.statusActive'.tr()
-                        : '${'thesis.statusInvalidated'.tr()}·${'thesis.reasonTimeStop'.tr()}',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: statusColor,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                const Spacer(),
-                if (isActive)
-                  IconButton(
-                    tooltip: 'thesis.cancel'.tr(),
-                    icon: const Icon(Icons.close, size: 18),
-                    visualDensity: VisualDensity.compact,
-                    onPressed: () => ref
-                        .read(pinnedThesisProvider.notifier)
-                        .cancel(thesis.id),
-                  )
-                else
-                  IconButton(
-                    tooltip: 'thesis.archive'.tr(),
-                    icon: const Icon(Icons.archive_outlined, size: 18),
-                    visualDensity: VisualDensity.compact,
-                    onPressed: () => ref
-                        .read(pinnedThesisProvider.notifier)
-                        .archive(thesis.id),
-                  ),
-              ],
-            ),
-            const SizedBox(height: DesignTokens.spacing4),
-            Text(
-              'thesis.refVsCurrent'.tr(
-                namedArgs: {
-                  'ref': thesis.referencePrice.toStringAsFixed(2),
-                  'current':
-                      currentClose?.toStringAsFixed(2) ?? 'thesis.noPrice'.tr(),
-                  'diff': diffPct?.toStringAsFixed(1) ?? '—',
-                },
-              ),
-              style: theme.textTheme.bodySmall,
-            ),
-            const SizedBox(height: DesignTokens.spacing4),
-            Text(
-              [
-                'thesis.pinnedOn'.tr(
-                  namedArgs: {'date': _fmtDate(thesis.pinnedDate)},
-                ),
-                if (thesis.lastCheckedDate != null)
-                  'thesis.lastChecked'.tr(
-                    namedArgs: {'date': _fmtDate(thesis.lastCheckedDate!)},
-                  ),
-              ].join('　'),
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            if (isDelisted) ...[
-              const SizedBox(height: DesignTokens.spacing4),
+      // 卡片 tap → 個股詳情：失效通知的第一反應是「看圖確認」，不能是死巷
+      child: InkWell(
+        onTap: () => context.push(AppRoutes.stockDetail(thesis.symbol)),
+        borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
+        child: Padding(
+          padding: const EdgeInsets.all(DesignTokens.spacing12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               Row(
-                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    Icons.warning_amber_outlined,
-                    size: 14,
-                    color: DesignTokens.warningColor(theme),
-                  ),
-                  const SizedBox(width: DesignTokens.spacing4),
                   Text(
-                    'thesis.delisted'.tr(),
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: DesignTokens.warningColor(theme),
+                    thesis.symbol,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
+                  const SizedBox(width: DesignTokens.spacing8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: statusColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(
+                        DesignTokens.radiusXs,
+                      ),
+                      border: Border.all(
+                        color: statusColor.withValues(alpha: 0.5),
+                      ),
+                    ),
+                    child: Text(
+                      isActive
+                          ? 'thesis.statusActive'.tr()
+                          : '${'thesis.statusInvalidated'.tr()}·${'thesis.reasonTimeStop'.tr()}',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: statusColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  if (isActive)
+                    IconButton(
+                      tooltip: 'thesis.cancel'.tr(),
+                      icon: const Icon(Icons.close, size: 18),
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () => ref
+                          .read(pinnedThesisProvider.notifier)
+                          .cancel(thesis.id),
+                    )
+                  else
+                    IconButton(
+                      tooltip: 'thesis.archive'.tr(),
+                      icon: const Icon(Icons.archive_outlined, size: 18),
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () => ref
+                          .read(pinnedThesisProvider.notifier)
+                          .archive(thesis.id),
+                    ),
                 ],
               ),
+              const SizedBox(height: DesignTokens.spacing4),
+              Text(
+                'thesis.refVsCurrent'.tr(
+                  namedArgs: {
+                    'ref': thesis.referencePrice.toStringAsFixed(2),
+                    'current':
+                        currentClose?.toStringAsFixed(2) ??
+                        'thesis.noPrice'.tr(),
+                    'diff': diffPct?.toStringAsFixed(1) ?? '—',
+                  },
+                ),
+                style: theme.textTheme.bodySmall,
+              ),
+              const SizedBox(height: DesignTokens.spacing4),
+              Text(
+                [
+                  'thesis.pinnedOn'.tr(
+                    namedArgs: {'date': _fmtDate(thesis.pinnedDate)},
+                  ),
+                  if (thesis.lastCheckedDate != null)
+                    'thesis.lastChecked'.tr(
+                      namedArgs: {'date': _fmtDate(thesis.lastCheckedDate!)},
+                    ),
+                ].join('　'),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              if (isDelisted) ...[
+                const SizedBox(height: DesignTokens.spacing4),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.warning_amber_outlined,
+                      size: 14,
+                      color: DesignTokens.warningColor(theme),
+                    ),
+                    const SizedBox(width: DesignTokens.spacing4),
+                    Text(
+                      'thesis.delisted'.tr(),
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: DesignTokens.warningColor(theme),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

@@ -14,6 +14,7 @@ import 'package:afterclose/core/constants/ui_constants.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/utils/responsive_helper.dart';
+import 'package:afterclose/presentation/providers/pinned_thesis_provider.dart';
 import 'package:afterclose/presentation/providers/scan_provider.dart';
 import 'package:afterclose/presentation/providers/settings_provider.dart';
 import 'package:afterclose/presentation/screens/scan/widgets/industry_filter_chip.dart';
@@ -626,6 +627,14 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
       isInWatchlist: stock.isInWatchlist,
       recentPrices: stock.recentPrices,
       showLimitMarkers: showLimitMarkers,
+      // 釘選入口（掃描頁是發現訊號的主場）；mode 由 provider 以當日
+      // dominant scoringMode 推斷
+      pinned: ref.watch(
+        pinnedThesisProvider.select(
+          (s) => s.value?.isPinned(stock.symbol) ?? false,
+        ),
+      ),
+      onPinToggle: () => _togglePin(stock.symbol),
       onTap: () => context.push(AppRoutes.stockDetail(stock.symbol)),
       onLongPress: isGrid
           ? () => _showStockContextMenu(context, stock)
@@ -765,6 +774,30 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
       }
     }
     return card;
+  }
+
+  /// 釘選/取消釘選論點（掃描頁入口；mode 由 dominant 規則推斷）
+  Future<void> _togglePin(String symbol) async {
+    HapticFeedback.lightImpact();
+    final notifier = ref.read(pinnedThesisProvider.notifier);
+    final active = ref
+        .read(pinnedThesisProvider)
+        .value
+        ?.active
+        .where((t) => t.symbol == symbol)
+        .toList();
+    try {
+      if (active != null && active.isNotEmpty) {
+        await notifier.cancel(active.first.id);
+      } else {
+        await notifier.pin(symbol);
+      }
+    } on StateError catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
+    }
   }
 
   /// 全域股票搜尋入口 — 開啟 [StockSearchDelegate]，選擇後導航到個股詳情。

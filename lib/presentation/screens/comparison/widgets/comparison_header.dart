@@ -1,4 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
+import 'package:go_router/go_router.dart';
+
+import 'package:afterclose/core/constants/app_routes.dart';
 import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/design_tokens.dart';
@@ -73,7 +76,9 @@ class _StockChip extends StatelessWidget {
     final theme = Theme.of(context);
     final displayName = name.length > 4 ? name.substring(0, 4) : name;
 
-    return Chip(
+    // InputChip：label tap → 個股詳情（比較的終點是選一檔深查，不能是
+    // 死巷）；delete icon 維持移除語意。
+    return InputChip(
       avatar: Container(
         width: 8,
         height: 8,
@@ -82,6 +87,7 @@ class _StockChip extends StatelessWidget {
       label: Text('$symbol $displayName', style: theme.textTheme.labelMedium),
       deleteIcon: const Icon(Icons.close, size: 16),
       onDeleted: onRemove,
+      onPressed: () => context.push(AppRoutes.stockDetail(symbol)),
       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
       visualDensity: VisualDensity.compact,
     );
