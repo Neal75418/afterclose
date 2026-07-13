@@ -66,11 +66,17 @@ class TaiwanCalendar {
     DateTime.utc(2025, 5, 31),
     DateTime.utc(2025, 6, 1),
     DateTime.utc(2025, 6, 2),
+    // 教師節（9/28 週日，補假 9/29 週一；2025 新增國定假日）
+    DateTime.utc(2025, 9, 29),
     // 中秋節 (10/6-10/7)
     DateTime.utc(2025, 10, 6),
     DateTime.utc(2025, 10, 7),
     // 國慶日
     DateTime.utc(2025, 10, 10),
+    // 光復節（10/25 週六，補假 10/24 週五；2025 新增國定假日）
+    DateTime.utc(2025, 10, 24),
+    // 行憲紀念日（2025 新增國定假日）
+    DateTime.utc(2025, 12, 25),
   };
 
   /// 2026 年台股休市日（預估）
@@ -99,11 +105,19 @@ class TaiwanCalendar {
     DateTime.utc(2026, 5, 1),
     // 端午節 (6/19 estimated)
     DateTime.utc(2026, 6, 19),
+    // 颱風停市（TWSE 證實 20260710 無交易資料）
+    DateTime.utc(2026, 7, 10),
     // 中秋節 (9/25 estimated)
     DateTime.utc(2026, 9, 25),
+    // 教師節（9/28 週一）
+    DateTime.utc(2026, 9, 28),
     // 國慶日（10/10 週六，補假 10/9 週五）
     DateTime.utc(2026, 10, 9),
     DateTime.utc(2026, 10, 10),
+    // 光復節（10/25 週日，補假 10/26 週一）
+    DateTime.utc(2026, 10, 26),
+    // 行憲紀念日（12/25 週五）
+    DateTime.utc(2026, 12, 25),
   };
 
   /// 2027 年台股休市日（預估）
