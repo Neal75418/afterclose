@@ -337,30 +337,50 @@ class _StockCardState extends State<StockCard> {
   }
 
   Widget _buildHeader(ThemeData theme) {
+    // 結構：左側內容（symbol+徽章）包在 Expanded 的內層 Row，釘選鈕
+    // 剛性放外層右緣。loose Flexible 用不完的配額會變成該 Row 的尾端
+    // 留白（不回填 Spacer）——留白限制在內層 Row 裡看不見的右側，
+    // 釘選鈕才能恆貼 header 右緣；窄卡片時內層被壓縮、徽章以
+    // FittedBox 等比縮小而非 overflow。
     return Row(
       children: [
-        Flexible(
-          child: Text(
-            widget.symbol,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.5,
-            ),
-            overflow: TextOverflow.ellipsis,
+        Expanded(
+          child: Row(
+            children: [
+              Flexible(
+                child: Text(
+                  widget.symbol,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (widget.dualScore != null) ...[
+                const SizedBox(width: 6),
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: ScoreTierBadge.dual(
+                      shortScore: widget.dualScore!.$1,
+                      longScore: widget.dualScore!.$2,
+                    ),
+                  ),
+                ),
+              ] else if (widget.score != null && widget.score! > 0) ...[
+                const SizedBox(width: 6),
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: ScoreTierBadge(score: widget.score!.toDouble()),
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
-        if (widget.dualScore != null) ...[
-          const SizedBox(width: 6),
-          ScoreTierBadge.dual(
-            shortScore: widget.dualScore!.$1,
-            longScore: widget.dualScore!.$2,
-          ),
-        ] else if (widget.score != null && widget.score! > 0) ...[
-          const SizedBox(width: 6),
-          ScoreTierBadge(score: widget.score!.toDouble()),
-        ],
-        if (widget.onPinToggle != null) ...[
-          const Spacer(),
+        if (widget.onPinToggle != null)
           // 釘選論點（出場層）：outline = 未釘選、filled = 已釘選
           InkWell(
             onTap: widget.onPinToggle,
@@ -378,7 +398,6 @@ class _StockCardState extends State<StockCard> {
               ),
             ),
           ),
-        ],
       ],
     );
   }

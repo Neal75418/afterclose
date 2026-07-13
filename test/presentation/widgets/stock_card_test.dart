@@ -53,6 +53,100 @@ void main() {
       expect(find.text('櫃'), findsNothing);
     });
 
+    testWidgets('極窄卡片下雙 score 徽章等比縮小不溢位', (tester) async {
+      // 迴歸：header 的分數徽章原為剛性寬度，卡片被格狀清單擠窄時
+      // RenderFlex overflow（production log 2026-07-13：header
+      // constraints w<=72.4, overflow 0.65~4.7px）。修正後徽章以
+      // Flexible+FittedBox 等比縮小。
+      // 註：價格區塊（StockCardPriceSection）的剛性寬度在窄卡片是
+      // 既有的獨立問題，不在本迴歸範圍。
+      await tester.pumpWidget(
+        buildTestApp(
+          Center(
+            child: SizedBox(
+              width: 100,
+              child: StockCard(symbol: '2330', dualScore: (62, 62)),
+            ),
+          ),
+        ),
+      );
+
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('極窄卡片下單一 score 徽章分支同樣不溢位', (tester) async {
+      await tester.pumpWidget(
+        buildTestApp(
+          Center(
+            child: SizedBox(
+              width: 100,
+              child: StockCard(symbol: '2330', score: 62),
+            ),
+          ),
+        ),
+      );
+
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('窄卡片下徽章+剛性釘選鈕共存不溢位', (tester) async {
+      await tester.pumpWidget(
+        buildTestApp(
+          Center(
+            child: SizedBox(
+              width: 140,
+              child: StockCard(
+                symbol: '2330',
+                dualScore: const (62, 62),
+                pinned: false,
+                onPinToggle: () {},
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('正常寬度下釘選鈕貼齊 header 右緣', (tester) async {
+      // 迴歸鎖：pin 若被包進 loose Flexible，用不完的 flex 配額會變成
+      // 尾端留白（不回填 Spacer），pin 會往左漂數十 px——pin 必須
+      // 維持剛性（stock_card.dart header 註解）。
+      await tester.pumpWidget(
+        buildTestApp(
+          Center(
+            child: SizedBox(
+              width: 400,
+              child: StockCard(
+                symbol: '2330',
+                stockName: '台積電',
+                dualScore: const (62, 62),
+                pinned: false,
+                onPinToggle: () {},
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final pin = find.byIcon(Icons.push_pin_outlined);
+      // 祖先 Row 有兩層（header Row 與卡片外層 Row），取最窄者 = header
+      final headerRect = find
+          .ancestor(of: pin, matching: find.byType(Row))
+          .evaluate()
+          .map((e) => tester.getRect(find.byWidget(e.widget)))
+          .reduce((a, b) => a.width <= b.width ? a : b);
+      final pinRect = tester.getRect(pin);
+      // 剛性 pin：icon 右緣距 header 右緣僅 InkWell padding（2px）；
+      // 漂移 bug 下會拉開數十 px
+      expect(
+        headerRect.right - pinRect.right,
+        lessThan(8),
+        reason: 'pin 應貼齊 header 右緣，而非漂在 Flexible 配額留白左側',
+      );
+    });
+
     testWidgets('calls onTap callback when tapped', (tester) async {
       var tapped = false;
       await tester.pumpWidget(
