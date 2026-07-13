@@ -485,6 +485,9 @@ class UpdateService {
       if (historyResult.syncedCount > 0) {
         ctx.result.pricesUpdated += historyResult.syncedCount;
       }
+      if (historyResult.marketDayRows > 0) {
+        ctx.result.pricesUpdated += historyResult.marketDayRows;
+      }
       if (historyResult.hasErrors) {
         ctx.result.errors.add(
           '歷史資料同步失敗 (${historyResult.failedSymbols.length} 檔)',

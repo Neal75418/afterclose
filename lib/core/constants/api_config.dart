@@ -101,6 +101,32 @@ abstract final class ApiConfig {
   /// Fresh DB 場景（每檔平均 14 個月）仍至少同步 15 檔。
   static const int historicalPriceMinSyncCount = 15;
 
+  /// 市場日快照回補：單次更新最多補幾個（日, 市場）
+  ///
+  /// 一個缺漏市場日 = 1 次 TWSE MI_INDEX 或 TPEx afterTrading 呼叫，
+  /// 即可補齊該市場**全部**股票當日價格。30 × 每日更新 → 380 天窗
+  /// 全缺（fresh DB）約 17 個更新日收斂。
+  static const int historicalMarketDayMaxCallsPerRun = 30;
+
+  /// 市場日快照回補：單日覆蓋率低於此比例（相對股票主檔市場股數）
+  /// 視為缺漏日
+  ///
+  /// 用 50% 而非高門檻：歷史日的市場規模較今日小（下市股），過高會
+  /// 把「已完整的舊日子」誤判為缺漏而反覆重抓（同 tool/backfill 教訓）。
+  ///
+  /// ⚠️ 隱性耦合：此值必須 > 候選層 per-symbol 同步所能覆蓋的市場比例
+  /// （目前 CandidateSelector 流動性下限後約 43% 市場），否則「只有
+  /// 候選股有資料的半市場日」會被誤判為完整、永不回補。若候選層
+  /// 放寬到過半市場，需同步調高此值。
+  static const double historicalMarketDayMinCoverageRatio = 0.5;
+
+  /// 市場日快照回補：連續零筆中止閾值（端點失效防護）
+  ///
+  /// 交易日回 0 筆代表端點回應日期 ≠ 請求日期（repository 過濾後全數
+  /// 丟棄）或日曆未知的臨時休市。連續達此值即中止本次回補，
+  /// 避免燒光單次上限。
+  static const int historicalMarketDayMaxConsecutiveZeroDays = 3;
+
   /// 財報同步回溯天數（約 2 年）
   static const int financialSyncLookbackDays = 730;
 

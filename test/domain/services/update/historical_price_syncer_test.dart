@@ -1,3 +1,5 @@
+import 'package:afterclose/core/constants/api_config.dart';
+import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/repositories/price_repository.dart';
 import 'package:afterclose/domain/services/update/historical_price_syncer.dart';
@@ -76,6 +78,11 @@ void main() {
     ).thenThrow(Exception('API Error'));
   }
 
+  setUpAll(() {
+    registerFallbackValue(DateTime(2020));
+    registerFallbackValue(<String>{});
+  });
+
   setUp(() {
     mockDb = MockAppDatabase();
     mockPriceRepo = MockPriceRepository();
@@ -83,6 +90,9 @@ void main() {
       database: mockDb,
       priceRepository: mockPriceRepo,
     );
+    // 市場日快照回補（phase 0）的良性預設：股票主檔為空 → phase 0
+    // 直接跳過（fresh DB 防護），既有 per-symbol 測試行為不變。
+    when(() => mockDb.getStocksByMarket(any())).thenAnswer((_) async => []);
   });
 
   group('HistoricalPriceSyncer', () {
@@ -642,6 +652,258 @@ void main() {
           );
         },
       );
+    });
+
+    group('市場日快照回補（phase 0）', () {
+      // testDate = 2025-01-15（週三）。窗內鄰近交易日：
+      // 1/14（二）、1/13（一）、1/10（五）；1/11-12 為週末。
+      final tue = DateTime(2025, 1, 14);
+      final mon = DateTime(2025, 1, 13);
+      final sun = DateTime(2025, 1, 12);
+
+      StockMasterEntry stockEntry(String symbol, String market) =>
+          StockMasterEntry(
+            symbol: symbol,
+            name: symbol,
+            market: market,
+            isActive: true,
+            updatedAt: testDate,
+          );
+
+      List<StockMasterEntry> twseStocks(int n) =>
+          List.generate(n, (i) => stockEntry('11$i', 'TWSE'));
+      List<StockMasterEntry> tpexStocks(int n) =>
+          List.generate(n, (i) => stockEntry('33$i', 'TPEx'));
+
+      /// 測試用 syncer：市場日回補呼叫間不延遲（避免測試等待真實時間）
+      late HistoricalPriceSyncer fastSyncer;
+
+      /// phase 1（per-symbol）快速通過：無任何需求
+      void setupEmptyPerSymbolPhase() {
+        setupSufficientDataSymbols([]);
+        setupPriceHistoryBatch({});
+      }
+
+      /// count 回應器：預設每日皆完整，[missingTwseDays] 內的日子回 0
+      void setupDayCounts({
+        Set<DateTime> missingTwseDays = const {},
+        int twseComplete = 10,
+        int tpexComplete = 8,
+      }) {
+        when(() => mockDb.countPricesByDateAndMarket(any(), any())).thenAnswer((
+          inv,
+        ) async {
+          final day = inv.positionalArguments[0] as DateTime;
+          final market = inv.positionalArguments[1] as String;
+          if (market == 'TWSE') {
+            return missingTwseDays.contains(day) ? 0 : twseComplete;
+          }
+          return tpexComplete;
+        });
+      }
+
+      void setupTwseBackfill(int rowsPerDay) {
+        when(
+          () => mockPriceRepo.backfillTwsePricesByDate(
+            date: any(named: 'date'),
+            targetSymbols: any(named: 'targetSymbols'),
+          ),
+        ).thenAnswer((_) async => rowsPerDay);
+      }
+
+      setUp(() {
+        fastSyncer = HistoricalPriceSyncer(
+          database: mockDb,
+          priceRepository: mockPriceRepo,
+          marketDayCallDelay: Duration.zero,
+        );
+        when(
+          () => mockDb.getStocksByMarket('TWSE'),
+        ).thenAnswer((_) async => twseStocks(10));
+        when(
+          () => mockDb.getStocksByMarket('TPEx'),
+        ).thenAnswer((_) async => tpexStocks(8));
+        setupEmptyPerSymbolPhase();
+      });
+
+      test('缺漏市場日觸發整市場回補（新→舊、只補缺的市場）', () async {
+        setupDayCounts(missingTwseDays: {tue, mon});
+        setupTwseBackfill(800);
+
+        final result = await fastSyncer.syncHistoricalPrices(
+          date: testDate,
+          watchlistSymbols: [],
+          popularStocks: [],
+          marketCandidates: [],
+        );
+
+        final captured = verify(
+          () => mockPriceRepo.backfillTwsePricesByDate(
+            date: captureAny(named: 'date'),
+            targetSymbols: captureAny(named: 'targetSymbols'),
+          ),
+        ).captured;
+        // 兩次呼叫、新→舊
+        expect(captured[0], tue);
+        expect(captured[2], mon);
+        // targetSymbols = 該市場全部股票
+        expect(captured[1], twseStocks(10).map((s) => s.symbol).toSet());
+        // TPEx 每日完整 → 不呼叫
+        verifyNever(
+          () => mockPriceRepo.backfillTpexPricesByDate(
+            date: any(named: 'date'),
+            targetSymbols: any(named: 'targetSymbols'),
+          ),
+        );
+        // 週末不列入缺漏檢查
+        verifyNever(() => mockDb.countPricesByDateAndMarket(sun, 'TWSE'));
+        // 回補列數進 result（含 phase 1 early-return 路徑）
+        expect(result.marketDayRows, 1600);
+      });
+
+      test('單次更新的回補呼叫數受上限保護、且由最近日開始', () async {
+        setupDayCounts(
+          missingTwseDays: {
+            // 窗內全部日子都缺（用寬鬆 750 天涵蓋整個 lookback 窗）
+            for (var i = 1; i <= 750; i++) testDate.subtract(Duration(days: i)),
+          },
+        );
+        setupTwseBackfill(5);
+
+        await fastSyncer.syncHistoricalPrices(
+          date: testDate,
+          watchlistSymbols: [],
+          popularStocks: [],
+          marketCandidates: [],
+        );
+
+        final captured = verify(
+          () => mockPriceRepo.backfillTwsePricesByDate(
+            date: captureAny(named: 'date'),
+            targetSymbols: any(named: 'targetSymbols'),
+          ),
+        ).captured;
+        expect(
+          captured.length,
+          ApiConfig.historicalMarketDayMaxCallsPerRun,
+          reason: '上限保護：單次更新最多補 N 個市場日',
+        );
+        expect(captured.first, tue, reason: '最近的缺漏交易日優先');
+      });
+
+      test('連續零筆中止（端點失效防護），且 phase 1 照常執行', () async {
+        setupDayCounts(
+          missingTwseDays: {
+            for (var i = 1; i <= 750; i++) testDate.subtract(Duration(days: i)),
+          },
+        );
+        setupTwseBackfill(0);
+
+        final result = await fastSyncer.syncHistoricalPrices(
+          date: testDate,
+          watchlistSymbols: [],
+          popularStocks: [],
+          marketCandidates: [],
+        );
+
+        verify(
+          () => mockPriceRepo.backfillTwsePricesByDate(
+            date: any(named: 'date'),
+            targetSymbols: any(named: 'targetSymbols'),
+          ),
+        ).called(ApiConfig.historicalMarketDayMaxConsecutiveZeroDays);
+        expect(result.marketDayRows, 0);
+        // phase 1 未被 phase 0 中止
+        verify(
+          () => mockDb.getSymbolsWithSufficientData(
+            minDays: any(named: 'minDays'),
+            startDate: any(named: 'startDate'),
+            endDate: any(named: 'endDate'),
+          ),
+        ).called(1);
+      });
+
+      test('RateLimit 中止 phase 0、不外拋、phase 1 照常執行', () async {
+        setupDayCounts(missingTwseDays: {tue, mon});
+        when(
+          () => mockPriceRepo.backfillTwsePricesByDate(
+            date: any(named: 'date'),
+            targetSymbols: any(named: 'targetSymbols'),
+          ),
+        ).thenThrow(const RateLimitException());
+
+        final result = await fastSyncer.syncHistoricalPrices(
+          date: testDate,
+          watchlistSymbols: [],
+          popularStocks: [],
+          marketCandidates: [],
+        );
+
+        verify(
+          () => mockPriceRepo.backfillTwsePricesByDate(
+            date: any(named: 'date'),
+            targetSymbols: any(named: 'targetSymbols'),
+          ),
+        ).called(1);
+        expect(result.marketDayRows, 0);
+        verify(
+          () => mockDb.getSymbolsWithSufficientData(
+            minDays: any(named: 'minDays'),
+            startDate: any(named: 'startDate'),
+            endDate: any(named: 'endDate'),
+          ),
+        ).called(1);
+      });
+
+      test('股票主檔為空（fresh DB）→ phase 0 全跳過', () async {
+        when(() => mockDb.getStocksByMarket(any())).thenAnswer((_) async => []);
+
+        final result = await fastSyncer.syncHistoricalPrices(
+          date: testDate,
+          watchlistSymbols: [],
+          popularStocks: [],
+          marketCandidates: [],
+        );
+
+        verifyNever(() => mockDb.countPricesByDateAndMarket(any(), any()));
+        verifyNever(
+          () => mockPriceRepo.backfillTwsePricesByDate(
+            date: any(named: 'date'),
+            targetSymbols: any(named: 'targetSymbols'),
+          ),
+        );
+        expect(result.marketDayRows, 0);
+      });
+
+      test('單日失敗（DatabaseException）不中斷後續日子', () async {
+        setupDayCounts(missingTwseDays: {tue, mon});
+        var call = 0;
+        when(
+          () => mockPriceRepo.backfillTwsePricesByDate(
+            date: any(named: 'date'),
+            targetSymbols: any(named: 'targetSymbols'),
+          ),
+        ).thenAnswer((_) async {
+          call++;
+          if (call == 1) throw const DatabaseException('單日失敗');
+          return 700;
+        });
+
+        final result = await fastSyncer.syncHistoricalPrices(
+          date: testDate,
+          watchlistSymbols: [],
+          popularStocks: [],
+          marketCandidates: [],
+        );
+
+        verify(
+          () => mockPriceRepo.backfillTwsePricesByDate(
+            date: any(named: 'date'),
+            targetSymbols: any(named: 'targetSymbols'),
+          ),
+        ).called(2);
+        expect(result.marketDayRows, 700);
+      });
     });
   });
 }

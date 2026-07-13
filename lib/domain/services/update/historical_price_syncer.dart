@@ -4,21 +4,34 @@ import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
+import 'package:afterclose/core/utils/taiwan_calendar.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/repositories/price_repository.dart';
 
 /// 歷史價格資料同步器
 ///
-/// 負責確保分析所需的歷史價格資料完整
+/// 負責確保分析所需的歷史價格資料完整。兩段式：
+/// - **Phase 0 市場日快照回補**：偵測 lookback 窗內「整個市場缺資料」的
+///   交易日，逐日以 1 次 API 呼叫回補該市場全部股票（TWSE MI_INDEX /
+///   TPEx afterTrading 歷史端點）。非自選股不再受 per-symbol 早退門檻
+///   （180 天）餓死——52 週規則需要 250 天。
+/// - **Phase 1 per-symbol 回補**：FinMind 逐檔逐月，處理個股殘缺
+///   （新上市、恢復交易等 phase 0 覆蓋不到的情境）。
 class HistoricalPriceSyncer {
   const HistoricalPriceSyncer({
     required AppDatabase database,
     required PriceRepository priceRepository,
+    this.marketDayCallDelay = const Duration(
+      milliseconds: ApiConfig.priceRequestDelayMs,
+    ),
   }) : _db = database,
        _priceRepo = priceRepository;
 
   final AppDatabase _db;
   final PriceRepository _priceRepo;
+
+  /// 市場日快照回補的呼叫間隔（測試注入 [Duration.zero]）
+  final Duration marketDayCallDelay;
 
   /// 同步歷史價格資料
   ///
@@ -31,7 +44,13 @@ class HistoricalPriceSyncer {
     required List<String> marketCandidates,
     void Function(String message)? onProgress,
   }) async {
-    // 整合所有歷史資料來源
+    // Phase 0：市場日快照回補（整市場缺漏日，1 呼叫補全市場一天）
+    final marketDayRows = await _syncMissingMarketDays(
+      date: date,
+      onProgress: onProgress,
+    );
+
+    // Phase 1：整合所有歷史資料來源
     final historyLookbackStart = date.subtract(
       const Duration(days: RuleParams.swingWindow + 20),
     );
@@ -74,9 +93,10 @@ class HistoricalPriceSyncer {
 
     if (symbolsNeedingData.isEmpty) {
       onProgress?.call('歷史資料已完整');
-      return const HistoricalPriceSyncResult(
+      return HistoricalPriceSyncResult(
         syncedCount: 0,
         symbolsProcessed: 0,
+        marketDayRows: marketDayRows,
       );
     }
 
@@ -97,13 +117,143 @@ class HistoricalPriceSyncer {
       avgMonthsPerSymbol: avgMonthsPerSymbol,
     );
 
-    return _performBatchSync(
+    final batchResult = await _performBatchSync(
       limitedSymbols,
       historyStartDate: historyStartDate,
       endDate: date,
       totalNeeded: symbolsNeedingData.length,
       onProgress: onProgress,
     );
+    return HistoricalPriceSyncResult(
+      syncedCount: batchResult.syncedCount,
+      symbolsProcessed: batchResult.symbolsProcessed,
+      totalSymbolsNeeded: batchResult.totalSymbolsNeeded,
+      failedSymbols: batchResult.failedSymbols,
+      marketDayRows: marketDayRows,
+    );
+  }
+
+  /// Phase 0：市場日快照回補
+  ///
+  /// 掃描 `[date - historyRequiredDays, date - 1]` 窗內每個交易日
+  /// （[TaiwanCalendar]，新→舊），該日該市場筆數 < 市場股數 ×
+  /// [ApiConfig.historicalMarketDayMinCoverageRatio] 即視為缺漏，
+  /// 以 [PriceRepository.backfillTwsePricesByDate] /
+  /// [PriceRepository.backfillTpexPricesByDate] 一次補齊該市場一天。
+  ///
+  /// 防護：
+  /// - 單次上限 [ApiConfig.historicalMarketDayMaxCallsPerRun]
+  /// - 連續零筆 [ApiConfig.historicalMarketDayMaxConsecutiveZeroDays]
+  ///   中止（端點失效 / 日曆未知休市）
+  /// - RateLimit / Network 中止 phase 0 但不外拋——phase 1 走 FinMind，
+  ///   不同 API 來源不受牽連
+  /// - 股票主檔為空（fresh DB 首次更新，尚未同步股票清單）→ 跳過
+  ///
+  /// 回傳實際寫入的價格列數。
+  Future<int> _syncMissingMarketDays({
+    required DateTime date,
+    void Function(String message)? onProgress,
+  }) async {
+    // 各市場目標股票集合與缺漏門檻
+    final targets = <String, Set<String>>{};
+    final thresholds = <String, int>{};
+    for (final market in [MarketCode.twse, MarketCode.tpex]) {
+      final stocks = await _db.getStocksByMarket(market);
+      if (stocks.isEmpty) continue;
+      targets[market] = stocks.map((s) => s.symbol).toSet();
+      thresholds[market] =
+          (stocks.length * ApiConfig.historicalMarketDayMinCoverageRatio)
+              .ceil();
+    }
+    if (targets.isEmpty) return 0;
+
+    // 掃描缺漏（日, 市場），今日不含（由每日同步負責），新→舊
+    final endDay = DateTime(date.year, date.month, date.day);
+    final windowStart = endDay.subtract(
+      const Duration(days: RuleParams.historyRequiredDays),
+    );
+    final tasks = <(DateTime, String)>[];
+    for (
+      var day = endDay.subtract(const Duration(days: 1));
+      !day.isBefore(windowStart) &&
+          tasks.length < ApiConfig.historicalMarketDayMaxCallsPerRun;
+      day = day.subtract(const Duration(days: 1))
+    ) {
+      if (!TaiwanCalendar.isTradingDay(day)) continue;
+      for (final market in targets.keys) {
+        if (tasks.length >= ApiConfig.historicalMarketDayMaxCallsPerRun) {
+          break;
+        }
+        final count = await _db.countPricesByDateAndMarket(day, market);
+        if (count < thresholds[market]!) tasks.add((day, market));
+      }
+    }
+    if (tasks.isEmpty) return 0;
+
+    AppLogger.info(
+      'HistoricalPriceSyncer',
+      '市場日快照回補: ${tasks.length} 個(日,市場)缺漏，開始逐日回補',
+    );
+
+    var totalRows = 0;
+    var consecutiveZero = 0;
+    var processed = 0;
+    for (final (day, market) in tasks) {
+      if (processed > 0) await Future.delayed(marketDayCallDelay);
+      processed++;
+      onProgress?.call('市場日回補 ($processed/${tasks.length})');
+      try {
+        final added = market == MarketCode.twse
+            ? await _priceRepo.backfillTwsePricesByDate(
+                date: day,
+                targetSymbols: targets[market]!,
+              )
+            : await _priceRepo.backfillTpexPricesByDate(
+                date: day,
+                targetSymbols: targets[market]!,
+              );
+        if (added > 0) {
+          totalRows += added;
+          consecutiveZero = 0;
+        } else {
+          consecutiveZero++;
+        }
+      } on RateLimitException {
+        AppLogger.warning(
+          'HistoricalPriceSyncer',
+          '市場日回補 API 限流，中止 phase 0（phase 1 照常）',
+        );
+        break;
+      } on NetworkException {
+        AppLogger.warning(
+          'HistoricalPriceSyncer',
+          '市場日回補網路異常，中止 phase 0（phase 1 照常）',
+        );
+        break;
+      } on Exception catch (e) {
+        // 單日失敗（如 DatabaseException）：計入零筆 streak 後續行，
+        // 連續失敗同樣觸發中止
+        consecutiveZero++;
+        AppLogger.warning(
+          'HistoricalPriceSyncer',
+          '市場日回補失敗 $market ${day.year}-${day.month}-${day.day}: $e',
+        );
+      }
+      if (consecutiveZero >=
+          ApiConfig.historicalMarketDayMaxConsecutiveZeroDays) {
+        AppLogger.warning(
+          'HistoricalPriceSyncer',
+          '市場日回補連續 $consecutiveZero 日零筆，推測端點異常，中止 phase 0',
+        );
+        break;
+      }
+    }
+
+    AppLogger.info(
+      'HistoricalPriceSyncer',
+      '市場日快照回補完成: +$totalRows 列（$processed/${tasks.length} 日）',
+    );
+    return totalRows;
   }
 
   /// 判斷哪些 symbol 需要補歷史資料
@@ -530,12 +680,16 @@ class HistoricalPriceSyncResult {
     required this.symbolsProcessed,
     this.totalSymbolsNeeded = 0,
     this.failedSymbols = const [],
+    this.marketDayRows = 0,
   });
 
   final int syncedCount;
   final int symbolsProcessed;
   final int totalSymbolsNeeded;
   final List<String> failedSymbols;
+
+  /// Phase 0（市場日快照回補）寫入的價格列數
+  final int marketDayRows;
 
   bool get hasErrors => failedSymbols.isNotEmpty;
 }
