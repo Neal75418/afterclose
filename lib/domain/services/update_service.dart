@@ -518,6 +518,7 @@ class UpdateService {
         backfillDays: ctx.force
             ? ApiConfig.institutionalForceBackfillDays
             : ApiConfig.institutionalDailyBackfillDays,
+        onProgress: (msg) => ctx.reportProgress(4, 10, msg),
       );
       ctx.result.institutionalUpdated = instResult.estimatedCount;
     } on RateLimitException catch (e) {

@@ -27,10 +27,13 @@ class InstitutionalSyncer {
   /// 只補缺的天。全清僅由口徑版本檢核（[InstitutionalRepository
   /// .ensureDataVersion]）在版本變更時觸發一次；原本 force 每次
   /// clearAllData 再重抓 62 天，中斷會留下日常 15 天回補補不回的深度殘缺。
+  /// [onProgress] 逐回補交易日回報（如「法人回補 3/62 天」）——force 深回補
+  /// 全缺時約 2-3 分鐘，無回報 UI 會像當機。
   Future<InstitutionalSyncResult> syncInstitutionalData({
     required DateTime date,
     bool force = false,
     int backfillDays = ApiConfig.institutionalDailyBackfillDays,
+    void Function(String message)? onProgress,
   }) async {
     var syncedDays = 0;
     final errors = <String>[];
@@ -57,30 +60,33 @@ class InstitutionalSyncer {
     }
 
     // 2. 回補近期資料（force:false——已完整的天跳過，形成斷點續傳）
-    for (var i = 1; i < backfillDays; i++) {
-      final backDate = date.subtract(Duration(days: i));
+    final backfillDates = [
+      for (var i = 1; i < backfillDays; i++) date.subtract(Duration(days: i)),
+    ].where(TaiwanCalendar.isTradingDay).toList();
 
-      if (TaiwanCalendar.isTradingDay(backDate)) {
-        await Future.delayed(
-          const Duration(milliseconds: ApiConfig.retryDelayMs),
+    for (var i = 0; i < backfillDates.length; i++) {
+      final backDate = backfillDates[i];
+      await Future.delayed(
+        const Duration(milliseconds: ApiConfig.retryDelayMs),
+      );
+
+      try {
+        await _institutionalRepo.syncAllMarketInstitutional(
+          backDate,
+          force: false,
         );
-
-        try {
-          await _institutionalRepo.syncAllMarketInstitutional(
-            backDate,
-            force: false,
-          );
-          syncedDays++;
-        } on RateLimitException {
-          rethrow;
-        } on NetworkException {
-          rethrow;
-        } catch (e) {
-          final dateStr = '${backDate.month}/${backDate.day}';
-          errors.add('法人資料回補失敗 ($dateStr): $e');
-          AppLogger.warning('InstitutionalSyncer', '法人資料回補失敗 ($dateStr)', e);
-        }
+        syncedDays++;
+      } on RateLimitException {
+        rethrow;
+      } on NetworkException {
+        rethrow;
+      } catch (e) {
+        final dateStr = '${backDate.month}/${backDate.day}';
+        errors.add('法人資料回補失敗 ($dateStr): $e');
+        AppLogger.warning('InstitutionalSyncer', '法人資料回補失敗 ($dateStr)', e);
       }
+
+      onProgress?.call('法人回補 ${i + 1}/${backfillDates.length} 天');
     }
 
     AppLogger.info('InstitutionalSyncer', '法人資料同步完成: $syncedDays 天');

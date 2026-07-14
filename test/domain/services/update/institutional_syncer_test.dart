@@ -96,6 +96,31 @@ void main() {
     expect(result.syncedDays, 2); // 當日 + 7/13 照常同步
   });
 
+  test('onProgress 逐回補交易日回報，非交易日與颱風停市不計入分母', () async {
+    final messages = <String>[];
+
+    // backfillDays=6 → 窗含 7/13(一)、7/12(日)、7/11(六)、7/10(颱風停市)、
+    // 7/9(四)——只有 7/13、7/9 是交易日
+    await syncer.syncInstitutionalData(
+      date: date,
+      force: false,
+      backfillDays: 6,
+      onProgress: messages.add,
+    );
+
+    expect(messages, ['法人回補 1/2 天', '法人回補 2/2 天']);
+  });
+
+  test('未提供 onProgress 不影響同步', () async {
+    final result = await syncer.syncInstitutionalData(
+      date: date,
+      force: false,
+      backfillDays: 4,
+    );
+
+    expect(result.syncedDays, 2);
+  });
+
   test('回補日 RateLimit 往上拋（UpdateService 據此止血）', () async {
     when(
       () => mockRepo.syncAllMarketInstitutional(backfillDate, force: false),
