@@ -313,20 +313,39 @@ class InstitutionalRepository implements IInstitutionalRepository {
   /// app_settings 的法人口徑版本 key
   static const String _dataVersionKey = 'institutional_data_version';
 
-  /// 口徑版本檢核：不符（或無記錄）即一次性清空重建
+  /// 口徑版本檢核：**實際版本不符**才一次性清空重建
   ///
   /// 取代 force 同步每次 clearAllData 的破壞式全清——同來源資料以
   /// insertOrReplace upsert 即冪等，全清只在口徑版本變更時才必要
   /// （bump [DataFreshness.institutionalDataVersion] 觸發）。
   ///
+  /// **null（無記錄）≠ 版本不符**：marker 引入前的既有 DB 都沒有記錄，
+  /// 但其資料已是現行口徑——視為認養（grandfather），只補寫 marker 不清。
+  /// 若把 null 當不符去清，升級後第一次日常更新就會把完整法人歷史砍到
+  /// 15 天回補窗（surge baseline 60 日、streak 深度全毀）。fresh DB 兩種
+  /// 語意等價（無資料可清）。
+  ///
   /// 清空與 marker 寫入包在同一交易：兩者原子成立，不存在「清了但沒標記
   /// →下次又清掉剛寫的新資料」的重清窗口。
   ///
-  /// 回傳是否執行了遷移。
+  /// 回傳是否執行了遷移（認養只蓋章、不算遷移）。
   @override
   Future<bool> ensureDataVersion() async {
     final stored = await _db.getSetting(_dataVersionKey);
     if (stored == DataFreshness.institutionalDataVersion) return false;
+
+    if (stored == null) {
+      await _db.setSetting(
+        _dataVersionKey,
+        DataFreshness.institutionalDataVersion,
+      );
+      AppLogger.info(
+        'InstitutionalRepo',
+        '法人口徑版本認養既有資料: (無記錄) → '
+            '${DataFreshness.institutionalDataVersion}（不清空）',
+      );
+      return false;
+    }
 
     var cleared = 0;
     await _db.transaction<void>(() async {
@@ -338,7 +357,7 @@ class InstitutionalRepository implements IInstitutionalRepository {
     });
     AppLogger.info(
       'InstitutionalRepo',
-      '法人口徑版本遷移: ${stored ?? '(無記錄)'} → '
+      '法人口徑版本遷移: $stored → '
           '${DataFreshness.institutionalDataVersion}，已清除 $cleared 筆舊資料',
     );
     return true;

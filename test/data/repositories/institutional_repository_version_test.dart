@@ -59,22 +59,27 @@ void main() {
     verifyNever(() => mockDb.setSetting(any(), any()));
   });
 
-  test('無版本記錄（fresh DB 或舊版 app）→ 交易內先清再寫 marker、回 true', () async {
+  test('無版本記錄（marker 引入前的既有 DB）→ 認養現有資料：只寫 marker、不清、回 false', () async {
+    // 升級路徑不變式：null 不是「版本錯誤」的證據——marker 引入前的 DB
+    // 都沒有記錄，但其資料已實證為現行口徑（production 140,037 筆
+    // dealer_self_net 全有值）。若把 null 當不符去清，升級後第一次
+    // 「日常更新」就會把 103 天法人歷史砍到 15 天回補窗，surge
+    // baseline（60 日）與 streak 深度全毀。fresh DB 兩種語意等價
+    // （本來就沒資料可清）。
     when(
       () => mockDb.getSetting('institutional_data_version'),
     ).thenAnswer((_) async => null);
 
     final migrated = await repo.ensureDataVersion();
 
-    expect(migrated, isTrue);
-    verify(() => mockDb.transaction<void>(any())).called(1);
-    verifyInOrder([
-      () => mockDb.clearAllInstitutionalData(),
+    expect(migrated, isFalse);
+    verifyNever(() => mockDb.clearAllInstitutionalData());
+    verify(
       () => mockDb.setSetting(
         'institutional_data_version',
         DataFreshness.institutionalDataVersion,
       ),
-    ]);
+    ).called(1);
   });
 
   test('版本不符（口徑變更後首跑）→ 先清再寫 marker、回 true', () async {
