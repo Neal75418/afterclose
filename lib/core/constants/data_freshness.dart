@@ -204,13 +204,22 @@ abstract final class DataFreshness {
 
   // ==================================================
   // 當沖資料刪除視窗（UTC 偏移補償）
+  //
+  // 寫入日 X 前先刪 [X−before, X+after]（含端點），清理歷史上 UTC/本地
+  // 時間不一致造成的同日變體時間戳。
+  //
+  // ⚠️ 不變式：before 與 after 都必須 < 24——資料列存於本地午夜，窗一旦
+  // 碰到 X±1 的午夜就會把**鄰日整天刪光**。每日路徑只寫「今天」（隔天必
+  // 為空）故無症狀；缺漏日回補寫歷史日時，鄰日通常有完整資料，after=36
+  // 曾使回補每補一天就毀掉後一天，缺漏沿日曆往前遷移、永不收斂
+  // （2026-07-14 實戰事故）。
   // ==================================================
 
   /// 當沖資料刪除視窗前緣（小時）— 涵蓋 UTC 偏移
   static const int dayTradingDeleteWindowBeforeHours = 12;
 
-  /// 當沖資料刪除視窗後緣（小時）— 涵蓋 UTC 偏移 + 1 日
-  static const int dayTradingDeleteWindowAfterHours = 36;
+  /// 當沖資料刪除視窗後緣（小時）— 涵蓋 UTC 偏移
+  static const int dayTradingDeleteWindowAfterHours = 12;
 
   // ==================================================
   // 日曆事件預覽
