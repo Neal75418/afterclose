@@ -4,6 +4,7 @@ import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
+import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/taiwan_calendar.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/repositories/price_repository.dart';
@@ -44,10 +45,11 @@ class HistoricalPriceSyncer {
     required List<String> marketCandidates,
     void Function(String message)? onProgress,
   }) async {
-    // 分段計時（debug log）：定位「價格同步 → 需要歷史資料」間的耗時歸因
-    // （2026-07-15 真實 DB snapshot 實測：整包載入 ~2.3s、phase-0 掃描
-    //  ~56ms——app 內日誌曾見 ~8s 空窗，需 in-app 數字決定是否值得把
-    //  整包載入換成 aggregate query，見 tradeoff 註解於 memory/plan）
+    // 分段計時（debug log）：各段耗時歸因。2026-07-15 in-app 實測曾為
+    // phase0=1407ms（~540 次逐日 COUNT 的 isolate roundtrip，離線 harness
+    // 直連僅 56ms——低估了 isolate 開銷）、覆蓋載入前身整包載入=3010ms；
+    // 兩者已分別以 getPriceCountsByDayAndMarket / getPriceCoverageBatch
+    // 聚合化。留計時供回歸監控。
     final phaseTimer = Stopwatch()..start();
 
     // Phase 0：市場日快照回補（整市場缺漏日，1 呼叫補全市場一天）
@@ -186,10 +188,17 @@ class HistoricalPriceSyncer {
     }
     if (targets.isEmpty) return 0;
 
-    // 掃描缺漏（日, 市場），今日不含（由每日同步負責），新→舊
+    // 掃描缺漏（日, 市場），今日不含（由每日同步負責），新→舊。
+    // 覆蓋筆數以一次 GROUP BY 預先取回（原逐 (日,市場) COUNT ~540 次
+    // 在 app 的 isolate 連線累積 ~1.4 秒）；掃描讀的是回補前的快照，
+    // 與原逐日查詢語意一致（tasks 本就先建完才執行）。
     final endDay = DateTime(date.year, date.month, date.day);
     final windowStart = endDay.subtract(
       const Duration(days: RuleParams.historyRequiredDays),
+    );
+    final dayCounts = await _db.getPriceCountsByDayAndMarket(
+      startDate: windowStart,
+      endDate: endDay,
     );
     final tasks = <(DateTime, String)>[];
     for (
@@ -199,11 +208,12 @@ class HistoricalPriceSyncer {
       day = day.subtract(const Duration(days: 1))
     ) {
       if (!TaiwanCalendar.isTradingDay(day)) continue;
+      final dayKey = DateContext.formatYmd(day);
       for (final market in targets.keys) {
         if (tasks.length >= ApiConfig.historicalMarketDayMaxCallsPerRun) {
           break;
         }
-        final count = await _db.countPricesByDateAndMarket(day, market);
+        final count = dayCounts[market]?[dayKey] ?? 0;
         if (count < thresholds[market]!) tasks.add((day, market));
       }
     }

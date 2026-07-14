@@ -1,5 +1,6 @@
 import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
+import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/repositories/price_repository.dart';
 import 'package:afterclose/domain/services/update/historical_price_syncer.dart';
@@ -706,21 +707,36 @@ void main() {
         setupPriceHistoryBatch({});
       }
 
-      /// count 回應器：預設每日皆完整，[missingTwseDays] 內的日子回 0
+      /// count 回應器：預設每日皆完整，[missingTwseDays] 內的日子缺漏
+      ///
+      /// 以 grouped 語意 stub（market → ymd → count）：缺漏日**不出現**在
+      /// Map 中（真實 GROUP BY 只會產生 COUNT>=1 的組），scanner 以 ?? 0
+      /// 處理缺鍵。
       void setupDayCounts({
         Set<DateTime> missingTwseDays = const {},
         int twseComplete = 10,
         int tpexComplete = 8,
       }) {
-        when(() => mockDb.countPricesByDateAndMarket(any(), any())).thenAnswer((
-          inv,
-        ) async {
-          final day = inv.positionalArguments[0] as DateTime;
-          final market = inv.positionalArguments[1] as String;
-          if (market == 'TWSE') {
-            return missingTwseDays.contains(day) ? 0 : twseComplete;
+        when(
+          () => mockDb.getPriceCountsByDayAndMarket(
+            startDate: any(named: 'startDate'),
+            endDate: any(named: 'endDate'),
+          ),
+        ).thenAnswer((inv) async {
+          final start = inv.namedArguments[#startDate] as DateTime;
+          final end = inv.namedArguments[#endDate] as DateTime;
+          final twse = <String, int>{};
+          final tpex = <String, int>{};
+          for (
+            var d = DateTime(start.year, start.month, start.day);
+            !d.isAfter(end);
+            d = d.add(const Duration(days: 1))
+          ) {
+            final key = DateContext.formatYmd(d);
+            if (!missingTwseDays.contains(d)) twse[key] = twseComplete;
+            tpex[key] = tpexComplete;
           }
-          return tpexComplete;
+          return {'TWSE': twse, 'TPEx': tpex};
         });
       }
 
@@ -777,8 +793,8 @@ void main() {
             targetSymbols: any(named: 'targetSymbols'),
           ),
         );
-        // 週末不列入缺漏檢查
-        verifyNever(() => mockDb.countPricesByDateAndMarket(sun, 'TWSE'));
+        // 週末不列入缺漏檢查——上方 captured 斷言已證明只回補 tue/mon
+        // （grouped 掃描下不再有 per-day 查詢可供 verifyNever）
         // 回補列數進 result（含 phase 1 early-return 路徑）
         expect(result.marketDayRows, 1600);
       });
@@ -887,7 +903,12 @@ void main() {
           marketCandidates: [],
         );
 
-        verifyNever(() => mockDb.countPricesByDateAndMarket(any(), any()));
+        verifyNever(
+          () => mockDb.getPriceCountsByDayAndMarket(
+            startDate: any(named: 'startDate'),
+            endDate: any(named: 'endDate'),
+          ),
+        );
         verifyNever(
           () => mockPriceRepo.backfillTwsePricesByDate(
             date: any(named: 'date'),

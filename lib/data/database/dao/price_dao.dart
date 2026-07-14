@@ -274,6 +274,44 @@ mixin PriceDaoMixin on $AppDatabase {
     return result.read<int>('cnt');
   }
 
+  /// 窗內各（交易日, 市場）的價格筆數（phase-0 缺漏掃描用）
+  ///
+  /// 一次 GROUP BY 取代逐 (日, 市場) 的 [countPricesByDateAndMarket]
+  /// ——380 天窗 ~540 次呼叫在 app 的 isolate 連線上累積 ~1.4 秒。
+  /// 回傳 market → 'yyyy-MM-dd' → 筆數；無資料的 (日, 市場) 不在 Map
+  /// （GROUP BY 只產生 COUNT>=1 的組，caller 以 `?? 0` 處理）。
+  /// 日期鍵取儲存文字前綴（全庫皆本地午夜，與逐日精確比對等價，
+  /// 由真 DB 對照測試釘住）。
+  Future<Map<String, Map<String, int>>> getPriceCountsByDayAndMarket({
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    final rows = await customSelect(
+      '''
+      SELECT substr(dp.date, 1, 10) AS d, sm.market AS market, COUNT(*) AS n
+      FROM daily_price dp
+      INNER JOIN stock_master sm ON dp.symbol = sm.symbol
+      WHERE dp.date >= ? AND dp.date <= ?
+      GROUP BY d, market
+      ''',
+      variables: [
+        Variable.withDateTime(startDate),
+        Variable.withDateTime(endDate),
+      ],
+      readsFrom: {dailyPrice, stockMaster},
+    ).get();
+
+    final result = <String, Map<String, int>>{};
+    for (final row in rows) {
+      result.putIfAbsent(row.read<String>('market'), () => {})[row.read<String>(
+        'd',
+      )] = row.read<int>(
+        'n',
+      );
+    }
+    return result;
+  }
+
   /// 批次計算每檔股票「近 [windowDays] 個交易日」的中位成交值（volume × close）。
   ///
   /// 候選層流動性下限用（`RuleParams.liquidityMinMedianTurnoverNtd`）。
@@ -365,9 +403,6 @@ mixin PriceDaoMixin on $AppDatabase {
     return (completed: completed, total: total);
   }
 
-  /// 批次取得多檔股票的價格歷史（批次查詢避免 N+1 問題）
-  ///
-  /// 回傳 symbol -> 價格列表 的 Map，依日期升冪排序
   /// 批次取得多檔股票的價格覆蓋摘要（歷史資料需求掃描用）
   ///
   /// 一次 GROUP BY (symbol, 年月) 取代 [getPriceHistoryBatch] 的整包載入
@@ -443,6 +478,9 @@ mixin PriceDaoMixin on $AppDatabase {
     };
   }
 
+  /// 批次取得多檔股票的價格歷史（批次查詢避免 N+1 問題）
+  ///
+  /// 回傳 symbol -> 價格列表 的 Map，依日期升冪排序
   Future<Map<String, List<DailyPriceEntry>>> getPriceHistoryBatch(
     List<String> symbols, {
     required DateTime startDate,
