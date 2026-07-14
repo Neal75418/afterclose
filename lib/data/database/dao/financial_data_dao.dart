@@ -29,6 +29,35 @@ mixin FinancialDataDaoMixin on $AppDatabase {
     return result?.date;
   }
 
+  /// 批次取得多檔股票的最新財務資料日期（新鮮度**預篩**用）
+  ///
+  /// 一次 GROUP BY 取代逐檔 [getLatestFinancialDataDate]——54 檔 × 2 表
+  /// 逐檔查在 app 的 isolate 連線上累積數秒。無資料的 symbol 不在回傳
+  /// Map 中（caller 以 null 視為需同步）。
+  Future<Map<String, DateTime>> getLatestFinancialDataDatesBatch(
+    List<String> symbols,
+    String statementType,
+  ) async {
+    if (symbols.isEmpty) return {};
+
+    final maxDate = financialData.date.max();
+    final query = selectOnly(financialData)
+      ..addColumns([financialData.symbol, maxDate])
+      ..where(financialData.statementType.equals(statementType))
+      ..where(financialData.symbol.isIn(symbols))
+      ..groupBy([financialData.symbol]);
+
+    final rows = await query.get();
+    // read() 對 aggregate 運算式回 UTC 表示，與逐檔版（table 映射、local）
+    // 是同一時刻的不同表示——isBefore 比較不受影響，但為了與
+    // [getLatestFinancialDataDate] 完全等價（含 == 語意），統一轉 local。
+    return {
+      for (final row in rows)
+        if (row.read(maxDate) != null)
+          row.read(financialData.symbol)!: row.read(maxDate)!.toLocal(),
+    };
+  }
+
   /// 取得單檔股票的 EPS 歷史（最近 8 季，降序）
   Future<List<FinancialDataEntry>> getEPSHistory(String symbol) {
     return (select(financialData)

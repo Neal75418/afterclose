@@ -5,6 +5,7 @@ import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/safe_execution.dart';
+import 'package:afterclose/core/utils/taiwan_calendar.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/repositories/fundamental_repository.dart';
 import 'package:afterclose/data/repositories/market_data_repository.dart';
@@ -215,6 +216,18 @@ class FundamentalSyncer {
       );
     }
 
+    final needySymbols = await _filterNeedingStatementSync(
+      stockSymbols,
+      'INCOME',
+    );
+    if (needySymbols.isEmpty) {
+      AppLogger.debug(
+        'FundamentalSyncer',
+        '財報: ${stockSymbols.length} 檔皆已快取，無需同步',
+      );
+      return 0;
+    }
+
     final now = _clock.now();
     final start = now.subtract(
       const Duration(days: ApiConfig.financialSyncLookbackDays),
@@ -223,8 +236,8 @@ class FundamentalSyncer {
     var count = 0;
 
     const chunkSize = ApiConfig.syncerBatchSize;
-    for (var i = 0; i < stockSymbols.length; i += chunkSize) {
-      final chunk = stockSymbols.skip(i).take(chunkSize).toList();
+    for (var i = 0; i < needySymbols.length; i += chunkSize) {
+      final chunk = needySymbols.skip(i).take(chunkSize).toList();
       final results = await Future.wait(
         chunk.map(
           (s) => _fundamentalRepo.syncFinancialStatements(
@@ -236,7 +249,7 @@ class FundamentalSyncer {
       );
       count += results.fold(0, (sum, n) => sum + n);
 
-      if (i + chunkSize < stockSymbols.length) {
+      if (i + chunkSize < needySymbols.length) {
         await Future.delayed(
           const Duration(milliseconds: ApiConfig.syncerBatchDelayMs),
         );
@@ -246,10 +259,43 @@ class FundamentalSyncer {
     if (count > 0) {
       AppLogger.info(
         'FundamentalSyncer',
-        '財報同步: $count 筆 (${stockSymbols.length} 檔)',
+        '財報同步: $count 筆 (${needySymbols.length} 檔)',
       );
     }
     return count;
+  }
+
+  /// 批次 freshness 預篩：回傳缺「應發布的最新一季」的 symbols
+  ///
+  /// 一次 GROUP BY 查詢取代 chunk 內逐檔 MAX(date)（2026-07-15 儀表實測
+  /// 財報段 7.1s 全是逐檔查詢 + chunk 間睡眠，實際 0 筆要抓——與法人
+  /// 節流同款病）。穩態 needy 為空 → 零逐檔查詢、零睡眠。repo 內逐檔
+  /// 檢查保留作雙重保險。查詢失敗 fail-open 回全清單（退回舊行為，
+  /// 寧多查不漏抓）。
+  Future<List<String>> _filterNeedingStatementSync(
+    List<String> symbols,
+    String statementType,
+  ) async {
+    try {
+      final latestDates = await _db.getLatestFinancialDataDatesBatch(
+        symbols,
+        statementType,
+      );
+      final expectedQuarter = TaiwanCalendar.expectedLatestReportQuarter(
+        _clock.now(),
+      );
+      return symbols.where((s) {
+        final latest = latestDates[s];
+        return latest == null || latest.isBefore(expectedQuarter);
+      }).toList();
+    } catch (e) {
+      AppLogger.warning(
+        'FundamentalSyncer',
+        '財報 freshness 預篩失敗，退回逐檔檢查 ($statementType)',
+        e,
+      );
+      return symbols;
+    }
   }
 
   /// 同步指定股票清單的資產負債表資料
@@ -273,6 +319,18 @@ class FundamentalSyncer {
       );
     }
 
+    final needySymbols = await _filterNeedingStatementSync(
+      stockSymbols,
+      'BALANCE',
+    );
+    if (needySymbols.isEmpty) {
+      AppLogger.debug(
+        'FundamentalSyncer',
+        '資產負債表: ${stockSymbols.length} 檔皆已快取，無需同步',
+      );
+      return null;
+    }
+
     final now = _clock.now();
     final start = now.subtract(
       const Duration(days: ApiConfig.financialSyncLookbackDays),
@@ -281,8 +339,8 @@ class FundamentalSyncer {
     var count = 0;
 
     const chunkSize = ApiConfig.syncerBatchSize;
-    for (var i = 0; i < stockSymbols.length; i += chunkSize) {
-      final chunk = stockSymbols.skip(i).take(chunkSize).toList();
+    for (var i = 0; i < needySymbols.length; i += chunkSize) {
+      final chunk = needySymbols.skip(i).take(chunkSize).toList();
       final results = await Future.wait(
         chunk.map((s) async {
           try {
@@ -301,7 +359,7 @@ class FundamentalSyncer {
       );
       count += results.fold(0, (sum, n) => sum + n);
 
-      if (i + chunkSize < stockSymbols.length) {
+      if (i + chunkSize < needySymbols.length) {
         await Future.delayed(
           const Duration(milliseconds: ApiConfig.syncerBatchDelayMs),
         );
@@ -311,7 +369,7 @@ class FundamentalSyncer {
     if (count > 0) {
       AppLogger.info(
         'FundamentalSyncer',
-        '資產負債表同步: $count 筆 (${stockSymbols.length} 檔)',
+        '資產負債表同步: $count 筆 (${needySymbols.length} 檔)',
       );
       return count;
     } else {
