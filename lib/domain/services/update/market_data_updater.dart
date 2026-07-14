@@ -1,9 +1,11 @@
 import 'package:afterclose/core/constants/api_config.dart';
+import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/logger.dart';
+import 'package:afterclose/core/utils/taiwan_calendar.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/repositories/insider_repository.dart';
 import 'package:afterclose/data/repositories/shareholding_repository.dart';
@@ -20,6 +22,9 @@ class MarketDataUpdater {
     required ShareholdingRepository shareholdingRepository,
     required WarningRepository warningRepository,
     required InsiderRepository insiderRepository,
+    this.backfillCallDelay = const Duration(
+      milliseconds: ApiConfig.priceRequestDelayMs,
+    ),
   }) : _db = database,
        _tradingRepo = tradingRepository,
        _shareholdingRepo = shareholdingRepository,
@@ -31,6 +36,9 @@ class MarketDataUpdater {
   final ShareholdingRepository _shareholdingRepo;
   final WarningRepository _warningRepo;
   final InsiderRepository _insiderRepo;
+
+  /// 缺漏日回補的呼叫間隔（測試注入 [Duration.zero]）
+  final Duration backfillCallDelay;
 
   /// 同步全市場籌碼資料（TWSE + TPEX 批次 API）
   ///
@@ -68,10 +76,211 @@ class MarketDataUpdater {
       AppLogger.warning('MarketDataUpdater', '融資融券資料同步失敗', e);
     }
 
+    // 回補缺漏日（今日同步完才跑，確保當日資料不被回補預算排擠）
+    final backfilledDays = await _backfillMissingTradingDays(date);
+
     return MarketDataSyncResult(
       dayTradingCount: twseDayTradingCount,
       marginCount: marginCount,
+      backfilledDays: backfilledDays,
     );
+  }
+
+  /// 回補當沖 / 融資融券的缺漏交易日
+  ///
+  /// 這兩類資料台交所約 21:00 後才發布，使用者在那之前更新就抓不到；
+  /// 而每日路徑只抓「更新當下那一天」，錯過即永久缺漏（2026-07-14 實測：
+  /// 近 30 交易日當沖缺 12 天、融資缺 10 天；法人因有回補迴圈而 0 缺漏）。
+  ///
+  /// 掃 `[date - lookback, date - 1]` 內的交易日（[TaiwanCalendar]，新→舊），
+  /// 以**三個獨立來源**（當沖、上市融資、上櫃融資）分別判斷缺漏與進度：
+  /// - **當沖**（僅上市，上櫃無全市場快照端點）走
+  ///   [TradingRepository.syncAllDayTradingFromTwse]（force 略過新鮮度檢查）。
+  ///   前提：該日價格覆蓋須達門檻——當沖比例以價格表的成交量為分母，半覆蓋日
+  ///   會把沒價格的股票全寫成 ratio 0（假資料），且之後筆數已足、永不重抓。
+  /// - **融資融券**走 [TradingRepository.backfillMarginTradingByDate]，**逐市場**
+  ///   判斷（合併門檻是上市+上櫃合計校準的，上市單邊約 1,280 筆低於門檻，
+  ///   上櫃失敗時會讓該日永遠被判缺漏）。
+  ///
+  /// **收斂性**（三道設計，缺一就會卡死）：
+  /// 1. **價格表當 ground truth**：行事曆是靜態表，未預期停市（颱風）會謊報為
+  ///    交易日。零價格日直接跳過，不浪費呼叫、也不吃斷路器額度。
+  /// 2. **進度 = 跨過缺漏偵測的門檻**（不是「有寫入列」）。某來源若持續回
+  ///    「非零但不足額」，用 rows > 0 判進度會無限重試。
+  /// 3. **斷路器 per-source**：某來源連續 N 天沒進度即在本次 run 標記 dead、
+  ///    不再嘗試，**也不再阻擋其他來源**。合併成 day-level 會讓單一來源永久
+  ///    失效時餓死整個掃描（頭部日子的唯一缺口就是它 → 連續零筆 → 中止 →
+  ///    更舊、原本補得到的日子永遠掃不到）。
+  ///
+  /// 其餘防護：單次上限 [ApiConfig.tradingBackfillMaxDaysPerRun]、單日一般
+  /// 錯誤不中斷後續日子。RateLimit / Network 往上拋——與本層每日路徑一致，
+  /// 讓 UpdateService 設 `rateLimitedAbort` 停掉後續 TWSE 呼叫。
+  ///
+  /// 回傳實際有進度的天數。
+  Future<int> _backfillMissingTradingDays(DateTime date) async {
+    final endDay = DateContext.normalize(date);
+    final windowStart = endDay.subtract(
+      const Duration(days: ApiConfig.tradingBackfillLookbackDays),
+    );
+
+    final twseStocks = await _db.countStocksByMarket(MarketCode.twse);
+    final tpexStocks = await _db.countStocksByMarket(MarketCode.tpex);
+    if (twseStocks == 0 && tpexStocks == 0) return 0; // fresh DB：主檔未同步
+
+    const ratio = ApiConfig.tradingBackfillMinCoverageRatio;
+    final twseThreshold = (twseStocks * ratio).ceil();
+    final tpexThreshold = (tpexStocks * ratio).ceil();
+
+    // 三個獨立來源的連續失敗計數；達門檻即在本次 run 標記 dead
+    const srcDayTrading = 'dayTrading';
+    final failures = <String, int>{};
+    final dead = <String>{};
+    void recordAttempt(String source, {required bool progressed}) {
+      if (progressed) {
+        failures[source] = 0;
+        return;
+      }
+      final n = (failures[source] ?? 0) + 1;
+      failures[source] = n;
+      if (n >= ApiConfig.tradingBackfillMaxConsecutiveZeroDays) {
+        dead.add(source);
+        AppLogger.warning(
+          'MarketDataUpdater',
+          '$source 連續 $n 天無進度，本次更新不再嘗試（其他來源照常回補）',
+        );
+      }
+    }
+
+    var backfilledDays = 0;
+    var apiDays = 0;
+
+    for (
+      var day = endDay.subtract(const Duration(days: 1));
+      !day.isBefore(windowStart) &&
+          backfilledDays < ApiConfig.tradingBackfillMaxDaysPerRun;
+      day = day.subtract(const Duration(days: 1))
+    ) {
+      if (!TaiwanCalendar.isTradingDay(day)) continue;
+
+      // 收斂設計 1：價格表 = 「那天到底有沒有開市」的 ground truth
+      final twsePrices = twseStocks > 0
+          ? await _db.countPricesByDateAndMarket(day, MarketCode.twse)
+          : 0;
+      var hasPrices = twsePrices > 0;
+      if (!hasPrices && tpexStocks > 0) {
+        hasPrices =
+            await _db.countPricesByDateAndMarket(day, MarketCode.tpex) > 0;
+      }
+      if (!hasPrices) {
+        AppLogger.debug(
+          'MarketDataUpdater',
+          '${DateContext.formatYmd(day)} 無任何價格資料，視為非交易日，跳過',
+        );
+        continue;
+      }
+
+      // 當沖（上市）
+      var canBackfillDayTrading = false;
+      if (!dead.contains(srcDayTrading) &&
+          twseStocks > 0 &&
+          await _db.getDayTradingCountForDate(day) <=
+              DataFreshness.twseBatchThreshold) {
+        canBackfillDayTrading = twsePrices >= twseThreshold;
+        if (!canBackfillDayTrading) {
+          AppLogger.debug(
+            'MarketDataUpdater',
+            '${DateContext.formatYmd(day)} 價格覆蓋不足 '
+                '($twsePrices < $twseThreshold)，跳過當沖回補（比例會失真）',
+          );
+        }
+      }
+
+      // 融資融券（per-market）
+      final missingMarkets = <String>{
+        if (!dead.contains(MarketCode.twse) &&
+            twseStocks > 0 &&
+            await _db.countMarginTradingByDateAndMarket(day, MarketCode.twse) <
+                twseThreshold)
+          MarketCode.twse,
+        if (!dead.contains(MarketCode.tpex) &&
+            tpexStocks > 0 &&
+            await _db.countMarginTradingByDateAndMarket(day, MarketCode.tpex) <
+                tpexThreshold)
+          MarketCode.tpex,
+      };
+
+      if (!canBackfillDayTrading && missingMarkets.isEmpty) continue;
+
+      if (apiDays > 0) await Future.delayed(backfillCallDelay);
+      apiDays++;
+
+      var dayProgressed = false;
+
+      if (canBackfillDayTrading) {
+        var rows = 0;
+        try {
+          rows = await _tradingRepo.syncAllDayTradingFromTwse(
+            date: day,
+            force: true,
+          );
+        } on RateLimitException {
+          rethrow;
+        } on NetworkException {
+          rethrow;
+        } on Exception catch (e) {
+          AppLogger.warning(
+            'MarketDataUpdater',
+            '當沖回補失敗 ${DateContext.formatYmd(day)}',
+            e,
+          );
+        }
+        // 收斂設計 2：進度 = 跨過缺漏偵測的門檻（與上方偵測條件互為補集）
+        final progressed = rows > DataFreshness.twseBatchThreshold;
+        recordAttempt(srcDayTrading, progressed: progressed);
+        dayProgressed |= progressed;
+      }
+
+      if (missingMarkets.isNotEmpty) {
+        var result = (twseRows: 0, tpexRows: 0);
+        try {
+          result = await _tradingRepo.backfillMarginTradingByDate(
+            date: day,
+            markets: missingMarkets,
+          );
+        } on RateLimitException {
+          rethrow;
+        } on NetworkException {
+          rethrow;
+        } on Exception catch (e) {
+          AppLogger.warning(
+            'MarketDataUpdater',
+            '融資融券回補失敗 ${DateContext.formatYmd(day)}',
+            e,
+          );
+        }
+        if (missingMarkets.contains(MarketCode.twse)) {
+          final progressed = result.twseRows >= twseThreshold;
+          recordAttempt(MarketCode.twse, progressed: progressed);
+          dayProgressed |= progressed;
+        }
+        if (missingMarkets.contains(MarketCode.tpex)) {
+          final progressed = result.tpexRows >= tpexThreshold;
+          recordAttempt(MarketCode.tpex, progressed: progressed);
+          dayProgressed |= progressed;
+        }
+      }
+
+      if (dayProgressed) backfilledDays++;
+    }
+
+    if (apiDays > 0) {
+      AppLogger.info(
+        'MarketDataUpdater',
+        '籌碼缺漏日回補: $backfilledDays/$apiDays 天'
+            '${dead.isEmpty ? "" : "（失效來源: ${dead.join(", ")}）"}',
+      );
+    }
+    return backfilledDays;
   }
 
   /// 同步特定股票清單的外資持股資料
@@ -339,12 +548,16 @@ class MarketDataSyncResult {
   const MarketDataSyncResult({
     required this.dayTradingCount,
     required this.marginCount,
+    this.backfilledDays = 0,
   });
 
   final int dayTradingCount;
 
   /// 融資融券同步筆數。null 表示已快取（跳過同步）。
   final int? marginCount;
+
+  /// 回補成功的缺漏交易日天數（當沖或融資任一有寫入即計 1 天）
+  final int backfilledDays;
 
   int get total => dayTradingCount + (marginCount ?? 0);
 }

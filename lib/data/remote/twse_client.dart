@@ -586,15 +586,24 @@ class TwseClient {
   /// 取得所有股票的融資融券資料
   ///
   /// 端點: /rwd/zh/marginTrading/MI_MARGN（融資融券餘額）
-  Future<List<TwseMarginTrading>> getAllMarginTradingData() {
+  /// [date] 為 null 時取最新可用交易日（每日路徑）；指定日期時回補該日
+  /// （端點支援歷史日期，2026-07-14 活體驗證）。
+  Future<List<TwseMarginTrading>> getAllMarginTradingData({DateTime? date}) {
     return MarketClientMixin.executeRequest(_tag, '融資融券', () async {
-      const cacheKey = 'marginTrading';
+      // cache key 必須含日期，否則回補不同日會互相污染
+      final cacheKey = date != null
+          ? 'marginTrading:${TwParseUtils.formatDateCompact(date)}'
+          : 'marginTrading';
       final cached = _cache.get(cacheKey) as List<TwseMarginTrading>?;
       if (cached != null) return cached;
 
       final response = await _dio.get(
         ApiEndpoints.twseMarginTrading,
-        queryParameters: {'response': 'json', 'selectType': 'ALL'},
+        queryParameters: {
+          'response': 'json',
+          'selectType': 'ALL',
+          if (date != null) 'date': TwParseUtils.formatDateCompact(date),
+        },
       );
 
       if (response.statusCode != 200) {
@@ -613,8 +622,10 @@ class TwseClient {
 
       if (data['stat'] != 'OK') return [];
 
+      // entries 一律蓋**回應自身的日期**（非請求日期）——回補時呼叫端據此
+      // 過濾，端點若回錯日期只會被丟棄，不會寫出錯誤日期的列
       final dateStr = data['date']?.toString() ?? '';
-      final date = TwParseUtils.parseAdDate(dateStr);
+      final responseDate = TwParseUtils.parseAdDate(dateStr);
 
       // 資料在 'tables' 陣列中，第二個表格含個股資料
       final tables = data['tables'] as List<dynamic>?;
@@ -626,10 +637,10 @@ class TwseClient {
 
       final result = MarketClientMixin.parseRows(
         rows: rows,
-        parser: (row) => _parseMarginTradingRow(row, date),
+        parser: (row) => _parseMarginTradingRow(row, responseDate),
         tag: _tag,
         operation: '融資融券',
-        date: date,
+        date: responseDate,
       );
       _cache.put(cacheKey, result);
       return result;
@@ -817,6 +828,27 @@ class TwseClient {
       if (data == null) return [];
 
       if (data['stat'] != 'OK') return [];
+
+      // 端點失效防護（fail closed）：呼叫端（TradingRepository）以**請求日期**
+      // 寫入，端點若像 STOCK_DAY_ALL 一樣無視 date 參數、回最新交易日，就會把
+      // 最新資料寫成歷史日期（資料污染）。日期不符**或回應根本沒帶日期**都整批
+      // 丟棄——無從驗證的資料一律不可信。
+      //
+      // ⚠️ 此守衛在**每日路徑上也生效**：`syncAllDayTradingFromTwse` 一律傳日期
+      // （`date ?? _clock.now()` 永不為 null）。代價是 TWSE 若拿掉 `data['date']`
+      // 欄位，每日當沖同步也會回 0 筆（有 warning）——這是刻意的取捨：寧可少資料
+      // 也不要寫錯日期的資料。
+      if (date != null) {
+        final responseDate = data['date']?.toString();
+        final requestedDate = TwParseUtils.formatDateCompact(targetDate);
+        if (responseDate != requestedDate) {
+          AppLogger.warning(
+            _tag,
+            '當沖資料回應日期 ${responseDate ?? "(無)"} ≠ 請求 $requestedDate，丟棄',
+          );
+          return [];
+        }
+      }
 
       // TWTB4U 回傳多個表格。我們需要含詳細個股資料的那個。
       // 通常是第二個表格，但以防萬一用標題來找。

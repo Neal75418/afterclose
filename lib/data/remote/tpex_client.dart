@@ -29,6 +29,12 @@ class TpexClient {
     : _dio = dio ?? MarketClientMixin.createDio(ApiEndpoints.tpexBaseUrl);
 
   static const String _tag = 'TPEX';
+
+  /// 「回應未帶日期」的哨兵值——回補守衛用，見 [getAllMarginTradingData]。
+  /// 刻意選一個不可能是交易日的日期，讓「回應沒帶日期」與「日期不符」收斂到
+  /// 同一條 fail-closed 路徑。
+  static final DateTime _unknownDateSentinel = DateTime.utc(1970);
+
   final Dio _dio;
   final LruCache<String, dynamic> _cache = LruCache(
     maxSize: CacheConfig.marketClientCacheMaxSize,
@@ -503,13 +509,23 @@ class TpexClient {
       );
       if (data == null) return [];
 
+      // extractTpexTable 在回應缺日期表頭時會 fallback 到傳入的日期。回補
+      // （明確指定日期）時若拿請求日期當 fallback，「回應沒帶日期」的列會被
+      // 蓋上請求日期、騙過下游的日期過濾（fail open）。改傳 sentinel：回應
+      // 沒帶日期 → table.date == sentinel ≠ 請求日期 → 下方守衛擋掉。
       final table = MarketClientMixin.extractTpexTable(
         data,
-        date ?? DateTime.now(),
+        date != null ? _unknownDateSentinel : DateTime.now(),
         _tag,
         '融資融券',
       );
       if (table == null) return [];
+
+      // 端點失效防護（fail closed）：回應日期不符或無從判定 → 整批丟棄
+      if (date != null && !DateContext.isSameDay(table.date, date)) {
+        AppLogger.warning(_tag, '融資融券回應日期 ${table.date} ≠ 請求 $date，丟棄');
+        return [];
+      }
 
       final result = MarketClientMixin.parseRows(
         rows: table.rows,

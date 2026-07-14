@@ -38,6 +38,35 @@ mixin MarginTradingDaoMixin on $AppDatabase {
     return result.read(countExpr) ?? 0;
   }
 
+  /// 計算某日、某市場（TWSE / TPEx）的融資融券筆數
+  ///
+  /// 缺漏日回補的偵測用。**必須 per-market**：合併門檻
+  /// （`DataFreshness.fullMarketThreshold` = 1500）是以上市+上櫃合計校準的，
+  /// 但上市單邊約 1,280 筆——若上櫃端點失敗、只寫進上市，合併筆數仍低於門檻，
+  /// 該日會被永遠判為缺漏而無限重抓。與
+  /// [PriceDaoMixin.countPricesByDateAndMarket] 同模式。
+  Future<int> countMarginTradingByDateAndMarket(
+    DateTime date,
+    String market,
+  ) async {
+    final startOfDay = DateContext.normalize(date);
+    final endOfDay = startOfDay.add(const Duration(days: 1));
+    final result = await customSelect(
+      '''
+      SELECT COUNT(*) as cnt
+      FROM margin_trading mt
+      INNER JOIN stock_master sm ON mt.symbol = sm.symbol
+      WHERE mt.date >= ? AND mt.date < ? AND sm.market = ?
+      ''',
+      variables: [
+        Variable.withDateTime(startOfDay),
+        Variable.withDateTime(endOfDay),
+        Variable.withString(market),
+      ],
+    ).getSingle();
+    return result.read<int>('cnt');
+  }
+
   /// 批次新增融資融券資料
   Future<void> insertMarginTradingData(
     List<MarginTradingCompanion> entries,

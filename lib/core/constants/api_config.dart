@@ -127,6 +127,41 @@ abstract final class ApiConfig {
   /// 避免燒光單次上限。
   static const int historicalMarketDayMaxConsecutiveZeroDays = 3;
 
+  // ==================================================
+  // 當沖 / 融資融券缺漏日回補
+  //
+  // 這兩類資料台交所約 21:00 後才發布，使用者在那之前更新就抓不到；
+  // 原本 syncer 只抓「更新當下那一天」，錯過即永久缺漏
+  // （2026-07-14 實測：近 30 交易日當沖缺 12 天、融資缺 10 天）。
+  // ==================================================
+
+  /// 缺漏日掃描窗（日曆天；內部以 TaiwanCalendar 過濾出交易日）
+  static const int tradingBackfillLookbackDays = 40;
+
+  /// 籌碼回補：單日、單市場的覆蓋率門檻（相對該市場在市股票數）
+  ///
+  /// 低於此比例視為缺漏；回補後跨過此比例才算「有進度」（否則某來源持續回
+  /// 「非零但不足額」會無限重試）。**逐市場**判斷——合併門檻
+  /// （`DataFreshness.fullMarketThreshold`）是以上市+上櫃合計校準的，
+  /// 上市單邊約 1,280 筆低於它，上櫃失效時該日會被永遠判為缺漏。
+  ///
+  /// ⚠️ 隱含假設：**各市場的融資融券覆蓋率維持在該市場在市股票數的 50% 以上**
+  /// （2026-07-14 實測 上市 ~99%、上櫃 ~97%，headroom 約 2×）。分母含 ETF/ETN
+  /// （`StockPatterns.isValidCode` 收 00xxx），若日後大量上市**不可融資**的標的，
+  /// headroom 會被無聲侵蝕——屆時需調降此值。刻意與價格用的
+  /// [historicalMarketDayMinCoverageRatio] 分開（那個綁的是候選層覆蓋率）。
+  static const double tradingBackfillMinCoverageRatio = 0.5;
+
+  /// 單次更新最多回補幾個缺漏日
+  ///
+  /// 每天最多 3 次呼叫（當沖 1 TWSE + 融資 1 TWSE + 1 TPEx），皆為免費
+  /// 公開端點、不吃 FinMind 配額。5 天 → ≤15 次呼叫，約 3 次更新即可
+  /// 補完目前的積欠，之後穩態每次僅 0-1 天。
+  static const int tradingBackfillMaxDaysPerRun = 5;
+
+  /// 連續零筆中止閾值（端點失效防護，同市場日快照回補）
+  static const int tradingBackfillMaxConsecutiveZeroDays = 3;
+
   /// 財報同步回溯天數（約 2 年）
   static const int financialSyncLookbackDays = 730;
 

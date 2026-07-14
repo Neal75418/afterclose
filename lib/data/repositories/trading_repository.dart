@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:afterclose/core/constants/stock_patterns.dart';
 import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/date_context.dart';
@@ -363,6 +364,133 @@ class TradingRepository implements ITradingRepository {
     } catch (e) {
       throw DatabaseException(
         'Failed to sync margin trading from TWSE/TPEX',
+        e,
+      );
+    }
+  }
+
+  /// 回補指定歷史交易日、指定市場的融資融券（詳細語意見介面註解）
+  @override
+  Future<({int twseRows, int tpexRows})> backfillMarginTradingByDate({
+    required DateTime date,
+    required Set<String> markets,
+  }) async {
+    const empty = (twseRows: 0, tpexRows: 0);
+    if (markets.isEmpty) return empty;
+    try {
+      final targetDate = DateContext.normalize(date);
+
+      // 只抓缺漏的市場（重寫已存在的市場會讓 caller 誤判為有進度）。
+      // 明確傳日期（與每日路徑相反）；錯誤隔離，允許單邊成功。
+      final twseFuture = markets.contains(MarketCode.twse)
+          ? safeAwait(
+              _twseClient.getAllMarginTradingData(date: targetDate),
+              <TwseMarginTrading>[],
+              tag: 'TradingRepo',
+              description: '上市融資融券回補失敗，繼續處理上櫃',
+            )
+          : Future.value(<TwseMarginTrading>[]);
+      final tpexFuture = markets.contains(MarketCode.tpex)
+          ? safeAwait(
+              _tpexClient.getAllMarginTradingData(date: targetDate),
+              <TpexMarginTrading>[],
+              tag: 'TradingRepo',
+              description: '上櫃融資融券回補失敗，繼續處理上市',
+            )
+          : Future.value(<TpexMarginTrading>[]);
+
+      final twseData = await twseFuture;
+      final tpexData = await tpexFuture;
+      if (twseData.isEmpty && tpexData.isEmpty) return empty;
+
+      final activeStocks = await _db.getAllActiveStocks();
+      final validSymbols = activeStocks.map((s) => s.symbol).toSet();
+
+      // 端點失效防護：只留「entry 自身日期 == 請求日期」的列。端點若無視
+      // date 參數回最新交易日，整批被丟棄（回 0），不會寫出錯誤日期的資料。
+      bool keep(String code, DateTime entryDate) =>
+          StockPatterns.isValidCode(code) &&
+          validSymbols.contains(code) &&
+          DateContext.normalize(entryDate) == targetDate;
+
+      MarginTradingCompanion companion({
+        required String code,
+        required double marginBuy,
+        required double marginSell,
+        required double marginBalance,
+        required double shortBuy,
+        required double shortSell,
+        required double shortBalance,
+      }) => MarginTradingCompanion.insert(
+        symbol: code,
+        date: targetDate,
+        marginBuy: Value(marginBuy),
+        marginSell: Value(marginSell),
+        marginBalance: Value(marginBalance),
+        shortBuy: Value(shortBuy),
+        shortSell: Value(shortSell),
+        shortBalance: Value(shortBalance),
+      );
+
+      final twseEntries = [
+        for (final item in twseData)
+          if (keep(item.code, item.date))
+            companion(
+              code: item.code,
+              marginBuy: item.marginBuy,
+              marginSell: item.marginSell,
+              marginBalance: item.marginBalance,
+              shortBuy: item.shortBuy,
+              shortSell: item.shortSell,
+              shortBalance: item.shortBalance,
+            ),
+      ];
+      final tpexEntries = [
+        for (final item in tpexData)
+          if (keep(item.code, item.date))
+            companion(
+              code: item.code,
+              marginBuy: item.marginBuy,
+              marginSell: item.marginSell,
+              marginBalance: item.marginBalance,
+              shortBuy: item.shortBuy,
+              shortSell: item.shortSell,
+              shortBalance: item.shortBalance,
+            ),
+      ];
+
+      final entries = [...twseEntries, ...tpexEntries];
+      if (entries.isEmpty) {
+        // 只列出**有抓**的市場，避免「上市 0 筆」被誤讀成日期不符
+        final detail = [
+          if (markets.contains(MarketCode.twse)) '上市 ${twseData.length}',
+          if (markets.contains(MarketCode.tpex)) '上櫃 ${tpexData.length}',
+        ].join(', ');
+        AppLogger.warning(
+          'TradingRepo',
+          '融資融券回補 ${DateContext.formatYmd(targetDate)}: '
+              '端點回應無該日資料（$detail 筆皆非目標日）',
+        );
+        return empty;
+      }
+
+      await _db.transaction<void>(() async {
+        await _db.insertMarginTradingData(entries);
+      });
+
+      AppLogger.info(
+        'TradingRepo',
+        '融資融券回補 ${DateContext.formatYmd(targetDate)}: '
+            '上市 ${twseEntries.length}, 上櫃 ${tpexEntries.length} 筆',
+      );
+      return (twseRows: twseEntries.length, tpexRows: tpexEntries.length);
+    } on RateLimitException {
+      rethrow;
+    } on NetworkException {
+      rethrow;
+    } catch (e) {
+      throw DatabaseException(
+        'Failed to backfill margin trading for ${DateContext.formatYmd(date)}',
         e,
       );
     }

@@ -582,10 +582,13 @@ class UpdateService {
       final marginLabel = marketResult.marginCount == null
           ? '已快取'
           : '${marketResult.marginCount}';
+      final backfillLabel = marketResult.backfilledDays > 0
+          ? ', 回補缺漏日=${marketResult.backfilledDays}'
+          : '';
       AppLogger.info(
         'UpdateService',
         '步驟 4.5: 當沖=${marketResult.dayTradingCount}, '
-            '融資=$marginLabel, 持股=$syncedCount',
+            '融資=$marginLabel, 持股=$syncedCount$backfillLabel',
       );
     } on RateLimitException catch (e) {
       ctx.rateLimitedAbort = true;

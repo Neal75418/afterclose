@@ -52,6 +52,17 @@ mixin StockDaoMixin on $AppDatabase {
         .get();
   }
 
+  /// 依市場計算在市股票數（覆蓋率門檻用；不需要 row 內容就別 materialize）
+  Future<int> countStocksByMarket(String market) async {
+    final countExpr = stockMaster.symbol.count();
+    final query = selectOnly(stockMaster)
+      ..addColumns([countExpr])
+      ..where(stockMaster.isActive.equals(true))
+      ..where(stockMaster.market.equals(market));
+    final row = await query.getSingle();
+    return row.read(countExpr) ?? 0;
+  }
+
   /// 取得所有不重複的產業類別（已排序）
   Future<List<String>> getDistinctIndustries() async {
     final query = selectOnly(stockMaster, distinct: true)
