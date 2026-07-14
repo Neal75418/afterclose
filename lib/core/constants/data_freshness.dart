@@ -125,6 +125,15 @@ abstract final class DataFreshness {
   /// 用於由同步天數估算已處理的資料量。
   static const int estimatedDailyInstitutionalRecords = 1000;
 
+  /// 法人資料口徑版本（來源 + 欄位語意）
+  ///
+  /// 與 app_settings 的 `institutional_data_version` 比對，不符即一次性
+  /// 清空重建（[InstitutionalRepository.ensureDataVersion]）。日後若更換
+  /// 資料來源或欄位口徑（如 dealer_self_net 計算方式），bump 此值即可
+  /// 觸發遷移——這取代了原本 force 同步每次 clearAllData 的破壞式全清
+  /// （中斷會留下殘缺深度，且日常 15 天回補補不回 62 天）。
+  static const String institutionalDataVersion = 'twse-batch-1';
+
   // ==================================================
   // 篩選器查詢回溯天數
   // ==================================================

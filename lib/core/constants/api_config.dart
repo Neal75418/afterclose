@@ -203,9 +203,10 @@ abstract final class ApiConfig {
 
   /// 法人資料「強制同步」的回補天數（calendar，~62 個交易日）
   ///
-  /// 強制同步會清空法人資料重抓，故一次補深一點以恢復下游信號所需的歷史深度：
-  /// institutionalSurge baseline（60 日）、自營/外資 streak 深度、情緒法人
-  /// Z-score 視窗（10 日）。以 1 秒/交易日節流，~62 個交易日約 2-3 分鐘。
+  /// 強制同步把回補窗拉深以補足下游信號所需的歷史深度：institutionalSurge
+  /// baseline（60 日）、自營/外資 streak 深度、情緒法人 Z-score 視窗
+  /// （10 日）。已完整的天由 per-day 檢查跳過（非破壞式、中斷可續傳）；
+  /// 全缺時以 1 秒/交易日節流，~62 個交易日約 2-3 分鐘。
   static const int institutionalForceBackfillDays = 90;
 
   /// 新聞內容最大長度（超過截斷以節省儲存空間）

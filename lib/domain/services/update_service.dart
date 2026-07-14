@@ -512,8 +512,9 @@ class UpdateService {
       final instResult = await syncer.syncInstitutionalData(
         date: ctx.normalizedDate,
         force: ctx.force,
-        // 強制同步會清空法人資料重抓，故補深一點（~62 交易日）恢復 surge/streak/
-        // Z-score 所需歷史深度；日常更新維持淺回補保持快速。
+        // 強制同步把回補窗拉深（~62 交易日）補足 surge/streak/Z-score 所需
+        // 歷史深度；已完整的天會被 per-day 檢查跳過（非破壞式、可續傳）。
+        // 日常更新維持淺回補保持快速。
         backfillDays: ctx.force
             ? ApiConfig.institutionalForceBackfillDays
             : ApiConfig.institutionalDailyBackfillDays,

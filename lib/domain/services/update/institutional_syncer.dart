@@ -20,7 +20,13 @@ class InstitutionalSyncer {
   /// 包含當日資料及近期回補
   /// [backfillDays] 指定回補天數，預設 [ApiConfig.institutionalDailyBackfillDays]
   /// （日常更新 15 天）；強制同步由 caller 傳深一點的
-  /// [ApiConfig.institutionalForceBackfillDays] 以恢復下游信號所需的歷史深度
+  /// [ApiConfig.institutionalForceBackfillDays] 以補足下游信號所需的歷史深度。
+  ///
+  /// **非破壞式**：force 只對「當日」繞快取；歷史回補日一律走 per-day
+  /// 完整性檢查——已完整的天直接跳過，中斷（rate limit / 斷網）後重跑
+  /// 只補缺的天。全清僅由口徑版本檢核（[InstitutionalRepository
+  /// .ensureDataVersion]）在版本變更時觸發一次；原本 force 每次
+  /// clearAllData 再重抓 62 天，中斷會留下日常 15 天回補補不回的深度殘缺。
   Future<InstitutionalSyncResult> syncInstitutionalData({
     required DateTime date,
     bool force = false,
@@ -29,14 +35,12 @@ class InstitutionalSyncer {
     var syncedDays = 0;
     final errors = <String>[];
 
-    // force 模式下先清除所有舊資料，避免新舊資料單位混用
-    if (force) {
-      try {
-        final cleared = await _institutionalRepo.clearAllData();
-        AppLogger.info('InstitutionalSyncer', '已清除 $cleared 筆舊法人資料');
-      } catch (e) {
-        AppLogger.warning('InstitutionalSyncer', '清除舊法人資料失敗', e);
-      }
+    // 口徑版本檢核（每次入口，日常更新也會遷移）；失敗不中斷同步，
+    // 下次入口重試
+    try {
+      await _institutionalRepo.ensureDataVersion();
+    } catch (e) {
+      AppLogger.warning('InstitutionalSyncer', '法人口徑版本檢核失敗', e);
     }
 
     // 1. 同步當日資料
@@ -52,7 +56,7 @@ class InstitutionalSyncer {
       AppLogger.warning('InstitutionalSyncer', '當日法人資料同步失敗', e);
     }
 
-    // 2. 回補近期資料（force 模式下也強制重新下載）
+    // 2. 回補近期資料（force:false——已完整的天跳過，形成斷點續傳）
     for (var i = 1; i < backfillDays; i++) {
       final backDate = date.subtract(Duration(days: i));
 
@@ -64,7 +68,7 @@ class InstitutionalSyncer {
         try {
           await _institutionalRepo.syncAllMarketInstitutional(
             backDate,
-            force: force,
+            force: false,
           );
           syncedDays++;
         } on RateLimitException {
@@ -114,6 +118,10 @@ class InstitutionalSyncResult {
   final List<String> errors;
 
   /// 估計同步的資料筆數（每天約 [DataFreshness.estimatedDailyInstitutionalRecords] 檔）
+  ///
+  /// ⚠️ 高估上限：syncedDays 含「已完整而被 per-day 檢查跳過」的天（repo
+  /// 回傳值無法區分 skip/fetch），force 深回補時多數天已完整，此值會遠大
+  /// 於實際新寫入。僅供 UI 摘要參考，精確化需改 repo 回傳語意。
   int get estimatedCount =>
       syncedDays * DataFreshness.estimatedDailyInstitutionalRecords;
 

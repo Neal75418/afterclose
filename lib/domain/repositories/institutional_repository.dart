@@ -45,4 +45,9 @@ abstract class IInstitutionalRepository {
 
   /// 清除所有法人資料
   Future<int> clearAllData();
+
+  /// 口徑版本檢核：版本不符（或無記錄）即一次性清空重建並寫入 marker
+  ///
+  /// 回傳是否執行了遷移。
+  Future<bool> ensureDataVersion();
 }

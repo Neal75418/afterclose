@@ -103,7 +103,16 @@ class InstitutionalRepository implements IInstitutionalRepository {
     bool force = false,
   }) async {
     try {
-      // 提高閾值以涵蓋上市+上櫃股票
+      // 提高閾值以涵蓋上市+上櫃股票。
+      //
+      // ⚠️ 合併門檻的已知取捨（2026-07-15 review）：單邊最高 ~1,214 筆
+      // < 1,500，故「單市場缺漏卻被判完整」不會發生（安全方向成立）；
+      // 但某市場**持續**失敗的日子會每輪重抓（TWSE 健康側白抓一次）。
+      // 接受不改 per-market 的理由：與缺漏日回補（margin）不同，此迴圈
+      // 無 per-run 上限、不會被幽靈缺漏日餓死，且視窗滾動（日常 15 天）
+      // 會讓壞日自然過期——代價是有界的免費呼叫，不是收斂性問題。
+      // 若 TWSE 上市家數成長逼近 1,500，此假設失效，屆時改
+      // per-market（照 countMarginTradingByDateAndMarket 模式）。
       if (!force) {
         final existingCount = await _db.getInstitutionalCountForDate(date);
         if (existingCount > DataFreshness.fullMarketThreshold) {
@@ -300,6 +309,40 @@ class InstitutionalRepository implements IInstitutionalRepository {
   /// 用於單位修正後強制重新同步，避免新舊資料單位混用
   @override
   Future<int> clearAllData() => _db.clearAllInstitutionalData();
+
+  /// app_settings 的法人口徑版本 key
+  static const String _dataVersionKey = 'institutional_data_version';
+
+  /// 口徑版本檢核：不符（或無記錄）即一次性清空重建
+  ///
+  /// 取代 force 同步每次 clearAllData 的破壞式全清——同來源資料以
+  /// insertOrReplace upsert 即冪等，全清只在口徑版本變更時才必要
+  /// （bump [DataFreshness.institutionalDataVersion] 觸發）。
+  ///
+  /// 清空與 marker 寫入包在同一交易：兩者原子成立，不存在「清了但沒標記
+  /// →下次又清掉剛寫的新資料」的重清窗口。
+  ///
+  /// 回傳是否執行了遷移。
+  @override
+  Future<bool> ensureDataVersion() async {
+    final stored = await _db.getSetting(_dataVersionKey);
+    if (stored == DataFreshness.institutionalDataVersion) return false;
+
+    var cleared = 0;
+    await _db.transaction<void>(() async {
+      cleared = await clearAllData();
+      await _db.setSetting(
+        _dataVersionKey,
+        DataFreshness.institutionalDataVersion,
+      );
+    });
+    AppLogger.info(
+      'InstitutionalRepo',
+      '法人口徑版本遷移: ${stored ?? '(無記錄)'} → '
+          '${DataFreshness.institutionalDataVersion}，已清除 $cleared 筆舊資料',
+    );
+    return true;
+  }
 
   /// 將法人資料轉換為資料庫 entries（TWSE/TPEX 共用）
   List<DailyInstitutionalCompanion> _toInstitutionalEntries<T>(
