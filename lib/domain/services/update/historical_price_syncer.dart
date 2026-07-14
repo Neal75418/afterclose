@@ -44,13 +44,21 @@ class HistoricalPriceSyncer {
     required List<String> marketCandidates,
     void Function(String message)? onProgress,
   }) async {
+    // 分段計時（debug log）：定位「價格同步 → 需要歷史資料」間的耗時歸因
+    // （2026-07-15 真實 DB snapshot 實測：整包載入 ~2.3s、phase-0 掃描
+    //  ~56ms——app 內日誌曾見 ~8s 空窗，需 in-app 數字決定是否值得把
+    //  整包載入換成 aggregate query，見 tradeoff 註解於 memory/plan）
+    final phaseTimer = Stopwatch()..start();
+
     // Phase 0：市場日快照回補（整市場缺漏日，1 呼叫補全市場一天）
     final marketDayRows = await _syncMissingMarketDays(
       date: date,
       onProgress: onProgress,
     );
+    final phase0Ms = phaseTimer.elapsedMilliseconds;
 
     // Phase 1：整合所有歷史資料來源
+    phaseTimer.reset();
     final historyLookbackStart = date.subtract(
       const Duration(days: RuleParams.swingWindow + 20),
     );
@@ -59,6 +67,7 @@ class HistoricalPriceSyncer {
       startDate: historyLookbackStart,
       endDate: date,
     );
+    final existingScanMs = phaseTimer.elapsedMilliseconds;
 
     final symbolsForHistory = <String>{
       ...watchlistSymbols,
@@ -72,11 +81,14 @@ class HistoricalPriceSyncer {
     );
 
     // 檢查哪些股票需要歷史資料
+    phaseTimer.reset();
     final priceHistoryBatch = await _db.getPriceHistoryBatch(
       symbolsForHistory,
       startDate: historyStartDate,
       endDate: date,
     );
+    final bulkLoadMs = phaseTimer.elapsedMilliseconds;
+    phaseTimer.reset();
 
     // 自選 + 熱門 = priority locked。它們不適用 lenient nearThreshold
     // 早退門檻（180 天）— 因 52w high/low rule 嚴格要求 250 天，priority
@@ -89,6 +101,12 @@ class HistoricalPriceSyncer {
       priceHistoryBatch,
       date,
       priorityLocked: priorityLocked,
+    );
+    final scanMs = phaseTimer.elapsedMilliseconds;
+    AppLogger.debug(
+      'HistoricalPriceSyncer',
+      '分段計時: phase0=${phase0Ms}ms 既有資料掃描=${existingScanMs}ms '
+          '整包載入=${bulkLoadMs}ms 需求掃描=${scanMs}ms',
     );
 
     if (symbolsNeedingData.isEmpty) {

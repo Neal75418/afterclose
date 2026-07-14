@@ -1,5 +1,6 @@
 import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/repositories/insider_repository.dart';
 import 'package:afterclose/data/repositories/institutional_repository.dart';
@@ -56,42 +57,87 @@ class BatchDataLoader {
 
     final instRepo = _institutionalRepo;
 
+    // per-query 完成耗時（並行下 = 該查詢從啟動到完成的牆鐘，含排隊；
+    // debug log 用於定位載入熱點——更新裡最大的本機區塊之一 ~9-12s）
+    final timings = <String, int>{};
+    final totalTimer = Stopwatch()..start();
+    Future<T> timed<T>(String label, Future<T> future) async {
+      final result = await future;
+      timings[label] = totalTimer.elapsedMilliseconds;
+      return result;
+    }
+
     // 同時啟動所有批次查詢（所有 Future 在建立時即開始並行執行）
-    final pricesFuture = _db.getPriceHistoryBatch(
-      candidates,
-      startDate: startDate,
-      endDate: date,
+    final pricesFuture = timed(
+      'prices',
+      _db.getPriceHistoryBatch(candidates, startDate: startDate, endDate: date),
     );
-    final newsFuture = _newsRepo.getNewsForStocksBatch(candidates, days: 2);
-    final instFuture = instRepo != null
-        ? _db.getInstitutionalHistoryBatch(
-            candidates,
-            startDate: instStartDate,
-            endDate: date,
-          )
-        : Future.value(<String, List<DailyInstitutionalEntry>>{});
-    final revenueFuture = _db.getLatestMonthlyRevenuesBatch(candidates);
-    final valuationFuture = _db.getLatestValuationsBatch(candidates);
-    final revenueHistoryFuture = _db.getRecentMonthlyRevenueBatch(
-      candidates,
-      months: DataFreshness.revenueDisplayMonths,
+    final newsFuture = timed(
+      'news',
+      _newsRepo.getNewsForStocksBatch(candidates, days: 2),
     );
-    final dayTradingFuture = _db.getDayTradingMapForDate(date);
-    final shareholdingFuture = _db.getLatestShareholdingsBatch(candidates);
-    final prevShareholdingFuture = _db.getShareholdingsBeforeDateBatch(
-      candidates,
-      beforeDate: date.subtract(
-        const Duration(
-          days: InstitutionalParams.foreignShareholdingLookbackDays,
+    final instFuture = timed(
+      'institutional',
+      instRepo != null
+          ? _db.getInstitutionalHistoryBatch(
+              candidates,
+              startDate: instStartDate,
+              endDate: date,
+            )
+          : Future.value(<String, List<DailyInstitutionalEntry>>{}),
+    );
+    final revenueFuture = timed(
+      'revenue',
+      _db.getLatestMonthlyRevenuesBatch(candidates),
+    );
+    final valuationFuture = timed(
+      'valuation',
+      _db.getLatestValuationsBatch(candidates),
+    );
+    final revenueHistoryFuture = timed(
+      'revenueHistory',
+      _db.getRecentMonthlyRevenueBatch(
+        candidates,
+        months: DataFreshness.revenueDisplayMonths,
+      ),
+    );
+    final dayTradingFuture = timed(
+      'dayTrading',
+      _db.getDayTradingMapForDate(date),
+    );
+    final shareholdingFuture = timed(
+      'shareholding',
+      _db.getLatestShareholdingsBatch(candidates),
+    );
+    final prevShareholdingFuture = timed(
+      'prevShareholding',
+      _db.getShareholdingsBeforeDateBatch(
+        candidates,
+        beforeDate: date.subtract(
+          const Duration(
+            days: InstitutionalParams.foreignShareholdingLookbackDays,
+          ),
         ),
       ),
     );
-    final warningFuture = _db.getActiveWarningsMapBatch(candidates);
-    final insiderFuture = _db.getLatestInsiderHoldingsBatch(candidates);
-    final epsFuture = _db.getEPSHistoryBatch(candidates);
-    final roeFuture = _db.getROEHistoryBatch(candidates);
-    final dividendFuture = _db.getDividendHistoryBatch(candidates);
-    final maxRevenueFuture = _db.getMaxRevenueBatch(candidates);
+    final warningFuture = timed(
+      'warning',
+      _db.getActiveWarningsMapBatch(candidates),
+    );
+    final insiderFuture = timed(
+      'insider',
+      _db.getLatestInsiderHoldingsBatch(candidates),
+    );
+    final epsFuture = timed('eps', _db.getEPSHistoryBatch(candidates));
+    final roeFuture = timed('roe', _db.getROEHistoryBatch(candidates));
+    final dividendFuture = timed(
+      'dividend',
+      _db.getDividendHistoryBatch(candidates),
+    );
+    final maxRevenueFuture = timed(
+      'maxRevenue',
+      _db.getMaxRevenueBatch(candidates),
+    );
 
     // 型別安全的並行等待（Dart 3 Record 解構）
     final (pricesMap, newsMap, institutionalMap) = await (
@@ -132,8 +178,19 @@ class BatchDataLoader {
 
     // 批次載入籌碼集中度（TDCC 股權分散表）
     final concentrationMap = _shareholdingRepo != null
-        ? await _shareholdingRepo.getConcentrationRatioBatch(candidates)
+        ? await timed(
+            'concentration',
+            _shareholdingRepo.getConcentrationRatioBatch(candidates),
+          )
         : <String, double>{};
+
+    final slowest = timings.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    AppLogger.debug(
+      'BatchDataLoader',
+      '批次載入計時: total=${totalTimer.elapsedMilliseconds}ms, '
+          '${slowest.map((e) => '${e.key}=${e.value}ms').join(', ')}',
+    );
 
     // 轉換為 Isolate 可用的 Map 格式
     final shareholdingMap = BatchDataBuilder.buildShareholdingMap(
