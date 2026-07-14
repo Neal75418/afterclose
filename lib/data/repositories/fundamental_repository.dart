@@ -5,6 +5,7 @@ import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/logger.dart';
+import 'package:afterclose/core/utils/taiwan_calendar.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
@@ -466,7 +467,8 @@ class FundamentalRepository implements IFundamentalRepository {
   /// 同步單檔股票的損益表資料（含 EPS、營收、毛利等）
   ///
   /// 從 FinMind API 取得近 2 年的季度損益表資料並寫入 DB。
-  /// 含 90 天新鮮度檢查，避免重複同步。
+  /// 新鮮度檢查為發布行事曆感知（[TaiwanCalendar.expectedLatestReportQuarter]），
+  /// 已有應發布的最新一季即跳過。
   @override
   Future<int> syncFinancialStatements({
     required String symbol,
@@ -474,12 +476,14 @@ class FundamentalRepository implements IFundamentalRepository {
     required DateTime endDate,
   }) async {
     try {
-      // 新鮮度檢查：若最新資料距今 < 60 天，跳過
-      // 季報每 ~90 天發布，60 天確保不會錯過最新一季
+      // 新鮮度檢查：已有「此刻應已發布的最新一季」則跳過。
+      // 不能用「距今 N 天」啟發式——財報日期是季度截止日，發布後只有
+      // ~2-6 週會通過天數檢查，其餘時間每次更新都重抓全部候選股。
       final latestDate = await _db.getLatestFinancialDataDate(symbol, 'INCOME');
-      if (latestDate != null &&
-          _clock.now().difference(latestDate).inDays <
-              DataFreshness.financialStatementStaleDays) {
+      final expectedQuarter = TaiwanCalendar.expectedLatestReportQuarter(
+        _clock.now(),
+      );
+      if (latestDate != null && !latestDate.isBefore(expectedQuarter)) {
         return 0;
       }
 

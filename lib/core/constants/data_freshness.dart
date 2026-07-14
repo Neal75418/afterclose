@@ -26,10 +26,9 @@ abstract final class DataFreshness {
   // 時效性判斷
   // ==================================================
 
-  /// 財報資料過期天數
-  ///
-  /// 季報每 ~90 天發布，60 天確保不會錯過最新一季。
-  static const int financialStatementStaleDays = 60;
+  // 財報新鮮度不用「距今 N 天」常數——財報日期是季度截止日，天數啟發式
+  // 在每季發布後僅 ~2-6 週有效，其餘時間每輪重抓。統一走
+  // TaiwanCalendar.expectedLatestReportQuarter（發布行事曆感知）。
 
   /// 上櫃估值資料新鮮天數
   ///

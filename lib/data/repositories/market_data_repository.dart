@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/date_context.dart';
+import 'package:afterclose/core/utils/taiwan_calendar.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
@@ -35,23 +36,8 @@ class MarketDataRepository implements IMarketDataRepository {
   /// - Q2（4-6月）→ 約 8 月中公布
   /// - Q3（7-9月）→ 約 11 月中公布
   /// - Q4（10-12月）→ 約隔年 3 月中公布
-  DateTime _getExpectedLatestQuarter() {
-    final now = _clock.now();
-    final month = now.month;
-
-    if (month >= 3 && month < 5) {
-      return DateTime(now.year - 1, 10, 1);
-    } else if (month >= 5 && month < 8) {
-      return DateTime(now.year, 1, 1);
-    } else if (month >= 8 && month < 11) {
-      return DateTime(now.year, 4, 1);
-    } else if (month >= 11) {
-      return DateTime(now.year, 7, 1);
-    } else {
-      // 1-2 月：Q3（10-12月）已於前年 11 月公布
-      return DateTime(now.year - 1, 10, 1);
-    }
-  }
+  DateTime _getExpectedLatestQuarter() =>
+      TaiwanCalendar.expectedLatestReportQuarter(_clock.now());
 
   // ==================================================
   // 財報資料

@@ -198,7 +198,7 @@ class FundamentalSyncer {
   /// 同步指定股票清單的損益表資料（含 EPS）
   ///
   /// 每批 10 檔並行，批間延遲 500ms 避免超過 FinMind 配額。
-  /// 每檔股票內部有 90 天新鮮度檢查。
+  /// 每檔股票內部有發布行事曆感知的新鮮度檢查（已有應發布的最新一季即跳過）。
   /// ETF（代碼以 00 開頭）無財報資料，自動過濾以避免無效 API 呼叫。
   Future<int> syncFinancialStatements({required List<String> symbols}) async {
     // 過濾 ETF：00 開頭的代碼（0050、00636、006205 等）沒有財報資料

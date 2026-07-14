@@ -224,4 +224,31 @@ class TaiwanCalendar {
     }
     return current;
   }
+
+  /// 此刻應已發布的最新一季財報的**季度起始日**
+  ///
+  /// 依台股申報期限（Q1→5/15、Q2→8/14、Q3→11/14、年報→3/31）取保守月界。
+  /// 與 financial_data 儲存的**季度截止日**（如 Q1 = 3/31）比較時，用
+  /// `!latestDate.isBefore(expected)` 判斷「已有該季」——截止日必不早於
+  /// 自身季度起始日、且早於下一季起始日。
+  ///
+  /// 新鮮度檢查必須用這個（發布行事曆感知），不能用「距今 N 天」啟發式：
+  /// 財報日期是季度截止日，發布後只有 ~2-6 週會通過天數檢查，其餘時間
+  /// 每次更新都會重抓（2026-07-14 實測損益表因此每輪多燒 54 檔 FinMind）。
+  static DateTime expectedLatestReportQuarter(DateTime now) {
+    final month = now.month;
+    if (month >= 5 && month < 8) {
+      return DateTime(now.year, 1, 1); // Q1（5/15 截止申報）
+    } else if (month >= 8 && month < 11) {
+      return DateTime(now.year, 4, 1); // Q2（8/14）
+    } else if (month >= 11) {
+      return DateTime(now.year, 7, 1); // Q3（11/14）
+    } else if (month == 4) {
+      return DateTime(now.year - 1, 10, 1); // Q4/年報（3/31 已截止）
+    }
+    // 1-3 月：年報 3/31 尚未截止，只能期待前一年 Q3。
+    // ⚠️ 必須回 Q3 自身起始 7/1、不能回 10/1——Q3 截止日 9/30 < 10/1
+    // 會被判「缺最新季」，1-3 月每輪更新都重抓（繼承 bug，review 修正）。
+    return DateTime(now.year - 1, 7, 1);
+  }
 }
