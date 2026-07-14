@@ -38,6 +38,8 @@ void main() {
     syncer = InstitutionalSyncer(institutionalRepository: mockRepo);
 
     when(() => mockRepo.ensureDataVersion()).thenAnswer((_) async => false);
+    // 預設全缺漏（既有測試的行為前提）
+    when(() => mockRepo.isDayComplete(any())).thenAnswer((_) async => false);
     when(
       () => mockRepo.syncAllMarketInstitutional(
         any(),
@@ -94,6 +96,109 @@ void main() {
     );
 
     expect(result.syncedDays, 2); // 當日 + 7/13 照常同步
+  });
+
+  group('已完整天跳過（不睡不打）', () {
+    test('穩態全完整：回補日不打 API、syncedDays 只計實際抓取', () async {
+      when(() => mockRepo.isDayComplete(any())).thenAnswer((_) async => true);
+
+      final result = await syncer.syncInstitutionalData(
+        date: date,
+        force: true,
+        backfillDays: 4,
+      );
+
+      // 當日 force 必抓；7/13 已完整 → 完全不打
+      verify(
+        () => mockRepo.syncAllMarketInstitutional(date, force: true),
+      ).called(1);
+      verifyNever(
+        () => mockRepo.syncAllMarketInstitutional(
+          backfillDate,
+          force: any(named: 'force'),
+        ),
+      );
+      expect(result.syncedDays, 1);
+    });
+
+    test('部分缺漏：完整天跳過、缺漏天照抓', () async {
+      when(
+        () => mockRepo.isDayComplete(backfillDate),
+      ).thenAnswer((_) async => true);
+      when(
+        () => mockRepo.isDayComplete(DateTime(2026, 7, 9)),
+      ).thenAnswer((_) async => false);
+
+      // backfillDays=6 → 交易日 7/13（完整）、7/9（缺漏）
+      final result = await syncer.syncInstitutionalData(
+        date: date,
+        force: false,
+        backfillDays: 6,
+      );
+
+      verifyNever(
+        () => mockRepo.syncAllMarketInstitutional(
+          backfillDate,
+          force: any(named: 'force'),
+        ),
+      );
+      verify(
+        () => mockRepo.syncAllMarketInstitutional(
+          DateTime(2026, 7, 9),
+          force: false,
+        ),
+      ).called(1);
+      expect(result.syncedDays, 2); // 當日 + 7/9
+    });
+
+    test('日常更新（!force）當日已完整也跳過（同晚二次更新 0 抓取）', () async {
+      when(() => mockRepo.isDayComplete(any())).thenAnswer((_) async => true);
+
+      final result = await syncer.syncInstitutionalData(
+        date: date,
+        force: false,
+        backfillDays: 4,
+      );
+
+      verifyNever(
+        () => mockRepo.syncAllMarketInstitutional(
+          any(),
+          force: any(named: 'force'),
+        ),
+      );
+      expect(result.syncedDays, 0);
+    });
+
+    test('isDayComplete 失敗 → 當缺漏處理照抓（fail-open 朝抓取）', () async {
+      when(
+        () => mockRepo.isDayComplete(any()),
+      ).thenAnswer((_) async => throw const DatabaseException('count 失敗'));
+
+      final result = await syncer.syncInstitutionalData(
+        date: date,
+        force: true,
+        backfillDays: 4,
+      );
+
+      verify(
+        () => mockRepo.syncAllMarketInstitutional(backfillDate, force: false),
+      ).called(1);
+      expect(result.syncedDays, 2);
+    });
+
+    test('跳過的天仍發 onProgress（掃描進度語意）', () async {
+      when(() => mockRepo.isDayComplete(any())).thenAnswer((_) async => true);
+      final messages = <String>[];
+
+      await syncer.syncInstitutionalData(
+        date: date,
+        force: false,
+        backfillDays: 6,
+        onProgress: messages.add,
+      );
+
+      expect(messages, ['法人回補 1/2 天', '法人回補 2/2 天']);
+    });
   });
 
   test('onProgress 逐回補交易日回報，非交易日與颱風停市不計入分母', () async {

@@ -50,4 +50,9 @@ abstract class IInstitutionalRepository {
   ///
   /// 回傳是否執行了遷移。
   Future<bool> ensureDataVersion();
+
+  /// 該日法人資料是否已達完整門檻（上市+上櫃合計）
+  ///
+  /// 供回補迴圈**在節流延遲前**預檢——已完整的天不睡不打。
+  Future<bool> isDayComplete(DateTime date);
 }

@@ -46,26 +46,39 @@ class InstitutionalSyncer {
       AppLogger.warning('InstitutionalSyncer', '法人口徑版本檢核失敗', e);
     }
 
-    // 1. 同步當日資料
-    try {
-      await _institutionalRepo.syncAllMarketInstitutional(date, force: force);
-      syncedDays++;
-    } on RateLimitException {
-      rethrow;
-    } on NetworkException {
-      rethrow;
-    } catch (e) {
-      errors.add('當日法人資料同步失敗: $e');
-      AppLogger.warning('InstitutionalSyncer', '當日法人資料同步失敗', e);
+    // 1. 同步當日資料（force 必抓；日常路徑若當日已完整——同晚二次更新——
+    //    預檢跳過，不打 API）
+    if (force || !await _isComplete(date)) {
+      try {
+        await _institutionalRepo.syncAllMarketInstitutional(date, force: force);
+        syncedDays++;
+      } on RateLimitException {
+        rethrow;
+      } on NetworkException {
+        rethrow;
+      } catch (e) {
+        errors.add('當日法人資料同步失敗: $e');
+        AppLogger.warning('InstitutionalSyncer', '當日法人資料同步失敗', e);
+      }
     }
 
-    // 2. 回補近期資料（force:false——已完整的天跳過，形成斷點續傳）
+    // 2. 回補近期資料——每天先預檢完整性，已完整**不睡不打**（穩態下
+    //    回補窗全完整，原本每輪白睡 ~10 秒、force 深回補 ~62 秒）；
+    //    缺漏的天才節流 + 抓取，形成斷點續傳
     final backfillDates = [
       for (var i = 1; i < backfillDays; i++) date.subtract(Duration(days: i)),
     ].where(TaiwanCalendar.isTradingDay).toList();
 
+    var skippedDays = 0;
     for (var i = 0; i < backfillDates.length; i++) {
       final backDate = backfillDates[i];
+
+      if (await _isComplete(backDate)) {
+        skippedDays++;
+        onProgress?.call('法人回補 ${i + 1}/${backfillDates.length} 天');
+        continue;
+      }
+
       await Future.delayed(
         const Duration(milliseconds: ApiConfig.retryDelayMs),
       );
@@ -89,9 +102,24 @@ class InstitutionalSyncer {
       onProgress?.call('法人回補 ${i + 1}/${backfillDates.length} 天');
     }
 
+    if (skippedDays > 0) {
+      AppLogger.debug('InstitutionalSyncer', '法人回補: $skippedDays 天已完整跳過（不睡不打）');
+    }
+
     AppLogger.info('InstitutionalSyncer', '法人資料同步完成: $syncedDays 天');
 
     return InstitutionalSyncResult(syncedDays: syncedDays, errors: errors);
+  }
+
+  /// 完整性預檢；查詢失敗視為缺漏（fail-open 朝抓取——寧可多抓一次
+  /// 免費 API，不因 DB 讀取異常漏補）
+  Future<bool> _isComplete(DateTime date) async {
+    try {
+      return await _institutionalRepo.isDayComplete(date);
+    } catch (e) {
+      AppLogger.warning('InstitutionalSyncer', '法人完整性預檢失敗，視為缺漏', e);
+      return false;
+    }
   }
 
   /// 同步單日法人資料
@@ -125,9 +153,7 @@ class InstitutionalSyncResult {
 
   /// 估計同步的資料筆數（每天約 [DataFreshness.estimatedDailyInstitutionalRecords] 檔）
   ///
-  /// ⚠️ 高估上限：syncedDays 含「已完整而被 per-day 檢查跳過」的天（repo
-  /// 回傳值無法區分 skip/fetch），force 深回補時多數天已完整，此值會遠大
-  /// 於實際新寫入。僅供 UI 摘要參考，精確化需改 repo 回傳語意。
+  /// syncedDays 只計實際抓取的天（已完整的天由預檢跳過、不入計）。
   int get estimatedCount =>
       syncedDays * DataFreshness.estimatedDailyInstitutionalRecords;
 

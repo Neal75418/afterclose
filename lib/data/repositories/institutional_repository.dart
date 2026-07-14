@@ -310,6 +310,18 @@ class InstitutionalRepository implements IInstitutionalRepository {
   @override
   Future<int> clearAllData() => _db.clearAllInstitutionalData();
 
+  /// 該日法人資料是否已達完整門檻
+  ///
+  /// 與 [syncAllMarketInstitutional] 內部的新鮮度檢查同一判準（合併門檻的
+  /// 取捨見該處註解）。獨立成方法是讓回補迴圈能在 1 秒節流**之前**預檢：
+  /// 穩態下回補窗全完整，原本每輪白睡 ~10 秒（force 深回補 ~62 秒）、
+  /// 一次 API 都沒打。
+  @override
+  Future<bool> isDayComplete(DateTime date) async {
+    final count = await _db.getInstitutionalCountForDate(date);
+    return count > DataFreshness.fullMarketThreshold;
+  }
+
   /// app_settings 的法人口徑版本 key
   static const String _dataVersionKey = 'institutional_data_version';
 
