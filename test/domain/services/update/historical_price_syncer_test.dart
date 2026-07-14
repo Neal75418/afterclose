@@ -45,15 +45,37 @@ void main() {
     ).thenAnswer((_) async => symbols);
   }
 
-  /// 設定 DB 的 getPriceHistoryBatch 回傳值
+  /// 設定 DB 的價格覆蓋回傳值（fixtures 仍以 entry list 描述，
+  /// 於此導出 PriceCoverage——與 DAO aggregate 同語意，讓既有測試
+  /// 全數成為 aggregate 重構的等價證明）
   void setupPriceHistoryBatch(Map<String, List<DailyPriceEntry>> batch) {
+    final coverage = <String, PriceCoverage>{};
+    for (final entry in batch.entries) {
+      final prices = entry.value;
+      if (prices.isEmpty) continue;
+      var first = prices.first.date;
+      var last = prices.first.date;
+      final months = <(int, int), int>{};
+      for (final p in prices) {
+        if (p.date.isBefore(first)) first = p.date;
+        if (p.date.isAfter(last)) last = p.date;
+        final key = (p.date.year, p.date.month);
+        months[key] = (months[key] ?? 0) + 1;
+      }
+      coverage[entry.key] = PriceCoverage(
+        count: prices.length,
+        firstDate: first,
+        lastDate: last,
+        daysByMonth: months,
+      );
+    }
     when(
-      () => mockDb.getPriceHistoryBatch(
+      () => mockDb.getPriceCoverageBatch(
         any(),
         startDate: any(named: 'startDate'),
         endDate: any(named: 'endDate'),
       ),
-    ).thenAnswer((_) async => batch);
+    ).thenAnswer((_) async => coverage);
   }
 
   /// 設定 PriceRepo 的 syncStockPrices 成功回傳

@@ -368,6 +368,81 @@ mixin PriceDaoMixin on $AppDatabase {
   /// 批次取得多檔股票的價格歷史（批次查詢避免 N+1 問題）
   ///
   /// 回傳 symbol -> 價格列表 的 Map，依日期升冪排序
+  /// 批次取得多檔股票的價格覆蓋摘要（歷史資料需求掃描用）
+  ///
+  /// 一次 GROUP BY (symbol, 年月) 取代 [getPriceHistoryBatch] 的整包載入
+  /// ——需求掃描只用每檔的筆數/首末日/每月分佈，卻曾把 ~59 萬列完整
+  /// 價格物件化跨 isolate（2026-07-15 in-app 實測 3.0 秒；aggregate
+  /// 同資料量 ~0.7 秒）。邊界語意與 [getPriceHistoryBatch] 相同
+  /// （>= startDate、<= endDate）。無資料的 symbol 不在回傳 Map。
+  Future<Map<String, PriceCoverage>> getPriceCoverageBatch(
+    List<String> symbols, {
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    if (symbols.isEmpty) return {};
+
+    final rows = await customSelect(
+      '''
+      SELECT symbol,
+             CAST(substr(date, 1, 4) AS INTEGER) AS y,
+             CAST(substr(date, 6, 2) AS INTEGER) AS m,
+             COUNT(*) AS n,
+             MIN(date) AS first_date,
+             MAX(date) AS last_date
+      FROM daily_price
+      WHERE date >= ? AND date <= ?
+      GROUP BY symbol, y, m
+      ''',
+      variables: [
+        Variable.withDateTime(startDate),
+        Variable.withDateTime(endDate),
+      ],
+      readsFrom: {dailyPrice},
+    ).get();
+
+    final wanted = symbols.toSet();
+    final counts = <String, int>{};
+    final firsts = <String, DateTime>{};
+    final lasts = <String, DateTime>{};
+    final months = <String, Map<(int, int), int>>{};
+
+    for (final row in rows) {
+      final symbol = row.read<String>('symbol');
+      if (!wanted.contains(symbol)) continue;
+
+      final n = row.read<int>('n');
+      // aggregate read() 回 UTC 表示，與 table 映射（local）是同一時刻的
+      // 不同表示；統一轉 local 保持與 entry 版本完全等價（含 == 語意）
+      final first = row.read<DateTime>('first_date').toLocal();
+      final last = row.read<DateTime>('last_date').toLocal();
+
+      counts[symbol] = (counts[symbol] ?? 0) + n;
+      final prevFirst = firsts[symbol];
+      if (prevFirst == null || first.isBefore(prevFirst)) {
+        firsts[symbol] = first;
+      }
+      final prevLast = lasts[symbol];
+      if (prevLast == null || last.isAfter(prevLast)) {
+        lasts[symbol] = last;
+      }
+      months.putIfAbsent(
+        symbol,
+        () => {},
+      )[(row.read<int>('y'), row.read<int>('m'))] = n;
+    }
+
+    return {
+      for (final symbol in counts.keys)
+        symbol: PriceCoverage(
+          count: counts[symbol]!,
+          firstDate: firsts[symbol]!,
+          lastDate: lasts[symbol]!,
+          daysByMonth: months[symbol]!,
+        ),
+    };
+  }
+
   Future<Map<String, List<DailyPriceEntry>>> getPriceHistoryBatch(
     List<String> symbols, {
     required DateTime startDate,
@@ -463,4 +538,36 @@ mixin PriceDaoMixin on $AppDatabase {
 
     return results.map((row) => row.read<String>('symbol')).toList();
   }
+}
+
+/// 單檔股票在指定窗內的價格覆蓋摘要（[PriceDaoMixin.getPriceCoverageBatch]）
+///
+/// 歷史資料需求掃描的讀取模型：只帶掃描所需的聚合值，
+/// 不物件化完整價格列。
+class PriceCoverage {
+  const PriceCoverage({
+    required this.count,
+    required this.firstDate,
+    required this.lastDate,
+    required this.daysByMonth,
+  });
+
+  /// 窗內價格筆數
+  final int count;
+
+  /// 窗內首筆價格日
+  final DateTime firstDate;
+
+  /// 窗內末筆價格日
+  final DateTime lastDate;
+
+  /// (年, 月) → 該月已有的價格天數（月度缺口估算用）
+  ///
+  /// ⚠️ 與 [firstDate]/[lastDate] 走不同推導路徑：本欄位鍵值取自儲存文字
+  /// 的 substr 前綴，首末日則經 drift 解析 + toLocal()。兩者一致性依賴
+  /// 「寫入與讀取在同一裝置時區」——本 app 為 local-first 單機（GUI 與
+  /// launchd CLI 同機同時區）故恆成立；若日後跨時區讀取 DB 檔，兩路徑
+  /// 對月界列可能分歧。消費者一律唯讀，請勿變異此 Map（跨消費者共享
+  /// 同一參考）。
+  final Map<(int, int), int> daysByMonth;
 }

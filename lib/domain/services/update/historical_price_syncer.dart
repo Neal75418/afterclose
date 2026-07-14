@@ -80,9 +80,10 @@ class HistoricalPriceSyncer {
       const Duration(days: RuleParams.historyRequiredDays),
     );
 
-    // 檢查哪些股票需要歷史資料
+    // 檢查哪些股票需要歷史資料（聚合摘要，不物件化完整價格列——
+    // 舊整包載入 in-app 實測 3.0 秒 / ~59 萬列跨 isolate）
     phaseTimer.reset();
-    final priceHistoryBatch = await _db.getPriceHistoryBatch(
+    final coverageBatch = await _db.getPriceCoverageBatch(
       symbolsForHistory,
       startDate: historyStartDate,
       endDate: date,
@@ -98,7 +99,7 @@ class HistoricalPriceSyncer {
 
     final symbolsNeedingData = _findSymbolsNeedingData(
       symbolsForHistory,
-      priceHistoryBatch,
+      coverageBatch,
       date,
       priorityLocked: priorityLocked,
     );
@@ -106,7 +107,7 @@ class HistoricalPriceSyncer {
     AppLogger.debug(
       'HistoricalPriceSyncer',
       '分段計時: phase0=${phase0Ms}ms 既有資料掃描=${existingScanMs}ms '
-          '整包載入=${bulkLoadMs}ms 需求掃描=${scanMs}ms',
+          '覆蓋載入=${bulkLoadMs}ms 需求掃描=${scanMs}ms',
     );
 
     if (symbolsNeedingData.isEmpty) {
@@ -118,12 +119,12 @@ class HistoricalPriceSyncer {
       );
     }
 
-    _logSyncDiagnostics(symbolsNeedingData, priceHistoryBatch);
+    _logSyncDiagnostics(symbolsNeedingData, coverageBatch);
 
     // 估算每檔平均需要的月度 API 呼叫數
     final avgMonthsPerSymbol = _estimateAvgMonthsNeeded(
       symbolsNeedingData,
-      priceHistoryBatch,
+      coverageBatch,
       historyStartDate: historyStartDate,
       endDate: date,
     );
@@ -282,7 +283,7 @@ class HistoricalPriceSyncer {
   /// 早退避免無效追打。
   List<String> _findSymbolsNeedingData(
     List<String> symbols,
-    Map<String, List<DailyPriceEntry>> priceHistoryBatch,
+    Map<String, PriceCoverage> coverageBatch,
     DateTime date, {
     Set<String> priorityLocked = const {},
   }) {
@@ -291,8 +292,8 @@ class HistoricalPriceSyncer {
     const nearThreshold = IndicatorParams.historyNearCompleteThreshold;
 
     for (final symbol in symbols) {
-      final prices = priceHistoryBatch[symbol];
-      final priceCount = prices?.length ?? 0;
+      final coverage = coverageBatch[symbol];
+      final priceCount = coverage?.count ?? 0;
 
       if (priceCount >= minRequiredDays) continue;
 
@@ -306,39 +307,35 @@ class HistoricalPriceSyncer {
 
       if (!isPriority && priceCount >= nearThreshold) continue;
 
-      if (priceCount == 0) {
+      if (coverage == null || priceCount == 0) {
         result.add(symbol);
         continue;
       }
 
       // 對已有資料的股票，檢查是否為近期上市且資料已足夠
       // 避免反覆向 TWSE 查詢不存在的歷史資料
-      if (prices != null && prices.isNotEmpty) {
-        final firstTradeDate = prices.first.date;
-        final daysSinceFirstTrade = date.difference(firstTradeDate).inDays;
+      final daysSinceFirstTrade = date.difference(coverage.firstDate).inDays;
 
-        // Fresh DB 場景：首筆資料是最近 3 天內（可能只從今日同步取得），
-        // 且資料量極少 → 仍需補歷史
-        // 例外：若首筆資料日期 > 今天 - 3 天，且最後一筆已是最新，
-        // 且已有 > 1 天的歷史（代表曾同步過），視為新上市而非 fresh DB
-        if (daysSinceFirstTrade <= 3 && priceCount < RuleParams.swingWindow) {
-          final lastDate = prices.last.date;
-          final isUpToDate = date.difference(lastDate).inDays <= 1;
-          final hasMultipleDays = priceCount > 1;
-          if (isUpToDate && hasMultipleDays && daysSinceFirstTrade > 0) {
-            // 新上市股票：有多天資料且已是最新，走 _hasEnoughDataForAge 判斷
-          } else {
-            result.add(symbol);
-            continue;
-          }
-        }
-
-        // 其他情況：檢查資料量是否與上市時間相符
-        // Priority 股 skip 此 ratio check — 它們追的是「is 250 enough」
-        // 而非「is data-density acceptable for current age」。
-        if (!isPriority && _hasEnoughDataForAge(prices, priceCount, date)) {
+      // Fresh DB 場景：首筆資料是最近 3 天內（可能只從今日同步取得），
+      // 且資料量極少 → 仍需補歷史
+      // 例外：若首筆資料日期 > 今天 - 3 天，且最後一筆已是最新，
+      // 且已有 > 1 天的歷史（代表曾同步過），視為新上市而非 fresh DB
+      if (daysSinceFirstTrade <= 3 && priceCount < RuleParams.swingWindow) {
+        final isUpToDate = date.difference(coverage.lastDate).inDays <= 1;
+        final hasMultipleDays = priceCount > 1;
+        if (isUpToDate && hasMultipleDays && daysSinceFirstTrade > 0) {
+          // 新上市股票：有多天資料且已是最新，走 _hasEnoughDataForAge 判斷
+        } else {
+          result.add(symbol);
           continue;
         }
+      }
+
+      // 其他情況：檢查資料量是否與上市時間相符
+      // Priority 股 skip 此 ratio check — 它們追的是「is 250 enough」
+      // 而非「is data-density acceptable for current age」。
+      if (!isPriority && _hasEnoughDataForAge(coverage, date)) {
+        continue;
       }
 
       result.add(symbol);
@@ -350,13 +347,9 @@ class HistoricalPriceSyncer {
   /// 檢查股票的資料量是否與其上市時間相符
   ///
   /// 避免反覆同步數據源無法提供更多資料的股票
-  bool _hasEnoughDataForAge(
-    List<DailyPriceEntry> prices,
-    int priceCount,
-    DateTime date,
-  ) {
-    final firstTradeDate = prices.first.date;
-    final daysSinceFirstTrade = date.difference(firstTradeDate).inDays;
+  bool _hasEnoughDataForAge(PriceCoverage coverage, DateTime date) {
+    final priceCount = coverage.count;
+    final daysSinceFirstTrade = date.difference(coverage.firstDate).inDays;
 
     // 今天才上市（daysSinceFirstTrade == 0），有任何資料就算足夠
     if (daysSinceFirstTrade <= 0) return priceCount > 0;
@@ -377,15 +370,15 @@ class HistoricalPriceSyncer {
   /// 記錄需要同步的股票診斷資訊
   void _logSyncDiagnostics(
     List<String> symbolsNeedingData,
-    Map<String, List<DailyPriceEntry>> priceHistoryBatch,
+    Map<String, PriceCoverage> priceHistoryBatch,
   ) {
     if (symbolsNeedingData.length <= 10) {
       final details = symbolsNeedingData
           .map((symbol) {
-            final prices = priceHistoryBatch[symbol];
-            final priceCount = prices?.length ?? 0;
-            final firstDate = prices?.isNotEmpty == true
-                ? '${prices!.first.date.month}/${prices.first.date.day}'
+            final coverage = priceHistoryBatch[symbol];
+            final priceCount = coverage?.count ?? 0;
+            final firstDate = coverage != null
+                ? '${coverage.firstDate.month}/${coverage.firstDate.day}'
                 : 'N/A';
             return '$symbol($priceCount 天,起:$firstDate)';
           })
@@ -413,7 +406,7 @@ class HistoricalPriceSyncer {
   /// = 300 calls 預算，實打 75 × ~15 月 = 1125，跑到 16 檔就被擋）。
   double _estimateAvgMonthsNeeded(
     List<String> symbols,
-    Map<String, List<DailyPriceEntry>> priceHistoryBatch, {
+    Map<String, PriceCoverage> coverageBatch, {
     required DateTime historyStartDate,
     required DateTime endDate,
   }) {
@@ -431,23 +424,20 @@ class HistoricalPriceSyncer {
 
     var totalMonthsNeeded = 0;
     for (final symbol in symbols) {
-      final prices = priceHistoryBatch[symbol];
-      if (prices == null || prices.isEmpty) {
+      final coverage = coverageBatch[symbol];
+      if (coverage == null || coverage.count == 0) {
         // 無資料：整個視窗都需抓取
         totalMonthsNeeded += totalWindowMonths;
         continue;
       }
 
-      // group by (year, month) — 與 PriceRepository 第 128–132 行對齊
-      final daysByMonth = <(int, int), int>{};
-      for (final p in prices) {
-        final key = (p.date.year, p.date.month);
-        daysByMonth[key] = (daysByMonth[key] ?? 0) + 1;
-      }
+      // (year, month) → 天數分佈由 aggregate 直接提供
+      // （與 PriceRepository 第 128–132 行的 group-by 對齊）
+      final daysByMonth = coverage.daysByMonth;
 
       // 鏡像 firstKnownDate 上市日邏輯（≥ 60 天才信任）
       // PriceRepository.syncStockPrices line 121–125
-      final firstKnownDate = prices.length >= 60 ? prices.first.date : null;
+      final firstKnownDate = coverage.count >= 60 ? coverage.firstDate : null;
       final firstKnownMonth = firstKnownDate != null
           ? (firstKnownDate.year, firstKnownDate.month)
           : null;

@@ -21,6 +21,7 @@ import 'package:afterclose/data/database/app_database.drift.dart';
 
 // Re-export generated types for backward compatibility
 export 'package:afterclose/data/database/app_database.drift.dart';
+export 'package:afterclose/data/database/dao/price_dao.dart' show PriceCoverage;
 export 'package:afterclose/data/database/tables/stock_master.drift.dart';
 export 'package:afterclose/data/database/tables/daily_price.drift.dart';
 export 'package:afterclose/data/database/tables/daily_institutional.drift.dart';
