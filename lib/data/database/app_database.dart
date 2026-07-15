@@ -68,6 +68,7 @@ import 'package:afterclose/data/database/dao/valuation_dao.dart';
     // 新聞
     NewsItem,
     NewsStockMap,
+    NewsMentionDaily,
     // 分析結果
     DailyAnalysis,
     DailyReason,
@@ -332,6 +333,7 @@ class AppDatabase extends $AppDatabase
     'screening_strategy_table',
     'stock_event',
     'app_settings',
+    'news_mention_daily', // 熱度快照：歷史不可重建，fingerprint reset 不得 wipe
   };
 
   Future<void> _ensureSchemaFingerprint() async {
@@ -403,7 +405,7 @@ class AppDatabase extends $AppDatabase
 ///
 /// Format: `<stage>-<feature>-<YYYY-MM-DD>`. Any string change triggers a
 /// reset — the value itself is opaque.
-const String _schemaFingerprint = 'stage5b-dual-horizon-2026-04-11';
+const String _schemaFingerprint = 'stage5b-news-mention-daily-2026-07-15';
 
 // 原 `QueryExecutor _openConnection()` 已搬到 `app_database_flutter.dart`
 // 並改為 public `openDriftFlutterConnection()`，避免 `drift_flutter` import

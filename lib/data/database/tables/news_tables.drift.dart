@@ -810,6 +810,223 @@ typedef $$NewsStockMapTableProcessedTableManager =
       i1.NewsStockMapEntry,
       i0.PrefetchHooks Function({bool newsId, bool symbol})
     >;
+typedef $$NewsMentionDailyTableCreateCompanionBuilder =
+    i1.NewsMentionDailyCompanion Function({
+      required DateTime date,
+      required String kind,
+      required String itemKey,
+      required int mentionCount,
+      required int dictionaryVersion,
+      i0.Value<int> rowid,
+    });
+typedef $$NewsMentionDailyTableUpdateCompanionBuilder =
+    i1.NewsMentionDailyCompanion Function({
+      i0.Value<DateTime> date,
+      i0.Value<String> kind,
+      i0.Value<String> itemKey,
+      i0.Value<int> mentionCount,
+      i0.Value<int> dictionaryVersion,
+      i0.Value<int> rowid,
+    });
+
+class $$NewsMentionDailyTableFilterComposer
+    extends i0.Composer<i0.GeneratedDatabase, i1.$NewsMentionDailyTable> {
+  $$NewsMentionDailyTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  i0.ColumnFilters<DateTime> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => i0.ColumnFilters(column),
+  );
+
+  i0.ColumnFilters<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => i0.ColumnFilters(column),
+  );
+
+  i0.ColumnFilters<String> get itemKey => $composableBuilder(
+    column: $table.itemKey,
+    builder: (column) => i0.ColumnFilters(column),
+  );
+
+  i0.ColumnFilters<int> get mentionCount => $composableBuilder(
+    column: $table.mentionCount,
+    builder: (column) => i0.ColumnFilters(column),
+  );
+
+  i0.ColumnFilters<int> get dictionaryVersion => $composableBuilder(
+    column: $table.dictionaryVersion,
+    builder: (column) => i0.ColumnFilters(column),
+  );
+}
+
+class $$NewsMentionDailyTableOrderingComposer
+    extends i0.Composer<i0.GeneratedDatabase, i1.$NewsMentionDailyTable> {
+  $$NewsMentionDailyTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  i0.ColumnOrderings<DateTime> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => i0.ColumnOrderings(column),
+  );
+
+  i0.ColumnOrderings<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => i0.ColumnOrderings(column),
+  );
+
+  i0.ColumnOrderings<String> get itemKey => $composableBuilder(
+    column: $table.itemKey,
+    builder: (column) => i0.ColumnOrderings(column),
+  );
+
+  i0.ColumnOrderings<int> get mentionCount => $composableBuilder(
+    column: $table.mentionCount,
+    builder: (column) => i0.ColumnOrderings(column),
+  );
+
+  i0.ColumnOrderings<int> get dictionaryVersion => $composableBuilder(
+    column: $table.dictionaryVersion,
+    builder: (column) => i0.ColumnOrderings(column),
+  );
+}
+
+class $$NewsMentionDailyTableAnnotationComposer
+    extends i0.Composer<i0.GeneratedDatabase, i1.$NewsMentionDailyTable> {
+  $$NewsMentionDailyTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  i0.GeneratedColumn<DateTime> get date =>
+      $composableBuilder(column: $table.date, builder: (column) => column);
+
+  i0.GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  i0.GeneratedColumn<String> get itemKey =>
+      $composableBuilder(column: $table.itemKey, builder: (column) => column);
+
+  i0.GeneratedColumn<int> get mentionCount => $composableBuilder(
+    column: $table.mentionCount,
+    builder: (column) => column,
+  );
+
+  i0.GeneratedColumn<int> get dictionaryVersion => $composableBuilder(
+    column: $table.dictionaryVersion,
+    builder: (column) => column,
+  );
+}
+
+class $$NewsMentionDailyTableTableManager
+    extends
+        i0.RootTableManager<
+          i0.GeneratedDatabase,
+          i1.$NewsMentionDailyTable,
+          i1.NewsMentionDailyEntry,
+          i1.$$NewsMentionDailyTableFilterComposer,
+          i1.$$NewsMentionDailyTableOrderingComposer,
+          i1.$$NewsMentionDailyTableAnnotationComposer,
+          $$NewsMentionDailyTableCreateCompanionBuilder,
+          $$NewsMentionDailyTableUpdateCompanionBuilder,
+          (
+            i1.NewsMentionDailyEntry,
+            i0.BaseReferences<
+              i0.GeneratedDatabase,
+              i1.$NewsMentionDailyTable,
+              i1.NewsMentionDailyEntry
+            >,
+          ),
+          i1.NewsMentionDailyEntry,
+          i0.PrefetchHooks Function()
+        > {
+  $$NewsMentionDailyTableTableManager(
+    i0.GeneratedDatabase db,
+    i1.$NewsMentionDailyTable table,
+  ) : super(
+        i0.TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              i1.$$NewsMentionDailyTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () => i1
+              .$$NewsMentionDailyTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              i1.$$NewsMentionDailyTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                i0.Value<DateTime> date = const i0.Value.absent(),
+                i0.Value<String> kind = const i0.Value.absent(),
+                i0.Value<String> itemKey = const i0.Value.absent(),
+                i0.Value<int> mentionCount = const i0.Value.absent(),
+                i0.Value<int> dictionaryVersion = const i0.Value.absent(),
+                i0.Value<int> rowid = const i0.Value.absent(),
+              }) => i1.NewsMentionDailyCompanion(
+                date: date,
+                kind: kind,
+                itemKey: itemKey,
+                mentionCount: mentionCount,
+                dictionaryVersion: dictionaryVersion,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required DateTime date,
+                required String kind,
+                required String itemKey,
+                required int mentionCount,
+                required int dictionaryVersion,
+                i0.Value<int> rowid = const i0.Value.absent(),
+              }) => i1.NewsMentionDailyCompanion.insert(
+                date: date,
+                kind: kind,
+                itemKey: itemKey,
+                mentionCount: mentionCount,
+                dictionaryVersion: dictionaryVersion,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), i0.BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$NewsMentionDailyTableProcessedTableManager =
+    i0.ProcessedTableManager<
+      i0.GeneratedDatabase,
+      i1.$NewsMentionDailyTable,
+      i1.NewsMentionDailyEntry,
+      i1.$$NewsMentionDailyTableFilterComposer,
+      i1.$$NewsMentionDailyTableOrderingComposer,
+      i1.$$NewsMentionDailyTableAnnotationComposer,
+      $$NewsMentionDailyTableCreateCompanionBuilder,
+      $$NewsMentionDailyTableUpdateCompanionBuilder,
+      (
+        i1.NewsMentionDailyEntry,
+        i0.BaseReferences<
+          i0.GeneratedDatabase,
+          i1.$NewsMentionDailyTable,
+          i1.NewsMentionDailyEntry
+        >,
+      ),
+      i1.NewsMentionDailyEntry,
+      i0.PrefetchHooks Function()
+    >;
 i0.Index get idxNewsItemPublishedAt => i0.Index(
   'idx_news_item_published_at',
   'CREATE INDEX idx_news_item_published_at ON news_item (published_at)',
@@ -1588,3 +1805,398 @@ i0.Index get idxNewsStockMapNewsId => i0.Index(
   'idx_news_stock_map_news_id',
   'CREATE INDEX idx_news_stock_map_news_id ON news_stock_map (news_id)',
 );
+i0.Index get idxNewsMentionDailyDate => i0.Index(
+  'idx_news_mention_daily_date',
+  'CREATE INDEX idx_news_mention_daily_date ON news_mention_daily (date)',
+);
+
+class $NewsMentionDailyTable extends i2.NewsMentionDaily
+    with i0.TableInfo<$NewsMentionDailyTable, i1.NewsMentionDailyEntry> {
+  @override
+  final i0.GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NewsMentionDailyTable(this.attachedDatabase, [this._alias]);
+  static const i0.VerificationMeta _dateMeta = const i0.VerificationMeta(
+    'date',
+  );
+  @override
+  late final i0.GeneratedColumn<DateTime> date = i0.GeneratedColumn<DateTime>(
+    'date',
+    aliasedName,
+    false,
+    type: i0.DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const i0.VerificationMeta _kindMeta = const i0.VerificationMeta(
+    'kind',
+  );
+  @override
+  late final i0.GeneratedColumn<String> kind = i0.GeneratedColumn<String>(
+    'kind',
+    aliasedName,
+    false,
+    type: i0.DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const i0.VerificationMeta _itemKeyMeta = const i0.VerificationMeta(
+    'itemKey',
+  );
+  @override
+  late final i0.GeneratedColumn<String> itemKey = i0.GeneratedColumn<String>(
+    'item_key',
+    aliasedName,
+    false,
+    type: i0.DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const i0.VerificationMeta _mentionCountMeta =
+      const i0.VerificationMeta('mentionCount');
+  @override
+  late final i0.GeneratedColumn<int> mentionCount = i0.GeneratedColumn<int>(
+    'mention_count',
+    aliasedName,
+    false,
+    type: i0.DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const i0.VerificationMeta _dictionaryVersionMeta =
+      const i0.VerificationMeta('dictionaryVersion');
+  @override
+  late final i0.GeneratedColumn<int> dictionaryVersion =
+      i0.GeneratedColumn<int>(
+        'dictionary_version',
+        aliasedName,
+        false,
+        type: i0.DriftSqlType.int,
+        requiredDuringInsert: true,
+      );
+  @override
+  List<i0.GeneratedColumn> get $columns => [
+    date,
+    kind,
+    itemKey,
+    mentionCount,
+    dictionaryVersion,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'news_mention_daily';
+  @override
+  i0.VerificationContext validateIntegrity(
+    i0.Insertable<i1.NewsMentionDailyEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = i0.VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('date')) {
+      context.handle(
+        _dateMeta,
+        date.isAcceptableOrUnknown(data['date']!, _dateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dateMeta);
+    }
+    if (data.containsKey('kind')) {
+      context.handle(
+        _kindMeta,
+        kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_kindMeta);
+    }
+    if (data.containsKey('item_key')) {
+      context.handle(
+        _itemKeyMeta,
+        itemKey.isAcceptableOrUnknown(data['item_key']!, _itemKeyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_itemKeyMeta);
+    }
+    if (data.containsKey('mention_count')) {
+      context.handle(
+        _mentionCountMeta,
+        mentionCount.isAcceptableOrUnknown(
+          data['mention_count']!,
+          _mentionCountMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_mentionCountMeta);
+    }
+    if (data.containsKey('dictionary_version')) {
+      context.handle(
+        _dictionaryVersionMeta,
+        dictionaryVersion.isAcceptableOrUnknown(
+          data['dictionary_version']!,
+          _dictionaryVersionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_dictionaryVersionMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<i0.GeneratedColumn> get $primaryKey => {date, kind, itemKey};
+  @override
+  i1.NewsMentionDailyEntry map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return i1.NewsMentionDailyEntry(
+      date: attachedDatabase.typeMapping.read(
+        i0.DriftSqlType.dateTime,
+        data['${effectivePrefix}date'],
+      )!,
+      kind: attachedDatabase.typeMapping.read(
+        i0.DriftSqlType.string,
+        data['${effectivePrefix}kind'],
+      )!,
+      itemKey: attachedDatabase.typeMapping.read(
+        i0.DriftSqlType.string,
+        data['${effectivePrefix}item_key'],
+      )!,
+      mentionCount: attachedDatabase.typeMapping.read(
+        i0.DriftSqlType.int,
+        data['${effectivePrefix}mention_count'],
+      )!,
+      dictionaryVersion: attachedDatabase.typeMapping.read(
+        i0.DriftSqlType.int,
+        data['${effectivePrefix}dictionary_version'],
+      )!,
+    );
+  }
+
+  @override
+  $NewsMentionDailyTable createAlias(String alias) {
+    return $NewsMentionDailyTable(attachedDatabase, alias);
+  }
+}
+
+class NewsMentionDailyEntry extends i0.DataClass
+    implements i0.Insertable<i1.NewsMentionDailyEntry> {
+  /// 本地日曆日（新聞 publishedAt 的 local 日）
+  final DateTime date;
+
+  /// 'stock' 或 'theme'
+  final String kind;
+
+  /// symbol（kind=stock）或題材名（kind=theme）
+  final String itemKey;
+
+  /// 該日提及篇數
+  final int mentionCount;
+
+  /// 寫入當下的 NewsHeatParams.dictionaryVersion
+  final int dictionaryVersion;
+  const NewsMentionDailyEntry({
+    required this.date,
+    required this.kind,
+    required this.itemKey,
+    required this.mentionCount,
+    required this.dictionaryVersion,
+  });
+  @override
+  Map<String, i0.Expression> toColumns(bool nullToAbsent) {
+    final map = <String, i0.Expression>{};
+    map['date'] = i0.Variable<DateTime>(date);
+    map['kind'] = i0.Variable<String>(kind);
+    map['item_key'] = i0.Variable<String>(itemKey);
+    map['mention_count'] = i0.Variable<int>(mentionCount);
+    map['dictionary_version'] = i0.Variable<int>(dictionaryVersion);
+    return map;
+  }
+
+  i1.NewsMentionDailyCompanion toCompanion(bool nullToAbsent) {
+    return i1.NewsMentionDailyCompanion(
+      date: i0.Value(date),
+      kind: i0.Value(kind),
+      itemKey: i0.Value(itemKey),
+      mentionCount: i0.Value(mentionCount),
+      dictionaryVersion: i0.Value(dictionaryVersion),
+    );
+  }
+
+  factory NewsMentionDailyEntry.fromJson(
+    Map<String, dynamic> json, {
+    i0.ValueSerializer? serializer,
+  }) {
+    serializer ??= i0.driftRuntimeOptions.defaultSerializer;
+    return NewsMentionDailyEntry(
+      date: serializer.fromJson<DateTime>(json['date']),
+      kind: serializer.fromJson<String>(json['kind']),
+      itemKey: serializer.fromJson<String>(json['itemKey']),
+      mentionCount: serializer.fromJson<int>(json['mentionCount']),
+      dictionaryVersion: serializer.fromJson<int>(json['dictionaryVersion']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({i0.ValueSerializer? serializer}) {
+    serializer ??= i0.driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'date': serializer.toJson<DateTime>(date),
+      'kind': serializer.toJson<String>(kind),
+      'itemKey': serializer.toJson<String>(itemKey),
+      'mentionCount': serializer.toJson<int>(mentionCount),
+      'dictionaryVersion': serializer.toJson<int>(dictionaryVersion),
+    };
+  }
+
+  i1.NewsMentionDailyEntry copyWith({
+    DateTime? date,
+    String? kind,
+    String? itemKey,
+    int? mentionCount,
+    int? dictionaryVersion,
+  }) => i1.NewsMentionDailyEntry(
+    date: date ?? this.date,
+    kind: kind ?? this.kind,
+    itemKey: itemKey ?? this.itemKey,
+    mentionCount: mentionCount ?? this.mentionCount,
+    dictionaryVersion: dictionaryVersion ?? this.dictionaryVersion,
+  );
+  NewsMentionDailyEntry copyWithCompanion(i1.NewsMentionDailyCompanion data) {
+    return NewsMentionDailyEntry(
+      date: data.date.present ? data.date.value : this.date,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      itemKey: data.itemKey.present ? data.itemKey.value : this.itemKey,
+      mentionCount: data.mentionCount.present
+          ? data.mentionCount.value
+          : this.mentionCount,
+      dictionaryVersion: data.dictionaryVersion.present
+          ? data.dictionaryVersion.value
+          : this.dictionaryVersion,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NewsMentionDailyEntry(')
+          ..write('date: $date, ')
+          ..write('kind: $kind, ')
+          ..write('itemKey: $itemKey, ')
+          ..write('mentionCount: $mentionCount, ')
+          ..write('dictionaryVersion: $dictionaryVersion')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(date, kind, itemKey, mentionCount, dictionaryVersion);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is i1.NewsMentionDailyEntry &&
+          other.date == this.date &&
+          other.kind == this.kind &&
+          other.itemKey == this.itemKey &&
+          other.mentionCount == this.mentionCount &&
+          other.dictionaryVersion == this.dictionaryVersion);
+}
+
+class NewsMentionDailyCompanion
+    extends i0.UpdateCompanion<i1.NewsMentionDailyEntry> {
+  final i0.Value<DateTime> date;
+  final i0.Value<String> kind;
+  final i0.Value<String> itemKey;
+  final i0.Value<int> mentionCount;
+  final i0.Value<int> dictionaryVersion;
+  final i0.Value<int> rowid;
+  const NewsMentionDailyCompanion({
+    this.date = const i0.Value.absent(),
+    this.kind = const i0.Value.absent(),
+    this.itemKey = const i0.Value.absent(),
+    this.mentionCount = const i0.Value.absent(),
+    this.dictionaryVersion = const i0.Value.absent(),
+    this.rowid = const i0.Value.absent(),
+  });
+  NewsMentionDailyCompanion.insert({
+    required DateTime date,
+    required String kind,
+    required String itemKey,
+    required int mentionCount,
+    required int dictionaryVersion,
+    this.rowid = const i0.Value.absent(),
+  }) : date = i0.Value(date),
+       kind = i0.Value(kind),
+       itemKey = i0.Value(itemKey),
+       mentionCount = i0.Value(mentionCount),
+       dictionaryVersion = i0.Value(dictionaryVersion);
+  static i0.Insertable<i1.NewsMentionDailyEntry> custom({
+    i0.Expression<DateTime>? date,
+    i0.Expression<String>? kind,
+    i0.Expression<String>? itemKey,
+    i0.Expression<int>? mentionCount,
+    i0.Expression<int>? dictionaryVersion,
+    i0.Expression<int>? rowid,
+  }) {
+    return i0.RawValuesInsertable({
+      if (date != null) 'date': date,
+      if (kind != null) 'kind': kind,
+      if (itemKey != null) 'item_key': itemKey,
+      if (mentionCount != null) 'mention_count': mentionCount,
+      if (dictionaryVersion != null) 'dictionary_version': dictionaryVersion,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  i1.NewsMentionDailyCompanion copyWith({
+    i0.Value<DateTime>? date,
+    i0.Value<String>? kind,
+    i0.Value<String>? itemKey,
+    i0.Value<int>? mentionCount,
+    i0.Value<int>? dictionaryVersion,
+    i0.Value<int>? rowid,
+  }) {
+    return i1.NewsMentionDailyCompanion(
+      date: date ?? this.date,
+      kind: kind ?? this.kind,
+      itemKey: itemKey ?? this.itemKey,
+      mentionCount: mentionCount ?? this.mentionCount,
+      dictionaryVersion: dictionaryVersion ?? this.dictionaryVersion,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, i0.Expression> toColumns(bool nullToAbsent) {
+    final map = <String, i0.Expression>{};
+    if (date.present) {
+      map['date'] = i0.Variable<DateTime>(date.value);
+    }
+    if (kind.present) {
+      map['kind'] = i0.Variable<String>(kind.value);
+    }
+    if (itemKey.present) {
+      map['item_key'] = i0.Variable<String>(itemKey.value);
+    }
+    if (mentionCount.present) {
+      map['mention_count'] = i0.Variable<int>(mentionCount.value);
+    }
+    if (dictionaryVersion.present) {
+      map['dictionary_version'] = i0.Variable<int>(dictionaryVersion.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = i0.Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NewsMentionDailyCompanion(')
+          ..write('date: $date, ')
+          ..write('kind: $kind, ')
+          ..write('itemKey: $itemKey, ')
+          ..write('mentionCount: $mentionCount, ')
+          ..write('dictionaryVersion: $dictionaryVersion, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}

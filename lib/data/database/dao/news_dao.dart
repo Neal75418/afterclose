@@ -1,4 +1,7 @@
+import 'package:drift/drift.dart';
+
 import 'package:afterclose/data/database/app_database.drift.dart';
+import 'package:afterclose/data/database/tables/news_tables.drift.dart';
 
 /// 新聞相關資料存取
 mixin NewsDaoMixin on $AppDatabase {
@@ -25,5 +28,29 @@ mixin NewsDaoMixin on $AppDatabase {
     }
 
     return grouped;
+  }
+
+  // ==================================================
+  // 每日提及數快照（新聞熱度發現層）
+  // ==================================================
+
+  /// 快照 upsert（(date,kind,itemKey) 覆蓋——供每日回補冪等重寫）
+  Future<void> upsertMentionCounts(List<NewsMentionDailyCompanion> rows) async {
+    if (rows.isEmpty) return;
+    await batch((b) {
+      for (final r in rows) {
+        b.insert(newsMentionDaily, r, mode: InsertMode.insertOrReplace);
+      }
+    });
+  }
+
+  /// 讀取快照（date >= from），未來回測用；測試亦用此驗證寫入
+  Future<List<NewsMentionDailyEntry>> getMentionCounts({
+    required DateTime from,
+  }) {
+    return (select(newsMentionDaily)
+          ..where((t) => t.date.isBiggerOrEqualValue(from))
+          ..orderBy([(t) => OrderingTerm.asc(t.date)]))
+        .get();
   }
 }

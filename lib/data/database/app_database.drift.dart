@@ -26,6 +26,8 @@ abstract class $AppDatabase extends i0.GeneratedDatabase {
       .$DailyInstitutionalTable(this);
   late final i4.$NewsItemTable newsItem = i4.$NewsItemTable(this);
   late final i4.$NewsStockMapTable newsStockMap = i4.$NewsStockMapTable(this);
+  late final i4.$NewsMentionDailyTable newsMentionDaily = i4
+      .$NewsMentionDailyTable(this);
   late final i5.$DailyAnalysisTable dailyAnalysis = i5.$DailyAnalysisTable(
     this,
   );
@@ -86,6 +88,7 @@ abstract class $AppDatabase extends i0.GeneratedDatabase {
     dailyInstitutional,
     newsItem,
     newsStockMap,
+    newsMentionDaily,
     dailyAnalysis,
     dailyReason,
     dailyRecommendation,
@@ -124,6 +127,7 @@ abstract class $AppDatabase extends i0.GeneratedDatabase {
     i4.idxNewsItemSource,
     i4.idxNewsStockMapSymbol,
     i4.idxNewsStockMapNewsId,
+    i4.idxNewsMentionDailyDate,
     i5.idxDailyAnalysisDate,
     i5.idxDailyAnalysisScoreShort,
     i5.idxDailyAnalysisScoreLong,
@@ -366,6 +370,8 @@ class $AppDatabaseManager {
       i4.$$NewsItemTableTableManager(_db, _db.newsItem);
   i4.$$NewsStockMapTableTableManager get newsStockMap =>
       i4.$$NewsStockMapTableTableManager(_db, _db.newsStockMap);
+  i4.$$NewsMentionDailyTableTableManager get newsMentionDaily =>
+      i4.$$NewsMentionDailyTableTableManager(_db, _db.newsMentionDaily);
   i5.$$DailyAnalysisTableTableManager get dailyAnalysis =>
       i5.$$DailyAnalysisTableTableManager(_db, _db.dailyAnalysis);
   i5.$$DailyReasonTableTableManager get dailyReason =>
