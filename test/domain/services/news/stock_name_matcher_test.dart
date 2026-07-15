@@ -66,4 +66,13 @@ void main() {
   test('金融股 3 字名', () {
     expect(matcher.match('國泰金股東會通過配息'), {'2882'});
   });
+
+  test('等長名稱重疊時 tie-break 確定（字典序優先）', () {
+    final m = StockNameMatcher.fromStocks([
+      stock('9998', '積電子'),
+      stock('9999', '台積電'),
+    ]);
+    // 「台積電子」中兩個 3 字名重疊：字典序「台積電」<「積電子」→ 台積電先掃並佔位
+    expect(m.match('研究台積電子公司'), {'9999'});
+  });
 }

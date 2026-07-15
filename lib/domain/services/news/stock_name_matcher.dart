@@ -26,7 +26,11 @@ class StockNameMatcher {
         entries.add((name, s.symbol));
       }
     }
-    entries.sort((a, b) => b.$1.length.compareTo(a.$1.length));
+    entries.sort((a, b) {
+      final lenCmp = b.$1.length.compareTo(a.$1.length);
+      if (lenCmp != 0) return lenCmp;
+      return a.$1.compareTo(b.$1); // tie-break by dictionary order ascending
+    });
     return StockNameMatcher._(entries);
   }
 
