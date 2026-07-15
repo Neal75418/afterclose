@@ -192,4 +192,12 @@ abstract final class ApiEndpoints {
 
   /// 中央社
   static const String rssCna = 'https://feeds.feedburner.com/rsscna/finance';
+
+  /// 經濟日報（證券版）
+  static const String rssUdnMoney =
+      'https://money.udn.com/rssfeed/news/1001/5590/5607?ch=money_rss';
+
+  /// 自由財經
+  static const String rssLtnBusiness =
+      'https://news.ltn.com.tw/rss/business.xml';
 }

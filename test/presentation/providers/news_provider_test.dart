@@ -93,6 +93,16 @@ void main() {
       expect(NewsSource.cna.matches('中央社'), isTrue);
       expect(NewsSource.cna.matches('MoneyDJ'), isFalse);
     });
+
+    test('udn matches only 經濟日報', () {
+      expect(NewsSource.udn.matches('經濟日報'), isTrue);
+      expect(NewsSource.udn.matches('中央社'), isFalse);
+    });
+
+    test('ltn matches only 自由財經', () {
+      expect(NewsSource.ltn.matches('自由財經'), isTrue);
+      expect(NewsSource.ltn.matches('經濟日報'), isFalse);
+    });
   });
 
   // ==========================================

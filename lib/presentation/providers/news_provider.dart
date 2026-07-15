@@ -17,7 +17,9 @@ enum NewsSource {
   moneyDJ,
   yahoo,
   cnyes,
-  cna;
+  cna,
+  udn,
+  ltn;
 
   String get label =>
       'empty.source${name[0].toUpperCase()}${name.substring(1)}'.tr();
@@ -30,6 +32,8 @@ enum NewsSource {
       NewsSource.yahoo => sourceName == 'Yahoo財經',
       NewsSource.cnyes => sourceName == '鉅亨網',
       NewsSource.cna => sourceName == '中央社',
+      NewsSource.udn => sourceName == '經濟日報',
+      NewsSource.ltn => sourceName == '自由財經',
     };
   }
 }

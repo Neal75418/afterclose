@@ -35,6 +35,18 @@ class NewsFeedSource {
     NewsFeedSource(name: '鉅亨網', url: ApiEndpoints.rssCnyes, category: 'OTHER'),
     // 中央社 CNA
     NewsFeedSource(name: '中央社', url: ApiEndpoints.rssCna, category: 'OTHER'),
+    // 經濟日報（證券版）
+    NewsFeedSource(
+      name: '經濟日報',
+      url: ApiEndpoints.rssUdnMoney,
+      category: 'OTHER',
+    ),
+    // 自由時報財經
+    NewsFeedSource(
+      name: '自由財經',
+      url: ApiEndpoints.rssLtnBusiness,
+      category: 'OTHER',
+    ),
   ];
 }
 

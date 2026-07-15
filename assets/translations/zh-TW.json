@@ -671,7 +671,9 @@
     "sourceCna": "中央社",
     "error": "發生錯誤",
     "networkError": "網路連線失敗",
-    "networkErrorHint": "請檢查網路連線後再試"
+    "networkErrorHint": "請檢查網路連線後再試",
+    "sourceUdn": "經濟日報",
+    "sourceLtn": "自由財經"
   },
   "accessibility": {
     "stock": "股票 {symbol}",

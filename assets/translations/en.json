@@ -671,7 +671,9 @@
     "sourceCna": "CNA",
     "error": "An Error Occurred",
     "networkError": "Network Connection Failed",
-    "networkErrorHint": "Please check your connection and try again"
+    "networkErrorHint": "Please check your connection and try again",
+    "sourceUdn": "UDN Money",
+    "sourceLtn": "LTN Business"
   },
   "accessibility": {
     "stock": "Stock {symbol}",
