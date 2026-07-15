@@ -64,9 +64,14 @@ class HeatResult {
 /// 窗口以 **local 日曆日差**切分：0–6 天＝近窗、7–27 天＝基準窗、其餘忽略。
 /// 爆量＝近 7 天篇數達前 21 天週均 3 倍（等價 `mentions7d >= mentionsPrev21d`）
 /// 且 `mentions7d >= surgeMinMentions`。
+///
+/// 時區假設：`now` 與 `publishedAt` 皆以 `.toLocal()` 正規化到**執行裝置**
+/// 的時區再取日曆日——假設寫入與讀取在同一裝置（同 PriceCoverage 的
+/// 已文件化假設）。單機 App 成立；若未來跨時區同步需改以固定時區錨定。
 class HeatCalculator {
   HeatResult compute(List<ArticleTags> articles, {required DateTime now}) {
-    final today = DateTime(now.year, now.month, now.day);
+    final localNow = now.toLocal();
+    final today = DateTime(localNow.year, localNow.month, localNow.day);
     final stockRecent = <String, int>{};
     final stockBaseline = <String, int>{};
     final themeRecent = <String, int>{};

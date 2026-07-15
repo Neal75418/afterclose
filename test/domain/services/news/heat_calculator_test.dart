@@ -88,4 +88,17 @@ void main() {
     expect(r.stocks, isEmpty);
     expect(r.themes, isEmpty);
   });
+
+  test('now 傳 UTC 與傳 local 結果一致（對稱正規化）', () {
+    final localNow = DateTime(2026, 7, 15, 20, 0);
+    final utcNow = localNow.toUtc();
+    final input = [
+      article('a', DateTime(2026, 7, 15, 9), symbols: {'2330'}),
+      article('b', DateTime(2026, 7, 8, 9), symbols: {'2330'}),
+    ];
+    final fromLocal = calc.compute(input, now: localNow).stocks.single;
+    final fromUtc = calc.compute(input, now: utcNow).stocks.single;
+    expect(fromUtc.mentions7d, fromLocal.mentions7d);
+    expect(fromUtc.mentionsPrev21d, fromLocal.mentionsPrev21d);
+  });
 }
