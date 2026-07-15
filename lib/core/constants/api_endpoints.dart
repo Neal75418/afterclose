@@ -178,9 +178,9 @@ abstract final class ApiEndpoints {
   // RSS 新聞來源
   // ==================================================
 
-  /// MoneyDJ 理財網
-  static const String rssMoneyDj =
-      'https://www.moneydj.com/KMDJ/RssCenter.aspx?svc=NR&fno=1&arg=MB010000';
+  // MoneyDJ 已於 2026-07-15 移除：其 RSS 退化到單次僅回 1 筆、
+  // 內容以美股/國際為主（502 筆僅 4 筆能關聯個股），且掃遍分類代碼
+  // （MB010000-MB070000）無台股分類可用。
 
   /// Yahoo 財經
   static const String rssYahooFinance =

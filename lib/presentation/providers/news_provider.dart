@@ -14,7 +14,6 @@ import 'package:afterclose/presentation/providers/providers.dart';
 /// 可用的新聞來源篩選選項
 enum NewsSource {
   all,
-  moneyDJ,
   yahoo,
   cnyes,
   cna,
@@ -28,7 +27,6 @@ enum NewsSource {
   bool matches(String sourceName) {
     return switch (this) {
       NewsSource.all => true,
-      NewsSource.moneyDJ => sourceName == 'MoneyDJ',
       NewsSource.yahoo => sourceName == 'Yahoo財經',
       NewsSource.cnyes => sourceName == '鉅亨網',
       NewsSource.cna => sourceName == '中央社',
@@ -56,12 +54,9 @@ class NewsState {
   final NewsSource selectedSource;
   final String searchQuery;
 
-  /// 依選定來源與搜尋關鍵字過濾的新聞
+  /// 依選定來源與搜尋關鍵字過濾的新聞（同日同標題去重後）
   List<NewsItemEntry> get filteredNews {
-    var result = allNews;
-    if (selectedSource != NewsSource.all) {
-      result = result.where((n) => selectedSource.matches(n.source)).toList();
-    }
+    var result = _dedupedBySource[selectedSource] ?? const <NewsItemEntry>[];
     if (searchQuery.isNotEmpty) {
       final query = searchQuery.toLowerCase();
       result = result
@@ -71,19 +66,48 @@ class NewsState {
     return result;
   }
 
-  /// 各來源的新聞數量（建構時計算一次，避免每次 watch 重新遍歷）
-  late final Map<NewsSource, int> sourceCounts = _computeSourceCounts();
+  /// 各檢視（全部／單一來源）去重後的清單，建構時算一次。
+  ///
+  /// 去重規則：**正規化標題 + 發布日（local）** 分組，保留組內最早發布
+  /// 的那筆（原始媒體優先於聚合轉載）。「同日」約束必要——語料驗證
+  /// 顯示跨天的同標題（如每日期貨行情欄目）是不同新聞，不可合併。
+  /// 去重在來源過濾**之後**做：全部檢視隱藏轉載、單一來源檢視仍看得到
+  /// 該來源自己的那份。僅影響顯示層，DB 與個股關聯評分不受影響。
+  late final Map<NewsSource, List<NewsItemEntry>> _dedupedBySource = {
+    for (final source in NewsSource.values)
+      source: _deduplicate(
+        source == NewsSource.all
+            ? allNews
+            : allNews.where((n) => source.matches(n.source)).toList(),
+      ),
+  };
 
-  Map<NewsSource, int> _computeSourceCounts() {
-    final counts = <NewsSource, int>{};
-    counts[NewsSource.all] = allNews.length;
+  /// 各來源的新聞數量（與各檢視實際顯示的清單一致）
+  late final Map<NewsSource, int> sourceCounts = {
+    for (final e in _dedupedBySource.entries) e.key: e.value.length,
+  };
 
-    for (final source in NewsSource.values) {
-      if (source == NewsSource.all) continue;
-      counts[source] = allNews.where((n) => source.matches(n.source)).length;
+  static List<NewsItemEntry> _deduplicate(List<NewsItemEntry> items) {
+    final best = <String, NewsItemEntry>{};
+    for (final n in items) {
+      final day = n.publishedAt.toLocal();
+      final key =
+          '${day.year}-${day.month}-${day.day}|${_normalizeTitle(n.title)}';
+      final current = best[key];
+      if (current == null || n.publishedAt.isBefore(current.publishedAt)) {
+        best[key] = n;
+      }
     }
+    return best.values.toList()
+      ..sort((a, b) => b.publishedAt.compareTo(a.publishedAt));
+  }
 
-    return counts;
+  /// 全形/半形空白（`\s` 不保證涵蓋 U+3000，故顯式列入）
+  static final RegExp _whitespace = RegExp(r'[\s　]+');
+
+  /// 標題正規化：全形/半形空白折疊為單一空格
+  static String _normalizeTitle(String title) {
+    return title.replaceAll(_whitespace, ' ').trim();
   }
 
   NewsState copyWith({

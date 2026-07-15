@@ -34,7 +34,7 @@ class FakeNewsNotifier extends NewsNotifier {
 NewsItemEntry createNewsItem({
   String id = 'news_1',
   String title = 'TSMC Q1 Revenue Hits Record',
-  String source = 'MoneyDJ',
+  String source = '鉅亨網',
   String url = 'https://example.com/news/1',
   DateTime? publishedAt,
 }) {
@@ -133,7 +133,7 @@ void main() {
         createNewsItem(
           id: 'n1',
           title: 'Breaking: TSMC Earnings',
-          source: 'MoneyDJ',
+          source: '鉅亨網',
           publishedAt: now,
         ),
         createNewsItem(
@@ -155,20 +155,20 @@ void main() {
     testWidgets('shows source badges', (tester) async {
       widenViewport(tester);
       final newsItems = [
-        createNewsItem(source: 'MoneyDJ', publishedAt: DateTime.now()),
+        createNewsItem(source: '鉅亨網', publishedAt: DateTime.now()),
       ];
       await tester.pumpWidget(
         buildTestWidget(newsState: NewsState(allNews: newsItems)),
       );
       await tester.pump(const Duration(seconds: 1));
 
-      expect(find.text('MoneyDJ'), findsAtLeastNWidgets(1));
+      expect(find.text('鉅亨網'), findsAtLeastNWidgets(1));
     });
 
     testWidgets('shows source filter chips when has news', (tester) async {
       widenViewport(tester);
       final newsItems = [
-        createNewsItem(source: 'MoneyDJ', publishedAt: DateTime.now()),
+        createNewsItem(source: '鉅亨網', publishedAt: DateTime.now()),
       ];
       await tester.pumpWidget(
         buildTestWidget(newsState: NewsState(allNews: newsItems)),
@@ -211,7 +211,7 @@ void main() {
     ) async {
       widenViewport(tester);
       final newsItems = [
-        createNewsItem(source: 'MoneyDJ', publishedAt: DateTime.now()),
+        createNewsItem(source: '鉅亨網', publishedAt: DateTime.now()),
       ];
       await tester.pumpWidget(
         buildTestWidget(

@@ -19,12 +19,6 @@ class NewsFeedSource {
 
   /// 預設的台灣財經新聞來源
   static const List<NewsFeedSource> defaultSources = [
-    // MoneyDJ 理財網
-    NewsFeedSource(
-      name: 'MoneyDJ',
-      url: ApiEndpoints.rssMoneyDj,
-      category: 'OTHER',
-    ),
     // Yahoo Taiwan Finance
     NewsFeedSource(
       name: 'Yahoo財經',
