@@ -419,23 +419,23 @@ class RssNewsItem {
   ///
   /// 支援 4-6 位數代碼：一般股票（4 位）、ETF/權證（5-6 位）。
   ///
-  /// **年份過濾**：4 位數落在 2000-2099 與鋼鐵股代號（20xx）衝突 — 文章裡的
-  /// 「2027年」「看好 2027 大爆發」會被誤當成大成鋼(2027)。此範圍要求明確股票
-  /// 上下文（括號包覆或 -TW 後綴，如「大成鋼(2027)」「(2027-TW)」）才採計；
-  /// 否則視為年份略過。代號 ≥ 2100（如 2330 台積電）不受影響。
+  /// **4 位數（非 0 開頭）一律要求明確股票上下文**（括號包覆或 -TW 後綴，
+  /// 如「凌通(4952)」「聯電(2303-TW)」）：裸寫的 4 位數與年份（2027年）、
+  /// 加權指數點數（漲1467點）、金額（賣超2102億）全面衝突，且台積電股價
+  /// 進入 2xxx 區間後（「台積電大漲95元報2505」）連 ≥2100 的代號空間也
+  /// 天天被行情文撞——對全量新聞語料重放驗證：正確關聯幾乎全帶括號/TW
+  /// 格式，強制上下文零誤殺。0 開頭 4 位數（0050 等 ETF 命名空間）與
+  /// 5-6 位數不受影響。
   List<String> extractStockCodes() {
     final regex = RegExp(r'\b(\d{4,6})\b');
     final codes = <String>[];
     for (final m in regex.allMatches(title)) {
       final code = m.group(1)!;
-      if (code.length == 4) {
-        final value = int.parse(code);
-        if (value >= 2000 && value <= 2099) {
-          final hasStockContext = RegExp(
-            '[（(]$code[)）]|$code-?TW',
-          ).hasMatch(title);
-          if (!hasStockContext) continue;
-        }
+      if (code.length == 4 && !code.startsWith('0')) {
+        final hasStockContext = RegExp(
+          '[（(]$code[)）]|$code-?TW',
+        ).hasMatch(title);
+        if (!hasStockContext) continue;
       }
       codes.add(code);
     }

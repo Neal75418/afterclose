@@ -146,17 +146,58 @@ void main() {
   // RssNewsItem.extractStockCodes
   // ==========================================
   group('RssNewsItem.extractStockCodes', () {
-    test('extracts 4-digit stock codes from title', () {
+    test('extracts 4-digit stock codes with explicit context', () {
       final item = RssNewsItem(
         id: '1',
         source: 'Test',
-        title: '台積電 2330 營收創新高，聯電 2303 跟進',
+        title: '台積電(2330)營收創新高，聯電(2303-TW)跟進',
         url: 'https://example.com',
         publishedAt: DateTime(2025, 1, 15),
         category: 'STOCK',
       );
 
       expect(item.extractStockCodes(), equals(['2330', '2303']));
+    });
+
+    test('skips bare 4-digit codes without stock context（股價/點數撞代號）', () {
+      // 台積電股價進入 2xxx 區間後，行情文的價格數字會撞整個 2xxx 代號空間
+      final item = RssNewsItem(
+        id: '1',
+        source: 'Test',
+        title: '台股收漲893點收復4萬7關卡　台積電大漲95元報2505',
+        url: 'https://example.com',
+        publishedAt: DateTime(2025, 1, 15),
+        category: 'STOCK',
+      );
+
+      expect(item.extractStockCodes(), isEmpty);
+    });
+
+    test('mixed title keeps only the contextualized code', () {
+      final item = RssNewsItem(
+        id: '1',
+        source: 'Test',
+        title: '台積電(2330)漲95元報2505　台股飆升1467點',
+        url: 'https://example.com',
+        publishedAt: DateTime(2025, 1, 15),
+        category: 'STOCK',
+      );
+
+      expect(item.extractStockCodes(), equals(['2330']));
+    });
+
+    test('zero-leading 4-digit ETF codes exempt from context requirement', () {
+      // 0050/0056 等 ETF 代號以 0 開頭，不會與股價/年份/點數衝突
+      final item = RssNewsItem(
+        id: '1',
+        source: 'Test',
+        title: '0050 狂掃4500億元居冠　0056年化殖利率跌破4％',
+        url: 'https://example.com',
+        publishedAt: DateTime(2025, 1, 15),
+        category: 'STOCK',
+      );
+
+      expect(item.extractStockCodes(), equals(['0050', '0056']));
     });
 
     test('returns empty for no stock codes', () {
@@ -198,11 +239,11 @@ void main() {
       expect(item.extractStockCodes(), equals(['2027']));
     });
 
-    test('distinguishes real code（≥2100）from year（≤2099）', () {
+    test('bare code and bare year both skipped; bracketed code kept', () {
       final item = RssNewsItem(
         id: '1',
         source: 'Test',
-        title: '台積電2330看好2027大爆發',
+        title: '台積電(2330)看好2027大爆發，目標價2415元',
         url: 'https://example.com',
         publishedAt: DateTime(2025, 1, 15),
         category: 'STOCK',
