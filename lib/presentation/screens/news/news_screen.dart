@@ -238,7 +238,15 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
             tooltip: _isSearching ? 'common.close'.tr() : 'common.search'.tr(),
           ),
           IconButton(
-            icon: const Icon(Icons.refresh),
+            // 重新整理進行中改顯示轉圈——已有內容時列表保持原地
+            //（不切 shimmer），進度回饋集中在這裡
+            icon: state.isLoading
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.refresh),
             onPressed: _refresh,
             tooltip: S.refresh,
           ),
@@ -246,8 +254,8 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
       ),
       body: Column(
         children: [
-          // 來源篩選標籤
-          if (!state.isLoading && state.allNews.isNotEmpty)
+          // 來源篩選標籤（重新整理時保留，避免整排 chips 閃爍消失）
+          if (state.allNews.isNotEmpty)
             _SourceFilterChips(
               selectedSource: state.selectedSource,
               sourceCounts: state.sourceCounts,
@@ -274,7 +282,9 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
           Expanded(
             child: ThemedRefreshIndicator(
               onRefresh: _refresh,
-              child: state.isLoading
+              // shimmer 只在「首次載入且尚無內容」時出現；已有內容的
+              // 重新整理保持列表原地不動（進度看右上角按鈕轉圈）
+              child: state.isLoading && state.allNews.isEmpty
                   ? const NewsListShimmer(itemCount: 8)
                   : state.error != null && state.allNews.isEmpty
                   ? SingleChildScrollView(

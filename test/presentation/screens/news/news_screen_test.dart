@@ -188,6 +188,58 @@ void main() {
       expect(find.byType(FilterChip), findsNothing);
     });
 
+    testWidgets('refreshing with existing news keeps list, no shimmer', (
+      tester,
+    ) async {
+      widenViewport(tester);
+      final newsItems = [
+        createNewsItem(title: 'Existing News', publishedAt: DateTime.now()),
+      ];
+      await tester.pumpWidget(
+        buildTestWidget(
+          newsState: NewsState(isLoading: true, allNews: newsItems),
+        ),
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.byType(NewsListShimmer), findsNothing);
+      expect(find.text('Existing News'), findsOneWidget);
+    });
+
+    testWidgets('refreshing with existing news keeps filter chips', (
+      tester,
+    ) async {
+      widenViewport(tester);
+      final newsItems = [
+        createNewsItem(source: 'MoneyDJ', publishedAt: DateTime.now()),
+      ];
+      await tester.pumpWidget(
+        buildTestWidget(
+          newsState: NewsState(isLoading: true, allNews: newsItems),
+        ),
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.byType(FilterChip), findsAtLeastNWidgets(1));
+    });
+
+    testWidgets('refresh button shows spinner while loading', (tester) async {
+      widenViewport(tester);
+      await tester.pumpWidget(
+        buildTestWidget(newsState: NewsState(isLoading: true)),
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.byIcon(Icons.refresh), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byType(AppBar),
+          matching: find.byType(CircularProgressIndicator),
+        ),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('shows related stock chips', (tester) async {
       widenViewport(tester);
       final newsItems = [
