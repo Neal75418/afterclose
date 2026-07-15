@@ -68,15 +68,23 @@ abstract final class FundamentalParams {
   /// 單月持股比例增加 5% 以上視為買進訊號。
   static const double insiderSignificantBuyingThreshold = 5.0;
 
-  /// 高質押比例門檻（%）
+  /// 高質押比例門檻（%）— v1 正式值（2026-07-15 定案，非 placeholder）
   ///
   /// 70% 是經驗法則的高風險邊界（家族企業常態高質押多在 30-50%、地雷股
   /// 事發時質押比通常 80%+）。50% 是 TWSE 法規分界（質押比 ≥ 1/2 不計入
-  /// 董事改選選舉權），不是統計顯著的轉折點，誤觸發太多。
+  /// 董事改選選舉權），不是統計顯著的轉折點，誤觸發太多；70 同時避免
+  /// 富邦金、國泰金等家族長期高質押被當風險訊號。
   ///
-  /// 等 calibration 累積真實 forward data 後，會根據 backtest 決定門檻
-  /// （或砍掉這條 rule）。在那之前用 70 降低 false positive，避免
-  /// 富邦金、國泰金等家族長期高質押被當風險訊號扣分。
+  /// backtest 校準目前**不可行**：pledge_ratio 快照僅自 2026-03 起、
+  /// 6 個時間點，不足以做門檻掃描 × forward returns。累積約一年後併入
+  /// calibration batch 重驗（屆時同時釐清 neutral 警訊的 -18 分是否
+  /// 參與計分，再決定調整或砍 rule）。
+  ///
+  /// ⚠️ 消費者不只 rule 一處：[HighPledgeRatioRule]（風險警示徽章，
+  /// ScoringMode.neutral）、ChipAnomalyService 質押飆升警示、
+  /// InsiderRepository 的高質押判定（供自選清單警示）、個股詳情頁兩處
+  /// UI 指標等——調整前先 `grep -rn highPledgeRatioThreshold lib/`
+  /// 盤點全部呼叫點，別依賴此清單（會過期）。
   static const double highPledgeRatioThreshold = 70.0;
 
   /// 處置股結束日期寬限天數

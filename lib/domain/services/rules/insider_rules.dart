@@ -1,5 +1,4 @@
 import 'package:afterclose/core/constants/rule_params.dart';
-import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/domain/models/models.dart';
 import 'package:afterclose/domain/services/rules/stock_rules.dart';
 
@@ -77,24 +76,10 @@ class InsiderSignificantBuyingRule extends StockRule {
 
 /// 規則：高質押比例
 ///
-/// 當董監質押比例過高時觸發(風險警示)。
-///
-/// **TODO (calibration)**：[FundamentalParams.highPledgeRatioThreshold] = 70
-/// 為 placeholder（自承），需等 Stage 4 真實 forward data 累積後 backtest
-/// 重新校準（或刪除此 rule）。Rule 首次觸發時 [_warnOnce] 會 log 一次提醒。
+/// 當董監質押比例過高時觸發(風險警示)。門檻 70% 為 v1 正式值，
+/// 依據與再校準條件見 [FundamentalParams.highPledgeRatioThreshold]。
 class HighPledgeRatioRule extends StockRule {
   const HighPledgeRatioRule();
-
-  /// 首次觸發是否已記過 placeholder 警告
-  ///
-  /// 鎖在 class 靜態欄位上，**per-Isolate 一次**（非 per-process）：
-  /// scoring 跑在 `Isolate.run()` 產生的新 isolate，與主 isolate 記憶體
-  /// 隔離，每次 spawn 此 flag 都從 false 重置。實務上一次 update cycle
-  /// 觸發兩次（主 isolate UI 路徑 + scoring isolate 各一次）是可接受
-  /// 的提醒頻率，hot reload 在同 isolate 內 preserve flag 不洗版。
-  /// `const` constructor 仍可用，因為這只是一個 mutable 靜態旗標，
-  /// 不影響 instance 不可變性。
-  static bool _warnedPlaceholderOnce = false;
 
   @override
   String get id => 'high_pledge_ratio';
@@ -107,16 +92,9 @@ class HighPledgeRatioRule extends StockRule {
     final pledgeRatio = insiderData.pledgeRatio;
     if (pledgeRatio == null) return null;
 
+    // 門檻 70% 為 v1 正式值，依據與再校準條件見
+    // [FundamentalParams.highPledgeRatioThreshold]
     if (pledgeRatio >= FundamentalParams.highPledgeRatioThreshold) {
-      if (!_warnedPlaceholderOnce) {
-        _warnedPlaceholderOnce = true;
-        AppLogger.warning(
-          'HighPledgeRatioRule',
-          'threshold ${FundamentalParams.highPledgeRatioThreshold} is a '
-              'placeholder pending calibration (see FundamentalParams.highPledgeRatioThreshold). '
-              'First trigger on ${data.symbol} at $pledgeRatio%.',
-        );
-      }
       return TriggeredReason(
         type: ReasonType.highPledgeRatio,
         score: RuleScores.highPledgeRatio,
