@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/presentation/providers/news_heat_provider.dart';
 import 'package:afterclose/presentation/providers/news_provider.dart';
+import 'package:afterclose/presentation/screens/news/heat_analysis_tab.dart';
 import 'package:afterclose/presentation/screens/news/news_screen.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
 import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
@@ -66,6 +69,7 @@ void main() {
   Widget buildTestWidget({
     NewsState? newsState,
     Brightness brightness = Brightness.light,
+    List<Override> extraOverrides = const [],
   }) {
     final state = newsState ?? NewsState();
     return buildProviderTestApp(
@@ -76,6 +80,7 @@ void main() {
           n.initialState = state;
           return n;
         }),
+        ...extraOverrides,
       ],
       brightness: brightness,
     );
@@ -295,6 +300,33 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
 
       expect(find.byIcon(Icons.arrow_forward_ios), findsOneWidget);
+    });
+
+    testWidgets('switches to heat analysis tab', (tester) async {
+      widenViewport(tester);
+      await tester.pumpWidget(
+        buildTestWidget(
+          extraOverrides: [
+            newsHeatProvider.overrideWith(
+              (ref) async => const NewsHeatAnalysis(
+                themes: [],
+                stocks: [],
+                stockNames: {},
+                modeBySymbol: {},
+              ),
+            ),
+          ],
+        ),
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.text('news.allNewsTab'), findsOneWidget);
+      expect(find.text('news.heatTab'), findsOneWidget);
+
+      await tester.tap(find.text('news.heatTab'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(HeatAnalysisTab), findsOneWidget);
     });
   });
 }

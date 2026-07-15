@@ -5,8 +5,10 @@ import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/core/constants/app_routes.dart';
 import 'package:afterclose/core/constants/scoring_mode.dart';
+import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/domain/services/news/heat_calculator.dart';
 import 'package:afterclose/presentation/providers/news_heat_provider.dart';
+import 'package:afterclose/presentation/widgets/empty_state.dart';
 
 /// 新聞頁「熱度分析」分頁：主流族群 + 焦點股（三模式交叉）
 class HeatAnalysisTab extends ConsumerStatefulWidget {
@@ -24,7 +26,19 @@ class _HeatAnalysisTabState extends ConsumerState<HeatAnalysisTab> {
     final async = ref.watch(newsHeatProvider);
     return async.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text(e.toString())),
+      error: (e, _) {
+        final message = ErrorDisplay.message(e);
+        return Center(
+          child: ErrorDisplay.isNetworkError(message)
+              ? EmptyStates.networkError(
+                  onRetry: () => ref.invalidate(newsHeatProvider),
+                )
+              : EmptyStates.error(
+                  message: message,
+                  onRetry: () => ref.invalidate(newsHeatProvider),
+                ),
+        );
+      },
       data: (data) {
         if (data.themes.isEmpty && data.stocks.isEmpty) {
           return Center(child: Text('news.heatEmpty'.tr()));

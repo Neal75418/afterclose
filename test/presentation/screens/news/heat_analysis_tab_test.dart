@@ -5,6 +5,7 @@ import 'package:afterclose/core/constants/scoring_mode.dart';
 import 'package:afterclose/domain/services/news/heat_calculator.dart';
 import 'package:afterclose/presentation/providers/news_heat_provider.dart';
 import 'package:afterclose/presentation/screens/news/heat_analysis_tab.dart';
+import 'package:afterclose/presentation/widgets/empty_state.dart';
 
 import '../../../helpers/provider_test_helpers.dart';
 import '../../../helpers/widget_test_helpers.dart';
@@ -106,5 +107,25 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('news.heatEmpty'), findsOneWidget);
+  });
+
+  testWidgets('讀取失敗顯示錯誤狀態＋重試，不顯示原始例外文字', (tester) async {
+    widenViewport(tester);
+    await tester.pumpWidget(
+      buildProviderTestApp(
+        const HeatAnalysisTab(),
+        overrides: [
+          newsHeatProvider.overrideWith((ref) async => throw Exception('boom')),
+        ],
+      ),
+    );
+    // FutureProvider 的 async throw 需一次 pump 完成並重建；EmptyState 的
+    // breathe 動畫是無限循環（repeat(reverse: true)），不能用 pumpAndSettle
+    // 等待穩定（會逾時），改用固定時長的 pump 推進一次動畫幀即可斷言。
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(find.byType(EmptyState), findsOneWidget);
+    expect(find.textContaining('Exception: boom'), findsNothing);
   });
 }

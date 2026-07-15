@@ -27,6 +27,11 @@ Widget buildProviderTestApp(
 }) {
   return ProviderScope(
     overrides: [databaseProvider.overrideWithValue(_testDb), ...overrides],
+    // Riverpod 3 預設對失敗的 FutureProvider 自動重試（指數退避，最多
+    // 10 次、單次延遲上看 6.4s，總計可達 ~38s）。Widget 測試需要錯誤狀態
+    // 立即、確定性地呈現，故關閉重試——與正式環境的 ProviderScope（main.dart）
+    // 各自獨立，不影響正式行為。
+    retry: (_, _) => null,
     child: MaterialApp(
       theme: brightness == Brightness.light
           ? AppTheme.lightTheme
