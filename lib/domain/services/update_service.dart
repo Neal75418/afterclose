@@ -866,8 +866,10 @@ class UpdateService {
     try {
       await service.snapshotRecentDays();
       AppLogger.info('UpdateService', '步驟 10+: 新聞提及快照完成');
-    } catch (e, stack) {
-      AppLogger.error('UpdateService', '新聞提及快照失敗（fail-safe）', e, stack);
+    } catch (e) {
+      // 非關鍵路徑（顯示層不依賴此表）：降級 warning，只留 Sentry
+      // breadcrumb，不觸發 Sentry 錯誤事件（`.error` 才會 capture exception）
+      AppLogger.warning('UpdateService', '新聞提及快照失敗（不影響更新）', e);
     }
   }
 

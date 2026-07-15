@@ -88,4 +88,38 @@ void main() {
     );
     expect(rows.first.mentionCount, 1);
   });
+
+  test('殘留列修正：窗內 stale key 重算為 0 時應被刪除（非殘留）', () async {
+    // 預先插入一筆「窗內日期、9999」的殘留列，模擬字典異動或個股下市
+    // 導致舊值不再有對應新聞，但重算計數為 0（不會被 upsert 觸及）
+    await db.upsertMentionCounts([
+      NewsMentionDailyCompanion.insert(
+        date: DateTime(2026, 7, 14),
+        kind: 'stock',
+        itemKey: '9999',
+        mentionCount: 3,
+        dictionaryVersion: 1,
+      ),
+    ]);
+
+    when(
+      () => newsRepo.getRecentNews(days: any(named: 'days')),
+    ).thenAnswer((_) async => [news('a', '台積電再創高', DateTime(2026, 7, 15, 9))]);
+
+    await service.snapshotRecentDays();
+
+    final rows = await db.getMentionCounts(from: DateTime(2026, 1, 1));
+    expect(
+      rows.any((r) => r.itemKey == '9999'),
+      isFalse,
+      reason: '窗內 stale 列應在全量覆寫後歸零消失',
+    );
+    expect(
+      rows.any(
+        (r) => r.kind == 'stock' && r.itemKey == '2330' && r.date.day == 15,
+      ),
+      isTrue,
+      reason: '真實提及數應正常寫入',
+    );
+  });
 }

@@ -44,6 +44,30 @@ mixin NewsDaoMixin on $AppDatabase {
     });
   }
 
+  /// 窗內全量覆寫：先刪 [from, to]（含端點）日期範圍內全部快照列再批次寫入，
+  /// 使重算對「已消失的 key」也冪等（殘留列歸零）
+  Future<void> replaceMentionCountsInWindow({
+    required DateTime from,
+    required DateTime to,
+    required List<NewsMentionDailyCompanion> rows,
+  }) async {
+    await transaction(() async {
+      await (delete(newsMentionDaily)..where(
+            (t) =>
+                t.date.isBiggerOrEqualValue(from) &
+                t.date.isSmallerOrEqualValue(to),
+          ))
+          .go();
+      if (rows.isNotEmpty) {
+        await batch((b) {
+          for (final r in rows) {
+            b.insert(newsMentionDaily, r, mode: InsertMode.insertOrReplace);
+          }
+        });
+      }
+    });
+  }
+
   /// 讀取快照（date >= from），未來回測用；測試亦用此驗證寫入
   Future<List<NewsMentionDailyEntry>> getMentionCounts({
     required DateTime from,
