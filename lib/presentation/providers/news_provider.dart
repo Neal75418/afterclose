@@ -109,6 +109,32 @@ class NewsNotifier extends Notifier<NewsState> {
   @override
   NewsState build() => NewsState();
 
+  /// refresh 進行中旗標（防連點重複抓 RSS）
+  bool _isRefreshing = false;
+
+  /// 重新整理：先抓 RSS 新新聞，再重讀本地資料
+  ///
+  /// RSS 同步失敗不阻擋本地重讀——離線時顯示既有新聞勝於整頁錯誤；
+  /// per-feed 的網路錯誤已在 RssParser.parseAllFeeds 內部收攏，
+  /// 這裡的 catch 只兜底 DB 寫入等意外。
+  Future<void> refresh({int days = 7}) async {
+    if (_isRefreshing) return;
+    _isRefreshing = true;
+    state = state.copyWith(isLoading: true, error: null);
+
+    try {
+      await ref.read(newsRepositoryProvider).syncNews();
+    } catch (e) {
+      AppLogger.warning('NewsNotifier', 'RSS 同步失敗，僅重讀本地資料', e);
+    }
+
+    try {
+      await loadData(days: days);
+    } finally {
+      _isRefreshing = false;
+    }
+  }
+
   /// 載入新聞資料
   Future<void> loadData({int days = 7}) async {
     state = state.copyWith(isLoading: true, error: null);

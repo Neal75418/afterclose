@@ -4,6 +4,8 @@ import 'package:mocktail/mocktail.dart';
 
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/repositories/news_repository.dart';
+import 'package:afterclose/domain/repositories/news_repository.dart'
+    show NewsSyncResult;
 import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:afterclose/presentation/providers/news_provider.dart';
 
@@ -229,5 +231,85 @@ void main() {
       final state = container.read(newsProvider);
       expect(state.selectedSource, NewsSource.yahoo);
     });
+
+    test('refresh syncs RSS before reloading local data', () async {
+      final callOrder = <String>[];
+      when(() => mockNewsRepo.syncNews()).thenAnswer((_) async {
+        callOrder.add('sync');
+        return const NewsSyncResult(itemsAdded: 3, errors: []);
+      });
+      when(
+        () => mockNewsRepo.getRecentNews(days: any(named: 'days')),
+      ).thenAnswer((_) async {
+        callOrder.add('load');
+        return [createNewsEntry(id: '1', title: '新聞一')];
+      });
+      when(
+        () => mockDb.getNewsStockMappingsBatch(any()),
+      ).thenAnswer((_) async => {});
+
+      final notifier = container.read(newsProvider.notifier);
+      await notifier.refresh();
+
+      expect(callOrder, equals(['sync', 'load']));
+      final state = container.read(newsProvider);
+      expect(state.allNews, hasLength(1));
+      expect(state.error, isNull);
+    });
+
+    test('refresh still loads local data when RSS sync throws', () async {
+      when(() => mockNewsRepo.syncNews()).thenThrow(Exception('offline'));
+      when(
+        () => mockNewsRepo.getRecentNews(days: any(named: 'days')),
+      ).thenAnswer((_) async => [createNewsEntry(id: '1', title: '新聞一')]);
+      when(
+        () => mockDb.getNewsStockMappingsBatch(any()),
+      ).thenAnswer((_) async => {});
+
+      final notifier = container.read(newsProvider.notifier);
+      await notifier.refresh();
+
+      final state = container.read(newsProvider);
+      expect(state.allNews, hasLength(1));
+      expect(state.error, isNull);
+      expect(state.isLoading, isFalse);
+    });
+
+    test('refresh ignores re-entrant calls while in flight', () async {
+      var syncCalls = 0;
+      when(() => mockNewsRepo.syncNews()).thenAnswer((_) async {
+        syncCalls++;
+        await Future<void>.delayed(Duration.zero);
+        return const NewsSyncResult(itemsAdded: 0, errors: []);
+      });
+      when(
+        () => mockNewsRepo.getRecentNews(days: any(named: 'days')),
+      ).thenAnswer((_) async => []);
+
+      final notifier = container.read(newsProvider.notifier);
+      await Future.wait([notifier.refresh(), notifier.refresh()]);
+
+      expect(syncCalls, 1);
+    });
+
+    test(
+      'refresh resets in-flight flag so sequential calls sync again',
+      () async {
+        var syncCalls = 0;
+        when(() => mockNewsRepo.syncNews()).thenAnswer((_) async {
+          syncCalls++;
+          return const NewsSyncResult(itemsAdded: 0, errors: []);
+        });
+        when(
+          () => mockNewsRepo.getRecentNews(days: any(named: 'days')),
+        ).thenAnswer((_) async => []);
+
+        final notifier = container.read(newsProvider.notifier);
+        await notifier.refresh();
+        await notifier.refresh();
+
+        expect(syncCalls, 2);
+      },
+    );
   });
 }

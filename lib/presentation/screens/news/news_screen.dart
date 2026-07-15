@@ -60,7 +60,8 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
   }
 
   Future<void> _refresh() async {
-    await ref.read(newsProvider.notifier).loadData();
+    // 先抓 RSS 再重讀本地（RSS 失敗仍會重讀，見 NewsNotifier.refresh）
+    await ref.read(newsProvider.notifier).refresh();
     // 刷新完成時觸覺回饋
     HapticFeedback.mediumImpact();
   }
