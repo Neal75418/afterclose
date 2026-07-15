@@ -375,6 +375,14 @@ class AppDatabase extends $AppDatabase
       }
       // createAll 用 CREATE TABLE IF NOT EXISTS（drift 2.x 內建），保留的
       // user input 表既存資料不會被動到。
+      //
+      // ⚠️ 但 createAll 建**索引**不帶 IF NOT EXISTS：whitelist 表未被
+      // drop、其索引仍存在，直接 createAll 會炸 "index already exists"
+      // （2026-07-15 生產事故：idx_portfolio_position_symbol）。索引皆可
+      // 安全重建——先全數 DROP 再交給 createAll 重建。
+      for (final index in allSchemaEntities.whereType<Index>()) {
+        await customStatement('DROP INDEX IF EXISTS "${index.entityName}"');
+      }
       await Migrator(this).createAll();
       AppLogger.info(
         'AppDatabase',
