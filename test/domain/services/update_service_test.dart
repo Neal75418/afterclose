@@ -12,6 +12,7 @@ import 'package:afterclose/domain/repositories/news_repository.dart'
 import 'package:afterclose/domain/repositories/price_repository.dart'
     show MarketSyncResult;
 import 'package:afterclose/domain/services/scoring_service.dart';
+import 'package:afterclose/domain/services/update/news_mention_snapshot_service.dart';
 import 'package:afterclose/domain/services/update_service.dart';
 import 'package:afterclose/domain/services/update_service_deps.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -34,6 +35,9 @@ class MockTpexClient extends Mock implements TpexClient {}
 class MockFundamentalRepository extends Mock implements FundamentalRepository {}
 
 class MockScoringService extends Mock implements ScoringService {}
+
+class MockNewsMentionSnapshotService extends Mock
+    implements NewsMentionSnapshotService {}
 
 void main() {
   late MockAppDatabase mockDb;
@@ -186,6 +190,7 @@ void main() {
   UpdateService buildService({
     TpexClient? tpex,
     FundamentalRepository? fundamental,
+    NewsMentionSnapshotService? newsMentionSnapshot,
   }) {
     return UpdateService(
       database: mockDb,
@@ -197,7 +202,10 @@ void main() {
         fundamental: fundamental,
       ),
       clients: UpdateClients(tdcc: mockTdcc, tpex: tpex),
-      services: UpdateServices(scoring: mockScoring),
+      services: UpdateServices(
+        scoring: mockScoring,
+        newsMentionSnapshot: newsMentionSnapshot,
+      ),
     );
   }
 
@@ -401,6 +409,26 @@ void main() {
 
       expect(result.success, isTrue);
       expect(result.errors, anyElement(contains('財報')));
+    });
+  });
+
+  group('UpdateService 新聞提及快照 fail-safe', () {
+    test('新聞提及快照拋例外時更新流程照常完成', () async {
+      when(
+        () => mockTdcc.getAllHoldingDistribution(),
+      ).thenAnswer((_) async => {});
+
+      final mockSnapshotService = MockNewsMentionSnapshotService();
+      when(
+        () => mockSnapshotService.snapshotRecentDays(),
+      ).thenThrow(Exception('snapshot boom'));
+
+      final service = buildService(newsMentionSnapshot: mockSnapshotService);
+      final result = await service.runDailyUpdate(forDate: tradingDay);
+
+      // 快照失敗不應中斷或拖垮整體更新結果（fail-safe：只 log，不 rethrow）
+      expect(result.success, isTrue);
+      verify(() => mockSnapshotService.snapshotRecentDays()).called(1);
     });
   });
 }

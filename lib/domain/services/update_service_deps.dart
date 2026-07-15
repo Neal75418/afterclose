@@ -18,6 +18,7 @@ import 'package:afterclose/domain/services/rule_engine.dart';
 import 'package:afterclose/domain/services/rule_accuracy_service.dart';
 import 'package:afterclose/domain/services/thesis/thesis_monitor_service.dart';
 import 'package:afterclose/domain/services/scoring_service.dart';
+import 'package:afterclose/domain/services/update/news_mention_snapshot_service.dart';
 
 /// [UpdateService] 的 Repository 依賴群組
 class UpdateRepositories {
@@ -66,6 +67,7 @@ class UpdateServices {
     this.scoring,
     this.ruleAccuracy,
     this.thesisMonitor,
+    this.newsMentionSnapshot,
   });
 
   final AnalysisService? analysis;
@@ -75,4 +77,7 @@ class UpdateServices {
 
   /// 釘選論點監控（出場層 Phase 2）。null = 不檢查（測試預設）。
   final ThesisMonitorService? thesisMonitor;
+
+  /// 每日提及數快照（新聞熱度發現層）。null = 不快照（測試預設）。
+  final NewsMentionSnapshotService? newsMentionSnapshot;
 }

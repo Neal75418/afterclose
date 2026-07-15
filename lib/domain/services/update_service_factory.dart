@@ -18,6 +18,7 @@ import 'package:afterclose/data/repositories/trading_repository.dart';
 import 'package:afterclose/data/repositories/warning_repository.dart';
 import 'package:afterclose/domain/services/rule_accuracy_service.dart';
 import 'package:afterclose/domain/services/thesis/thesis_monitor_service.dart';
+import 'package:afterclose/domain/services/update/news_mention_snapshot_service.dart';
 import 'package:afterclose/domain/services/update_service.dart';
 import 'package:afterclose/domain/services/update_service_deps.dart';
 
@@ -144,6 +145,11 @@ class UpdateServiceFactory {
         ruleAccuracy:
             ruleAccuracyService ?? RuleAccuracyService(database: database),
         thesisMonitor: ThesisMonitorService(database: database),
+        newsMentionSnapshot: NewsMentionSnapshotService(
+          database: database,
+          newsRepository: newsRepo,
+          clock: clock,
+        ),
       ),
       clock: clock,
     );

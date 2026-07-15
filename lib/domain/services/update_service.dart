@@ -16,6 +16,7 @@ import 'package:afterclose/domain/services/rule_accuracy_service.dart';
 import 'package:afterclose/domain/services/thesis/thesis_monitor_service.dart';
 import 'package:afterclose/domain/services/rule_engine.dart';
 import 'package:afterclose/domain/services/scoring_service.dart';
+import 'package:afterclose/domain/services/update/news_mention_snapshot_service.dart';
 import 'package:afterclose/domain/services/update/update.dart';
 import 'package:afterclose/domain/services/update_service_deps.dart';
 
@@ -43,6 +44,7 @@ class UpdateService {
        _clock = clock,
        _ruleAccuracyService = services.ruleAccuracy,
        _thesisMonitorService = services.thesisMonitor,
+       _newsMentionSnapshotService = services.newsMentionSnapshot,
        _priceRepo = repositories.price,
        _analysisRepo = repositories.analysis,
        _analysisService = services.analysis ?? AnalysisService(),
@@ -126,6 +128,7 @@ class UpdateService {
   final ScoringService? _scoringService;
   final RuleAccuracyService? _ruleAccuracyService;
   final ThesisMonitorService? _thesisMonitorService;
+  final NewsMentionSnapshotService? _newsMentionSnapshotService;
   final List<String> _popularStocks;
 
   // 專責 updater / loader
@@ -290,6 +293,7 @@ class UpdateService {
       // 路徑若不 await，isolate 可能在統計更新跑完前被 OS 殺掉。所以維持 await
       // 是 by-design，docstring 同步澄清。
       await _updateRuleAccuracyStatsFailSafe();
+      await _snapshotNewsMentionsFailSafe();
       await _checkPinnedThesesFailSafe(ctx);
 
       return result;
@@ -850,6 +854,20 @@ class UpdateService {
       AppLogger.info('UpdateService', '步驟 10+: 規則準確度統計更新完成');
     } catch (e, stack) {
       AppLogger.error('UpdateService', '規則準確度統計更新失敗（fail-safe）', e, stack);
+    }
+  }
+
+  /// 新聞提及數快照（新聞熱度發現層）。**fail-safe**：失敗只 log、
+  /// 不影響 update result（與 [_updateRuleAccuracyStatsFailSafe] 同模式）。
+  Future<void> _snapshotNewsMentionsFailSafe() async {
+    final service = _newsMentionSnapshotService;
+    if (service == null) return;
+
+    try {
+      await service.snapshotRecentDays();
+      AppLogger.info('UpdateService', '步驟 10+: 新聞提及快照完成');
+    } catch (e, stack) {
+      AppLogger.error('UpdateService', '新聞提及快照失敗（fail-safe）', e, stack);
     }
   }
 
