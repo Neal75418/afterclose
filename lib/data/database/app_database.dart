@@ -361,7 +361,13 @@ class AppDatabase extends $AppDatabase
 
     if (stored != null) {
       // 偵測到 schema drift — drop 所有非 whitelist 的 Drift managed table
-      // 後重建。foreign_keys pragma 仍為 OFF（Drift 預設），可以安全 DROP。
+      // 後重建。
+      //
+      // ⚠️ 承重不變量：此時 foreign_keys pragma 必須仍為 OFF（Drift 預設，
+      // beforeOpen 稍後才 ON）。若 FK 已 ON，SQLite 的 DROP TABLE 會對子表
+      // 觸發 ON DELETE CASCADE——drop stock_master 會**靜默清空保留中的
+      // news_stock_map**（白名單形同虛設）。日後任何人調整 pragma 順序前，
+      // 先看 schema_fingerprint_reset_test.dart 的保留斷言。
       final preserved = <String>[];
       final dropped = <String>[];
       AppLogger.warning(
