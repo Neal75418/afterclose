@@ -52,6 +52,22 @@ void main() {
           market: 'TWSE',
         ),
       );
+      // 新聞歷史不可重抓（RSS 只供應當下窗口）——必須在 reset 中保留
+      b.insert(
+        db1.newsItem,
+        NewsItemCompanion.insert(
+          id: 'news-1',
+          source: '鉅亨網',
+          title: '台積電(2330)營收創高',
+          url: 'https://example.com/1',
+          category: 'OTHER',
+          publishedAt: DateTime(2026, 7, 15, 9),
+        ),
+      );
+      b.insert(
+        db1.newsStockMap,
+        NewsStockMapCompanion.insert(newsId: 'news-1', symbol: '2330'),
+      );
     });
     await db1.close();
 
@@ -70,6 +86,15 @@ void main() {
         .getSingle();
     // 白名單表資料保留
     expect(mentions.read<int>('c'), 1);
+    // 新聞與關聯保留（30 天存量 RSS 補不回，2026-07-15 事故教訓）
+    final news = await db2
+        .customSelect('SELECT COUNT(*) AS c FROM news_item')
+        .getSingle();
+    expect(news.read<int>('c'), 1);
+    final map = await db2
+        .customSelect('SELECT COUNT(*) AS c FROM news_stock_map')
+        .getSingle();
+    expect(map.read<int>('c'), 1);
     // 非白名單 derived 表被 wipe 後重建：空但可查詢
     final stocks = await db2
         .customSelect('SELECT COUNT(*) AS c FROM stock_master')

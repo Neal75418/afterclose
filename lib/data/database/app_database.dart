@@ -334,6 +334,11 @@ class AppDatabase extends $AppDatabase
     'stock_event',
     'app_settings',
     'news_mention_daily', // 熱度快照：歷史不可重建，fingerprint reset 不得 wipe
+    // 新聞非嚴格「使用者輸入」但同屬不可重建：RSS feed 只供應當下窗口，
+    // 30 天存量 wipe 後補不回（2026-07-15 reset 實際損失 ~6,200 筆，
+    // 熱度分析基準窗因此空窗數週）。schema 改動需走 ALTER 路徑。
+    'news_item',
+    'news_stock_map',
   };
 
   Future<void> _ensureSchemaFingerprint() async {
