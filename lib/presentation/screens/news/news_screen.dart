@@ -13,7 +13,9 @@ import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/presentation/providers/news_heat_provider.dart';
 import 'package:afterclose/presentation/providers/news_provider.dart';
+import 'package:afterclose/presentation/screens/news/heat_analysis_tab.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
 import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
 import 'package:afterclose/presentation/widgets/common/drag_handle.dart';
@@ -62,10 +64,95 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
   Future<void> _refresh() async {
     // 先抓 RSS 再重讀本地（RSS 失敗仍會重讀，見 NewsNotifier.refresh）
     await ref.read(newsProvider.notifier).refresh();
+    // 熱度分析與全部新聞共用同一份 RSS 資料，重新整理完成後 invalidate
+    // 讓熱度分頁的下次讀取反映新抓的新聞
+    ref.invalidate(newsHeatProvider);
     // 刷新完成時觸覺回饋
     HapticFeedback.mediumImpact();
   }
 
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(newsProvider);
+
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: _isSearching
+              ? TextField(
+                  controller: _searchController,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    hintText: 'common.search'.tr(),
+                    border: InputBorder.none,
+                  ),
+                  onChanged: (value) {
+                    _searchDebounce?.cancel();
+                    _searchDebounce = Timer(
+                      const Duration(milliseconds: 300),
+                      () {
+                        ref.read(newsProvider.notifier).setSearchQuery(value);
+                      },
+                    );
+                  },
+                )
+              : Text(S.newsTitle),
+          actions: [
+            IconButton(
+              icon: Icon(_isSearching ? Icons.close : Icons.search),
+              onPressed: _toggleSearch,
+              tooltip: _isSearching
+                  ? 'common.close'.tr()
+                  : 'common.search'.tr(),
+            ),
+            IconButton(
+              // 重新整理進行中改顯示轉圈——已有內容時列表保持原地
+              //（不切 shimmer），進度回饋集中在這裡
+              icon: state.isLoading
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.refresh),
+              onPressed: _refresh,
+              tooltip: S.refresh,
+            ),
+          ],
+          bottom: TabBar(
+            tabs: [
+              Tab(text: 'news.allNewsTab'.tr()),
+              Tab(text: 'news.heatTab'.tr()),
+            ],
+          ),
+        ),
+        body: TabBarView(
+          children: [
+            _AllNewsTab(onRefresh: _refresh),
+            const HeatAnalysisTab(),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ==================================================
+// 全部新聞分頁（原 NewsScreen body，邏輯不變）
+// ==================================================
+
+class _AllNewsTab extends ConsumerStatefulWidget {
+  const _AllNewsTab({required this.onRefresh});
+
+  /// 重新整理回呼（由 NewsScreen 提供，含 RSS 同步 + newsHeatProvider invalidate）
+  final Future<void> Function() onRefresh;
+
+  @override
+  ConsumerState<_AllNewsTab> createState() => _AllNewsTabState();
+}
+
+class _AllNewsTabState extends ConsumerState<_AllNewsTab> {
   Future<void> _openUrl(String url) async {
     final uri = Uri.tryParse(url);
     if (uri == null || !{'http', 'https'}.contains(uri.scheme)) {
@@ -210,112 +297,69 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(newsProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: _isSearching
-            ? TextField(
-                controller: _searchController,
-                autofocus: true,
-                decoration: InputDecoration(
-                  hintText: 'common.search'.tr(),
-                  border: InputBorder.none,
-                ),
-                onChanged: (value) {
-                  _searchDebounce?.cancel();
-                  _searchDebounce = Timer(
-                    const Duration(milliseconds: 300),
-                    () {
-                      ref.read(newsProvider.notifier).setSearchQuery(value);
-                    },
-                  );
-                },
-              )
-            : Text(S.newsTitle),
-        actions: [
-          IconButton(
-            icon: Icon(_isSearching ? Icons.close : Icons.search),
-            onPressed: _toggleSearch,
-            tooltip: _isSearching ? 'common.close'.tr() : 'common.search'.tr(),
+    return Column(
+      children: [
+        // 來源篩選標籤（重新整理時保留，避免整排 chips 閃爍消失）
+        if (state.allNews.isNotEmpty)
+          _SourceFilterChips(
+            selectedSource: state.selectedSource,
+            sourceCounts: state.sourceCounts,
+            onSelected: (source) {
+              ref.read(newsProvider.notifier).setSourceFilter(source);
+            },
           ),
-          IconButton(
-            // 重新整理進行中改顯示轉圈——已有內容時列表保持原地
-            //（不切 shimmer），進度回饋集中在這裡
-            icon: state.isLoading
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.refresh),
-            onPressed: _refresh,
-            tooltip: S.refresh,
+        // Refresh 失敗但有舊資料時顯示 MaterialBanner
+        if (state.error != null && state.allNews.isNotEmpty)
+          MaterialBanner(
+            content: Text(state.error!),
+            actions: [
+              TextButton(
+                onPressed: widget.onRefresh,
+                child: Text('common.retry'.tr()),
+              ),
+              TextButton(
+                onPressed: () => ref.read(newsProvider.notifier).clearError(),
+                child: Text('common.dismiss'.tr()),
+              ),
+            ],
           ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // 來源篩選標籤（重新整理時保留，避免整排 chips 閃爍消失）
-          if (state.allNews.isNotEmpty)
-            _SourceFilterChips(
-              selectedSource: state.selectedSource,
-              sourceCounts: state.sourceCounts,
-              onSelected: (source) {
-                ref.read(newsProvider.notifier).setSourceFilter(source);
-              },
-            ),
-          // Refresh 失敗但有舊資料時顯示 MaterialBanner
-          if (state.error != null && state.allNews.isNotEmpty)
-            MaterialBanner(
-              content: Text(state.error!),
-              actions: [
-                TextButton(
-                  onPressed: _refresh,
-                  child: Text('common.retry'.tr()),
-                ),
-                TextButton(
-                  onPressed: () => ref.read(newsProvider.notifier).clearError(),
-                  child: Text('common.dismiss'.tr()),
-                ),
-              ],
-            ),
-          // 新聞列表
-          Expanded(
-            child: ThemedRefreshIndicator(
-              onRefresh: _refresh,
-              // shimmer 只在「首次載入且尚無內容」時出現；已有內容的
-              // 重新整理保持列表原地不動（進度看右上角按鈕轉圈）
-              child: state.isLoading && state.allNews.isEmpty
-                  ? const NewsListShimmer(itemCount: 8)
-                  : state.error != null && state.allNews.isEmpty
-                  ? SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      child: SizedBox(
-                        height: MediaQuery.of(context).size.height * 0.6,
-                        child: ErrorDisplay.isNetworkError(state.error!)
-                            ? EmptyStates.networkError(onRetry: _refresh)
-                            : EmptyStates.error(
-                                message: state.error!,
-                                onRetry: _refresh,
-                              ),
-                      ),
-                    )
-                  : state.filteredNews.isEmpty
-                  ? SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      child: SizedBox(
-                        height: MediaQuery.of(context).size.height * 0.6,
-                        child: EmptyStates.noNews(),
-                      ),
-                    )
-                  : _GroupedNewsList(
-                      news: state.filteredNews,
-                      newsStockMap: state.newsStockMap,
-                      onTap: _showNewsPreview,
+        // 新聞列表
+        Expanded(
+          child: ThemedRefreshIndicator(
+            onRefresh: widget.onRefresh,
+            // shimmer 只在「首次載入且尚無內容」時出現；已有內容的
+            // 重新整理保持列表原地不動（進度看右上角按鈕轉圈）
+            child: state.isLoading && state.allNews.isEmpty
+                ? const NewsListShimmer(itemCount: 8)
+                : state.error != null && state.allNews.isEmpty
+                ? SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: SizedBox(
+                      height: MediaQuery.of(context).size.height * 0.6,
+                      child: ErrorDisplay.isNetworkError(state.error!)
+                          ? EmptyStates.networkError(onRetry: widget.onRefresh)
+                          : EmptyStates.error(
+                              message: state.error!,
+                              onRetry: widget.onRefresh,
+                            ),
                     ),
-            ),
+                  )
+                : state.filteredNews.isEmpty
+                ? SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: SizedBox(
+                      height: MediaQuery.of(context).size.height * 0.6,
+                      child: EmptyStates.noNews(),
+                    ),
+                  )
+                : _GroupedNewsList(
+                    news: state.filteredNews,
+                    newsStockMap: state.newsStockMap,
+                    onTap: _showNewsPreview,
+                  ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

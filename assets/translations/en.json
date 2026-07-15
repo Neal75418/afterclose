@@ -79,7 +79,16 @@
     "cannotOpenLink": "Cannot open link",
     "minutesAgo": "{minutes} min ago",
     "hoursAgo": "{hours} hr ago",
-    "daysAgo": "{days} days ago"
+    "daysAgo": "{days} days ago",
+    "heatTab": "Heat",
+    "allNewsTab": "All News",
+    "hotThemes": "Hot Themes",
+    "focusStocks": "Focus Stocks",
+    "surgeBadge": "Surging",
+    "pullbackOnly": "Pullback Only",
+    "articlesCount": "{} articles",
+    "prevWeekCount": "{} in prior 3 weeks",
+    "heatEmpty": "Not enough recent news to analyze heat"
   },
   "market": {
     "twse": "TSE",

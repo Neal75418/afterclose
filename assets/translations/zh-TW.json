@@ -79,7 +79,16 @@
     "cannotOpenLink": "無法開啟連結",
     "minutesAgo": "{minutes} 分鐘前",
     "hoursAgo": "{hours} 小時前",
-    "daysAgo": "{days} 天前"
+    "daysAgo": "{days} 天前",
+    "heatTab": "熱度分析",
+    "allNewsTab": "全部新聞",
+    "hotThemes": "主流族群",
+    "focusStocks": "焦點股",
+    "surgeBadge": "爆量",
+    "pullbackOnly": "只看回檔中",
+    "articlesCount": "{} 篇",
+    "prevWeekCount": "前三週共 {} 篇",
+    "heatEmpty": "近期新聞不足，無法分析熱度"
   },
   "market": {
     "twse": "市",
