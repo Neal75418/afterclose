@@ -105,9 +105,18 @@ class NewsState {
   /// 全形/半形空白（`\s` 不保證涵蓋 U+3000，故顯式列入）
   static final RegExp _whitespace = RegExp(r'[\s　]+');
 
-  /// 標題正規化：全形/半形空白折疊為單一空格
+  /// 聚合器品牌化前綴（如 Yahoo 轉載通訊社稿加掛的「【台股盤中】」
+  /// 「【盤前焦點】」）——剝除後才能與原始稿合併去重。上限 12 字防
+  /// 誤剝正文（語料實測前綴均 ≤ 6 字）。
+  static final RegExp _brandPrefix = RegExp(r'^【[^】]{1,12}】');
+
+  /// 標題正規化（僅用於去重 key，顯示仍用原標題）：
+  /// 剝【…】前綴 → 全形/半形空白折疊為單一空格
   static String _normalizeTitle(String title) {
-    return title.replaceAll(_whitespace, ' ').trim();
+    return title
+        .replaceFirst(_brandPrefix, '')
+        .replaceAll(_whitespace, ' ')
+        .trim();
   }
 
   NewsState copyWith({

@@ -192,6 +192,27 @@ void main() {
       expect(state.filteredNews, hasLength(2));
     });
 
+    test('dedup 剝除聚合器加掛的【…】前綴（同日同文合併）', () {
+      final news = [
+        createNewsEntry(
+          id: 'yahoo-branded',
+          title: '【台股盤中】台股暫守45000點　盤中跌勢收斂',
+          source: 'Yahoo財經',
+          publishedAt: DateTime(2026, 7, 16, 11, 30),
+        ),
+        createNewsEntry(
+          id: 'cna-original',
+          title: '台股暫守45000點　盤中跌勢收斂',
+          source: '中央社',
+          publishedAt: DateTime(2026, 7, 16, 11, 0),
+        ),
+      ];
+      final state = NewsState(allNews: news);
+
+      expect(state.filteredNews, hasLength(1));
+      expect(state.filteredNews.single.id, 'cna-original');
+    });
+
     test('dedup normalizes whitespace variants（含全形空白）', () {
       final news = [
         createNewsEntry(
