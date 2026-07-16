@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/domain/models/market_overview_models.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/industry_performance_row.dart';
 
@@ -224,6 +225,9 @@ void main() {
 
     expect(find.textContaining('-0.0%'), findsNothing);
     expect(find.textContaining('0.0%'), findsOneWidget);
+    // 顏色也須用捨入後的值：顯示 0.0% 就該是中性色，不得帶漲跌方向色
+    final text = tester.widget<Text>(find.textContaining('0.0%'));
+    expect(text.style?.color, AppTheme.neutralColor, reason: '顯示為零的動能不應著漲跌色');
   });
 
   testWidgets('等權口徑：顯示等權 caption', (tester) async {
