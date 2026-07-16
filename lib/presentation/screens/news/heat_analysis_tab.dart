@@ -319,9 +319,9 @@ class _SurgeBadge extends StatelessWidget {
   }
 }
 
-/// 風險徽章：注意/處置股或風險新聞命中。刻意與 [_SurgeBadge] 同底色
-/// （errorContainer）＋同形狀，但加上警示圖示與 onErrorContainer 文字色，
-/// 使兩者「危險 vs 熱門」語意仍可視覺區分（而非單純同色同形狀混淆）。
+/// 風險徽章：注意/處置股或風險新聞命中。與 [_SurgeBadge] 用**不同視覺
+/// 通道**區分「危險 vs 熱門」：加 error 色外框＋警示圖示＋onErrorContainer
+/// 文字色——同檔股票同時掛兩枚徽章時（列警且爆量）仍一眼可辨。
 class _RiskBadge extends StatelessWidget {
   const _RiskBadge({required this.label});
 
@@ -335,6 +335,7 @@ class _RiskBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: scheme.errorContainer,
         borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: scheme.error, width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

@@ -193,6 +193,42 @@ void main() {
     expect(find.text('news.riskNews'), findsNothing);
   });
 
+  testWidgets('處置股警示走 DISPOSAL 分支顯示對應標籤', (tester) async {
+    widenViewport(tester);
+    final data = NewsHeatAnalysis(
+      themes: const [],
+      stocks: const [
+        StockHeat(
+          symbol: '2408',
+          mentions7d: 5,
+          mentionsPrev21d: 2,
+          isSurging: false,
+          distinctSources7d: 2,
+          hasRiskNews: false,
+          isNewEntrant: false,
+          surgeRatio: 1.0,
+        ),
+      ],
+      stockNames: const {'2408': '南亞科'},
+      modeBySymbol: const {},
+      priceChangeBySymbol: const {},
+      warningBySymbol: {
+        '2408': TradingWarningEntry(
+          symbol: '2408',
+          date: DateTime(2026, 7, 10),
+          warningType: 'DISPOSAL',
+          isActive: true,
+        ),
+      },
+      surgeReliable: false,
+    );
+    await tester.pumpWidget(build(data));
+    await tester.pumpAndSettle();
+
+    expect(find.text('warning.disposal'), findsOneWidget);
+    expect(find.text('warning.attention'), findsNothing);
+  });
+
   testWidgets('hasRiskNews 無警示表仍顯示風險徽章', (tester) async {
     widenViewport(tester);
     const data = NewsHeatAnalysis(
