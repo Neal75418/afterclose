@@ -99,21 +99,41 @@ class ChipAnomalyService {
     return result;
   }
 
-  /// 質押率飆升：最新質押率 > [FundamentalParams.highPledgeRatioThreshold]%
+  /// 質押率「變動觸發」：僅在**新**發生時計入，避免持續高於門檻的股票天天
+  /// 佔用「今日偵測到 N 項異常」名額（警示疲勞）。
+  ///
+  /// 「新」定義（兩者擇一，皆須最新質押率 >=
+  /// [FundamentalParams.highPledgeRatioThreshold]）：
+  /// - 跨門檻：前次快照 < 門檻、最新快照 >= 門檻
+  /// - 持續惡化：兩次快照皆 >= 門檻，但漲幅 >=
+  ///   [FundamentalParams.kPledgeAlertDeltaPp]
+  ///
+  /// 該股無前次快照（僅 1 筆歷史）一律不計入（避免首次同步大量歷史資料時
+  /// 洗版）。個股層級的持續性顯示（風險徽章、自選清單警示、股票詳情頁）
+  /// 不受影響，見 [FundamentalParams.kPledgeAlertDeltaPp] 文件。
   Future<List<ChipAnomaly>> _detectHighPledge() async {
     try {
       const query =
           '''
-        SELECT ih.symbol, ih.pledge_ratio, s.name, s.market
-        FROM insider_holding ih
-        INNER JOIN (
-          SELECT symbol, MAX(date) as max_date
-          FROM insider_holding
-          GROUP BY symbol
-        ) latest ON ih.symbol = latest.symbol AND ih.date = latest.max_date
-        INNER JOIN stock_master s ON ih.symbol = s.symbol
-        WHERE ih.pledge_ratio >= ?
-        ORDER BY ih.pledge_ratio DESC
+        WITH ranked AS (
+          SELECT ih.symbol, ih.pledge_ratio,
+                 ROW_NUMBER() OVER (PARTITION BY ih.symbol ORDER BY ih.date DESC) AS rn
+          FROM insider_holding ih
+          WHERE ih.pledge_ratio IS NOT NULL
+        ),
+        latest AS (
+          SELECT symbol, pledge_ratio AS latest_ratio FROM ranked WHERE rn = 1
+        ),
+        previous AS (
+          SELECT symbol, pledge_ratio AS prev_ratio FROM ranked WHERE rn = 2
+        )
+        SELECT l.symbol, l.latest_ratio, s.name, s.market
+        FROM latest l
+        INNER JOIN previous p ON l.symbol = p.symbol
+        INNER JOIN stock_master s ON l.symbol = s.symbol
+        WHERE l.latest_ratio >= ?
+          AND (p.prev_ratio < ? OR (l.latest_ratio - p.prev_ratio) >= ?)
+        ORDER BY l.latest_ratio DESC
         LIMIT ${ChipAnomalyParams.maxResultsPerType}
       ''';
 
@@ -124,12 +144,16 @@ class ChipAnomalyService {
               const Variable<double>(
                 FundamentalParams.highPledgeRatioThreshold,
               ),
+              const Variable<double>(
+                FundamentalParams.highPledgeRatioThreshold,
+              ),
+              const Variable<double>(FundamentalParams.kPledgeAlertDeltaPp),
             ],
           )
           .get();
 
       return rows.map((row) {
-        final ratio = row.read<double>('pledge_ratio');
+        final ratio = row.read<double>('latest_ratio');
         final ratioStr = ratio.toStringAsFixed(1);
         return ChipAnomaly(
           type: ChipAnomalyType.highPledge,

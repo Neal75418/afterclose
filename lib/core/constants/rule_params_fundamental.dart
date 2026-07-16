@@ -87,6 +87,19 @@ abstract final class FundamentalParams {
   /// 盤點全部呼叫點，別依賴此清單（會過期）。
   static const double highPledgeRatioThreshold = 70.0;
 
+  /// 高質押「變動觸發」判定的最小增幅（百分點，pp）
+  ///
+  /// 僅供 [ChipAnomalyService] 市場層級「今日異常」feed 判斷是否為**新**高
+  /// 質押事件：前次快照 < [highPledgeRatioThreshold] 且最新 >= 門檻（跨門檻），
+  /// 或兩次快照皆 >= 門檻但漲幅 >= 此值（持續惡化），才計入當日異常，避免
+  /// 同一檔股票天天佔用「今日偵測到 N 項異常」名額造成警示疲勞。該股無前次
+  /// 快照（僅 1 筆歷史）一律不計入，避免首次同步大量歷史資料時洗版。
+  ///
+  /// 個股層級的持續性風險顯示（[HighPledgeRatioRule] 徽章、
+  /// `InsiderRepository` 的自選清單警示、股票詳情頁 UI 指標）不受本常數
+  /// 影響，仍持續顯示——市場層級 feed 收斂為「新事件」，不代表風險消失。
+  static const double kPledgeAlertDeltaPp = 5.0;
+
   /// 處置股結束日期寬限天數
   ///
   /// 判斷處置股是否仍生效時，在結束日期後加上此天數作為緩衝。

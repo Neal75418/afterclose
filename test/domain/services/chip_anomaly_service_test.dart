@@ -36,13 +36,18 @@ void main() {
     // 高質押率
     // ─────────────────────────────────────────────────────────────────────────
 
-    group('高質押率偵測', () {
-      test('pledge_ratio >= 70 應被偵測', () async {
+    group('高質押率偵測（變動觸發：跨門檻或 Δ>=5pp 才計入，防警示疲勞）', () {
+      test('跨門檻（前次 < 70、最新 >= 70）應被偵測', () async {
         await db.insertInsiderHoldingData([
           InsiderHoldingCompanion.insert(
             symbol: '2330',
+            date: today.subtract(const Duration(days: 30)),
+            pledgeRatio: const Value(65.0), // 前次 < 70
+          ),
+          InsiderHoldingCompanion.insert(
+            symbol: '2330',
             date: today,
-            pledgeRatio: const Value(75.5),
+            pledgeRatio: const Value(75.5), // 最新 >= 70
           ),
         ]);
 
@@ -56,8 +61,13 @@ void main() {
         );
       });
 
-      test('pledge_ratio < 70 不應被偵測', () async {
+      test('pledge_ratio < 70 不應被偵測（即使有前次資料）', () async {
         await db.insertInsiderHoldingData([
+          InsiderHoldingCompanion.insert(
+            symbol: '2330',
+            date: today.subtract(const Duration(days: 30)),
+            pledgeRatio: const Value(20.0),
+          ),
           InsiderHoldingCompanion.insert(
             symbol: '2330',
             date: today,
@@ -73,8 +83,13 @@ void main() {
         );
       });
 
-      test('keyValue 格式化為百分比字串', () async {
+      test('keyValue 格式化為最新質押率的百分比字串', () async {
         await db.insertInsiderHoldingData([
+          InsiderHoldingCompanion.insert(
+            symbol: '2330',
+            date: today.subtract(const Duration(days: 30)),
+            pledgeRatio: const Value(60.0),
+          ),
           InsiderHoldingCompanion.insert(
             symbol: '2330',
             date: today,
@@ -91,7 +106,7 @@ void main() {
         expect(anomaly.severity, ChipSeverity.high);
       });
 
-      test('使用最新一筆資料（MAX(date)）', () async {
+      test('使用最新一筆資料判定門檻（MAX(date) 為 latest，跨門檻情境）', () async {
         // 舊資料低於門檻，新資料超過門檻
         await db.insertInsiderHoldingData([
           InsiderHoldingCompanion.insert(
@@ -111,6 +126,133 @@ void main() {
         expect(
           result['TWSE']!.any((a) => a.type == ChipAnomalyType.highPledge),
           isTrue,
+        );
+      });
+
+      test('首次快照（無前次資料）即使 >= 70 也不應偵測（防首次同步洗版）', () async {
+        await db.insertInsiderHoldingData([
+          InsiderHoldingCompanion.insert(
+            symbol: '2330',
+            date: today,
+            pledgeRatio: const Value(75.5),
+          ),
+        ]);
+
+        final result = await service.detectAnomaliesByMarket(today);
+
+        expect(
+          result['TWSE']!.any((a) => a.type == ChipAnomalyType.highPledge),
+          isFalse,
+        );
+      });
+
+      test('持續高於門檻但變動 < 5pp 不應偵測（警示疲勞防制）', () async {
+        await db.insertInsiderHoldingData([
+          InsiderHoldingCompanion.insert(
+            symbol: '2330',
+            date: today.subtract(const Duration(days: 30)),
+            pledgeRatio: const Value(75.0), // 前次已 >= 70
+          ),
+          InsiderHoldingCompanion.insert(
+            symbol: '2330',
+            date: today,
+            pledgeRatio: const Value(76.5), // Δ = 1.5pp < 5pp
+          ),
+        ]);
+
+        final result = await service.detectAnomaliesByMarket(today);
+
+        expect(
+          result['TWSE']!.any((a) => a.type == ChipAnomalyType.highPledge),
+          isFalse,
+        );
+      });
+
+      test('持續高於門檻但 Δ >= 5pp 應偵測（即使早已跨過門檻）', () async {
+        await db.insertInsiderHoldingData([
+          InsiderHoldingCompanion.insert(
+            symbol: '2330',
+            date: today.subtract(const Duration(days: 30)),
+            pledgeRatio: const Value(72.0), // 前次已 >= 70
+          ),
+          InsiderHoldingCompanion.insert(
+            symbol: '2330',
+            date: today,
+            pledgeRatio: const Value(78.0), // Δ = 6pp >= 5pp
+          ),
+        ]);
+
+        final result = await service.detectAnomaliesByMarket(today);
+
+        expect(
+          result['TWSE']!.any((a) => a.type == ChipAnomalyType.highPledge),
+          isTrue,
+        );
+      });
+
+      test('Δ 恰為 5pp（inclusive）應偵測', () async {
+        await db.insertInsiderHoldingData([
+          InsiderHoldingCompanion.insert(
+            symbol: '2330',
+            date: today.subtract(const Duration(days: 30)),
+            pledgeRatio: const Value(70.0),
+          ),
+          InsiderHoldingCompanion.insert(
+            symbol: '2330',
+            date: today,
+            pledgeRatio: const Value(75.0), // Δ = 5.0pp
+          ),
+        ]);
+
+        final result = await service.detectAnomaliesByMarket(today);
+
+        expect(
+          result['TWSE']!.any((a) => a.type == ChipAnomalyType.highPledge),
+          isTrue,
+        );
+      });
+
+      test('前次略低於門檻、最新略高於門檻（小幅跨越）仍應偵測', () async {
+        await db.insertInsiderHoldingData([
+          InsiderHoldingCompanion.insert(
+            symbol: '2330',
+            date: today.subtract(const Duration(days: 30)),
+            pledgeRatio: const Value(69.9),
+          ),
+          InsiderHoldingCompanion.insert(
+            symbol: '2330',
+            date: today,
+            pledgeRatio: const Value(70.1), // Δ 僅 0.2pp，但屬跨門檻
+          ),
+        ]);
+
+        final result = await service.detectAnomaliesByMarket(today);
+
+        expect(
+          result['TWSE']!.any((a) => a.type == ChipAnomalyType.highPledge),
+          isTrue,
+        );
+      });
+
+      test('質押率下降但仍 >= 70 不應偵測（非跨門檻也非 Δ>=+5pp）', () async {
+        await db.insertInsiderHoldingData([
+          InsiderHoldingCompanion.insert(
+            symbol: '2330',
+            date: today.subtract(const Duration(days: 30)),
+            pledgeRatio: const Value(90.0),
+          ),
+          InsiderHoldingCompanion.insert(
+            symbol: '2330',
+            date: today,
+            pledgeRatio: const Value(85.0),
+          ),
+        ]);
+
+        final result = await service.detectAnomaliesByMarket(today);
+
+        expect(
+          result['TWSE']!.any((a) => a.type == ChipAnomalyType.highPledge),
+          isFalse,
         );
       });
     });
@@ -620,11 +762,21 @@ void main() {
         await db.insertInsiderHoldingData([
           InsiderHoldingCompanion.insert(
             symbol: '2330', // TWSE
+            date: today.subtract(const Duration(days: 30)),
+            pledgeRatio: const Value(50.0), // 前次 < 70（跨門檻情境，需前次快照才會被偵測）
+          ),
+          InsiderHoldingCompanion.insert(
+            symbol: '2330',
             date: today,
             pledgeRatio: const Value(80.0),
           ),
           InsiderHoldingCompanion.insert(
             symbol: '6488', // TPEx
+            date: today.subtract(const Duration(days: 30)),
+            pledgeRatio: const Value(50.0),
+          ),
+          InsiderHoldingCompanion.insert(
+            symbol: '6488',
             date: today,
             pledgeRatio: const Value(75.0),
           ),
