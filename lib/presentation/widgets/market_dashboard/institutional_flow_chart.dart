@@ -265,6 +265,12 @@ class _FlowCard extends StatelessWidget {
                     // 兩張卡並列時方向感反向，不利於跨市場交叉比較（例如
                     // TWSE 外資 +434 億 vs TPEx 外資 -115 億）。改成中央為 0、
                     // 兩側等量放，視覺上立刻看出正負與相對量級。
+                    //
+                    // 色彩語意：條的填色沿用上方金額數字已用的 valueColor
+                    // （買超右/紅、賣超左/綠，台股慣例）而非法人類別色
+                    // （item.color，僅用於左側邊框條 + 名稱，標示「哪個法人」）
+                    // ——買賣方向是明確的漲跌判斷，理應走 red/green，類別色
+                    // 留給「哪個法人」這個和方向無關的身份標示。
                     ClipRRect(
                       borderRadius: BorderRadius.circular(3),
                       child: SizedBox(
@@ -298,11 +304,7 @@ class _FlowCard extends StatelessWidget {
                                     width: barWidth,
                                     top: 0,
                                     bottom: 0,
-                                    child: Container(
-                                      color: isPositive
-                                          ? item.color
-                                          : item.color.withValues(alpha: 0.7),
-                                    ),
+                                    child: Container(color: valueColor),
                                   ),
                               ],
                             );

@@ -6,23 +6,39 @@ import 'package:afterclose/core/constants/rule_params_fundamental.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/domain/services/chip_anomaly_service.dart'
-    show ChipAnomaly, ChipAnomalyType, ChipSeverity, kZeroInsiderTransfer;
+    show ChipAnomaly, ChipAnomalyType, ChipSeverity;
+import 'package:afterclose/presentation/providers/market_overview_provider.dart'
+    show WarningCounts;
 
 /// 籌碼異動摘要列
 ///
-/// 台股風格：摘要橫幅 + 各類型直接展開（最多顯示 3 檔），
-/// 每檔附白話一行說明。支援點擊個股導航至詳情頁。
+/// 台股風格：摘要橫幅 + 各類型直接展開（最多顯示 3 檔），每檔一行
+/// （代號＋名稱＋關鍵數值）。支援點擊個股導航至詳情頁。標題列可選擇性
+/// 併入注意/處置股家數徽章（見 [warningCounts]），取代原本獨立的
+/// 注意/處置摘要列。
 class ChipAnomalyRow extends StatelessWidget {
-  const ChipAnomalyRow({super.key, required this.anomalies, this.onStockTap});
+  const ChipAnomalyRow({
+    super.key,
+    required this.anomalies,
+    this.onStockTap,
+    this.warningCounts,
+  });
 
   final List<ChipAnomaly> anomalies;
 
   /// 點擊個股時的回呼，傳入股票代號。由父層決定導航行為。
   final void Function(String symbol)? onStockTap;
 
+  /// 注意/處置股家數；非 null 且 [WarningCounts.total] > 0 時於標題列顯示
+  /// 徽章。原本獨立一列的注意/處置摘要併入本區塊標題（見類別文件）。
+  final WarningCounts? warningCounts;
+
   @override
   Widget build(BuildContext context) {
-    if (anomalies.isEmpty) return const SizedBox.shrink();
+    final hasAnomalies = anomalies.isNotEmpty;
+    final warnings = warningCounts;
+    final hasWarnings = warnings != null && warnings.total > 0;
+    if (!hasAnomalies && !hasWarnings) return const SizedBox.shrink();
 
     final theme = Theme.of(context);
 
@@ -46,32 +62,99 @@ class ChipAnomalyRow extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'marketOverview.chipAnomaly.title'.tr(),
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w600,
-          ),
+        // 標題列：籌碼異動標題 + 注意/處置徽章（若有）
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Text(
+                'marketOverview.chipAnomaly.title'.tr(),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            if (hasWarnings) ...[
+              if (warnings.attention > 0)
+                _WarningCountBadge(
+                  label: 'marketOverview.attentionCount'.tr(
+                    namedArgs: {'count': '${warnings.attention}'},
+                  ),
+                  color: Colors.orange,
+                ),
+              if (warnings.attention > 0 && warnings.disposal > 0)
+                const SizedBox(width: DesignTokens.spacing6),
+              if (warnings.disposal > 0)
+                _WarningCountBadge(
+                  label: 'marketOverview.disposalCount'.tr(
+                    namedArgs: {'count': '${warnings.disposal}'},
+                  ),
+                  color: Colors.red,
+                ),
+            ],
+          ],
         ),
-        const SizedBox(height: DesignTokens.spacing8),
 
-        // 摘要橫幅
-        _SummaryBanner(count: anomalies.length, hasHigh: hasHigh),
-        const SizedBox(height: DesignTokens.spacing12),
+        if (hasAnomalies) ...[
+          const SizedBox(height: DesignTokens.spacing8),
 
-        // 各類型區塊（直接展開，不折疊）
-        for (int i = 0; i < sortedTypes.length; i++) ...[
-          if (i > 0) const SizedBox(height: DesignTokens.spacing8),
-          _AnomalyTypeSection(
-            // 用 type 當 key，確保 sort 順序變動（如 severity 升級導致重排）時
-            // _isExpanded 狀態仍跟著正確的 type 走，不會誤掛到不同類別。
-            key: ValueKey(sortedTypes[i]),
-            type: sortedTypes[i],
-            items: grouped[sortedTypes[i]]!,
-            onStockTap: onStockTap,
-          ),
+          // 摘要橫幅
+          _SummaryBanner(count: anomalies.length, hasHigh: hasHigh),
+          const SizedBox(height: DesignTokens.spacing12),
+
+          // 各類型區塊（直接展開，不折疊）
+          for (int i = 0; i < sortedTypes.length; i++) ...[
+            if (i > 0) const SizedBox(height: DesignTokens.spacing8),
+            _AnomalyTypeSection(
+              // 用 type 當 key，確保 sort 順序變動（如 severity 升級導致重排）
+              // 時 _isExpanded 狀態仍跟著正確的 type 走，不會誤掛到不同類別。
+              key: ValueKey(sortedTypes[i]),
+              type: sortedTypes[i],
+              items: grouped[sortedTypes[i]]!,
+              onStockTap: onStockTap,
+            ),
+          ],
         ],
       ],
+    );
+  }
+}
+
+// ==================================================
+// 注意/處置徽章（併入標題列）
+// ==================================================
+
+/// 注意/處置股家數徽章
+///
+/// 樣式沿用原本獨立一列的 `_WarningBadge`（見 warnings_summary_row.dart），
+/// 僅搬移位置到本區塊標題列右側，視覺不變。
+class _WarningCountBadge extends StatelessWidget {
+  const _WarningCountBadge({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.spacing8,
+        vertical: 3,
+      ),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(DesignTokens.radiusSm),
+        color: color.withValues(alpha: 0.1),
+      ),
+      child: Text(
+        label,
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: color,
+          fontWeight: FontWeight.w600,
+          fontSize: DesignTokens.fontSizeXs,
+        ),
+      ),
     );
   }
 }
@@ -305,8 +388,10 @@ class _AnomalyItem extends StatelessWidget {
     final valueColor = anomaly.severity == ChipSeverity.high
         ? AppTheme.errorColor
         : AppTheme.warningColor;
-    final description = _buildDescription(anomaly);
 
+    // 單行：代號 + 名稱 + 關鍵數值。原本附帶的白話說明句已移除——分類
+    // 標頭（[_TypeMeta.subtitle]）已解釋該類型異動的意義，逐檔重複同一句
+    // 是低資訊密度的重複，壓縮成一行讓清單更快掃視。
     return MergeSemantics(
       child: InkWell(
         onTap: onTap != null
@@ -318,53 +403,32 @@ class _AnomalyItem extends StatelessWidget {
         borderRadius: BorderRadius.circular(DesignTokens.radiusSm),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: DesignTokens.spacing4),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
             children: [
-              // 代號 + 名稱 + 關鍵數值
-              Row(
-                children: [
-                  Text(
-                    anomaly.symbol,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
-                  ),
-                  const SizedBox(width: DesignTokens.spacing6),
-                  Expanded(
-                    child: Text(
-                      anomaly.stockName,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.onSurface,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  if (anomaly.keyValue != null)
-                    Text(
-                      anomaly.keyValue!,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: valueColor,
-                        fontWeight: FontWeight.w700,
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      ),
-                    ),
-                ],
+              Text(
+                anomaly.symbol,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
               ),
-
-              // 白話一行說明
-              if (description != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: DesignTokens.spacing2),
-                  child: Text(
-                    description,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      fontSize: DesignTokens.fontSizeXs,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+              const SizedBox(width: DesignTokens.spacing6),
+              Expanded(
+                child: Text(
+                  anomaly.stockName,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurface,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (anomaly.keyValue != null)
+                Text(
+                  anomaly.keyValue!,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: valueColor,
+                    fontWeight: FontWeight.w700,
+                    fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
             ],
@@ -372,41 +436,6 @@ class _AnomalyItem extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-// ==================================================
-// 白話描述（走 i18n）
-// ==================================================
-
-String? _buildDescription(ChipAnomaly a) {
-  final v = a.keyValue;
-  if (v == null) return null;
-
-  const base = 'marketOverview.chipAnomaly.desc';
-
-  switch (a.type) {
-    case ChipAnomalyType.highPledge:
-      return '$base.highPledge'.tr(namedArgs: {'value': v});
-
-    case ChipAnomalyType.insiderTransfer:
-      if (v == kZeroInsiderTransfer) return '$base.insiderTransferZero'.tr();
-      return '$base.insiderTransfer'.tr(namedArgs: {'value': v});
-
-    case ChipAnomalyType.foreignNearLimit:
-      return '$base.foreignNearLimit'.tr(namedArgs: {'value': v});
-
-    case ChipAnomalyType.shortSurge:
-      return '$base.shortSurge'.tr(namedArgs: {'value': v});
-
-    case ChipAnomalyType.institutionalSurge:
-      if (v.startsWith('+')) {
-        return '$base.instBuy'.tr(namedArgs: {'value': v.substring(1)});
-      }
-      if (v.startsWith('-')) {
-        return '$base.instSell'.tr(namedArgs: {'value': v.substring(1)});
-      }
-      return '$base.instMove'.tr(namedArgs: {'value': v});
   }
 }
 

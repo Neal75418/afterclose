@@ -19,7 +19,6 @@ import 'package:afterclose/presentation/widgets/market_dashboard/chip_anomaly_ro
 import 'package:afterclose/presentation/widgets/market_dashboard/market_reading_line.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/trading_turnover_row.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/sentiment_gauge_section.dart';
-import 'package:afterclose/presentation/widgets/market_dashboard/warnings_summary_row.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/taiwan_calendar.dart';
@@ -267,7 +266,9 @@ class _MarketDashboardState extends State<MarketDashboard> {
       decline: ad.decline,
       institutionalTotalNet: institutionalTotalNet,
     );
-    return MarketReadingLine(reading: reading);
+    // prominent: true — 升層為市場欄位頂部的視覺焦點，與其餘 per-section
+    // 判讀行（維持預設 muted）區隔。
+    return MarketReadingLine(reading: reading, prominent: true);
   }
 
   /// 計算指定市場的市場情緒分數
@@ -475,17 +476,14 @@ class _MarketDashboardState extends State<MarketDashboard> {
       );
     }
 
-    // 注意/處置股摘要
-    if (warningCounts != null && warningCounts.total > 0) {
-      sections.add(WarningsSummaryRow(data: warningCounts));
-    }
-
-    // 籌碼異動
+    // 籌碼異動（標題列併入 注意/處置 徽章，取代原本獨立一列）
     final chipAnomalies = widget.state.chipAnomaliesByMarket[marketKey];
-    if (chipAnomalies != null && chipAnomalies.isNotEmpty) {
+    if ((chipAnomalies != null && chipAnomalies.isNotEmpty) ||
+        (warningCounts != null && warningCounts.total > 0)) {
       sections.add(
         ChipAnomalyRow(
-          anomalies: chipAnomalies,
+          anomalies: chipAnomalies ?? const [],
+          warningCounts: warningCounts,
           onStockTap: (symbol) => context.push(AppRoutes.stockDetail(symbol)),
         ),
       );
@@ -539,13 +537,13 @@ class _MarketDashboardState extends State<MarketDashboard> {
     final tpexSentiment = _buildSentimentSection(MarketCode.tpex);
 
     // 每個 section builder 返回 Widget?，null 表示該市場無此資料
+    // （注意/處置已併入 _buildChipAnomalySection 標題列，無獨立 builder）
     final sectionBuilders = <Widget? Function(String)>[
       _buildAdvanceDeclineSection,
       _buildBreadthTrendSection,
       _buildTurnoverSection,
       _buildInstitutionalSection,
       _buildMarginSection,
-      _buildWarningsSection,
       _buildChipAnomalySection,
       _buildIndustrySection,
     ];
@@ -845,17 +843,16 @@ class _MarketDashboardState extends State<MarketDashboard> {
     );
   }
 
-  Widget? _buildWarningsSection(String market) {
-    final warningCounts = widget.state.warningCountsByMarket[market];
-    if (warningCounts == null || warningCounts.total <= 0) return null;
-    return WarningsSummaryRow(data: warningCounts);
-  }
-
+  /// 籌碼異動 section（標題列併入 注意/處置 徽章，取代原本獨立一列）
   Widget? _buildChipAnomalySection(String market) {
     final chipAnomalies = widget.state.chipAnomaliesByMarket[market];
-    if (chipAnomalies == null || chipAnomalies.isEmpty) return null;
+    final warningCounts = widget.state.warningCountsByMarket[market];
+    final hasAnomalies = chipAnomalies != null && chipAnomalies.isNotEmpty;
+    final hasWarnings = warningCounts != null && warningCounts.total > 0;
+    if (!hasAnomalies && !hasWarnings) return null;
     return ChipAnomalyRow(
-      anomalies: chipAnomalies,
+      anomalies: chipAnomalies ?? const [],
+      warningCounts: warningCounts,
       onStockTap: (symbol) => context.push(AppRoutes.stockDetail(symbol)),
     );
   }

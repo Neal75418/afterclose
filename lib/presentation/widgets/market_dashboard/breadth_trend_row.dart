@@ -93,6 +93,9 @@ class BreadthTrendRow extends StatelessWidget {
         ],
 
         // AD 騰落線 sparkline
+        //
+        // 次要輔助圖線（相對 Hero 指數 sparkline 為 primary）：縮小高度並降
+        // 低不透明度，視覺上明確退居輔助角色，不與指數走勢圖搶焦點。
         if (hasAdLine) ...[
           const SizedBox(height: DesignTokens.spacing10),
           Text(
@@ -103,7 +106,14 @@ class BreadthTrendRow extends StatelessWidget {
             ),
           ),
           const SizedBox(height: DesignTokens.spacing6),
-          MiniTrendChart(dataPoints: line, height: 36, lineColor: adColor),
+          Opacity(
+            opacity: 0.6,
+            child: MiniTrendChart(
+              dataPoints: line,
+              height: 25,
+              lineColor: adColor,
+            ),
+          ),
         ],
 
         // 判讀層（廣度趨勢）

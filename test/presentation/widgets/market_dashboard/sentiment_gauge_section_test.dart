@@ -73,6 +73,23 @@ void main() {
     });
   });
 
+  group('SentimentGaugeSection 趨勢 sparkline 已移除', () {
+    testWidgets('即使提供 5 筆以上歷史分數，也不再渲染趨勢 sparkline row', (tester) async {
+      widenViewport(tester);
+      await tester.pumpWidget(
+        buildTestApp(
+          SentimentGaugeSection(
+            sentiment: createSentiment(),
+            market: MarketCode.twse,
+            sentimentHistory: const [40, 45, 50, 55, 57],
+          ),
+        ),
+      );
+
+      expect(find.text('marketOverview.sentiment.trend'), findsNothing);
+    });
+  });
+
   group('SentimentGaugeSection 市場標示', () {
     testWidgets('上市／上櫃各自標題內含對應市場標示，兩者文字不同', (tester) async {
       widenViewport(tester);

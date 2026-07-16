@@ -5,7 +5,6 @@ import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/domain/services/market_sentiment_service.dart';
-import 'package:afterclose/presentation/widgets/stock_card_sparkline.dart';
 
 /// 市場情緒儀表板
 ///
@@ -29,7 +28,11 @@ class SentimentGaugeSection extends StatefulWidget {
   /// 「市場情緒」標題、無法區分（單一市場資料不足優雅降級時尤其模糊）。
   final String market;
 
-  /// 歷史情緒分數（oldest→newest），用於趨勢 sparkline
+  /// 歷史情緒分數（oldest→newest）
+  ///
+  /// 視覺 pass 移除趨勢 sparkline 後本欄暫不渲染，保留參數與上游計算
+  /// （market_dashboard.dart 的 `_computeSentimentHistory`）不變，避免牽動
+  /// 資料層。
   final List<double> sentimentHistory;
 
   @override
@@ -78,7 +81,10 @@ class _SentimentGaugeSectionState extends State<SentimentGaugeSection> {
                     sentiment.score.toStringAsFixed(0),
                     style: theme.textTheme.headlineLarge?.copyWith(
                       fontWeight: FontWeight.w900,
-                      color: color,
+                      // 色彩語意：red/green 僅供價格方向使用，情緒分數非漲跌
+                      // 判斷 — 數字改中性色，與三角指標（已用 onSurface）
+                      // 一致；等級徽章（levelText）仍用 color 標示 fear/greed。
+                      color: theme.colorScheme.onSurface,
                       fontFeatures: const [FontFeature.tabularFigures()],
                     ),
                   ),
@@ -127,36 +133,6 @@ class _SentimentGaugeSectionState extends State<SentimentGaugeSection> {
                           child: _SubScoresGrid(subScores: sentiment.subScores),
                         )
                       : const SizedBox(width: double.infinity),
-                ),
-              ],
-
-              // 趨勢 sparkline
-              if (widget.sentimentHistory.length >= 5) ...[
-                const SizedBox(height: DesignTokens.spacing10),
-                Row(
-                  children: [
-                    Text(
-                      'marketOverview.sentiment.trend'.tr(),
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant.withValues(
-                          alpha: 0.6,
-                        ),
-                        fontSize: DesignTokens.fontSizeXs,
-                      ),
-                    ),
-                    const SizedBox(width: DesignTokens.spacing8),
-                    Expanded(
-                      child: SizedBox(
-                        height: 28,
-                        child: MiniSparkline(
-                          prices: widget.sentimentHistory,
-                          color: color,
-                          width: double.infinity,
-                          height: 28,
-                        ),
-                      ),
-                    ),
-                  ],
                 ),
               ],
             ],

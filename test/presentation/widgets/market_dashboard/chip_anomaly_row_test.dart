@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:afterclose/domain/services/chip_anomaly_service.dart'
     show ChipAnomaly, ChipAnomalyType, ChipSeverity, kZeroInsiderTransfer;
+import 'package:afterclose/presentation/providers/market_overview_provider.dart'
+    show WarningCounts;
 import 'package:afterclose/presentation/widgets/market_dashboard/chip_anomaly_row.dart';
 
 import '../../../helpers/widget_test_helpers.dart';
@@ -91,6 +93,25 @@ void main() {
       );
 
       expect(find.text('65.5%'), findsOneWidget);
+    });
+
+    testWidgets('個股列壓縮為單行，不再顯示白話說明句', (tester) async {
+      widenViewport(tester);
+      await tester.pumpWidget(
+        buildTestApp(
+          ChipAnomalyRow(
+            anomalies: [_anomaly('2330', '台積電', keyValue: '65.5%')],
+          ),
+        ),
+      );
+
+      // 代號/名稱/數值單行仍在，但原本逐檔重複的白話說明句已移除
+      // （分類標頭 subtitle 已解釋類型意義，不需每檔重複一次）。
+      expect(find.text('2330'), findsOneWidget);
+      expect(
+        find.textContaining('marketOverview.chipAnomaly.desc'),
+        findsNothing,
+      );
     });
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -237,6 +258,65 @@ void main() {
 
       expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
       expect(find.text('2330'), findsOneWidget);
+    });
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // 注意/處置徽章併入標題列
+  // ─────────────────────────────────────────────────────────────────────────
+
+  group('ChipAnomalyRow 注意/處置徽章併入標題列', () {
+    testWidgets('warningCounts 有值時，標題列顯示注意/處置徽章', (tester) async {
+      widenViewport(tester);
+      await tester.pumpWidget(
+        buildTestApp(
+          ChipAnomalyRow(
+            anomalies: [_anomaly('2330', '台積電')],
+            warningCounts: const WarningCounts(attention: 3, disposal: 1),
+          ),
+        ),
+      );
+
+      expect(
+        find.textContaining('marketOverview.attentionCount'),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('marketOverview.disposalCount'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('anomalies 為空但 warningCounts 有值時，標題列徽章仍渲染（不隨獨立列一起消失）', (
+      tester,
+    ) async {
+      widenViewport(tester);
+      await tester.pumpWidget(
+        buildTestApp(
+          const ChipAnomalyRow(
+            anomalies: [],
+            warningCounts: WarningCounts(attention: 2),
+          ),
+        ),
+      );
+
+      expect(find.text('marketOverview.chipAnomaly.title'), findsOneWidget);
+      expect(
+        find.textContaining('marketOverview.attentionCount'),
+        findsOneWidget,
+      );
+      // 無籌碼異動資料 → 摘要橫幅（含 warning_amber icon）不出現
+      expect(find.byIcon(Icons.warning_amber_rounded), findsNothing);
+    });
+
+    testWidgets('anomalies 與 warningCounts 皆空（或 0）時仍不渲染任何內容', (tester) async {
+      await tester.pumpWidget(
+        buildTestApp(
+          const ChipAnomalyRow(anomalies: [], warningCounts: WarningCounts()),
+        ),
+      );
+
+      expect(find.byType(Text), findsNothing);
     });
   });
 }

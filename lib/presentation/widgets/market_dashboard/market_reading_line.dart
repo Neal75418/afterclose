@@ -14,10 +14,23 @@ import 'package:afterclose/domain/services/market_reading_service.dart';
 ///
 /// 將 tone → 樣式 的對應集中於此，四個區塊共用，確保視覺一致。
 class MarketReadingLine extends StatelessWidget {
-  const MarketReadingLine({super.key, required this.reading});
+  const MarketReadingLine({
+    super.key,
+    required this.reading,
+    this.prominent = false,
+  });
 
   /// 判讀結果；為 null 時不渲染任何內容（資料缺失時優雅留白）。
   final MarketReading? reading;
+
+  /// 是否以「醒目 strip」樣式呈現（帶淡背景色 + 較粗字重的一條）。
+  ///
+  /// 綜合判讀（top-level，見 [MarketReadingService.interpretCompositeSynthesis]）
+  /// 用 `true` 升層為市場欄位頂部的視覺焦點；其餘三處 per-section 判讀
+  /// （廣度／廣度趨勢／位階乖離）維持預設 `false`，樣式不變 — 四處共用同一
+  /// 元件，僅 top-level 那一處選擇醒目樣式，避免全部連帶被拉高視覺權重、
+  /// 蓋過各區塊自己的數字。
+  final bool prominent;
 
   @override
   Widget build(BuildContext context) {
@@ -29,46 +42,71 @@ class MarketReadingLine extends StatelessWidget {
       alpha: 0.7,
     );
 
-    // tone → 色彩：warning=amber、negative=下跌色，其餘 muted
+    // tone → 色彩：warning=amber、negative=下跌色，其餘 muted。
+    // prominent 時 positive/neutral 改用全對比 onSurface，避免醒目 strip
+    // 裡的文字仍是灰階、達不到「readable weight」。
     final color = switch (reading.tone) {
       InterpretationTone.warning => AppTheme.cautionColor,
       InterpretationTone.negative => AppTheme.downColor,
-      InterpretationTone.positive => mutedColor,
-      InterpretationTone.neutral => mutedColor,
+      InterpretationTone.positive =>
+        prominent ? theme.colorScheme.onSurface : mutedColor,
+      InterpretationTone.neutral =>
+        prominent ? theme.colorScheme.onSurface : mutedColor,
     };
 
     final text = reading.args == null
         ? reading.messageKey.tr()
         : reading.messageKey.tr(namedArgs: reading.args!);
 
-    final children = <Widget>[
-      if (reading.tone == InterpretationTone.warning) ...[
-        Text(
-          '⚠',
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: color,
-            fontSize: DesignTokens.fontSizeXs,
-          ),
-        ),
-        const SizedBox(width: DesignTokens.spacing4),
-      ],
-      Flexible(
-        child: Text(
-          text,
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: color,
-            fontSize: DesignTokens.fontSizeXs,
-          ),
-        ),
-      ),
-    ];
+    final fontSize = prominent
+        ? DesignTokens.fontSizeSm
+        : DesignTokens.fontSizeXs;
 
-    return Padding(
-      padding: const EdgeInsets.only(top: DesignTokens.spacing6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: children,
+    final content = Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (reading.tone == InterpretationTone.warning) ...[
+          Text(
+            '⚠',
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: color,
+              fontSize: fontSize,
+            ),
+          ),
+          const SizedBox(width: DesignTokens.spacing4),
+        ],
+        Flexible(
+          child: Text(
+            text,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: color,
+              fontSize: fontSize,
+              fontWeight: prominent ? FontWeight.w600 : null,
+            ),
+          ),
+        ),
+      ],
+    );
+
+    if (!prominent) {
+      return Padding(
+        padding: const EdgeInsets.only(top: DesignTokens.spacing6),
+        child: content,
+      );
+    }
+
+    // 醒目 strip：淡背景（tone 色 10% 透明度）+ 圓角，貼齊各市場欄位頂部。
+    return Container(
+      margin: const EdgeInsets.only(top: DesignTokens.spacing8),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.spacing10,
+        vertical: DesignTokens.spacing6,
       ),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
+      ),
+      child: content,
     );
   }
 }

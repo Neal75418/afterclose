@@ -5,6 +5,7 @@ import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:afterclose/data/models/twse/twse_market_index.dart';
 import 'package:afterclose/presentation/providers/market_overview_provider.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/market_dashboard.dart';
+import 'package:afterclose/presentation/widgets/market_dashboard/market_reading_line.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/sentiment_gauge_section.dart';
 
 import '../../../helpers/widget_test_helpers.dart';
@@ -163,6 +164,35 @@ void main() {
         find.text('marketOverview.reading.synthesis.weightSupport'),
         findsOneWidget,
       );
+    });
+
+    testWidgets('綜合判讀 strip 以 prominent 樣式呈現，與同欄位其餘 per-section 判讀區隔', (
+      tester,
+    ) async {
+      widenViewport(tester);
+      // 沿用 weightSupport 情境：advance=200/decline=800 同時也會觸發
+      // AdvanceDeclineGauge 內建的廣度判讀行（per-section，非 prominent），
+      // 一次驗證「僅 top-level 綜合判讀升層、其餘維持預設」。
+      final state = MarketOverviewState(
+        indices: [createIndex(MarketIndexNames.taiex, 22000, 10)],
+        advanceDeclineByMarket: {
+          'TWSE': const AdvanceDecline(advance: 200, decline: 800),
+        },
+        institutionalByMarket: {
+          'TWSE': const InstitutionalTotals(totalNet: 100000000),
+        },
+        dataDate: DateTime(2026, 2, 13),
+      );
+
+      await tester.pumpWidget(buildTestApp(MarketDashboard(state: state)));
+      await tester.pump(const Duration(seconds: 1));
+
+      final lines = tester
+          .widgetList<MarketReadingLine>(find.byType(MarketReadingLine))
+          .toList();
+      expect(lines, isNotEmpty);
+      expect(lines.where((l) => l.prominent).length, 1);
+      expect(lines.any((l) => !l.prominent), isTrue);
     });
 
     testWidgets('綜合判讀僅在該市場有指數資料時顯示；TPEx 無指數時該欄不渲染', (tester) async {

@@ -136,12 +136,17 @@ class HeroIndexSection extends StatelessWidget {
               ..._buildStageRow(context, theme),
 
               // Sparkline 走勢圖
+              //
+              // 色彩語意：red/green 僅供價格方向（漲跌 badge、乖離 chip 等）
+              // 使用。這條線畫的是 30 日「數列」本身，不是方向判斷，故不沿用
+              // up/down 色，改中性 blue-grey（AppTheme.neutralSlateColor，
+              // 既有 token：「用於非漲跌的平穩狀態」）。
               if (historyData.length >= 2) ...[
                 const SizedBox(height: DesignTokens.spacing12),
                 MiniTrendChart(
                   dataPoints: historyData,
                   height: 60,
-                  lineColor: color,
+                  lineColor: AppTheme.neutralSlateColor,
                 ),
               ],
             ],

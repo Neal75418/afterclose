@@ -149,13 +149,19 @@ class AdvanceDeclineGauge extends StatelessWidget {
         ],
 
         // 30日漲幅比趨勢 sparkline
+        //
+        // 次要輔助圖線（相對 Hero 指數 sparkline 為 primary）：縮小高度並降
+        // 低不透明度，視覺上明確退居輔助角色，不與指數走勢圖搶焦點。
         if (advanceRatioHistory != null &&
             advanceRatioHistory!.length >= 2) ...[
           const SizedBox(height: DesignTokens.spacing10),
-          MiniTrendChart(
-            dataPoints: advanceRatioHistory!,
-            height: 36,
-            lineColor: AppTheme.upColor,
+          Opacity(
+            opacity: 0.6,
+            child: MiniTrendChart(
+              dataPoints: advanceRatioHistory!,
+              height: 25,
+              lineColor: AppTheme.upColor,
+            ),
           ),
         ],
 
