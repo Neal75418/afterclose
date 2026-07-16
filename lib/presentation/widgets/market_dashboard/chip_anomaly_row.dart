@@ -127,7 +127,7 @@ class ChipAnomalyRow extends StatelessWidget {
 
 /// 注意/處置股家數徽章
 ///
-/// 樣式沿用原本獨立一列的 `_WarningBadge`（見 warnings_summary_row.dart），
+/// 樣式沿用原「注意/處置」獨立摘要列的徽章（2026-07-17 該列已併入本標題列後移除），
 /// 僅搬移位置到本區塊標題列右側，視覺不變。
 class _WarningCountBadge extends StatelessWidget {
   const _WarningCountBadge({required this.label, required this.color});
