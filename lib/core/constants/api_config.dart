@@ -166,6 +166,32 @@ abstract final class ApiConfig {
   static const int financialSyncLookbackDays = 730;
 
   // ==================================================
+  // 指數深度回補（解鎖大盤位階 MA60 長窗深度）
+  //
+  // MarketIndexSyncer 每日主同步只寫入當日資料；DB 清空後僅剩近期 API
+  // 回應窗（實測 ~42 天），不足大盤位階 MA60 所需的 60 個交易日，更遠低於
+  // 「52 週」深度目標（~250 交易日）。深度回補從既有最早一筆資料往回走，
+  // 逐日呼叫 TWSE MI_INDEX（含 date 參數，2026-07-12 活體驗證支援歷史
+  // 日期）分批補齊。僅 TWSE：TPEx 櫃買指數 OpenAPI 不支援 date 參數、
+  // 無法逐日回補歷史（見 MarketIndexSyncer class doc）。
+  // ==================================================
+
+  /// 指數深度回補：單次更新最多回補幾個交易日
+  ///
+  /// 曾一次回補 200 天觸發 TWSE 反爬限流（redirect loop）中止同步、已回退
+  /// （見 [MarketIndexSyncer] class doc）。分批 60 天/次，多輪逐步收斂：
+  /// 由 fresh DB 的 ~42 天回補到 [indexBackfillTargetCalendarDays]
+  /// （~250 交易日）約需 4-5 次每日同步；越過 MA60 所需的 60 個交易日
+  /// 則僅需 1 次即可解鎖大盤位階。
+  static const int indexBackfillMaxDaysPerRun = 60;
+
+  /// 指數深度回補目標深度（日曆天）
+  ///
+  /// ~370 日曆天涵蓋約 250 個交易日（52 週），與 `AlertParams.week52LookbackDays`
+  /// 的日曆/交易日換算慣例一致。
+  static const int indexBackfillTargetCalendarDays = 370;
+
+  // ==================================================
   // 排程設定
   // ==================================================
 

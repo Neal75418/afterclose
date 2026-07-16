@@ -16,10 +16,14 @@ import 'package:afterclose/data/remote/twse_client.dart';
 /// 大盤指數歷史同步器
 ///
 /// 從 TWSE MI_INDEX API 取得指數資料，篩選 Dashboard 重點指數後寫入 MarketIndex 表。
-/// 供大盤總覽走勢圖使用。
+/// 供大盤總覽走勢圖與大盤位階（MA20/MA60 乖離）使用。
 ///
-/// - [sync] 同步當日資料，資料不足時自動觸發 [backfill]。
+/// - [sync] 同步當日資料，資料不足時自動觸發 [backfill]；同步後一律嘗試
+///   [backfillDeepHistory]（fail-safe，見其 doc）。
 /// - [backfill] 回補近 45 天歷史，確保走勢圖至少有 ~20 個交易日的資料點。
+/// - [backfillDeepHistory] 分批回補至 ~370 天（~250 交易日）深度，解鎖
+///   大盤位階所需的 MA60（60 交易日）長窗——DB 清空後只剩近期 API 回應窗
+///   （~42 天），不足 MA60，且僅靠每日累積需近一年才能自然補齊。
 class MarketIndexSyncer {
   const MarketIndexSyncer({
     required AppDatabase database,
@@ -27,11 +31,15 @@ class MarketIndexSyncer {
     TpexClient? tpexClient,
     FinMindClient? finMindClient,
     AppClock clock = const SystemClock(),
+    Duration requestDelay = const Duration(
+      milliseconds: ApiConfig.syncerBatchDelayMs,
+    ),
   }) : _db = database,
        _twse = twseClient,
        _tpex = tpexClient,
        _finMind = finMindClient,
-       _clock = clock;
+       _clock = clock,
+       _requestDelay = requestDelay;
 
   final AppDatabase _db;
   final TwseClient _twse;
@@ -56,10 +64,8 @@ class MarketIndexSyncer {
   /// 觸發回補判斷時查詢的歷史天數
   static const _historyCheckDays = 30;
 
-  /// API 請求間隔，避免 TWSE rate limit
-  static const _requestDelay = Duration(
-    milliseconds: ApiConfig.syncerBatchDelayMs,
-  );
+  /// API 請求間隔，避免 TWSE rate limit（可由建構子覆寫，測試用 [Duration.zero]）
+  final Duration _requestDelay;
 
   /// 同步當日大盤指數至 DB
   ///
@@ -140,6 +146,15 @@ class MarketIndexSyncer {
     // 無論今日同步是否成功，都檢查是否需要歷史回補
     await _backfillIfNeeded();
 
+    // 深度回補（解鎖大盤位階 MA60 長窗深度）：完全 fail-safe，任何例外
+    // （含 RateLimitException / NetworkException）皆不影響當日同步結果，
+    // 也不設 ctx.rateLimitedAbort（見 backfillDeepHistory doc）。
+    try {
+      await backfillDeepHistory();
+    } catch (e) {
+      AppLogger.warning('MarketIndexSyncer', '指數深度回補失敗，不影響當日同步', e);
+    }
+
     return synced;
   }
 
@@ -149,8 +164,6 @@ class MarketIndexSyncer {
   /// 回傳總寫入筆數。
   Future<int> backfill() async {
     final now = _clock.now();
-    var totalInserted = 0;
-    var apiCalls = 0;
 
     // 查詢 DB 已有的指數日期，避免重複呼叫 API
     final existingHistory = await _db.getIndexHistoryBatch(
@@ -187,7 +200,142 @@ class MarketIndexSyncer {
       '開始歷史回補: ${datesToFetch.length} 個交易日需補（已有 ${existingDates.length} 日）',
     );
 
-    for (final date in datesToFetch) {
+    final (totalInserted, apiCalls) = await _fetchAndUpsertDates(
+      datesToFetch,
+      '回補',
+    );
+
+    AppLogger.info(
+      'MarketIndexSyncer',
+      '歷史回補完成: $totalInserted 筆 ($apiCalls 次 API 呼叫)',
+    );
+    return totalInserted;
+  }
+
+  /// 深度回補指數歷史，解鎖大盤位階（MA60）所需的長窗深度
+  ///
+  /// 從 DB 目前最早的 [MarketIndexNames.taiex] 資料往前一天開始往回走，
+  /// 逐日呼叫 TWSE MI_INDEX（含 date 參數），跳過非交易日與已覆蓋日期，
+  /// 直到達成 [ApiConfig.indexBackfillTargetCalendarDays] 目標深度或用完
+  /// 本次上限 [ApiConfig.indexBackfillMaxDaysPerRun]。
+  ///
+  /// 所有 dashboardIndices 皆由同一次 TWSE 回應寫入，日期集合與加權指數
+  /// 一致，故以它為代表判斷回補起點與既有覆蓋，無需逐指數查詢。
+  ///
+  /// **僅 TWSE**：TPEx 櫃買指數 OpenAPI（[TpexClient.getTpexIndex]）不支援
+  /// date 參數、只回傳近月資料，無法逐日回補歷史（見 class doc 與
+  /// `.superpowers/sdd/index-backfill-report.md` 的端點調查記錄）。櫃買指數
+  /// 的位階深度僅能靠每日同步逐步自然累積。
+  ///
+  /// Idempotent：與 [backfill] 共用 (date, name) UNIQUE upsert，重複執行
+  /// 安全。呼叫端（[sync]）以 try/catch 完整包裹本方法，任何例外（含
+  /// [RateLimitException] / [NetworkException]）皆 fail-soft、不影響當日
+  /// 同步結果——這與 [backfill] 內部「NetworkException 仍 rethrow」的
+  /// 既有慣例刻意不同：深度回補是「錦上添花」的背景步驟，其例外不應
+  /// 讓 `_syncAuxiliaryData` 誤判為限流而連帶中止 TDCC/股利/內部人轉讓等
+  /// 其餘同步器。
+  ///
+  /// 回傳本次寫入筆數。
+  Future<int> backfillDeepHistory() async {
+    final now = _clock.now();
+
+    final existingHistory = await _db.getIndexHistoryBatch(
+      [MarketIndexNames.taiex],
+      days: ApiConfig.indexBackfillTargetCalendarDays + _queryBufferDays,
+      now: now,
+    );
+    final existingRows = existingHistory[MarketIndexNames.taiex] ?? const [];
+
+    if (existingRows.isEmpty) {
+      AppLogger.debug('MarketIndexSyncer', '指數深度回補: 尚無既有資料，待每日同步或近期回補建立起點後再回補');
+      return 0;
+    }
+
+    // getIndexHistoryBatch 已依日期升冪排序，first 即最早日期
+    final earliestDay = DateContext.normalize(existingRows.first.date);
+    final targetDay = DateContext.normalize(
+      now.subtract(
+        const Duration(days: ApiConfig.indexBackfillTargetCalendarDays),
+      ),
+    );
+
+    if (!earliestDay.isAfter(targetDay)) {
+      AppLogger.debug(
+        'MarketIndexSyncer',
+        '指數深度回補: 已達目標深度 '
+            '(${ApiConfig.indexBackfillTargetCalendarDays} 天)，略過',
+      );
+      return 0;
+    }
+
+    final existingDates = <String>{
+      for (final row in existingRows)
+        '${row.date.year}-${row.date.month}-${row.date.day}',
+    };
+
+    // 從既有最早日期前一天開始往回走，跳過非交易日與已覆蓋日期（後者為
+    // 防禦性檢查——正常情況下不會命中，因 earliestDay 本身即既有資料的
+    // 最小值，但可防護未來若資料來源改變導致的不連續缺口）。
+    // 上限 ApiConfig.indexBackfillMaxDaysPerRun 個交易日／次。
+    final datesToFetch = <DateTime>[];
+    var remainingTradingDays = 0;
+    for (
+      var day = earliestDay.subtract(const Duration(days: 1));
+      !day.isBefore(targetDay);
+      day = day.subtract(const Duration(days: 1))
+    ) {
+      if (!TaiwanCalendar.isTradingDay(day)) continue;
+      final key = '${day.year}-${day.month}-${day.day}';
+      if (existingDates.contains(key)) continue;
+
+      if (datesToFetch.length < ApiConfig.indexBackfillMaxDaysPerRun) {
+        datesToFetch.add(day);
+      } else {
+        remainingTradingDays++;
+      }
+    }
+
+    if (datesToFetch.isEmpty) {
+      AppLogger.debug('MarketIndexSyncer', '指數深度回補: 目標窗內已無缺漏交易日，略過');
+      return 0;
+    }
+
+    final (inserted, apiCalls) = await _fetchAndUpsertDates(
+      datesToFetch,
+      '深度回補',
+    );
+
+    // apiCalls 可能因中途限流而少於 datesToFetch.length（見
+    // _fetchAndUpsertDates 的 RateLimitException 處理）；未實際嘗試的
+    // 排隊日期仍算「剩餘」，否則限流中止的那次會低估剩餘量、誤導下次
+    // 進度預期（2026-07-16 活體驗證：60 天排隊、50 次呼叫後撞限流中止）。
+    final notAttempted = datesToFetch.length - apiCalls;
+    AppLogger.info(
+      'MarketIndexSyncer',
+      '指數回補 $apiCalls 天（剩餘 ~${remainingTradingDays + notAttempted}）',
+    );
+
+    return inserted;
+  }
+
+  /// 逐日回補共用執行邏輯：依序呼叫 TWSE 取得指定日期指數並 upsert，
+  /// 呼叫間依 [_requestDelay] 節流。
+  ///
+  /// - [RateLimitException]：中止迴圈但不 rethrow（best-effort 提前結束，
+  ///   見 [backfill] 內原有的不對稱設計說明）。
+  /// - [NetworkException]：rethrow，交由呼叫端決定是否吸收（[backfill]
+  ///   任其向上傳、[backfillDeepHistory] 由 [sync] 的 try/catch 吸收）。
+  /// - 其餘例外：單日略過，不中斷整體回補。
+  ///
+  /// 回傳 (寫入筆數, 實際 API 呼叫數)。
+  Future<(int inserted, int apiCalls)> _fetchAndUpsertDates(
+    List<DateTime> dates,
+    String logLabel,
+  ) async {
+    var totalInserted = 0;
+    var apiCalls = 0;
+
+    for (final date in dates) {
       try {
         if (apiCalls > 0) {
           await Future.delayed(_requestDelay);
@@ -204,13 +352,9 @@ class MarketIndexSyncer {
         await _db.upsertMarketIndices(companions);
         totalInserted += companions.length;
       } on RateLimitException {
-        // 刻意 break 而非 rethrow（與 NetworkException 不對稱是設計）：
-        // 歷史回補跑在「今日主同步已成功」之後、屬 best-effort——rethrow
-        // 會把已成功的主同步整段標成限流失敗。代價：caller 不知限流已
-        // 發生，下一個 syncer 會再撞一次才 abort（浪費一次呼叫，可接受）。
         AppLogger.warning(
           'MarketIndexSyncer',
-          'API 限流，中止歷史回補 (已完成 $apiCalls 次呼叫)',
+          '指數$logLabel API 限流，中止 (已完成 $apiCalls 次呼叫)',
         );
         break;
       } on NetworkException {
@@ -219,16 +363,12 @@ class MarketIndexSyncer {
         // 單日失敗不中斷整個回補
         AppLogger.debug(
           'MarketIndexSyncer',
-          '回補 ${DateContext.formatYmd(date)} 失敗: $e',
+          '指數$logLabel ${DateContext.formatYmd(date)} 失敗: $e',
         );
       }
     }
 
-    AppLogger.info(
-      'MarketIndexSyncer',
-      '歷史回補完成: $totalInserted 筆 ($apiCalls 次 API 呼叫)',
-    );
-    return totalInserted;
+    return (totalInserted, apiCalls);
   }
 
   /// 檢查 DB 資料是否不足，不足則觸發回補
