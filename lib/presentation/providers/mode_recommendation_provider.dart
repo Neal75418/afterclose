@@ -208,6 +208,17 @@ bool isEligibleForMode({
       if (todayPct != null && todayPct > ModeFilters.modeAExcludeTodayPct) {
         return false;
       }
+      // **2026-07-16 當日跌幅下限**：「準備起漲」與當日重挫語意不相容——沿用
+      // 回檔模式（Mode C）的崩跌分界（ModeFilters.modeCMinTodayPct，-4%），
+      // 不是獨立最佳化過的參數。今日重挫的股票不該被歸類為「即將起漲」，即使
+      // 其他非價格訊號（如 ROE 改善）仍讓分數過關。null（不知道）→ 不擋，同
+      // 其他 todayPct gate 的 permissive 原則。
+      //
+      // 案例：2026-07-16 1444 力麗 today -7.55%，score 只靠 ROE_IMPROVING 撐
+      // 住、誤入 Mode A 起漲候選榜。
+      if (todayPct != null && todayPct < ModeFilters.modeCMinTodayPct) {
+        return false;
+      }
       // **2026-06-20 Wave 2a — 乖離率 gate 取代 5D 漲幅 proxy + 強訊號豁免**：
       // analyst 判「準備起漲 vs 已漲」看的是「離 MA20 多遠（延伸度）」而非「最近
       // 漲幅」。MA20 正乖離 > +15%（台股標準偏熱線）= 已漲一波、過度延伸 → 不符

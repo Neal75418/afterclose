@@ -135,6 +135,59 @@ void main() {
         isFalse,
       );
     });
+
+    // **2026-07-16 當日跌幅下限**：「準備起漲」與當日重挫語意不相容，沿用
+    // Mode C（回檔觀察）的崩跌分界 -4%。案例：1444 力麗 today -7.55%，score
+    // 只靠 ROE_IMPROVING（非當日價格訊號）撐住、誤入 Mode A 起漲候選榜。
+    group('當日跌幅下限（沿用 Mode C -4% 崩跌分界）', () {
+      test('ineligible when today -7.55% (1444 力麗案例、重挫日不入起漲榜)', () {
+        expect(
+          isEligibleForMode(
+            mode: ScoringMode.momentumEntry,
+            score: _score(short: 30),
+            todayPct: -7.55,
+            biasMa20: 0.0,
+          ),
+          isFalse,
+        );
+      });
+
+      test('eligible when today -3.9%（未達崩跌分界）', () {
+        expect(
+          isEligibleForMode(
+            mode: ScoringMode.momentumEntry,
+            score: _score(short: 30),
+            todayPct: -3.9,
+            biasMa20: 0.0,
+          ),
+          isTrue,
+        );
+      });
+
+      test('keeps stock at exact -4.0% boundary（strict <，與 Mode C 共用分界）', () {
+        expect(
+          isEligibleForMode(
+            mode: ScoringMode.momentumEntry,
+            score: _score(short: 30),
+            todayPct: -4.0,
+            biasMa20: 0.0,
+          ),
+          isTrue,
+        );
+      });
+
+      test('null today 仍 eligible（不知道就不擋，加了 floor 也一樣）', () {
+        expect(
+          isEligibleForMode(
+            mode: ScoringMode.momentumEntry,
+            score: _score(short: 30),
+            todayPct: null,
+            biasMa20: 0.0,
+          ),
+          isTrue,
+        );
+      });
+    });
   });
 
   group('isEligibleForMode — Mode B (strengthObserve)', () {
