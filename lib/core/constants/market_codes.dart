@@ -10,6 +10,18 @@ abstract final class MarketCode {
   static const String tpex = 'TPEx';
 }
 
+/// 市場代碼 → 顯示標籤的 i18n key（`marketOverview.twse` / `marketOverview.tpex`）
+///
+/// 集中「代碼→key」判斷，避免多處各自重複 `market == MarketCode.twse ? ... :
+/// ...` 三元判斷（曾同時出現在 `MarketDashboard._buildMarketHeader` 與
+/// `SentimentGaugeSection` 兩處）。呼叫端仍需自行 `.tr()` — 本函式不依賴
+/// `easy_localization`，保持 `core/constants` 層不引入 i18n/presentation 依賴。
+String marketLabelKey(String market) {
+  return market == MarketCode.twse
+      ? 'marketOverview.twse'
+      : 'marketOverview.tpex';
+}
+
 /// 判定「完整覆蓋交易日」的最低個股報價數門檻。
 ///
 /// 本地資料庫部分日子僅同步候選子集（約半市場：TWSE ~531 / TPEx ~338），

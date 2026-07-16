@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:afterclose/domain/services/market_sentiment_service.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/sentiment_gauge_section.dart';
 
@@ -35,7 +36,12 @@ void main() {
     testWidgets('預設收摺：顯示總分、子指標細項不在 tree', (tester) async {
       widenViewport(tester);
       await tester.pumpWidget(
-        buildTestApp(SentimentGaugeSection(sentiment: createSentiment())),
+        buildTestApp(
+          SentimentGaugeSection(
+            sentiment: createSentiment(),
+            market: MarketCode.twse,
+          ),
+        ),
       );
 
       // 總分仍顯示
@@ -50,7 +56,12 @@ void main() {
     testWidgets('點細項展開：子指標分數出現、chevron 反轉', (tester) async {
       widenViewport(tester);
       await tester.pumpWidget(
-        buildTestApp(SentimentGaugeSection(sentiment: createSentiment())),
+        buildTestApp(
+          SentimentGaugeSection(
+            sentiment: createSentiment(),
+            market: MarketCode.twse,
+          ),
+        ),
       );
 
       await tester.tap(find.byIcon(Icons.expand_more));
@@ -59,6 +70,66 @@ void main() {
       expect(find.byIcon(Icons.expand_less), findsOneWidget);
       expect(find.text('59'), findsOneWidget); // advanceRatio
       expect(find.text('68'), findsOneWidget); // industryBreadth
+    });
+  });
+
+  group('SentimentGaugeSection 市場標示', () {
+    testWidgets('上市／上櫃各自標題內含對應市場標示，兩者文字不同', (tester) async {
+      widenViewport(tester);
+      await tester.pumpWidget(
+        buildTestApp(
+          Column(
+            children: [
+              SentimentGaugeSection(
+                sentiment: createSentiment(),
+                market: MarketCode.twse,
+              ),
+              SentimentGaugeSection(
+                sentiment: createSentiment(),
+                market: MarketCode.tpex,
+              ),
+            ],
+          ),
+        ),
+      );
+
+      final gauges = find.byType(SentimentGaugeSection);
+      final twseGauge = gauges.at(0);
+      final tpexGauge = gauges.at(1);
+
+      // 各自標題含對應市場標示（測試環境無 EasyLocalization context，
+      // .tr() 回傳原始 key，故比對 key 而非實際翻譯後中文字串）。
+      expect(
+        find.descendant(
+          of: twseGauge,
+          matching: find.textContaining('marketOverview.twse'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: tpexGauge,
+          matching: find.textContaining('marketOverview.tpex'),
+        ),
+        findsOneWidget,
+      );
+
+      // 交叉檢查：TWSE 側不得混入 TPEx 標示，反之亦然 — 證明兩者標題
+      // 真正不同（而非兩側剛好都含相同字串)。
+      expect(
+        find.descendant(
+          of: twseGauge,
+          matching: find.textContaining('marketOverview.tpex'),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: tpexGauge,
+          matching: find.textContaining('marketOverview.twse'),
+        ),
+        findsNothing,
+      );
     });
   });
 }

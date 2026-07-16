@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
+import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/domain/services/market_sentiment_service.dart';
@@ -15,18 +16,21 @@ class SentimentGaugeSection extends StatefulWidget {
   const SentimentGaugeSection({
     super.key,
     required this.sentiment,
+    required this.market,
     this.sentimentHistory = const [],
-    this.showInternalTitle = true,
   });
 
   final MarketSentiment sentiment;
 
+  /// 市場代碼（[MarketCode.twse] / [MarketCode.tpex]）
+  ///
+  /// 用於內建標題列標示「上市 市場情緒」／「上櫃 市場情緒」。桌面版
+  /// dashboard 並排顯示兩個市場的儀表，若不標示會呈現兩個完全相同的
+  /// 「市場情緒」標題、無法區分（單一市場資料不足優雅降級時尤其模糊）。
+  final String market;
+
   /// 歷史情緒分數（oldest→newest），用於趨勢 sparkline
   final List<double> sentimentHistory;
-
-  /// 是否顯示內建「市場情緒」標題列。桌面版的 dashboard 在外層已渲染
-  /// 「上市 市場情緒」標頭，傳 false 避免重複顯示。手機版維持 true。
-  final bool showInternalTitle;
 
   @override
   State<SentimentGaugeSection> createState() => _SentimentGaugeSectionState();
@@ -46,17 +50,15 @@ class _SentimentGaugeSectionState extends State<SentimentGaugeSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 標題行（可由桌面版 dashboard 隱藏避免重複）
-        if (widget.showInternalTitle) ...[
-          Text(
-            'marketOverview.sentiment.title'.tr(),
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w600,
-            ),
+        // 標題行：標示市場（上市/上櫃），桌面版並排雙欄時避免兩側標題相同
+        Text(
+          '${_marketLabel(widget.market)} ${'marketOverview.sentiment.title'.tr()}',
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w600,
           ),
-          const SizedBox(height: DesignTokens.spacing10),
-        ],
+        ),
+        const SizedBox(height: DesignTokens.spacing10),
 
         Container(
           padding: const EdgeInsets.all(DesignTokens.spacing14),
@@ -184,6 +186,12 @@ class _SentimentGaugeSectionState extends State<SentimentGaugeSection> {
     };
     return key.tr();
   }
+
+  /// 市場代碼 → 顯示標籤（「上市」／「上櫃」）
+  ///
+  /// key 判斷邏輯共用 [marketLabelKey]（與 `MarketDashboard` 內部
+  /// `_buildMarketHeader` 同一份，避免兩處各自維護一份三元判斷）。
+  static String _marketLabel(String market) => marketLabelKey(market).tr();
 }
 
 /// 子指標展開/收摺切換列

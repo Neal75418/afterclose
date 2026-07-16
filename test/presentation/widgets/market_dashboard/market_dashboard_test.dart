@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:afterclose/data/models/twse/twse_market_index.dart';
 import 'package:afterclose/presentation/providers/market_overview_provider.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/market_dashboard.dart';
@@ -25,6 +26,31 @@ void main() {
       close: close,
       change: change,
       changePercent: change / close * 100,
+    );
+  }
+
+  /// TWSE + TPEx 皆有足夠資料觸發 `_computeSentiment` 的 state（兩側情緒儀表
+  /// 都會渲染），供「parallel 檢視」情緒配對相關測試共用。
+  MarketOverviewState parallelSentimentState() {
+    return MarketOverviewState(
+      indices: [createIndex(MarketIndexNames.taiex, 22000, 150)],
+      advanceDeclineByMarket: {
+        'TWSE': const AdvanceDecline(advance: 600, decline: 200),
+        'TPEx': const AdvanceDecline(advance: 100, decline: 300),
+      },
+      historyTrends: HistoryTrends(
+        turnover: {
+          'TWSE': [
+            (date: DateTime(2026, 2, 11), value: 1000.0),
+            (date: DateTime(2026, 2, 12), value: 1200.0),
+          ],
+          'TPEx': [
+            (date: DateTime(2026, 2, 11), value: 100.0),
+            (date: DateTime(2026, 2, 12), value: 90.0),
+          ],
+        },
+      ),
+      dataDate: DateTime(2026, 2, 13),
     );
   }
 
@@ -158,26 +184,7 @@ void main() {
       tester,
     ) async {
       widenViewport(tester);
-      final state = MarketOverviewState(
-        indices: [createIndex(MarketIndexNames.taiex, 22000, 150)],
-        advanceDeclineByMarket: {
-          'TWSE': const AdvanceDecline(advance: 600, decline: 200),
-          'TPEx': const AdvanceDecline(advance: 100, decline: 300),
-        },
-        historyTrends: HistoryTrends(
-          turnover: {
-            'TWSE': [
-              (date: DateTime(2026, 2, 11), value: 1000.0),
-              (date: DateTime(2026, 2, 12), value: 1200.0),
-            ],
-            'TPEx': [
-              (date: DateTime(2026, 2, 11), value: 100.0),
-              (date: DateTime(2026, 2, 12), value: 90.0),
-            ],
-          },
-        ),
-        dataDate: DateTime(2026, 2, 13),
-      );
+      final state = parallelSentimentState();
 
       await tester.pumpWidget(buildTestApp(MarketDashboard(state: state)));
       await tester.pump(const Duration(seconds: 1));
@@ -192,7 +199,44 @@ void main() {
         gauges[0].sentiment.score,
         isNot(equals(gauges[1].sentiment.score)),
       );
+      // 各自傳入正確且不同的 market，內建標題才能標示「上市/上櫃 市場情緒」
+      // 而非兩側顯示相同、無法區分的「市場情緒」（見 SentimentGaugeSection
+      // 市場標示測試驗證實際渲染文字）。
+      expect(gauges[0].market, MarketCode.twse);
+      expect(gauges[1].market, MarketCode.tpex);
     });
+
+    testWidgets(
+      'parallel 檢視情緒配對列在 unbounded 高度環境（今日頁 CustomScrollView 情境）下分隔線仍可見',
+      (tester) async {
+        widenViewport(tester);
+        final state = parallelSentimentState();
+
+        // 今日頁實際將 MarketDashboard 放在 CustomScrollView 的
+        // SliverToBoxAdapter 內，對 Column 子孫的垂直方向給 unbounded
+        // 高度；用 SingleChildScrollView 在測試中複現同一條件
+        // （VerticalDivider 唯有在此條件下才會塌陷為 0 高度、隱形）。
+        await tester.pumpWidget(
+          buildTestApp(
+            SingleChildScrollView(child: MarketDashboard(state: state)),
+          ),
+        );
+        await tester.pump(const Duration(seconds: 1));
+
+        final sentimentRow = find
+            .ancestor(
+              of: find.byType(SentimentGaugeSection).first,
+              matching: find.byType(Row),
+            )
+            .first;
+        final divider = find.descendant(
+          of: sentimentRow,
+          matching: find.byType(VerticalDivider),
+        );
+        expect(divider, findsOneWidget);
+        expect(tester.getSize(divider).height, greaterThan(0));
+      },
+    );
 
     testWidgets('TPEx 情緒資料不足時，parallel 檢視僅渲染 TWSE 情緒儀表（優雅降級）', (tester) async {
       widenViewport(tester);

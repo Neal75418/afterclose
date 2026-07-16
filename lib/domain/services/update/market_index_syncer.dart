@@ -24,6 +24,20 @@ import 'package:afterclose/data/remote/twse_client.dart';
 /// - [backfillDeepHistory] 分批回補至 ~370 天（~250 交易日）深度，解鎖
 ///   大盤位階所需的 MA60（60 交易日）長窗——DB 清空後只剩近期 API 回應窗
 ///   （~42 天），不足 MA60，且僅靠每日累積需近一年才能自然補齊。
+///
+/// ## 已知邊界：深度回補內部缺口不重訪（設計接受，非缺陷）
+///
+/// [backfillDeepHistory] 由新至舊單向走訪，單日遇空回應或例外時僅跳過該日、
+/// 不中斷整體回補（見 [_fetchAndUpsertDates] 的「其餘例外」分支）。下次執行
+/// 時的起點是 DB 現有最舊 [MarketIndexNames.taiex] 列（「最早錨點」），只會
+/// 繼續往比錨點更舊的方向走——錨點以內（比錨點新）曾被跳過的日期不會被
+/// 重新嘗試，除非 DB 整表清空重建（如 schema fingerprint 不符觸發的全清；
+/// `market_index` 不在 `AppDatabase._userInputTableNames` whitelist 內）。
+///
+/// 對真正休市日（本就無資料可補）此行為正確；但對開發中一次性 API 失敗
+/// （單次逾時、偶發 5xx 等），會在指數歷史留下永久小洞。此為可接受的邊界：
+/// MA20/MA60 乖離計算基於 DB 現有列本身，並非強制要求連續交易日窗，少數
+/// 缺口不影響代表性。
 class MarketIndexSyncer {
   const MarketIndexSyncer({
     required AppDatabase database,

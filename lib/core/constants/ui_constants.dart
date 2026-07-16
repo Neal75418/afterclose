@@ -29,4 +29,14 @@ abstract final class UiConstants {
 
   /// 自訂篩選捲動載入觸發距離（像素）
   static const double scrollLoadMoreThreshold = 200.0;
+
+  /// 大盤 Dashboard 情緒配對列 `VerticalDivider` 的固定高度（像素）
+  ///
+  /// 該分隔線所在 Row 無法用 `IntrinsicHeight` 撐開高度（見
+  /// `MarketDashboard._buildParallelView` 的內部註解），必須給明確值，否則
+  /// 在 unbounded 高度環境下會塌陷為 0 而不可見。取值需大於等於
+  /// `SentimentGaugeSection` 各狀態下的實測渲染高度，否則分隔線會明顯短於
+  /// 卡片本身：子指標收摺、無趨勢 sparkline 172、趨勢 sparkline 顯示 210、
+  /// 子指標展開 197、兩者同時 256——260 留有餘裕。
+  static const double sentimentDividerHeight = 260.0;
 }

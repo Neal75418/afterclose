@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:afterclose/core/constants/animations.dart';
 import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:afterclose/core/constants/app_routes.dart';
+import 'package:afterclose/core/constants/ui_constants.dart';
 import 'package:afterclose/core/theme/breakpoints.dart';
 import 'package:afterclose/presentation/providers/market_overview_provider.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/advance_decline_gauge.dart';
@@ -396,6 +397,7 @@ class _MarketDashboardState extends State<MarketDashboard> {
       sections.add(
         SentimentGaugeSection(
           sentiment: sentiment,
+          market: marketKey,
           sentimentHistory: _computeSentimentHistory(marketKey),
         ),
       );
@@ -565,10 +567,17 @@ class _MarketDashboardState extends State<MarketDashboard> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(child: twseSentiment ?? const SizedBox.shrink()),
-              VerticalDivider(
-                width: 32,
-                thickness: 1,
-                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
+              // 固定高度：此 Row 無 IntrinsicHeight 可撐開 unbounded 高度
+              // 環境下 0 尺寸子孫的高度（見 UiConstants.sentimentDividerHeight 註解）。
+              SizedBox(
+                height: UiConstants.sentimentDividerHeight,
+                child: VerticalDivider(
+                  width: 32,
+                  thickness: 1,
+                  color: theme.colorScheme.outlineVariant.withValues(
+                    alpha: 0.2,
+                  ),
+                ),
               ),
               Expanded(child: tpexSentiment ?? const SizedBox.shrink()),
             ],
@@ -644,9 +653,7 @@ class _MarketDashboardState extends State<MarketDashboard> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          market == MarketCode.twse
-              ? 'marketOverview.twse'.tr()
-              : 'marketOverview.tpex'.tr(),
+          marketLabelKey(market).tr(),
           style: theme.textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.bold,
             color: theme.colorScheme.primary,
@@ -737,6 +744,7 @@ class _MarketDashboardState extends State<MarketDashboard> {
     if (sentiment == null) return null;
     return SentimentGaugeSection(
       sentiment: sentiment,
+      market: market,
       sentimentHistory: _computeSentimentHistory(market),
     );
   }
