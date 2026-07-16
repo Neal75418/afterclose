@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
+import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/theme/breakpoints.dart';
@@ -8,15 +9,30 @@ import 'package:afterclose/presentation/providers/market_overview_provider.dart'
 
 /// 產業表現區域
 ///
-/// 顯示各產業的平均漲跌幅、漲跌家數。
-/// 桌面版使用 Wrap 排列，手機版水平捲動。
+/// 顯示各產業的平均漲跌幅、漲跌家數（等權平均）。
+/// 桌面版取前/後榜排成 4 欄格線，手機版水平捲動顯示完整排名。
+/// 標頭以 [Wrap] 排列市場標籤／口徑／大盤錨點，窄螢幕自動換行避免溢出。
 class IndustryPerformanceRow extends StatelessWidget {
-  const IndustryPerformanceRow({super.key, required this.industries});
+  const IndustryPerformanceRow({
+    super.key,
+    required this.industries,
+    required this.indexChangePercent,
+    required this.marketLabel,
+  });
 
   final List<IndustrySummary> industries;
 
+  /// 大盤（對應市場 Hero 指數）漲跌幅（%），供標頭錨點顯示；null 時不顯示
+  final double? indexChangePercent;
+
+  /// 市場標籤（如「上市」/「上櫃」），顯示於標題旁供辨識目前口徑所屬市場
+  final String marketLabel;
+
   /// 桌面 Wrap 模式最多顯示的產業數量（前 N + 後 N，對稱）
   static const _desktopMaxItems = 8;
+
+  /// 卡片固定高度：容納「產業名／漲跌幅+家數／5日動能（選填）」三行內容
+  static const _cardHeight = 84.0;
 
   @override
   Widget build(BuildContext context) {
@@ -25,31 +41,50 @@ class IndustryPerformanceRow extends StatelessWidget {
     final theme = Theme.of(context);
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth >= Breakpoints.mobile;
+    final qualified = _qualifiedIndustries();
+    final isTruncated = isDesktop && qualified.length > _desktopMaxItems;
+    final hintStyle = theme.textTheme.labelSmall?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+      fontSize: DesignTokens.fontSizeXs,
+    );
+    final changePct = indexChangePercent;
+    final anchorSign = (changePct != null && changePct > 0) ? '+' : '';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
+        // Wrap（非 Row）：標題＋市場標籤＋提示＋等權口徑＋大盤錨點項目較多，
+        // 窄螢幕（手機）避免 RenderFlex overflow，寬螢幕視覺上仍呈單行。
+        Wrap(
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: DesignTokens.spacing6,
+          runSpacing: DesignTokens.spacing4,
           children: [
             Text(
-              'marketOverview.industryPerformance'.tr(),
+              '${'marketOverview.industryPerformance'.tr()} · $marketLabel',
               style: theme.textTheme.labelSmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w600,
               ),
             ),
             // 桌面模式有截斷時顯示提示
-            if (isDesktop && industries.length > _desktopMaxItems) ...[
-              const SizedBox(width: DesignTokens.spacing6),
+            if (isTruncated)
               Text(
                 'marketOverview.industryTopBottom'.tr(
                   namedArgs: {'count': '${_desktopMaxItems ~/ 2}'},
                 ),
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant.withValues(
-                    alpha: 0.5,
-                  ),
-                  fontSize: DesignTokens.fontSizeXs,
+                style: hintStyle,
+              ),
+            // 等權口徑標示（產業內個股簡單平均，非市值加權）
+            Text('marketOverview.industryEqualWeighted'.tr(), style: hintStyle),
+            // 大盤錨點：供對照產業普遍表現 vs 大盤本身
+            if (changePct != null) ...[
+              Text('marketOverview.industryIndexAnchor'.tr(), style: hintStyle),
+              Text(
+                '$anchorSign${changePct.toStringAsFixed(2)}%',
+                style: hintStyle?.copyWith(
+                  color: context.priceColor(changePct),
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
@@ -57,10 +92,10 @@ class IndustryPerformanceRow extends StatelessWidget {
         ),
         const SizedBox(height: DesignTokens.spacing10),
         if (isDesktop)
-          _desktopGrid(_desktopItems())
+          _desktopGrid(_desktopItems(qualified))
         else
           SizedBox(
-            height: 72,
+            height: _cardHeight,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: industries.length,
@@ -78,13 +113,20 @@ class IndustryPerformanceRow extends StatelessWidget {
     );
   }
 
-  /// 桌面模式取 top + bottom 產業（已按 avgChangePct DESC 排序）
-  List<IndustrySummary> _desktopItems() {
-    if (industries.length <= _desktopMaxItems) return industries;
+  /// 進榜資格：個股數 ≥ [kIndustryBoardMinStockCount] 才可能進入桌面前/後榜
+  /// （手機水平捲動列表不受此限制，維持完整排名以保留脈絡）。
+  List<IndustrySummary> _qualifiedIndustries() => industries
+      .where((i) => i.stockCount >= kIndustryBoardMinStockCount)
+      .toList();
+
+  /// 桌面模式取 top + bottom 產業（已按 avgChangePct DESC 排序，且僅從
+  /// [_qualifiedIndustries] 篩選——未達門檻不足以取代 8 個榜位）
+  List<IndustrySummary> _desktopItems(List<IndustrySummary> qualified) {
+    if (qualified.length <= _desktopMaxItems) return qualified;
     // 取前半 + 後半，保持排序順序
     const half = _desktopMaxItems ~/ 2;
-    final top = industries.take(half).toList();
-    final bottom = industries.skip(industries.length - half).toList();
+    final top = qualified.take(half).toList();
+    final bottom = qualified.skip(qualified.length - half).toList();
     // 去重（如果列表很短可能重疊）
     final seen = <String>{};
     final result = <IndustrySummary>[];
@@ -112,7 +154,7 @@ class IndustryPerformanceRow extends StatelessWidget {
           Expanded(
             child: idx < items.length
                 ? SizedBox(
-                    height: 72,
+                    height: _cardHeight,
                     child: _IndustryCard(industry: items[idx]),
                   )
                 : const SizedBox.shrink(),
@@ -240,12 +282,37 @@ class _IndustryCard extends StatelessWidget {
                                   ],
                                 ),
                               ),
+                              // 家數基底（▲N▼M · X檔）——等權平均對小樣本敏感，
+                              // 標出成分股數供投資人自行判讀可信度
+                              Text(
+                                ' · ${'marketOverview.industryStockCount'.tr(namedArgs: {'count': '${industry.stockCount}'})}',
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant
+                                      .withValues(alpha: 0.5),
+                                  fontSize: DesignTokens.fontSizeXs,
+                                  fontFeatures: const [
+                                    FontFeature.tabularFigures(),
+                                  ],
+                                ),
+                              ),
                             ],
                           ),
                         ),
                       ),
                     ],
                   ),
+                  // 5 日動能（資料不足時 momentum5d 為 null，隱藏不顯示）
+                  if (industry.momentum5d != null)
+                    Text(
+                      '${'marketOverview.industryMomentum5d'.tr()} '
+                      '${industry.momentum5d! > 0 ? '+' : ''}'
+                      '${industry.momentum5d!.toStringAsFixed(1)}%',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: context.priceColor(industry.momentum5d),
+                        fontSize: DesignTokens.fontSizeXs,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
                 ],
               ),
             ),

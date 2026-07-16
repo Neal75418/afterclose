@@ -461,7 +461,15 @@ class _MarketDashboardState extends State<MarketDashboard> {
 
     // 產業表現
     if (industries != null && industries.isNotEmpty) {
-      sections.add(IndustryPerformanceRow(industries: industries));
+      sections.add(
+        IndustryPerformanceRow(
+          industries: industries,
+          indexChangePercent: _indexChangePercent(marketKey),
+          marketLabel: marketKey == MarketCode.twse
+              ? 'marketOverview.twse'.tr()
+              : 'marketOverview.tpex'.tr(),
+        ),
+      );
     }
 
     // 組合所有 sections
@@ -807,7 +815,13 @@ class _MarketDashboardState extends State<MarketDashboard> {
   Widget? _buildIndustrySection(String market) {
     final industries = widget.state.industrySummaryByMarket[market];
     if (industries == null || industries.isEmpty) return null;
-    return IndustryPerformanceRow(industries: industries);
+    return IndustryPerformanceRow(
+      industries: industries,
+      indexChangePercent: _indexChangePercent(market),
+      marketLabel: market == MarketCode.twse
+          ? 'marketOverview.twse'.tr()
+          : 'marketOverview.tpex'.tr(),
+    );
   }
 }
 
