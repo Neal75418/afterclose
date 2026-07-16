@@ -15,12 +15,14 @@ import 'package:afterclose/presentation/widgets/market_dashboard/industry_perfor
 import 'package:afterclose/presentation/widgets/market_dashboard/institutional_flow_chart.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/margin_compact_row.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/chip_anomaly_row.dart';
+import 'package:afterclose/presentation/widgets/market_dashboard/market_reading_line.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/trading_turnover_row.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/sentiment_gauge_section.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/warnings_summary_row.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/taiwan_calendar.dart';
+import 'package:afterclose/domain/services/market_reading_service.dart';
 import 'package:afterclose/domain/services/market_sentiment_service.dart';
 
 /// 大盤總覽 Dashboard
@@ -243,6 +245,30 @@ class _MarketDashboardState extends State<MarketDashboard> {
     return null;
   }
 
+  /// 綜合判讀行（top-level，見 [MarketReadingService.interpretCompositeSynthesis]）
+  ///
+  /// 顯示於各市場欄位頂部（Hero 指數下方），需指數漲跌幅 + 漲跌家數才有意義，
+  /// 任一缺失時回傳 null（不顯示，避免用 0 家數誤判內部偏強/偏弱）。法人
+  /// 合計缺資料時視為 0（[InstitutionalTotals] 預設值），僅影響背離規則是否
+  /// 命中，不影響本行是否顯示。
+  Widget? _buildCompositeSynthesisLine(String market) {
+    final indexChangePercent = _indexChangePercent(market);
+    final ad = widget.state.advanceDeclineByMarket[market];
+    if (indexChangePercent == null || ad == null || ad.total <= 0) {
+      return null;
+    }
+    final institutionalTotalNet =
+        widget.state.institutionalByMarket[market]?.totalNet ?? 0;
+    final reading = MarketReadingService.interpretCompositeSynthesis(
+      market: market,
+      indexChangePercent: indexChangePercent,
+      advance: ad.advance,
+      decline: ad.decline,
+      institutionalTotalNet: institutionalTotalNet,
+    );
+    return MarketReadingLine(reading: reading);
+  }
+
   /// 計算指定市場的市場情緒分數
   ///
   /// 今日情緒：各子指標各自用「自己的」完整序列獨立計算，不跨序列對齊，
@@ -358,6 +384,10 @@ class _MarketDashboardState extends State<MarketDashboard> {
         );
       }
     }
+
+    // Section: 綜合判讀（top-level，緊接 Hero 指數，見「top of column」定位）
+    final synthesisLine = _buildCompositeSynthesisLine(_selectedMarket.key);
+    if (synthesisLine != null) sections.add(synthesisLine);
 
     // Section: 市場情緒儀表板
     final marketKey = _selectedMarket.key;
@@ -612,6 +642,9 @@ class _MarketDashboardState extends State<MarketDashboard> {
                 0) >=
             2;
 
+    // 綜合判讀（top-level，緊接 Hero 指數，位於欄位最上方）
+    final synthesis = _buildCompositeSynthesisLine(market);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -649,6 +682,7 @@ class _MarketDashboardState extends State<MarketDashboard> {
               textAlign: TextAlign.center,
             ),
           ),
+        ?synthesis,
       ],
     );
   }

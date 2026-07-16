@@ -197,6 +197,13 @@
       "stageBias": {
         "overheated": "Wide bias — short-term overheated",
         "oversold": "Oversold — watch for a bounce"
+      },
+      "synthesis": {
+        "weightSupport": "Index flat but over half of stocks declining — mega-caps propping up the index, internals weak",
+        "weightPressure": "Index flat but over half of stocks advancing — mega-caps capping the index, internals strong",
+        "divergenceSell": "Index up but foreign/institutional flows net sell significantly — chips diverging from the index",
+        "divergenceBuy": "Index down but foreign/institutional flows net buy significantly — chips diverging from the index",
+        "neutral": "No clear bull/bear divergence"
       }
     },
     "sentiment": {

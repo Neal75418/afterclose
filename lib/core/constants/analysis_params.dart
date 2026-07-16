@@ -189,6 +189,30 @@ abstract final class AnalysisParams {
   /// 空頭排列下 MA60 負乖離超過此值視為「超跌」。
   static const double kBiasOverheatPct = 15.0;
 
+  /// 綜合判讀「指數平盤」門檻（漲跌幅絕對值百分比）
+  ///
+  /// |indexChangePercent| 低於此值才視為指數平盤，才會進一步檢查「內部
+  /// 家數是否偏向一邊」（見 [kSynthesisInternalSkewRatio]）。
+  static const double kSynthesisFlatIndexPct = 0.3;
+
+  /// 綜合判讀「內部偏向」家數占比門檻（0~1）
+  ///
+  /// 指數平盤時，下跌（或上漲）家數 / (上漲+下跌) 達此比例，視為「指數
+  /// 被權值股撐/壓住、內部其實偏弱/偏強」。
+  static const double kSynthesisInternalSkewRatio = 0.55;
+
+  /// 綜合判讀「法人合計背離」金額門檻（元）— 上市
+  ///
+  /// 指數方向與外資/法人合計方向相反時，合計淨額絕對值達此門檻才視為
+  /// 「金額顯著」而點名背離，避免小額雜訊觸發。200 億為上市量級的門檻。
+  static const double kSynthesisInstDivergenceAmountTwse = 20000000000.0;
+
+  /// 綜合判讀「法人合計背離」金額門檻（元）— 上櫃
+  ///
+  /// 上櫃成交與法人動向量級遠小於上市，套用上市門檻會使上櫃背離訊號永遠
+  /// 不觸發，故另訂 30 億（約為上市門檻的 1/6～1/7，對應兩市場典型量級差）。
+  static const double kSynthesisInstDivergenceAmountTpex = 3000000000.0;
+
   // ==================================================
   // 大盤位階（均線乖離）門檻
   // ==================================================

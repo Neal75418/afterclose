@@ -113,5 +113,44 @@ void main() {
 
       expect(find.byIcon(Icons.show_chart), findsOneWidget);
     });
+
+    testWidgets('指數平盤 + 廣度明顯偏向下跌時，市場欄位頂部顯示綜合判讀 weightSupport', (tester) async {
+      widenViewport(tester);
+      final state = MarketOverviewState(
+        indices: [
+          createIndex(MarketIndexNames.taiex, 22000, 10), // ~0.045%，平盤
+        ],
+        advanceDeclineByMarket: {
+          'TWSE': const AdvanceDecline(advance: 200, decline: 800),
+        },
+        institutionalByMarket: {
+          'TWSE': const InstitutionalTotals(totalNet: 100000000),
+        },
+        dataDate: DateTime(2026, 2, 13),
+      );
+
+      await tester.pumpWidget(buildTestApp(MarketDashboard(state: state)));
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(
+        find.text('marketOverview.reading.synthesis.weightSupport'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('綜合判讀僅在該市場有指數資料時顯示；TPEx 無指數時該欄不渲染', (tester) async {
+      widenViewport(tester);
+      // createLoadedState()：TWSE 有指數（漲 0.68%，非平盤）+ 法人合計同向買超
+      // → neutral；TPEx 有漲跌家數但 indices 中無櫃買指數 → 綜合判讀不顯示。
+      final state = createLoadedState();
+
+      await tester.pumpWidget(buildTestApp(MarketDashboard(state: state)));
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(
+        find.text('marketOverview.reading.synthesis.neutral'),
+        findsOneWidget,
+      );
+    });
   });
 }

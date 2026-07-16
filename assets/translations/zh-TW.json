@@ -197,6 +197,13 @@
       "stageBias": {
         "overheated": "乖離偏大，短線偏熱",
         "oversold": "超跌，留意反彈"
+      },
+      "synthesis": {
+        "weightSupport": "指數平盤但逾半個股下跌——權值撐盤、內部偏弱",
+        "weightPressure": "指數平盤但逾半個股上漲——權值壓盤、內部偏強",
+        "divergenceSell": "指數上漲但外資/法人合計賣超顯著——籌碼與指數背離",
+        "divergenceBuy": "指數下跌但外資/法人合計買超顯著——籌碼與指數背離",
+        "neutral": "多空訊號無明顯背離"
       }
     },
     "sentiment": {

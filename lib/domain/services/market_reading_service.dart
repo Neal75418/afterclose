@@ -1,4 +1,5 @@
 import 'package:afterclose/core/constants/analysis_params.dart';
+import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:afterclose/domain/services/technical_indicator_service.dart'
     show MarketStage;
 
@@ -221,5 +222,78 @@ class MarketReadingService {
       );
     }
     return null;
+  }
+
+  /// 綜合判讀（大盤層級，非單一區塊）
+  ///
+  /// 綜合指數漲跌、個股廣度（漲跌家數）與外資/法人合計方向，抓出「指數
+  /// 表現 vs 個股/籌碼實際狀況」的背離訊號。窄規則、依序判斷，命中即回傳：
+  ///
+  /// 1. 指數平盤（|[indexChangePercent]| < [AnalysisParams.kSynthesisFlatIndexPct]）
+  ///    且下跌（或上漲）家數占比 >= [AnalysisParams.kSynthesisInternalSkewRatio]
+  ///    → 「權值撐盤/壓盤、內部偏弱/偏強」（negative / positive）
+  /// 2. 指數方向與法人合計方向相反，且 |[institutionalTotalNet]| 達市場門檻
+  ///    （[AnalysisParams.kSynthesisInstDivergenceAmountTwse] /
+  ///    [AnalysisParams.kSynthesisInstDivergenceAmountTpex]，依 [market]）
+  ///    → 點名籌碼與指數背離（warning）
+  /// 3. 其餘 → 中性「多空訊號無明顯背離」
+  ///
+  /// [market] 使用 [MarketCode.twse] / [MarketCode.tpex]，決定 rule 2 的金額
+  /// 門檻（上櫃成交及法人量級遠小於上市，需獨立門檻）；[advance]/[decline]
+  /// 分母 <= 0 時占比預設 0.5（不觸發 rule 1，行為對齊 [interpretBreadth]）。
+  static MarketReading interpretCompositeSynthesis({
+    required String market,
+    required double indexChangePercent,
+    required int advance,
+    required int decline,
+    required double institutionalTotalNet,
+  }) {
+    // Rule 1：指數平盤 + 內部家數明顯偏向一邊
+    if (indexChangePercent.abs() < AnalysisParams.kSynthesisFlatIndexPct) {
+      final total = advance + decline;
+      final declineRatio = total > 0 ? decline / total : 0.5;
+      final advanceRatio = total > 0 ? advance / total : 0.5;
+
+      if (declineRatio >= AnalysisParams.kSynthesisInternalSkewRatio) {
+        return const MarketReading(
+          messageKey: 'marketOverview.reading.synthesis.weightSupport',
+          tone: InterpretationTone.negative,
+        );
+      }
+      if (advanceRatio >= AnalysisParams.kSynthesisInternalSkewRatio) {
+        return const MarketReading(
+          messageKey: 'marketOverview.reading.synthesis.weightPressure',
+          tone: InterpretationTone.positive,
+        );
+      }
+    }
+
+    // Rule 2：指數方向與法人合計方向相反，且金額顯著（門檻依市場而定）
+    final amountThreshold = market == MarketCode.twse
+        ? AnalysisParams.kSynthesisInstDivergenceAmountTwse
+        : AnalysisParams.kSynthesisInstDivergenceAmountTpex;
+
+    if (indexChangePercent > 0 &&
+        institutionalTotalNet < 0 &&
+        institutionalTotalNet.abs() >= amountThreshold) {
+      return const MarketReading(
+        messageKey: 'marketOverview.reading.synthesis.divergenceSell',
+        tone: InterpretationTone.warning,
+      );
+    }
+    if (indexChangePercent < 0 &&
+        institutionalTotalNet > 0 &&
+        institutionalTotalNet.abs() >= amountThreshold) {
+      return const MarketReading(
+        messageKey: 'marketOverview.reading.synthesis.divergenceBuy',
+        tone: InterpretationTone.warning,
+      );
+    }
+
+    // Rule 3：其餘 — 無明顯背離
+    return const MarketReading(
+      messageKey: 'marketOverview.reading.synthesis.neutral',
+      tone: InterpretationTone.neutral,
+    );
   }
 }

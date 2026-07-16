@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:afterclose/domain/services/market_reading_service.dart';
 import 'package:afterclose/domain/services/technical_indicator_service.dart'
     show MarketStage;
@@ -370,6 +371,188 @@ void main() {
         biasMa60: 30,
       );
       expect(r, isNull);
+    });
+  });
+
+  group('MarketReadingService.interpretCompositeSynthesis', () {
+    // Rule 1：|index%| < kSynthesisFlatIndexPct(0.3) 且偏向家數佔比 >= kSynthesisInternalSkewRatio(0.55)
+    // Rule 2：index 方向與法人合計方向相反，且 |合計| >= 市場門檻（TWSE 200億 / TPEx 30億）
+    // Rule 3：其餘 → neutral
+
+    test('指數平盤 + 下跌家數佔比 >= 55% → negative weightSupport', () {
+      final r = MarketReadingService.interpretCompositeSynthesis(
+        market: MarketCode.twse,
+        indexChangePercent: 0.1,
+        advance: 30,
+        decline: 70,
+        institutionalTotalNet: 0,
+      );
+      expect(r.tone, InterpretationTone.negative);
+      expect(r.messageKey, 'marketOverview.reading.synthesis.weightSupport');
+    });
+
+    test('指數平盤 + 上漲家數佔比 >= 55% → positive weightPressure', () {
+      final r = MarketReadingService.interpretCompositeSynthesis(
+        market: MarketCode.twse,
+        indexChangePercent: -0.2,
+        advance: 70,
+        decline: 30,
+        institutionalTotalNet: 0,
+      );
+      expect(r.tone, InterpretationTone.positive);
+      expect(r.messageKey, 'marketOverview.reading.synthesis.weightPressure');
+    });
+
+    test('偏向佔比恰在 55% 邊界 → 觸發（inclusive >=）', () {
+      final r = MarketReadingService.interpretCompositeSynthesis(
+        market: MarketCode.twse,
+        indexChangePercent: 0.0,
+        advance: 45,
+        decline: 55,
+        institutionalTotalNet: 0,
+      );
+      expect(r.messageKey, 'marketOverview.reading.synthesis.weightSupport');
+    });
+
+    test('偏向佔比 54% 未達 55% 門檻 → 不觸發 rule1（無背離 → neutral）', () {
+      final r = MarketReadingService.interpretCompositeSynthesis(
+        market: MarketCode.twse,
+        indexChangePercent: 0.1,
+        advance: 46,
+        decline: 54,
+        institutionalTotalNet: 0,
+      );
+      expect(r.tone, InterpretationTone.neutral);
+      expect(r.messageKey, 'marketOverview.reading.synthesis.neutral');
+    });
+
+    test('指數恰為 0.3（非 < 0.3）→ 不視為平盤，rule1 不觸發', () {
+      final r = MarketReadingService.interpretCompositeSynthesis(
+        market: MarketCode.twse,
+        indexChangePercent: 0.3,
+        advance: 30,
+        decline: 70,
+        institutionalTotalNet: 0,
+      );
+      expect(r.messageKey, 'marketOverview.reading.synthesis.neutral');
+    });
+
+    test('guard: advance/decline 皆為 0 → ratio 預設 0.5，不觸發 rule1', () {
+      final r = MarketReadingService.interpretCompositeSynthesis(
+        market: MarketCode.twse,
+        indexChangePercent: 0.1,
+        advance: 0,
+        decline: 0,
+        institutionalTotalNet: 0,
+      );
+      expect(r.messageKey, 'marketOverview.reading.synthesis.neutral');
+    });
+
+    test('指數漲 + 法人合計賣超顯著（TWSE >= 200億）→ warning divergenceSell', () {
+      final r = MarketReadingService.interpretCompositeSynthesis(
+        market: MarketCode.twse,
+        indexChangePercent: 1.0,
+        advance: 500,
+        decline: 400,
+        institutionalTotalNet: -25000000000, // 250億賣超
+      );
+      expect(r.tone, InterpretationTone.warning);
+      expect(r.messageKey, 'marketOverview.reading.synthesis.divergenceSell');
+    });
+
+    test('指數跌 + 法人合計買超顯著（TWSE >= 200億）→ warning divergenceBuy', () {
+      final r = MarketReadingService.interpretCompositeSynthesis(
+        market: MarketCode.twse,
+        indexChangePercent: -1.0,
+        advance: 400,
+        decline: 500,
+        institutionalTotalNet: 25000000000, // 250億買超
+      );
+      expect(r.tone, InterpretationTone.warning);
+      expect(r.messageKey, 'marketOverview.reading.synthesis.divergenceBuy');
+    });
+
+    test('TPEx 使用較低門檻（30億）：35億賣超即觸發背離', () {
+      final r = MarketReadingService.interpretCompositeSynthesis(
+        market: MarketCode.tpex,
+        indexChangePercent: 1.0,
+        advance: 200,
+        decline: 150,
+        // 35億：低於 TWSE 門檻(200億)但高於 TPEx 門檻(30億)，驗證市場別門檻
+        institutionalTotalNet: -3500000000,
+      );
+      expect(r.messageKey, 'marketOverview.reading.synthesis.divergenceSell');
+    });
+
+    test('金額恰在 TWSE 門檻（200億）→ 觸發（inclusive >=）', () {
+      final r = MarketReadingService.interpretCompositeSynthesis(
+        market: MarketCode.twse,
+        indexChangePercent: 1.0,
+        advance: 500,
+        decline: 400,
+        institutionalTotalNet: -20000000000,
+      );
+      expect(r.messageKey, 'marketOverview.reading.synthesis.divergenceSell');
+    });
+
+    test('金額差 1 元未達 TWSE 門檻 → 不觸發（neutral）', () {
+      final r = MarketReadingService.interpretCompositeSynthesis(
+        market: MarketCode.twse,
+        indexChangePercent: 1.0,
+        advance: 500,
+        decline: 400,
+        institutionalTotalNet: -19999999999,
+      );
+      expect(r.tone, InterpretationTone.neutral);
+      expect(r.messageKey, 'marketOverview.reading.synthesis.neutral');
+    });
+
+    test('方向一致（不背離）：指數漲 + 法人也買超巨額 → neutral', () {
+      final r = MarketReadingService.interpretCompositeSynthesis(
+        market: MarketCode.twse,
+        indexChangePercent: 1.0,
+        advance: 500,
+        decline: 400,
+        institutionalTotalNet: 25000000000,
+      );
+      expect(r.tone, InterpretationTone.neutral);
+      expect(r.messageKey, 'marketOverview.reading.synthesis.neutral');
+    });
+
+    test('indexChangePercent == 0 時無方向可背離，法人巨額也不觸發 rule2', () {
+      final r = MarketReadingService.interpretCompositeSynthesis(
+        market: MarketCode.twse,
+        indexChangePercent: 0.0,
+        advance: 50,
+        decline: 50,
+        institutionalTotalNet: 99000000000,
+      );
+      expect(r.tone, InterpretationTone.neutral);
+      expect(r.messageKey, 'marketOverview.reading.synthesis.neutral');
+    });
+
+    test('rule1 優先於 rule2：兩者條件同時成立時取 rule1', () {
+      final r = MarketReadingService.interpretCompositeSynthesis(
+        market: MarketCode.twse,
+        indexChangePercent: 0.2, // flat（< 0.3）且為正
+        advance: 30,
+        decline: 70, // 下跌佔比 70% >= 55%
+        institutionalTotalNet: -25000000000, // 亦滿足 rule2 背離金額
+      );
+      expect(r.tone, InterpretationTone.negative);
+      expect(r.messageKey, 'marketOverview.reading.synthesis.weightSupport');
+    });
+
+    test('背離方向正確但金額不顯著 → neutral（非佔比不足，是金額不足）', () {
+      final r = MarketReadingService.interpretCompositeSynthesis(
+        market: MarketCode.twse,
+        indexChangePercent: 0.5,
+        advance: 520,
+        decline: 480,
+        institutionalTotalNet: -1000000000, // 方向背離但僅 10 億，遠低於門檻
+      );
+      expect(r.tone, InterpretationTone.neutral);
+      expect(r.messageKey, 'marketOverview.reading.synthesis.neutral');
     });
   });
 }
