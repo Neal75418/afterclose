@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:afterclose/core/constants/market_codes.dart';
+import 'package:afterclose/core/constants/ui_constants.dart';
 import 'package:afterclose/domain/services/market_sentiment_service.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/sentiment_gauge_section.dart';
 
@@ -70,6 +71,61 @@ void main() {
       expect(find.byIcon(Icons.expand_less), findsOneWidget);
       expect(find.text('59'), findsOneWidget); // advanceRatio
       expect(find.text('68'), findsOneWidget); // industryBreadth
+    });
+  });
+
+  group('SentimentGaugeSection 渲染高度（回歸：情緒配對列殘留高度）', () {
+    // 移除趨勢 sparkline 前的 UiConstants.sentimentDividerHeight 舊值（見該
+    // 常數的變更前註解）。兩測試皆須遠低於此值，證明「殘留高度」迴歸已修正。
+    const oldSentimentDividerHeight = 260.0;
+
+    /// 量測「內容實際需要的高度」，非填滿可用空間的高度。
+    ///
+    /// [SentimentGaugeSection] 頂層為 `Column`（預設 `mainAxisSize.max`），
+    /// 若直接塞進 `buildTestApp` 的 `Scaffold(body: ...)`，會在有限高度環境
+    /// 下被撐滿至整個 body（量到的是「可用空間」而非「內容所需空間」）。
+    /// `SingleChildScrollView` 給子孫 unbounded 高度，複現
+    /// `MarketDashboard._buildParallelView` 實際所在的 CustomScrollView
+    /// 情境——此時 `Column` 的 `mainAxisSize.max` 在 unbounded 環境下會回退
+    /// 為子孫實際大小總和，量到的才是真正的內容高度。
+    Future<double> measureHeight(
+      WidgetTester tester,
+      MarketSentiment sentiment,
+    ) async {
+      widenViewport(tester);
+      await tester.pumpWidget(
+        buildTestApp(
+          SingleChildScrollView(
+            child: SentimentGaugeSection(
+              sentiment: sentiment,
+              market: MarketCode.twse,
+            ),
+          ),
+        ),
+      );
+      return tester.getSize(find.byType(SentimentGaugeSection)).height;
+    }
+
+    testWidgets('子指標收摺（預設狀態）：高度遠小於已移除趨勢 sparkline 前的舊值', (tester) async {
+      final height = await measureHeight(tester, createSentiment());
+
+      expect(height, lessThan(oldSentimentDividerHeight));
+      // 不得超過現行 sentimentDividerHeight，否則分隔線會明顯短於卡片本身
+      // （見 UiConstants.sentimentDividerHeight 註解）。
+      expect(height, lessThanOrEqualTo(UiConstants.sentimentDividerHeight));
+    });
+
+    testWidgets('子指標展開（5 項全部命中，最高狀態）：高度遠小於舊值，且不超過分隔線常數', (tester) async {
+      // 子指標全部 5 項命中展開是目前最高的內容狀態（趨勢 sparkline 移除後
+      // 已無更高狀態），故用此狀態驗證 UiConstants.sentimentDividerHeight
+      // 是否仍涵蓋實際最高內容高度。
+      await measureHeight(tester, createSentiment());
+      await tester.tap(find.byIcon(Icons.expand_more));
+      await tester.pumpAndSettle();
+      final height = tester.getSize(find.byType(SentimentGaugeSection)).height;
+
+      expect(height, lessThan(oldSentimentDividerHeight));
+      expect(height, lessThanOrEqualTo(UiConstants.sentimentDividerHeight));
     });
   });
 

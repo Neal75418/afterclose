@@ -36,7 +36,12 @@ abstract final class UiConstants {
   /// `MarketDashboard._buildParallelView` 的內部註解），必須給明確值，否則
   /// 在 unbounded 高度環境下會塌陷為 0 而不可見。取值需大於等於
   /// `SentimentGaugeSection` 各狀態下的實測渲染高度，否則分隔線會明顯短於
-  /// 卡片本身：子指標收摺、無趨勢 sparkline 172、趨勢 sparkline 顯示 210、
-  /// 子指標展開 197、兩者同時 256——260 留有餘裕。
-  static const double sentimentDividerHeight = 260.0;
+  /// 卡片本身。
+  ///
+  /// 趨勢 sparkline 已移除（見 `SentimentGaugeSection.sentimentHistory` 註解），
+  /// 實測（`sentiment_gauge_section_test.dart` 渲染高度測試）：子指標收摺
+  /// 172、子指標展開（5 項全部命中，最高狀態）218——222 留有餘裕。原值 260
+  /// 是移除前「子指標展開+趨勢 sparkline」同時發生的最高狀態（256）預留的，
+  /// sparkline 移除後未同步下修，導致情緒卡片下方出現殘留空白。
+  static const double sentimentDividerHeight = 222.0;
 }
