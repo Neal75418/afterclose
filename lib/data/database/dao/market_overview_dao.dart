@@ -162,9 +162,14 @@ mixin MarketOverviewDaoMixin on $AppDatabase {
       final market = row.readNullable<String>('market');
       if (market == null) continue;
 
-      // max_date 存為 ISO-8601 字串（Drift store_date_time_values_as_text）
-      final dateStr = row.readNullable<String>('data_date');
-      final dataDate = dateStr != null ? DateTime.tryParse(dateStr) : null;
+      // max_date 存為 ISO-8601 字串（Drift store_date_time_values_as_text）。
+      // 用 row.read<DateTime?> 走 drift 內建型別化轉換（QueryRow → SqlTypes
+      // ._readDateTime），而非手動 readNullable<String> + DateTime.tryParse。
+      // 手動 parse 對帶明確 UTC offset 的字串（本地日期一律如此）會回傳
+      // isUtc=true，直接讀 .day/.month 會拿到 UTC 曆日、比本地曆日落後一天
+      // ——與 getLatestDataDate（price_dao.dart）等既有正確用法同公式，才能
+      // 一致地拿回本地曆日。
+      final dataDate = row.read<DateTime?>('data_date');
 
       byMarket[market] = (
         marginBalance: row.readNullable<double>('margin_balance') ?? 0,

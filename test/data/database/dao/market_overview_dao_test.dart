@@ -912,6 +912,47 @@ void main() {
 
         expect(result, isEmpty);
       });
+
+      test('dataDate 還原本地曆日——不可讓 .day 讀到 UTC 曆日（落後一天迴歸測試）', () async {
+        // Bug: Today 頁融資融券區塊日期標示落後 DB 實際最新資料一天
+        // （DB 最新為 7/15，畫面顯示 7/14）。
+        //
+        // 直接用 raw SQL 寫入帶明確 UTC offset 的 ISO-8601 文字，模擬正式環境
+        // 裝置在 Asia/Taipei（+08:00）寫入 margin_trading.date 的實際格式
+        // （drift store_date_time_values_as_text 對「本地」DateTime 一律附加
+        // 執行當下的 UTC offset）。用字面 offset 而非仰賴執行機器目前時區，
+        // 確保本測試在任何時區的 CI runner 上都能穩定重現（GitHub Actions
+        // ubuntu-latest 預設 UTC，offset=0 時此 bug 不會現形）。
+        const rawDateText = '2026-07-15T00:00:00.000 +08:00';
+        await db.customStatement(
+          'INSERT INTO margin_trading '
+          '(symbol, date, margin_buy, margin_sell, margin_balance, '
+          'short_sell, short_buy, short_balance) '
+          'VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+          ['2330', rawDateText, 500.0, 300.0, 10000.0, 100.0, 50.0, 2000.0],
+        );
+
+        final result = await db.getLatestMarginTradingTotalsByMarket();
+        final dataDate = result['TWSE']?.dataDate;
+
+        expect(dataDate, isNotNull);
+        // Root cause 斷言：DateTime.parse 對帶明確 offset 的字串一律回傳
+        // isUtc=true（純字串運算、與執行機器時區無關——見 drift
+        // SqlTypes._readDateTime 原始碼註解）。Drift 自己的型別化讀取路徑
+        // （QueryRow.read<DateTime>）在這種情況一定會接 .toLocal()
+        // 轉正；若這裡讀出 isUtc=true，代表繞過了該轉換，.day/.month
+        // 會讀到 UTC 曆日而非本地曆日。
+        expect(
+          dataDate!.isUtc,
+          isFalse,
+          reason:
+              '應如 QueryRow.read<DateTime>（drift 內建型別化路徑）一樣 '
+              '.toLocal() 轉換，否則 .day 會讀到 UTC 曆日、比本地曆日落後一天',
+        );
+        // 與 drift 官方型別化 read 路徑（getLatestDataDate 等既有正確用法）
+        // 同公式驗證——在同一台機器、同一時刻求值，不受執行環境時區影響。
+        expect(dataDate, DateTime.parse(rawDateText).toLocal());
+      });
     });
 
     // ── getIndustrySummaryByMarket ──────────────────────────
