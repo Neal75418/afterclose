@@ -200,6 +200,32 @@ void main() {
     expect(find.textContaining('industryMomentum5d'), findsOneWidget);
   });
 
+  testWidgets('5 日動能微負值不顯示「-0.0%」負零（捨入後歸零去符號）', (tester) async {
+    widenViewport(tester);
+    final industries = [
+      const IndustrySummary(
+        industry: 'M01',
+        stockCount: 10,
+        avgChangePct: 1,
+        advance: 5,
+        decline: 0,
+        momentum5d: -0.04, // toStringAsFixed(1) 會變 "-0.0"
+      ),
+    ];
+
+    await tester.pumpWidget(
+      buildTestApp(
+        IndustryPerformanceRow(
+          industries: industries,
+          indexChangePercent: null,
+        ),
+      ),
+    );
+
+    expect(find.textContaining('-0.0%'), findsNothing);
+    expect(find.textContaining('0.0%'), findsOneWidget);
+  });
+
   testWidgets('等權口徑：顯示等權 caption', (tester) async {
     widenViewport(tester);
 

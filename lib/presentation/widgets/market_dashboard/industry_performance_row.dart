@@ -28,6 +28,14 @@ class IndustryPerformanceRow extends StatelessWidget {
   /// 桌面 Wrap 模式最多顯示的產業數量（前 N + 後 N，對稱）
   static const _desktopMaxItems = 8;
 
+  /// 格式化帶正負號的百分比：**先依 [decimals] 捨入再判正負**，
+  /// 避免微負值（如 -0.04 取一位）顯示成「-0.0%」負零。
+  static String formatSignedPct(double value, int decimals) {
+    final rounded = double.parse(value.toStringAsFixed(decimals));
+    if (rounded == 0) return '${0.0.toStringAsFixed(decimals)}%';
+    return '${rounded > 0 ? '+' : ''}${rounded.toStringAsFixed(decimals)}%';
+  }
+
   /// 卡片固定高度：容納「產業名／漲跌幅+家數／5日動能（選填）」三行內容
   static const _cardHeight = 84.0;
 
@@ -45,7 +53,6 @@ class IndustryPerformanceRow extends StatelessWidget {
       fontSize: DesignTokens.fontSizeXs,
     );
     final changePct = indexChangePercent;
-    final anchorSign = (changePct != null && changePct > 0) ? '+' : '';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -78,7 +85,7 @@ class IndustryPerformanceRow extends StatelessWidget {
             if (changePct != null) ...[
               Text('marketOverview.industryIndexAnchor'.tr(), style: hintStyle),
               Text(
-                '$anchorSign${changePct.toStringAsFixed(2)}%',
+                IndustryPerformanceRow.formatSignedPct(changePct, 2),
                 style: hintStyle?.copyWith(
                   color: context.priceColor(changePct),
                   fontWeight: FontWeight.w600,
@@ -181,7 +188,6 @@ class _IndustryCard extends StatelessWidget {
         : industry.avgChangePct < 0
         ? AppTheme.downColor
         : AppTheme.neutralColor;
-    final sign = isUp ? '+' : '';
 
     return Card(
       elevation: 0,
@@ -222,7 +228,10 @@ class _IndustryCard extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        '$sign${industry.avgChangePct.toStringAsFixed(2)}%',
+                        IndustryPerformanceRow.formatSignedPct(
+                          industry.avgChangePct,
+                          2,
+                        ),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: color,
                           fontWeight: FontWeight.w700,
@@ -302,8 +311,7 @@ class _IndustryCard extends StatelessWidget {
                   if (industry.momentum5d != null)
                     Text(
                       '${'marketOverview.industryMomentum5d'.tr()} '
-                      '${industry.momentum5d! > 0 ? '+' : ''}'
-                      '${industry.momentum5d!.toStringAsFixed(1)}%',
+                      '${IndustryPerformanceRow.formatSignedPct(industry.momentum5d!, 1)}',
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: context.priceColor(industry.momentum5d),
                         fontSize: DesignTokens.fontSizeXs,
