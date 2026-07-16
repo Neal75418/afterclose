@@ -465,9 +465,6 @@ class _MarketDashboardState extends State<MarketDashboard> {
         IndustryPerformanceRow(
           industries: industries,
           indexChangePercent: _indexChangePercent(marketKey),
-          marketLabel: marketKey == MarketCode.twse
-              ? 'marketOverview.twse'.tr()
-              : 'marketOverview.tpex'.tr(),
         ),
       );
     }
@@ -818,9 +815,6 @@ class _MarketDashboardState extends State<MarketDashboard> {
     return IndustryPerformanceRow(
       industries: industries,
       indexChangePercent: _indexChangePercent(market),
-      marketLabel: market == MarketCode.twse
-          ? 'marketOverview.twse'.tr()
-          : 'marketOverview.tpex'.tr(),
     );
   }
 }

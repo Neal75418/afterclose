@@ -11,22 +11,19 @@ import 'package:afterclose/presentation/providers/market_overview_provider.dart'
 ///
 /// 顯示各產業的平均漲跌幅、漲跌家數（等權平均）。
 /// 桌面版取前/後榜排成 4 欄格線，手機版水平捲動顯示完整排名。
-/// 標頭以 [Wrap] 排列市場標籤／口徑／大盤錨點，窄螢幕自動換行避免溢出。
+/// 標頭以 [Wrap] 排列口徑／大盤錨點，窄螢幕自動換行避免溢出。市場脈絡已由
+/// 外層版面的加權指數／櫃買指數 Hero 區塊錨定，本區不再重複標示市場。
 class IndustryPerformanceRow extends StatelessWidget {
   const IndustryPerformanceRow({
     super.key,
     required this.industries,
     required this.indexChangePercent,
-    required this.marketLabel,
   });
 
   final List<IndustrySummary> industries;
 
   /// 大盤（對應市場 Hero 指數）漲跌幅（%），供標頭錨點顯示；null 時不顯示
   final double? indexChangePercent;
-
-  /// 市場標籤（如「上市」/「上櫃」），顯示於標題旁供辨識目前口徑所屬市場
-  final String marketLabel;
 
   /// 桌面 Wrap 模式最多顯示的產業數量（前 N + 後 N，對稱）
   static const _desktopMaxItems = 8;
@@ -53,7 +50,7 @@ class IndustryPerformanceRow extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Wrap（非 Row）：標題＋市場標籤＋提示＋等權口徑＋大盤錨點項目較多，
+        // Wrap（非 Row）：標題＋提示＋等權口徑＋大盤錨點項目較多，
         // 窄螢幕（手機）避免 RenderFlex overflow，寬螢幕視覺上仍呈單行。
         Wrap(
           crossAxisAlignment: WrapCrossAlignment.center,
@@ -61,7 +58,7 @@ class IndustryPerformanceRow extends StatelessWidget {
           runSpacing: DesignTokens.spacing4,
           children: [
             Text(
-              '${'marketOverview.industryPerformance'.tr()} · $marketLabel',
+              'marketOverview.industryPerformance'.tr(),
               style: theme.textTheme.labelSmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w600,

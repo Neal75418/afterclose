@@ -35,7 +35,6 @@ void main() {
         IndustryPerformanceRow(
           industries: makeIndustries(12),
           indexChangePercent: null,
-          marketLabel: 'TWSE',
         ),
         brightness: Brightness.light,
       ),
@@ -90,7 +89,6 @@ void main() {
         IndustryPerformanceRow(
           industries: industries,
           indexChangePercent: null,
-          marketLabel: 'TWSE',
         ),
       ),
     );
@@ -133,7 +131,6 @@ void main() {
         IndustryPerformanceRow(
           industries: industries,
           indexChangePercent: null,
-          marketLabel: 'TWSE',
         ),
       ),
     );
@@ -153,7 +150,6 @@ void main() {
         IndustryPerformanceRow(
           industries: makeIndustries(3),
           indexChangePercent: 2.1,
-          marketLabel: 'TWSE',
         ),
       ),
     );
@@ -164,7 +160,6 @@ void main() {
         IndustryPerformanceRow(
           industries: makeIndustries(3),
           indexChangePercent: null,
-          marketLabel: 'TWSE',
         ),
       ),
     );
@@ -196,7 +191,6 @@ void main() {
         IndustryPerformanceRow(
           industries: industries,
           indexChangePercent: null,
-          marketLabel: 'TWSE',
         ),
       ),
     );
@@ -206,7 +200,7 @@ void main() {
     expect(find.textContaining('industryMomentum5d'), findsOneWidget);
   });
 
-  testWidgets('市場標籤 + 等權口徑：標題含 marketLabel、顯示等權 caption', (tester) async {
+  testWidgets('等權口徑：顯示等權 caption', (tester) async {
     widenViewport(tester);
 
     await tester.pumpWidget(
@@ -214,16 +208,10 @@ void main() {
         IndustryPerformanceRow(
           industries: makeIndustries(3),
           indexChangePercent: null,
-          marketLabel: '上市',
         ),
       ),
     );
 
-    expect(
-      find.textContaining('上市'),
-      findsOneWidget,
-      reason: '標題應含傳入的 marketLabel',
-    );
     expect(find.textContaining('industryEqualWeighted'), findsOneWidget);
   });
 }
