@@ -86,7 +86,11 @@
     "focusStocks": "焦點股",
     "surgeBadge": "爆量",
     "pullbackOnly": "只看回檔中",
+    "sortByMentions": "篇數",
+    "riskNews": "風險新聞",
+    "newEntrant": "新進榜",
     "articlesCount": "{} 篇",
+    "sourcesCount": "{} 源",
     "prevWeekCount": "前三週共 {} 篇",
     "heatEmpty": "近期新聞不足，無法分析熱度"
   },

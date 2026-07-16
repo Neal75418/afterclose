@@ -86,7 +86,11 @@
     "focusStocks": "Focus Stocks",
     "surgeBadge": "Surging",
     "pullbackOnly": "Pullback Only",
+    "sortByMentions": "Mentions",
+    "riskNews": "Risk news",
+    "newEntrant": "New Entrant",
     "articlesCount": "{} articles",
+    "sourcesCount": "{} sources",
     "prevWeekCount": "{} in prior 3 weeks",
     "heatEmpty": "Not enough recent news to analyze heat"
   },
