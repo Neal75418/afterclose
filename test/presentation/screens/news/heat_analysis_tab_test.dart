@@ -32,12 +32,20 @@ NewsHeatAnalysis analysis() => NewsHeatAnalysis(
       mentions7d: 9,
       mentionsPrev21d: 2,
       isSurging: true,
+      distinctSources7d: 3,
+      hasRiskNews: false,
+      isNewEntrant: false,
+      surgeRatio: 9.0, // 9 / max(2/3, 1.0)
     ),
     StockHeat(
       symbol: '2330',
       mentions7d: 30,
       mentionsPrev21d: 40,
       isSurging: false,
+      distinctSources7d: 5,
+      hasRiskNews: false,
+      isNewEntrant: false,
+      surgeRatio: 2.25, // 30 / (40/3)
     ),
   ],
   stockNames: const {'2408': '南亞科', '2344': '華邦電', '2330': '台積電'},

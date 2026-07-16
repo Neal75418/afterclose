@@ -30,6 +30,28 @@ abstract final class NewsHeatParams {
   /// 快照回補天數（晚到新聞自我修正）
   static const int snapshotBackfillDays = 3;
 
+  /// 風險事件關鍵字：標題命中即標記該篇為風險新聞（提及的個股掛風險旗標）。
+  /// 非情緒分析——只抓明確的負面「事件類型」詞。
+  static const List<String> riskNewsKeywords = [
+    '違約交割',
+    '掏空',
+    '全額交割',
+    '下市',
+    '跳票',
+    '財報不實',
+    '內線交易',
+    '處置股',
+    '注意股',
+    '停止買賣',
+    '重整',
+    '聲請破產',
+  ];
+
+  /// 爆量類顯示（🔥/新進榜/爆量排序）啟用門檻：基準窗（前 21 天）至少要有
+  /// 這麼多個「有新聞的日曆日」才有統計意義。2026-07-15 新聞存量歸零事故後
+  /// 的空窗期，此閘門讓爆量徽章自動待命而非全亮誤導。
+  static const int surgeBaselineMinCoverageDays = 14;
+
   /// 2 字公司簡稱白名單（Task 2 語料稽核定稿——已對 production DB 6203 篇新聞
   /// 標題全量重放 [StockNameMatcher]，逐名核對樣本標題後移除誤配名）
   ///

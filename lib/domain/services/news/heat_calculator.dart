@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:afterclose/core/constants/news_heat_params.dart';
 
 /// 一篇新聞的標籤（matcher 輸出的彙整）
@@ -7,12 +9,20 @@ class ArticleTags {
     required this.publishedAt,
     required this.symbols,
     required this.themes,
+    required this.source,
+    required this.hasRiskKeyword,
   });
 
   final String newsId;
   final DateTime publishedAt;
   final Set<String> symbols;
   final Set<String> themes;
+
+  /// 新聞來源（媒體名，如「鉅亨網」）——供來源廣度統計
+  final String source;
+
+  /// 標題是否命中 [NewsHeatParams.riskNewsKeywords]（風險事件新聞）
+  final bool hasRiskKeyword;
 }
 
 /// 焦點股熱度
@@ -22,12 +32,33 @@ class StockHeat {
     required this.mentions7d,
     required this.mentionsPrev21d,
     required this.isSurging,
+    required this.distinctSources7d,
+    required this.hasRiskNews,
+    required this.isNewEntrant,
+    required this.surgeRatio,
   });
 
   final String symbol;
   final int mentions7d;
   final int mentionsPrev21d;
   final bool isSurging;
+
+  /// 近窗提及該股的文章中，相異新聞來源數（來源廣度——多家媒體同時報導
+  /// 比單一媒體洗稿更有信號意義）
+  final int distinctSources7d;
+
+  /// 近窗是否有任一提及該股的文章命中風險關鍵字
+  final bool hasRiskNews;
+
+  /// 新進榜：近窗達爆量門檻篇數（[NewsHeatParams.surgeMinMentions]）
+  /// 且基準窗完全無提及——「從零冒出」比「持續增溫」更值得注意
+  final bool isNewEntrant;
+
+  /// 爆量倍率 = `mentions7d / max(mentionsPrev21d / 3.0, 1.0)`。
+  ///
+  /// 分母是基準窗的**週均**篇數（21 天 ÷ 3 週），並以 1.0 為下限——
+  /// 避免基準窗只有 0–2 篇時倍率爆表（6/0.33 = 18x 之類的假訊號）。
+  final double surgeRatio;
 }
 
 /// 題材熱度
@@ -50,13 +81,27 @@ class ThemeHeat {
 }
 
 class HeatResult {
-  const HeatResult({required this.stocks, required this.themes});
+  const HeatResult({
+    required this.stocks,
+    required this.themes,
+    required this.baselineCoverageDays,
+  });
 
   /// mentions7d 降冪
   final List<StockHeat> stocks;
 
   /// articles7d 降冪
   final List<ThemeHeat> themes;
+
+  /// 基準窗（前 21 天）內「有 ≥1 篇新聞」的相異本地日曆日數——
+  /// 不論該篇是否匹配到個股/題材，衡量的是新聞**存量**覆蓋度
+  final int baselineCoverageDays;
+
+  /// 爆量類顯示是否有統計意義（基準窗覆蓋日數達
+  /// [NewsHeatParams.surgeBaselineMinCoverageDays]）。
+  /// false 時 UI 應隱藏 🔥/新進榜等爆量徽章，而非全亮誤導。
+  bool get surgeReliable =>
+      baselineCoverageDays >= NewsHeatParams.surgeBaselineMinCoverageDays;
 }
 
 /// 熱度計算（純函數）：窗口切分與爆量判定
@@ -78,6 +123,11 @@ class HeatCalculator {
     final themeBaseline = <String, int>{};
     // (theme, symbol) 近窗共現次數
     final coOccurrence = <String, Map<String, int>>{};
+    // 近窗每股的相異來源集合／風險旗標
+    final stockSources = <String, Set<String>>{};
+    final stockRisk = <String>{};
+    // 基準窗有新聞的相異日曆日（不論匹配與否）
+    final baselineDays = <DateTime>{};
 
     for (final a in articles) {
       final local = a.publishedAt.toLocal();
@@ -91,9 +141,15 @@ class HeatCalculator {
                   NewsHeatParams.baselineWindowDays;
       if (!isRecent && !isBaseline) continue;
 
+      if (isBaseline) baselineDays.add(day);
+
       final stockBucket = isRecent ? stockRecent : stockBaseline;
       for (final s in a.symbols) {
         stockBucket[s] = (stockBucket[s] ?? 0) + 1;
+        if (isRecent) {
+          stockSources.putIfAbsent(s, () => {}).add(a.source);
+          if (a.hasRiskKeyword) stockRisk.add(s);
+        }
       }
       final themeBucket = isRecent ? themeRecent : themeBaseline;
       for (final t in a.themes) {
@@ -119,6 +175,10 @@ class HeatCalculator {
             mentions7d: r,
             mentionsPrev21d: b,
             isSurging: surging(r, b),
+            distinctSources7d: stockSources[s]?.length ?? 0,
+            hasRiskNews: stockRisk.contains(s),
+            isNewEntrant: r >= NewsHeatParams.surgeMinMentions && b == 0,
+            surgeRatio: r / max(b / 3.0, 1.0),
           );
         }).toList()..sort((a, b) {
           final byRecent = b.mentions7d.compareTo(a.mentions7d);
@@ -153,6 +213,10 @@ class HeatCalculator {
           return a.theme.compareTo(b.theme);
         });
 
-    return HeatResult(stocks: stocks, themes: themes);
+    return HeatResult(
+      stocks: stocks,
+      themes: themes,
+      baselineCoverageDays: baselineDays.length,
+    );
   }
 }
