@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:afterclose/data/models/twse/twse_market_index.dart';
 import 'package:afterclose/presentation/providers/market_overview_provider.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/market_dashboard.dart';
+import 'package:afterclose/presentation/widgets/market_dashboard/sentiment_gauge_section.dart';
 
 import '../../../helpers/widget_test_helpers.dart';
 
@@ -151,6 +152,72 @@ void main() {
         find.text('marketOverview.reading.synthesis.neutral'),
         findsOneWidget,
       );
+    });
+
+    testWidgets('parallel 檢視在 TWSE + TPEx 皆有足夠資料時，同時渲染兩個市場情緒儀表', (
+      tester,
+    ) async {
+      widenViewport(tester);
+      final state = MarketOverviewState(
+        indices: [createIndex(MarketIndexNames.taiex, 22000, 150)],
+        advanceDeclineByMarket: {
+          'TWSE': const AdvanceDecline(advance: 600, decline: 200),
+          'TPEx': const AdvanceDecline(advance: 100, decline: 300),
+        },
+        historyTrends: HistoryTrends(
+          turnover: {
+            'TWSE': [
+              (date: DateTime(2026, 2, 11), value: 1000.0),
+              (date: DateTime(2026, 2, 12), value: 1200.0),
+            ],
+            'TPEx': [
+              (date: DateTime(2026, 2, 11), value: 100.0),
+              (date: DateTime(2026, 2, 12), value: 90.0),
+            ],
+          },
+        ),
+        dataDate: DateTime(2026, 2, 13),
+      );
+
+      await tester.pumpWidget(buildTestApp(MarketDashboard(state: state)));
+      await tester.pump(const Duration(seconds: 1));
+
+      final gauges = tester
+          .widgetList<SentimentGaugeSection>(find.byType(SentimentGaugeSection))
+          .toList();
+      expect(gauges, hasLength(2));
+      // TWSE 上漲占比 0.75、TPEx 上漲占比 0.25 → 分數應明顯不同，證明兩側
+      // 各自獨立計算（非共用或硬編碼同一值）。
+      expect(
+        gauges[0].sentiment.score,
+        isNot(equals(gauges[1].sentiment.score)),
+      );
+    });
+
+    testWidgets('TPEx 情緒資料不足時，parallel 檢視僅渲染 TWSE 情緒儀表（優雅降級）', (tester) async {
+      widenViewport(tester);
+      final state = MarketOverviewState(
+        indices: [createIndex(MarketIndexNames.taiex, 22000, 150)],
+        advanceDeclineByMarket: {
+          'TWSE': const AdvanceDecline(advance: 600, decline: 200),
+          'TPEx': const AdvanceDecline(advance: 100, decline: 300),
+        },
+        historyTrends: HistoryTrends(
+          turnover: {
+            'TWSE': [
+              (date: DateTime(2026, 2, 11), value: 1000.0),
+              (date: DateTime(2026, 2, 12), value: 1200.0),
+            ],
+            // 'TPEx' 缺席 → 資料不足，_computeSentiment 應回傳 null
+          },
+        ),
+        dataDate: DateTime(2026, 2, 13),
+      );
+
+      await tester.pumpWidget(buildTestApp(MarketDashboard(state: state)));
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.byType(SentimentGaugeSection), findsOneWidget);
     });
   });
 }

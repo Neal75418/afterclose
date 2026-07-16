@@ -526,7 +526,15 @@ class _MarketDashboardState extends State<MarketDashboard> {
   /// 使用跨欄配對方式，每個 section 型別左右配成一組 [IntrinsicHeight] + [Row]，
   /// 確保對應 section 水平對齊，避免左右高度差異導致後續 section 錯位。
   Widget _buildParallelView(ThemeData theme) {
-    final sentiment = _computeSentiment(MarketCode.twse);
+    // 市場情緒（TWSE + TPEx 對稱計算，兩側各自資料是否足夠獨立判定）。
+    //
+    // 不透過下方 sectionBuilders／_buildPairedRow 迴圈：SentimentGaugeSection
+    // 內部（漸層 bar 三角形定位）使用 LayoutBuilder，與 _buildPairedRow 的
+    // IntrinsicHeight 不相容，會丟出「LayoutBuilder does not support
+    // returning intrinsic dimensions」。改用一般 Row 並排，僅犧牲兩欄等高
+    // 對齊（其餘 section 仍對齊），不影響資料正確性。
+    final twseSentiment = _buildSentimentSection(MarketCode.twse);
+    final tpexSentiment = _buildSentimentSection(MarketCode.tpex);
 
     // 每個 section builder 返回 Widget?，null 表示該市場無此資料
     final sectionBuilders = <Widget? Function(String)>[
@@ -552,31 +560,18 @@ class _MarketDashboardState extends State<MarketDashboard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 共用：市場情緒儀表板（僅 TWSE，TPEx 資料量不足以穩定計算）
-        if (sentiment != null) ...[
+        if (twseSentiment != null || tpexSentiment != null) ...[
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'marketOverview.twse'.tr(),
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w600,
-                ),
+              Expanded(child: twseSentiment ?? const SizedBox.shrink()),
+              VerticalDivider(
+                width: 32,
+                thickness: 1,
+                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
               ),
-              const SizedBox(width: DesignTokens.spacing4),
-              Text(
-                'marketOverview.sentimentLabel'.tr(),
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
+              Expanded(child: tpexSentiment ?? const SizedBox.shrink()),
             ],
-          ),
-          const SizedBox(height: DesignTokens.spacing6),
-          SentimentGaugeSection(
-            sentiment: sentiment,
-            sentimentHistory: _computeSentimentHistory(MarketCode.twse),
-            showInternalTitle: false, // 外層 Row 已渲染「上市 市場情緒」，避免重複
           ),
           const SizedBox(height: DesignTokens.spacing14),
           Divider(
@@ -731,6 +726,20 @@ class _MarketDashboardState extends State<MarketDashboard> {
   // ==================================================
   // Section builders
   // ==================================================
+
+  /// 市場情緒儀表板 section（TWSE / TPEx 對稱計算）
+  ///
+  /// [_computeSentiment] 本身即以 marketKey 參數化（無 TWSE 硬編碼），兩市場
+  /// 走同一組 guard（漲跌家數 + 至少一項歷史資料，見該方法文件）。資料不足
+  /// 時回傳 null，該市場欄位不顯示（與其餘 section 一致的優雅降級）。
+  Widget? _buildSentimentSection(String market) {
+    final sentiment = _computeSentiment(market);
+    if (sentiment == null) return null;
+    return SentimentGaugeSection(
+      sentiment: sentiment,
+      sentimentHistory: _computeSentimentHistory(market),
+    );
+  }
 
   Widget? _buildAdvanceDeclineSection(String market) {
     final adData = widget.state.advanceDeclineByMarket[market];

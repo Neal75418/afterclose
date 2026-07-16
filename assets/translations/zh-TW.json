@@ -106,7 +106,6 @@
     "noData": "暫無資料",
     "notToday": "(非今日)",
     "staleBreadth": "漲跌家數為 {dataDate} 資料（{mainDate} 個股尚未釋出）",
-    "sentimentLabel": "市場情緒",
     "loadError": "載入大盤數據失敗",
     "taiex": "加權指數",
     "exFinance": "未含金融",
