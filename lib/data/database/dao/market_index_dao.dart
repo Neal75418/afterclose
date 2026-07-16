@@ -52,16 +52,4 @@ mixin MarketIndexDaoMixin on $AppDatabase {
     }
     return result;
   }
-
-  /// 取得最新的指數日期
-  Future<DateTime?> getLatestMarketIndexDate() async {
-    final result = await customSelect(
-      'SELECT MAX(date) as max_date FROM market_index',
-    ).getSingleOrNull();
-    if (result == null) return null;
-    final val = result.data['max_date'];
-    if (val == null) return null;
-    // storeDateTimeAsText: date 儲存為 ISO 8601 文字
-    return DateTime.tryParse(val.toString());
-  }
 }

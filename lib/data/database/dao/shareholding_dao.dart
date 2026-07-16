@@ -57,7 +57,11 @@ mixin ShareholdingDaoMixin on $AppDatabase {
       final symbol = row.read<String>('symbol');
       map[symbol] = ShareholdingEntry(
         symbol: symbol,
-        date: DateTime.parse(row.read<String>('date')),
+        // 用 read<DateTime> 走 drift 內建型別化轉換，而非手動
+        // read<String> + DateTime.parse。手動 parse 對帶明確 UTC offset 的
+        // 字串（本地日期一律如此）會回傳 isUtc=true，直接讀 .day/.month
+        // 會拿到 UTC 曆日、比本地曆日落後一天（與融資融券同型 bug）。
+        date: row.read<DateTime>('date'),
         foreignRemainingShares: row.read<double?>('foreign_remaining_shares'),
         foreignSharesRatio: row.read<double?>('foreign_shares_ratio'),
         foreignUpperLimitRatio: row.read<double?>('foreign_upper_limit_ratio'),
@@ -100,7 +104,10 @@ mixin ShareholdingDaoMixin on $AppDatabase {
       final symbol = row.read<String>('symbol');
       map[symbol] = ShareholdingEntry(
         symbol: symbol,
-        date: DateTime.parse(row.read<String>('date')),
+        // 與 getLatestShareholdingsBatch 同型修法：read<DateTime> 走 drift
+        // 內建型別化轉換，避免手動 parse 帶 offset 字串時漏 .toLocal()
+        // 而讀到 UTC 曆日。
+        date: row.read<DateTime>('date'),
         foreignRemainingShares: row.read<double?>('foreign_remaining_shares'),
         foreignSharesRatio: row.read<double?>('foreign_shares_ratio'),
         foreignUpperLimitRatio: row.read<double?>('foreign_upper_limit_ratio'),

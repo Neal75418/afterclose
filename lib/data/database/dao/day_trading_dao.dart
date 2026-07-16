@@ -109,9 +109,14 @@ mixin DayTradingDaoMixin on $AppDatabase {
         ],
       ).getSingleOrNull();
 
-      final latestDateStr = latestDateResult?.read<String?>('latest_date');
-      if (latestDateStr != null) {
-        final latestDate = DateTime.parse(latestDateStr);
+      // 用 read<DateTime?> 走 drift 內建型別化轉換，而非手動
+      // read<String?> + DateTime.parse。手動 parse 對帶明確 UTC offset 的
+      // 字串（本地日期一律如此）會回傳 isUtc=true，DateContext.normalize
+      // 直接讀其 .year/.month/.day 會拿到 UTC 曆日、比本地曆日落後一天，
+      // 導致下方查詢範圍位移一天——不是查無資料，而是靜默查到「更舊一天」
+      // 的資料當作最新回傳。
+      final latestDate = latestDateResult?.read<DateTime?>('latest_date');
+      if (latestDate != null) {
         final latestStartOfDay = DateContext.normalize(latestDate);
         final latestEndOfDay = latestStartOfDay.add(const Duration(days: 1));
 
