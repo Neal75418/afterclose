@@ -179,17 +179,21 @@ class _ThemeCard extends StatelessWidget {
               'news.prevWeekCount'.tr(args: ['${theme.articlesPrev21d}']),
               style: Theme.of(context).textTheme.bodySmall,
             ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 6,
-              children: [
-                for (final sym in theme.topStocks)
-                  ActionChip(
-                    label: Text(stockNames[sym] ?? sym),
-                    onPressed: () => _openStockDetail(context, sym),
-                  ),
-              ],
-            ),
+            // 政策/產業級報導可能無任何上市公司名（如軍工的無人機條例新聞）
+            // → 成分股為空時整塊不渲染，不留空白列
+            if (theme.topStocks.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 6,
+                children: [
+                  for (final sym in theme.topStocks)
+                    ActionChip(
+                      label: Text(stockNames[sym] ?? sym),
+                      onPressed: () => _openStockDetail(context, sym),
+                    ),
+                ],
+              ),
+            ],
           ],
         ),
       ),

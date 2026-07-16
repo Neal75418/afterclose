@@ -104,6 +104,34 @@ void main() {
     expect(find.text('台積電'), findsNothing);
   });
 
+  testWidgets('族群卡片成分股為空時不渲染 chips 區塊', (tester) async {
+    widenViewport(tester);
+    const data = NewsHeatAnalysis(
+      themes: [
+        ThemeHeat(
+          theme: '軍工',
+          articles7d: 8,
+          articlesPrev21d: 0,
+          isSurging: false,
+          topStocks: [], // 政策/產業級報導無上市公司名 → 無成分股
+        ),
+      ],
+      stocks: [],
+      stockNames: {},
+      modeBySymbol: {},
+      priceChangeBySymbol: {},
+      warningBySymbol: {},
+      surgeReliable: false,
+    );
+    await tester.pumpWidget(build(data));
+    await tester.pumpAndSettle();
+
+    expect(find.text('軍工'), findsOneWidget);
+    // 空成分股 → 整個 Wrap（chips 容器）不渲染，不留空白列
+    expect(find.byType(Wrap), findsNothing);
+    expect(find.byType(ActionChip), findsNothing);
+  });
+
   testWidgets('空資料顯示空狀態', (tester) async {
     widenViewport(tester);
     await tester.pumpWidget(
