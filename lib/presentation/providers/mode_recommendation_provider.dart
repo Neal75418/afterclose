@@ -348,6 +348,16 @@ final _modeAssignmentsProvider =
         data.latestPrices,
       );
 
+      // STEP 4b — 批次載入警示資料（供處置股排除用）。disposalEndDate + grace
+      // 已在寫入時套用過（syncAllMarketWarnings → _createWarningEntry，見
+      // warning_repository.dart / FundamentalParams.disposalEndDateGraceDays），
+      // getActiveWarningsMapBatch（trading_warning_dao.dart）只需信任
+      // isActive=true 即代表目前仍生效，此處不需重算過期邏輯。ATTENTION 一併
+      // 撈回但不影響 routing，只有 DISPOSAL 需要排除（見下方 STEP 5 迴圈）。
+      final activeWarnings = await ref
+          .read(databaseProvider)
+          .getActiveWarningsMapBatch(allCandidateSymbols);
+
       // STEP 5 — eligibility-first 指派 + floor + routing priority
       //
       // **2026-06-19 v2 audit**：multi-mode eligible 時，先按 ScoringMode.routingPriority
@@ -359,6 +369,7 @@ final _modeAssignmentsProvider =
       var droppedNoEligible = 0;
       var droppedBelowFloor = 0;
       var droppedEtf = 0;
+      var droppedDisposal = 0;
       var droppedObservation = 0;
       for (final entry in stockModeScores.entries) {
         final symbol = entry.key;
@@ -369,6 +380,17 @@ final _modeAssignmentsProvider =
         // user 決定 3 個 tab 全濾。stock_master.industry == 'ETF' 是乾淨標記。
         if (data.stocks[symbol]?.industry == 'ETF') {
           droppedEtf++;
+          continue;
+        }
+
+        // **2026-07-16 處置股全模式排除**：處置＝分盤交易＋預收款券，機制上非
+        // 正常可交易（撮合方式、單量都被限制）→ 不佔任何模式的「可行動候選」
+        // 榜位——跟 ETF 過濾同屬宇宙定義過濾（不是分數判斷），故放在 ETF 過濾
+        // 旁邊、eligibility 判斷之前。注意股（ATTENTION）風險較低、仍保留候選
+        // 資格，靠卡片風險徽章（RiskBadgeCluster／[RiskWarnings]）提示即可，
+        // 不在此排除。
+        if (activeWarnings[symbol]?.warningType == 'DISPOSAL') {
+          droppedDisposal++;
           continue;
         }
 
@@ -432,6 +454,7 @@ final _modeAssignmentsProvider =
             'droppedNoEligible=$droppedNoEligible '
             'droppedBelowFloor=$droppedBelowFloor '
             'droppedEtf=$droppedEtf '
+            'droppedDisposal=$droppedDisposal '
             'droppedObservation=$droppedObservation',
       );
 
