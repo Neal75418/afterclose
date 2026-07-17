@@ -435,7 +435,13 @@ class HammerAtSupportRule extends StockRule {
 // Rule C: KD_HIGH_PULLBACK — KD 高檔回落未死叉
 // ============================================
 
-/// KD 從 80+ 回落到 [50, 75] 區間但 K > D（未死叉）+ 多頭排列維持
+/// KD 從高檔（前日 K >= [PullbackParams.kdHighPrevMin]，78）回落到
+/// [[PullbackParams.kdPullbackBandLow], [PullbackParams.kdPullbackBandHigh])
+/// 區間（[60, 80)）但 K > D（未死叉）+ 多頭排列維持 + 過去強勢 + 非瀑布跌。
+///
+/// **2026-07-18 audit 修正**：舊 doc 寫「80+」「[50, 75]」已與實際參數
+/// （kdHighPrevMin=78、band [60,80)）不符，見 Step 5/6 的 2026-06-20 體檢
+/// 修正說明。
 ///
 /// 技術指標 proxy、相對較弱訊號、score +12。
 class KdHighLevelPullbackRule extends StockRule {
@@ -515,12 +521,18 @@ class KdHighLevelPullbackRule extends StockRule {
     // ---- Step 8: 收盤未破 MA20 過深（>= ma20 * 0.99）----
     if (todayClose < ma20 * PullbackParams.kdCloseMinMa20Ratio) return null;
 
-    // ---- Step 9: K 值漸降非崩跌（單日 K 跌幅 <= 30）----
+    // ---- Step 9: K 值確實回落、非崩跌（0 < 單日跌幅 <= 30）----
     //
     // **2026-06-20 早期體檢修正**：原 <= 20 跟 [60,80) 窗口衝突（prevKdK 高時
     // drop 自然 > 20）、是窗口變窄元兇。放寬到 30 保留 panic 防護但不殺窗口。
+    //
+    // **2026-07-18 audit 修正（回落 floor）**：原本只檢查跌幅上限，未要求
+    // kdKDailyDrop > 0——3/13 真實 fire 樣本當日 K 其實還在上升、不是「回
+    // 落」，規則名稱與語意都對不上。補上 > 0 下限。
     final kdKDailyDrop = prevKdK - kdK;
-    if (kdKDailyDrop > PullbackParams.kdMaxDailyDrop) return null;
+    if (kdKDailyDrop <= 0 || kdKDailyDrop > PullbackParams.kdMaxDailyDrop) {
+      return null;
+    }
 
     // ---- Step 10: 非跌停 ----
     if (isLimitDownDay(data)) return null;

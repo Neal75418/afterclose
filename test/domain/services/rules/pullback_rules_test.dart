@@ -598,6 +598,28 @@ void main() {
       expect(r, isNotNull);
     });
 
+    // Extra（低風險，audit「回落」缺口）：Step 9 舊版只檢查跌幅上限
+    // （<=30），未要求 kdKDailyDrop > 0——3/13 真實 KD_HIGH_PULLBACK fire
+    // 樣本當日 K 其實還在上升（非回落），語意上不該算「KD 高檔回落」。
+    test('null when K did not actually drop (still rising, not a pullback) '
+        '(audit: 3/13 real fires had K still rising)', () {
+      // prevK=78（剛達高檔門檻）、今日 K=79 反而上升：drop=78-79=-1<=0。
+      final r = rule.evaluate(
+        kdCtx(kdK: 79, kdD: 70, prevKdK: 78),
+        stock(closeAt(100)),
+      );
+      expect(r, isNull);
+    });
+
+    test('fires at drop just above 0 (genuine small pullback)', () {
+      // prevK=78 → K=77.9, drop=0.1 > 0
+      final r = rule.evaluate(
+        kdCtx(kdK: 77.9, kdD: 70, prevKdK: 78),
+        stock(closeAt(100)),
+      );
+      expect(r, isNotNull);
+    });
+
     test('null when KD missing', () {
       final r = rule.evaluate(
         kdCtx(kdK: null, kdD: 65, prevKdK: 85),
