@@ -864,6 +864,84 @@ void main() {
 
         expect(result, isNull);
       });
+
+      test('does not trigger positive fire from a bearish-flavored title '
+          'that only contains 法說會 (audit real case: 0050「外資提款…遭大砍」'
+          '因含「法說會」誤判 score +8)', () {
+        final now = DateTime.now();
+        final news = [
+          NewsItemEntry(
+            id: 'audit-0050',
+            title: '外資提款效應加劇，0050遭大舉倒貨，法說會前氣氛保守',
+            source: 'MoneyDJ',
+            url: 'https://example.com/news/audit-0050',
+            publishedAt: now.subtract(const Duration(hours: 1)),
+            fetchedAt: now,
+            category: 'EARNINGS',
+          ),
+        ];
+        final context = AnalysisContext(
+          evaluationTime: now,
+          trendState: TrendState.range,
+        );
+        final data = StockData(symbol: 'TEST', prices: [], news: news);
+
+        final result = rule.evaluate(context, data);
+
+        expect(result, isNull);
+      });
+
+      test('does not trigger negative fire from neutral 現金減資 news '
+          '(word alone is not directionally meaningful — 現金減資 is often '
+          'market-favorable, unlike 虧損減資)', () {
+        final now = DateTime.now();
+        final news = [
+          NewsItemEntry(
+            id: 'cash-reduction-1',
+            title: '公司現金減資，每股退還股東2元',
+            source: 'MoneyDJ',
+            url: 'https://example.com/news/cash-reduction-1',
+            publishedAt: now.subtract(const Duration(hours: 1)),
+            fetchedAt: now,
+            category: 'COMPANY_EVENT',
+          ),
+        ];
+        final context = AnalysisContext(
+          evaluationTime: now,
+          trendState: TrendState.range,
+        );
+        final data = StockData(symbol: 'TEST', prices: [], news: news);
+
+        final result = rule.evaluate(context, data);
+
+        expect(result, isNull);
+      });
+
+      test('excludes future-published news from evaluation '
+          '(age must be >= 0; weekend manual-refresh path can make '
+          'evaluationTime=Friday while news arrives Saturday)', () {
+        final evaluationTime = DateTime(2025, 6, 13); // 週五
+        final news = [
+          NewsItemEntry(
+            id: 'future-1',
+            title: '營收創新高，業績亮眼',
+            source: 'MoneyDJ',
+            url: 'https://example.com/news/future-1',
+            publishedAt: DateTime(2025, 6, 14), // 週六，晚於 evaluationTime
+            fetchedAt: DateTime(2025, 6, 14),
+            category: 'EARNINGS',
+          ),
+        ];
+        final context = AnalysisContext(
+          evaluationTime: evaluationTime,
+          trendState: TrendState.range,
+        );
+        final data = StockData(symbol: 'TEST', prices: [], news: news);
+
+        final result = rule.evaluate(context, data);
+
+        expect(result, isNull);
+      });
     });
   });
 }
