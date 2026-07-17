@@ -18,7 +18,7 @@ bool _isValuationStale(StockValuationEntry valuation, AnalysisContext context) {
 
 /// 規則：營收年增暴增
 ///
-/// 當月營收年增率 > 50% 且股價站上 MA60 時觸發
+/// 當月營收年增率 ≥ 30% 且股價站上 MA60 時觸發
 class RevenueYoYSurgeRule extends StockRule with FundamentalTechnicalFilter {
   const RevenueYoYSurgeRule();
 
@@ -381,9 +381,10 @@ class EPSYoYSurgeRule extends StockRule with FundamentalTechnicalFilter {
     if (latestEps == null || latestEps <= 0) return null;
 
     // 找去年同季（用季度編號比較）
-    // FinancialDataEntry.date 為季度起始日（由 parseQuarterDate 解析 "YYYY-QN" 格式），
-    // 例如 Q1 = 1月, Q2 = 4月, Q3 = 7月, Q4 = 10月，非申報日期。
-    // 因此 (month - 1) ~/ 3 可正確對應季度編號 0~3。
+    // FinancialDataEntry.date 為季度截止日（FinMind 損益表回傳日曆日期如
+    // 2024-03-31，由 parseQuarterDate 的非 "YYYY-QN" 分支原樣解析），
+    // 例如 Q1 = 3月, Q2 = 6月, Q3 = 9月, Q4 = 12月，非申報日期。
+    // (month - 1) ~/ 3 對季末(3/6/9/12)與季初(1/4/7/10)月份都映射到季度編號 0~3，故仍正確。
     final latestQuarter = (latest.date.month - 1) ~/ 3;
     double? lastYearEps;
     for (int i = FundamentalParams.epsQuarterOffset; i < eps.length; i++) {

@@ -64,16 +64,19 @@ void main() {
     updatedAt: testDate,
   );
 
-  DailyAnalysisEntry analysis(String symbol, double score) =>
-      DailyAnalysisEntry(
-        symbol: symbol,
-        date: testDate,
-        trendState: 'UP',
-        reversalState: 'NONE',
-        scoreShort: score, // ≥ RuleParams.minScoreThreshold(12)，過 isSignalTier
-        scoreLong: score,
-        computedAt: testDate,
-      );
+  DailyAnalysisEntry analysis(
+    String symbol,
+    double score,
+  ) => DailyAnalysisEntry(
+    symbol: symbol,
+    date: testDate,
+    trendState: 'UP',
+    reversalState: 'NONE',
+    scoreShort:
+        score, // 聚合分析分數（非 tier 依據；isSignalTier 改讀 getModeStockScores 的 modeScore）
+    scoreLong: score,
+    computedAt: testDate,
+  );
 
   DailyReasonEntry reason(String symbol, double score, String reasonType) =>
       DailyReasonEntry(

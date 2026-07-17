@@ -326,7 +326,7 @@ class MAAlignmentBearishRule extends StockRule {
 
 /// 規則：RSI 極度超買
 ///
-/// 當 RSI >= 80 時觸發（高風險警示）
+/// 當 RSI >= 85 時觸發（高風險警示）
 class RSIExtremeOverboughtRule extends StockRule {
   const RSIExtremeOverboughtRule();
 
@@ -360,7 +360,7 @@ class RSIExtremeOverboughtRule extends StockRule {
 
 /// 規則：RSI 極度超賣
 ///
-/// 當 RSI <= 25 時觸發（潛在反彈機會）
+/// 當 RSI <= 30 時觸發（潛在反彈機會）
 class RSIExtremeOversoldRule extends StockRule {
   const RSIExtremeOversoldRule();
 
@@ -419,7 +419,7 @@ class KDGoldenCrossRule extends StockRule {
       // 過濾 1：僅在低檔區觸發
       if (prevK >= IndicatorParams.kdGoldenCrossZone) return null;
 
-      // 過濾 2：成交量確認（今日 > 5 日均量）
+      // 過濾 2：成交量確認（今日 > 5 日均量的 1.5 倍）
       // 使用 PriceCalculator 統一計算，排除今日以正確比較
       if (!PriceCalculator.isVolumeAboveAverage(
         data.prices,
@@ -483,7 +483,7 @@ class KDDeathCrossRule extends StockRule {
       // 過濾 1：僅在高檔區觸發
       if (prevK <= IndicatorParams.kdDeathCrossZone) return null;
 
-      // 過濾 2：成交量確認（今日 > 5 日均量）
+      // 過濾 2：成交量確認（今日 > 5 日均量的 1.5 倍）
       // 使用 PriceCalculator 統一計算，排除今日以正確比較
       if (!PriceCalculator.isVolumeAboveAverage(
         data.prices,

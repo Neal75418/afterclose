@@ -9,10 +9,11 @@
 //
 // ## 為什麼需要這支工具
 //
-// 生產環境的 `rule_accuracy_service.validatePastRecommendationsMultiPeriod`
-// 只看 Top 20 推薦股的 rule firings — 這造成 calibration 的嚴重 selection
-// bias：負訊號 rule 會拖低總分，相關股票根本不會進 Top 20，於是 calibration
-// 看不到足夠的負訊號 rule 樣本，全部被 `sample_size < 30` 砍掉。
+// 生產環境的 `RuleAccuracyService.updateRuleAccuracyStats` 只從**已持久化**的
+// `daily_reason` 聚合，且過濾到 signal-tier（任一 horizon ≥ minScoreThreshold）
+// 的 (symbol, date)。後果：負訊號 rule 會拖低總分，相關 (symbol, date) 根本不會
+// 被寫進 daily_reason／達不到 signal-tier，於是 calibration 看不到足夠的負訊號
+// rule 樣本，全部被 `sample_size < 30` 砍掉。
 //
 // 這支工具**直接迭代所有股票的所有交易日**，呼叫 `RuleEngine.evaluateStock`
 // 收集每條 rule 的所有觸發，計算 forward return，寫入 `rule_accuracy`
