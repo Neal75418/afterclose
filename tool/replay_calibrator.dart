@@ -16,7 +16,12 @@
 //
 // 這支工具**直接迭代所有股票的所有交易日**，呼叫 `RuleEngine.evaluateStock`
 // 收集每條 rule 的所有觸發，計算 forward return，寫入 `rule_accuracy`
-// 表。沒有任何 Top-20 過濾 → unbiased sample。
+// 表。沒有任何 Top-20 過濾 → unbiased sample（entry price 另見 lookahead
+// bias fix，audit finding #6，2026-07-18：entry 用訊號隔日 open，不是訊號
+// 當日 close——真實使用者只能隔日進場。三處計算 entry 的地方
+// [_replaySymbol] / [_computeUniverseMeanReturns] / [_computeUniverseBaselineHit]
+// 一致套用同一慣例，避免 firing return 與其扣除的 universe 均值用不同
+// entry 基準而污染超額報酬）。
 //
 // ## 使用方式
 //
@@ -402,12 +407,13 @@ class ReplayCalibrator {
     var firingsRecorded = 0;
 
     for (var i = config.minHistoryDays; i < prices.length; i++) {
-      // 確保 forward window 完整（短跟長都要）
+      // 確保 forward window 完整（短跟長都要）——連帶保證 i+1 必在界內，
+      // 下方 lookahead bias fix 的隔日 entry 查找不需再另外做邊界檢查。
       if (i + longDays >= prices.length) break;
 
       final currentPrice = prices[i];
-      final entryClose = currentPrice.close;
-      if (entryClose == null || entryClose <= 0) continue;
+      final signalClose = currentPrice.close;
+      if (signalClose == null || signalClose <= 0) continue;
 
       // dateFilter：walk-forward 校準窗 — 只把窗內 entry 當 firing（early
       // skip，省下昂貴的 evaluateStock）。universe 均值仍用全部資料計算。
@@ -449,13 +455,22 @@ class ReplayCalibrator {
 
       if (reasons.isEmpty) continue;
 
+      // Lookahead bias fix（audit finding #6，2026-07-18）：entry 用訊號隔日
+      // open（缺值 fallback close），不可用 signalClose（訊號當日 close 是
+      // 規則賴以觸發的輸入，真實使用者只能隔日進場）。i+1 保證在界內（見
+      // 上方 forward window break）；隔日 open/close 皆缺 → 視為未成熟樣本
+      // 跳過，不得退回 signalClose 頂替。
+      final nextDayPrice = prices[i + 1];
+      final entryPrice = nextDayPrice.open ?? nextDayPrice.close;
+      if (entryPrice == null || entryPrice <= 0) continue;
+
       // Forward return: i + shortDays, i + longDays
       final shortExit = prices[i + shortDays].close;
       final longExit = prices[i + longDays].close;
       if (shortExit == null || longExit == null) continue;
 
-      var shortReturn = (shortExit / entryClose - 1) * 100;
-      var longReturn = (longExit / entryClose - 1) * 100;
+      var shortReturn = (shortExit / entryPrice - 1) * 100;
+      var longReturn = (longExit / entryPrice - 1) * 100;
 
       // 橫斷面超額：減去當日全市場平均 forward return（去 beta）。
       // 該日 universe 覆蓋不足（半套日 / 稀疏歷史）→ 均值不可靠，跳過。
@@ -516,7 +531,9 @@ class ReplayCalibrator {
             volatility = math.sqrt(sq / rets.length) * 100;
           }
         }
-        // 趨勢 proxy：close 相對 60 日均線偏離(%)。>0 多頭、<0 空頭。
+        // 趨勢 proxy：訊號當日 close 相對 60 日均線偏離(%)。>0 多頭、<0 空頭。
+        // 刻意用 signalClose（訊號當日）而非 entryPrice（隔日進場價）——這是
+        // 「訊號當下的趨勢位置」診斷欄位，不是報酬計算，維持原語意。
         const maWindow = 60;
         var trendPct = 0.0;
         if (i >= maWindow) {
@@ -529,8 +546,8 @@ class ReplayCalibrator {
               cnt++;
             }
           }
-          if (cnt > 0 && entryClose > 0) {
-            trendPct = (entryClose / (sum / cnt) - 1) * 100;
+          if (cnt > 0 && signalClose > 0) {
+            trendPct = (signalClose / (sum / cnt) - 1) * 100;
           }
         }
         _scoreSink((
@@ -707,7 +724,13 @@ class ReplayCalibrator {
 
     for (final prices in data.pricesBySymbol.values) {
       for (var i = 0; i < prices.length; i++) {
-        final entry = prices[i].close;
+        // Lookahead bias fix（audit finding #6）：entry 與 [_replaySymbol] 用
+        // 同一隔日 open 慣例（缺值 fallback close）——universe 均值必須與
+        // firing return 用同一 entry 基準，否則超額報酬（firing − 均值）會
+        // 被兩種 entry 基準的系統性落差污染，不再是乾淨的去 beta。
+        if (i + 1 >= prices.length) continue;
+        final nextDayPrice = prices[i + 1];
+        final entry = nextDayPrice.open ?? nextDayPrice.close;
         if (entry == null || entry <= 0) continue;
         final key = _dateKey(prices[i].date);
 
@@ -765,7 +788,12 @@ class ReplayCalibrator {
 
     for (final prices in data.pricesBySymbol.values) {
       for (var i = 0; i < prices.length; i++) {
-        final entry = prices[i].close;
+        // Lookahead bias fix（audit finding #6）：與 [_computeUniverseMeanReturns]
+        // 用同一隔日 open entry 慣例，理由同上（baseline 須與 firing/均值
+        // 同一 entry 基準，否則 H0 與樣本分布不一致）。
+        if (i + 1 >= prices.length) continue;
+        final nextDayPrice = prices[i + 1];
+        final entry = nextDayPrice.open ?? nextDayPrice.close;
         if (entry == null || entry <= 0) continue;
         final date = prices[i].date;
 

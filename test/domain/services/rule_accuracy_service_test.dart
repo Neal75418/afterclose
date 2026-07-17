@@ -31,9 +31,16 @@ void main() {
     await db.close();
   });
 
-  /// Seed `daily_reason` + `daily_price` (entry + exit) for a single rule
-  /// trigger that yields [returnRatePct] over [periodDays] trading days.
-  /// Routes through `updateRuleAccuracyStats` → `_computeUnbiasedRuleStats`.
+  /// Seed `daily_reason` + `daily_price` (signal day + next-day open entry +
+  /// exit) for a single rule trigger that yields [returnRatePct] over
+  /// [periodDays] trading days. Routes through `updateRuleAccuracyStats` →
+  /// `_computeUnbiasedRuleStats`.
+  ///
+  /// Entry price is the **next trading day's open** (lookahead bias fix,
+  /// audit finding #6) — set equal to [entryPrice] so [returnRatePct] keeps
+  /// its documented meaning regardless of which price the engine reads as
+  /// entry. When `periodDays == 1` the next trading day *is* the exit day,
+  /// so both open (entry) and close (exit) are written on that single row.
   Future<void> seedReason({
     required String symbol,
     required DateTime entryDate,
@@ -44,6 +51,7 @@ void main() {
   }) async {
     const entryPrice = 100.0;
     final exitPrice = entryPrice * (1 + returnRatePct / 100);
+    final nextTradingDate = TaiwanCalendar.addTradingDays(entryDate, 1);
     final exitDate = TaiwanCalendar.addTradingDays(entryDate, periodDays);
 
     await db.upsertStocks([
@@ -54,18 +62,43 @@ void main() {
       ),
     ]);
 
-    await db.insertPrices([
+    final priceRows = <DailyPriceCompanion>[
+      // 訊號當日 close：規則觸發賴以判斷的輸入，不再是 entry 價，仍寫入避免
+      // 其他路徑誤讀 null。
       DailyPriceCompanion.insert(
         symbol: symbol,
         date: entryDate,
         close: const Value(entryPrice),
       ),
-      DailyPriceCompanion.insert(
-        symbol: symbol,
-        date: exitDate,
-        close: Value(exitPrice),
-      ),
-    ]);
+    ];
+    if (nextTradingDate == exitDate) {
+      // periodDays == 1：進場（隔日 open）與出場（同日 close）落在同一列。
+      priceRows.add(
+        DailyPriceCompanion.insert(
+          symbol: symbol,
+          date: nextTradingDate,
+          open: const Value(entryPrice),
+          close: Value(exitPrice),
+        ),
+      );
+    } else {
+      priceRows.add(
+        DailyPriceCompanion.insert(
+          symbol: symbol,
+          date: nextTradingDate,
+          open: const Value(entryPrice),
+          close: const Value(entryPrice),
+        ),
+      );
+      priceRows.add(
+        DailyPriceCompanion.insert(
+          symbol: symbol,
+          date: exitDate,
+          close: Value(exitPrice),
+        ),
+      );
+    }
+    await db.insertPrices(priceRows);
 
     await db.insertReasons([
       DailyReasonCompanion.insert(
@@ -393,6 +426,14 @@ void main() {
           date: entry,
           close: const Value(100.0),
         ),
+        // 隔日 open（lookahead bias fix 的 entry 來源）：與訊號當日 close 同值，
+        // 讓下方 exit 報酬算法維持原意。
+        DailyPriceCompanion.insert(
+          symbol: '2330',
+          date: TaiwanCalendar.addTradingDays(entry, 1),
+          open: const Value(100.0),
+          close: const Value(100.0),
+        ),
         DailyPriceCompanion.insert(
           symbol: '2330',
           date: TaiwanCalendar.addTradingDays(entry, 5),
@@ -557,6 +598,137 @@ void main() {
       final fresh = await fetchRuleAccuracy('TECH_BREAKOUT', period: '5D');
       expect(fresh, isNotNull);
       expect(fresh!.triggerCount, 1);
+    });
+  });
+
+  // ========================================================================
+  // Lookahead bias fix — entry uses next-day open (audit finding #6)
+  // ========================================================================
+  //
+  // 修前：entry = 訊號當日 close（規則觸發賴以判斷的輸入之一）。真實使用者
+  // 只能隔日進場。修後：entry = 訊號隔日 open（缺值 fallback close；隔日
+  // 完全無資料 → 視為未成熟樣本排除，不得退回同日 close）。
+
+  group('Lookahead bias fix — entry uses next-day open (audit finding #6)', () {
+    test(
+      'next-day-open entry flips a same-day-close "win" into a loss',
+      () async {
+        final entryDate = DateTime.utc(2026, 1, 5);
+        final nextOpenDate = TaiwanCalendar.addTradingDays(entryDate, 1);
+        final exitDate = TaiwanCalendar.addTradingDays(entryDate, 5);
+
+        await db.upsertStocks([
+          StockMasterCompanion.insert(
+            symbol: '2330',
+            name: 'Test',
+            market: 'TWSE',
+          ),
+        ]);
+        await db.insertPrices([
+          // 訊號當日 close = 100 —— 規則賴以觸發的輸入，不是進場價。
+          DailyPriceCompanion.insert(
+            symbol: '2330',
+            date: entryDate,
+            close: const Value(100.0),
+          ),
+          // 隔日跳空高開 open = 101.6 —— 真實使用者的進場價。
+          DailyPriceCompanion.insert(
+            symbol: '2330',
+            date: nextOpenDate,
+            open: const Value(101.6),
+            close: const Value(101.6),
+          ),
+          // 5D 出場 close = 101.52。
+          DailyPriceCompanion.insert(
+            symbol: '2330',
+            date: exitDate,
+            close: const Value(101.52),
+          ),
+        ]);
+        await db.insertReasons([
+          DailyReasonCompanion.insert(
+            symbol: '2330',
+            date: entryDate,
+            reasonType: 'TECH_BREAKOUT',
+            rank: 0,
+            evidenceJson: '{}',
+          ),
+        ]);
+        await db.insertAnalysis(
+          DailyAnalysisCompanion.insert(
+            symbol: '2330',
+            date: entryDate,
+            trendState: 'UP',
+            scoreShort: const Value(99.0),
+            scoreLong: const Value(99.0),
+          ),
+        );
+
+        await service.updateRuleAccuracyStats();
+
+        final row = await fetchRuleAccuracy('TECH_BREAKOUT', period: '5D');
+        expect(row, isNotNull);
+        expect(row!.triggerCount, 1);
+        // 同日 close entry（舊算法）：(101.52-100)/100 = +1.52% ≥ 1.5% 門檻
+        // → 誤判為命中。隔日 open entry（新算法）：
+        // (101.52-101.6)/101.6 ≈ -0.079% < 1.5% 門檻 → 正確判定為虧損。
+        expect(
+          row.successCount,
+          0,
+          reason:
+              'entry 必須用隔日 open(101.6) 而非訊號當日 close(100)；同日 '
+              'close entry 算法會誤判此筆為命中，隔日 open entry 正確算出虧損',
+        );
+        expect(row.avgReturn, closeTo(-0.0787, 0.01));
+      },
+    );
+
+    test('signal with no next-trading-day price is excluded as immature '
+        '(not backfilled with same-day close)', () async {
+      final entryDate = DateTime.utc(2026, 1, 5);
+
+      await db.upsertStocks([
+        StockMasterCompanion.insert(
+          symbol: '2330',
+          name: 'Test',
+          market: 'TWSE',
+        ),
+      ]);
+      // 只有訊號當日的價格 —— 沒有隔日資料（例如最新一筆訊號，隔日尚未發生）。
+      await db.insertPrices([
+        DailyPriceCompanion.insert(
+          symbol: '2330',
+          date: entryDate,
+          close: const Value(100.0),
+        ),
+      ]);
+      await db.insertReasons([
+        DailyReasonCompanion.insert(
+          symbol: '2330',
+          date: entryDate,
+          reasonType: 'IMMATURE_RULE',
+          rank: 0,
+          evidenceJson: '{}',
+        ),
+      ]);
+      await db.insertAnalysis(
+        DailyAnalysisCompanion.insert(
+          symbol: '2330',
+          date: entryDate,
+          trendState: 'UP',
+          scoreShort: const Value(99.0),
+          scoreLong: const Value(99.0),
+        ),
+      );
+
+      await service.updateRuleAccuracyStats();
+
+      final allRows = await db.select(db.ruleAccuracy).get();
+      expect(
+        allRows.where((r) => r.ruleId == 'IMMATURE_RULE'),
+        isEmpty,
+        reason: '沒有隔日價格 → 視為未成熟樣本排除，不可退回同日 close 充當進場價',
+      );
     });
   });
 

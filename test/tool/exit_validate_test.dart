@@ -214,6 +214,13 @@ void main() {
           DailyPriceCompanion.insert(
             symbol: symbol,
             date: first.add(Duration(days: i)),
+            // close=null 模擬停牌（ExitValidator.simulateExit 只讀 close，
+            // 見 closesBySymbol 只取 p.close）。open 仍給值：
+            // ReplayCalibrator._replaySymbol 的隔日 entry fallback（lookahead
+            // bias fix，audit finding #6）open ?? close 才不會在這裡搶先把
+            // 整筆樣本擋在 scoreSink 之前——本測試要驗證的是 ExitValidator
+            // 自己的 T+1 close-null 偵測，不是 _replaySymbol 的 entry 判斷。
+            open: Value(100.0 + i * 0.1),
             close: i == nullIndex ? const Value(null) : Value(100.0 + i * 0.1),
             volume: const Value(1000000),
           ),

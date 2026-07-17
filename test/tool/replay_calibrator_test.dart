@@ -222,6 +222,91 @@ void main() {
     );
   });
 
+  group('ReplayCalibrator — lookahead bias fix (audit finding #6)', () {
+    test(
+      'next-day-open entry flips a same-day-close "win" into a loss',
+      () async {
+        const symbol = 'GAP';
+        const signalIndex = 30; // > minHistoryDays(20)
+        const totalDays = signalIndex + 65; // 訊號日 + 60D forward window + margin
+
+        await db.upsertStocks([
+          StockMasterCompanion.insert(
+            symbol: symbol,
+            name: 'Test $symbol',
+            market: 'TWSE',
+          ),
+        ]);
+
+        final first = DateTime(2024, 1, 1);
+        final prices = <DailyPriceCompanion>[];
+        for (var i = 0; i < totalDays; i++) {
+          final date = first.add(Duration(days: i));
+          double value;
+          if (i == signalIndex) {
+            value = 100.0; // 訊號日 close：規則觸發輸入，不是進場價
+          } else if (i == signalIndex + 1) {
+            value = 101.6; // 隔日跳空高開 —— 真實使用者的進場價
+          } else if (i == signalIndex + 5) {
+            value = 101.52; // 5D 出場 close
+          } else {
+            value = 100.0; // 其餘天數平盤填充，避免污染這筆觀測
+          }
+          prices.add(
+            DailyPriceCompanion.insert(
+              symbol: symbol,
+              date: date,
+              open: Value(value),
+              close: Value(value),
+            ),
+          );
+        }
+        await db.insertPrices(prices);
+
+        final signalDate = first.add(const Duration(days: signalIndex));
+        when(
+          () => mockRuleEngine.evaluateStock(any(), any()),
+        ).thenReturn(const [
+          TriggeredReason(
+            type: ReasonType.techBreakout,
+            score: 25,
+            description: 'gap test',
+          ),
+        ]);
+
+        final calibrator = ReplayCalibrator(
+          db: db,
+          config: ReplayConfig(
+            dbPath: ':memory:',
+            minHistoryDays: 20,
+            excessReturn: false, // 絕對模式：直接驗證 _replaySymbol 的 entry 選擇
+            // dateFilter 縮到單一交易日，讓這筆精心構造的觀測是唯一 firing。
+            dateFilter: (start: signalDate, end: signalDate),
+          ),
+          analysisService: mockAnalysis,
+          ruleEngine: mockRuleEngine,
+          logger: (_) {},
+        );
+        final result = await calibrator.run();
+
+        final stats = result.ruleStats[ReasonType.techBreakout.code];
+        expect(stats, isNotNull);
+        expect(stats!.short.triggerCount, 1);
+        // 同日 close entry（舊算法）：(101.52-100)/100 = +1.52% ≥ 1.5% 門檻
+        // → 誤判為命中。隔日 open entry（新算法）：
+        // (101.52-101.6)/101.6 ≈ -0.079% < 1.5% 門檻 → 正確判定為虧損。
+        expect(
+          stats.short.successCount,
+          0,
+          reason:
+              'entry 必須用隔日 open(101.6) 而非訊號當日 close(100)；同日 '
+              'close entry 算法會誤判此筆為命中，隔日 open entry 正確算出虧損',
+        );
+        expect(stats.short.avgReturn, closeTo(-0.0787, 0.01));
+      },
+    );
+  });
+
   group('ReplayCalibrator — unbiased sampling', () {
     test('records ALL firings without Top-20 filter', () async {
       // Two stocks, both trigger the SAME negative-signal rule

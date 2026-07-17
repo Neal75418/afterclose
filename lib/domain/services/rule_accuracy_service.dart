@@ -182,23 +182,32 @@ class RuleAccuracyService {
             ))
             .get();
 
-    // 建 price lookup：{symbol: {normalized_date: close}}
-    final priceMap = <String, Map<DateTime, double>>{};
+    // 建 price lookup：{symbol: {normalized_date: (open, close)}}
+    //
+    // 同時保留 open（entry 用，見下方 lookahead bias fix）與 close（exit 用）。
+    final priceMap = <String, Map<DateTime, ({double? open, double? close})>>{};
     for (final p in priceRows) {
-      final close = p.close;
-      if (close == null) continue;
+      if (p.open == null && p.close == null) continue;
       final normalized = DateContext.normalize(p.date);
-      priceMap.putIfAbsent(p.symbol, () => {})[normalized] = close;
+      priceMap.putIfAbsent(p.symbol, () => {})[normalized] = (
+        open: p.open,
+        close: p.close,
+      );
     }
 
     // 累加 per-(ruleId, period) 統計
     //
     // ## Known biases（calibration 訓練資料的方法論注意事項）
     //
-    // **(1) Lookahead bias**：entry 用當日 close，user 實際只能 T+1 open
-    // 進場。TWII 大盤平均 open→close 漂移 ~0.3-0.5%，calibrated hit_rate
-    // 系統性高估約這個量級。修法需 daily_price 加 open 欄位 + sync 改抓
-    // open price（成本大），目前 docstring 揭露為主、待 Stage 4 處理。
+    // **(1) Lookahead bias（已修復，audit finding #6，2026-07-18）**：entry
+    // 原本用訊號當日 close（規則觸發賴以判斷的輸入之一），但真實使用者只能
+    // T+1 open 進場。現改用訊號隔日 open（缺值 fallback 當日 close；隔日
+    // 完全無資料視為未成熟樣本排除，不得退回同日 close 頂替）。exit date
+    // 仍錨定「訊號日 + period 個交易日」不變，只換算報酬用的 entry 價格
+    // （見下方迴圈）。Audit 實測（live DB 2025-07~2026-07，n=518K）
+    // close→next-open 平均漂移 +0.28pp，約為 5D 命中門檻 19%，此修法後已消除。
+    // 舊 docstring 曾聲稱此修法「需 daily_price 加 open 欄位（成本大）」——
+    // 該 blocker 不成立：open 欄位早已存在且 99% 已填值，audit 已證實。
     //
     // **(2) Survivorship bias**：missing exit close 靜默 continue。下市 /
     // 長停的股票永遠在 sample 外，winner 永遠有後續價格。下方 `_BiasCounters`
@@ -230,8 +239,18 @@ class RuleAccuracyService {
       }
 
       final entryDate = DateContext.normalize(reason.date);
-      final entryClose = symbolPrices[entryDate];
-      if (entryClose == null) {
+
+      // Lookahead bias fix（audit finding #6，2026-07-18）：entry 用訊號隔日
+      // open（缺值 fallback 當日 close），不可用訊號當日 close —— 那是規則
+      // 賴以觸發的輸入之一，真實使用者只能隔日進場。隔日完全無資料（尚未
+      // 發生，或當日停牌）→ 視為未成熟樣本排除，不得退回同日 close 頂替。
+      final nextTradingDate = DateContext.normalize(
+        TaiwanCalendar.addTradingDays(entryDate, 1),
+      );
+      final entryPrice =
+          symbolPrices[nextTradingDate]?.open ??
+          symbolPrices[nextTradingDate]?.close;
+      if (entryPrice == null) {
         biasCounters.skippedNoEntryPrice++;
         continue;
       }
@@ -240,13 +259,13 @@ class RuleAccuracyService {
         final exitDate = DateContext.normalize(
           TaiwanCalendar.addTradingDays(entryDate, period),
         );
-        final exitClose = symbolPrices[exitDate];
+        final exitClose = symbolPrices[exitDate]?.close;
         if (exitClose == null) {
           biasCounters.skippedNoExitPrice++;
           continue;
         }
 
-        final returnRate = ((exitClose - entryClose) / entryClose) * 100;
+        final returnRate = ((exitClose - entryPrice) / entryPrice) * 100;
         final isSuccess = _isSuccessFor(returnRate, period);
 
         ruleStats
@@ -412,7 +431,9 @@ class _BiasCounters {
   /// symbol 在 priceMap 中完全缺資料的 reason 數（多為極早期 / 下市股）
   int skippedNoSymbolPrices = 0;
 
-  /// 觸發當日 close 缺資料的 reason 數（多為當日停牌）
+  /// 訊號隔日缺 open/close 資料的 reason 數（多為尚未成熟的最新訊號、或隔日
+  /// 停牌）。Lookahead bias fix（audit finding #6）後 entry 改用隔日資料，
+  /// 此計數器涵蓋「算不出隔日進場價」的所有情況——不得退回同日 close 頂替。
   int skippedNoEntryPrice = 0;
 
   /// 出場日 close 缺資料的 (reason × period) 數
