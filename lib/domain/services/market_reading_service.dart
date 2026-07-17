@@ -248,11 +248,20 @@ class MarketReadingService {
   /// rule 2 的金額門檻（上櫃成交及法人量級遠小於上市，需獨立門檻）；
   /// [advance]/[decline] 分母 <= 0 時占比預設 0.5（不觸發 rule 0/1 的偏向判斷，
   /// 行為對齊 [interpretBreadth]）。
+  ///
+  /// **兩種佔比口徑並存（刻意不同，勿合併）**：
+  /// - **顯示口徑**（rule 0 極端日 `breadthPct`）：分母含 [unchanged]，對齊
+  ///   漲跌家數區（大盤總覽的 AdvanceDeclineGauge）的 `decline /
+  ///   (advance+decline+unchanged)`，避免同頁兩處百分比不一致（如 92% vs 89%）。
+  /// - **門檻判定口徑**（rule 1 的 [AnalysisParams.kSynthesisInternalSkewRatio]
+  ///   55% 比較）：分母刻意排除 [unchanged]，維持原定義——該常數是依「排除
+  ///   持平」的比例校準，改分母會改變觸發敏感度，故不隨顯示口徑一併更動。
   static MarketReading interpretCompositeSynthesis({
     required String market,
     required double indexChangePercent,
     required int advance,
     required int decline,
+    required int unchanged,
     required double institutionalTotalNet,
   }) {
     // 金額門檻（依市場而定）；rule 0 的背離附註與 rule 2 皆沿用同一組門檻。
@@ -265,9 +274,11 @@ class MarketReadingService {
     // 日」框架，避免「無明顯背離」之類雲淡風輕的措辭掩蓋系統性風險。
     if (indexChangePercent.abs() >= AnalysisParams.kSynthesisExtremeDayPct) {
       final isDown = indexChangePercent < 0;
-      final total = advance + decline;
-      final breadthRatio = total > 0
-          ? (isDown ? decline / total : advance / total)
+      // 顯示口徑：分母含持平，對齊漲跌家數區同一頁的百分比（見上方 dartdoc
+      // 「兩種佔比口徑並存」），與下方 rule 1 的門檻判定口徑刻意不同。
+      final displayTotal = advance + decline + unchanged;
+      final breadthRatio = displayTotal > 0
+          ? (isDown ? decline / displayTotal : advance / displayTotal)
           : 0.5;
       final args = {
         'pct': indexChangePercent.abs().toStringAsFixed(2),
@@ -305,6 +316,10 @@ class MarketReadingService {
     }
 
     // Rule 1：指數平盤 + 內部家數明顯偏向一邊
+    //
+    // 門檻判定口徑：分母刻意排除持平（不含 unchanged），與上方 rule 0 的
+    // 顯示口徑不同——55% 門檻常數是依「排除持平」的比例校準，若改分母會
+    // 改變觸發敏感度，故不隨顯示口徑一併更動（見上方 dartdoc 說明）。
     if (indexChangePercent.abs() < AnalysisParams.kSynthesisFlatIndexPct) {
       final total = advance + decline;
       final declineRatio = total > 0 ? decline / total : 0.5;

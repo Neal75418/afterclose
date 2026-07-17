@@ -385,6 +385,7 @@ void main() {
         indexChangePercent: 0.1,
         advance: 30,
         decline: 70,
+        unchanged: 0,
         institutionalTotalNet: 0,
       );
       expect(r.tone, InterpretationTone.negative);
@@ -397,6 +398,7 @@ void main() {
         indexChangePercent: -0.2,
         advance: 70,
         decline: 30,
+        unchanged: 0,
         institutionalTotalNet: 0,
       );
       expect(r.tone, InterpretationTone.positive);
@@ -409,6 +411,7 @@ void main() {
         indexChangePercent: 0.0,
         advance: 45,
         decline: 55,
+        unchanged: 0,
         institutionalTotalNet: 0,
       );
       expect(r.messageKey, 'marketOverview.reading.synthesis.weightSupport');
@@ -420,6 +423,7 @@ void main() {
         indexChangePercent: 0.1,
         advance: 46,
         decline: 54,
+        unchanged: 0,
         institutionalTotalNet: 0,
       );
       expect(r.tone, InterpretationTone.neutral);
@@ -432,6 +436,7 @@ void main() {
         indexChangePercent: 0.3,
         advance: 30,
         decline: 70,
+        unchanged: 0,
         institutionalTotalNet: 0,
       );
       expect(r.messageKey, 'marketOverview.reading.synthesis.neutral');
@@ -443,6 +448,7 @@ void main() {
         indexChangePercent: 0.1,
         advance: 0,
         decline: 0,
+        unchanged: 0,
         institutionalTotalNet: 0,
       );
       expect(r.messageKey, 'marketOverview.reading.synthesis.neutral');
@@ -454,6 +460,7 @@ void main() {
         indexChangePercent: 1.0,
         advance: 500,
         decline: 400,
+        unchanged: 0,
         institutionalTotalNet: -25000000000, // 250億賣超
       );
       expect(r.tone, InterpretationTone.warning);
@@ -466,6 +473,7 @@ void main() {
         indexChangePercent: -1.0,
         advance: 400,
         decline: 500,
+        unchanged: 0,
         institutionalTotalNet: 25000000000, // 250億買超
       );
       expect(r.tone, InterpretationTone.warning);
@@ -479,6 +487,7 @@ void main() {
         advance: 200,
         decline: 150,
         // 35億：低於 TWSE 門檻(200億)但高於 TPEx 門檻(30億)，驗證市場別門檻
+        unchanged: 0,
         institutionalTotalNet: -3500000000,
       );
       expect(r.messageKey, 'marketOverview.reading.synthesis.divergenceSell');
@@ -490,6 +499,7 @@ void main() {
         indexChangePercent: 1.0,
         advance: 500,
         decline: 400,
+        unchanged: 0,
         institutionalTotalNet: -20000000000,
       );
       expect(r.messageKey, 'marketOverview.reading.synthesis.divergenceSell');
@@ -501,6 +511,7 @@ void main() {
         indexChangePercent: 1.0,
         advance: 500,
         decline: 400,
+        unchanged: 0,
         institutionalTotalNet: -19999999999,
       );
       expect(r.tone, InterpretationTone.neutral);
@@ -513,6 +524,7 @@ void main() {
         indexChangePercent: 1.0,
         advance: 500,
         decline: 400,
+        unchanged: 0,
         institutionalTotalNet: 25000000000,
       );
       expect(r.tone, InterpretationTone.neutral);
@@ -525,6 +537,7 @@ void main() {
         indexChangePercent: 0.0,
         advance: 50,
         decline: 50,
+        unchanged: 0,
         institutionalTotalNet: 99000000000,
       );
       expect(r.tone, InterpretationTone.neutral);
@@ -537,6 +550,7 @@ void main() {
         indexChangePercent: 0.2, // flat（< 0.3）且為正
         advance: 30,
         decline: 70, // 下跌佔比 70% >= 55%
+        unchanged: 0,
         institutionalTotalNet: -25000000000, // 亦滿足 rule2 背離金額
       );
       expect(r.tone, InterpretationTone.negative);
@@ -549,6 +563,7 @@ void main() {
         indexChangePercent: 0.5,
         advance: 520,
         decline: 480,
+        unchanged: 0,
         institutionalTotalNet: -1000000000, // 方向背離但僅 10 億，遠低於門檻
       );
       expect(r.tone, InterpretationTone.neutral);
@@ -568,6 +583,7 @@ void main() {
           indexChangePercent: -6.47,
           advance: 45,
           decline: 55,
+          unchanged: 0,
           institutionalTotalNet: -8000000000, // 80億賣超，與指數同向（非背離）
         );
         expect(r.tone, InterpretationTone.negative);
@@ -583,6 +599,7 @@ void main() {
             indexChangePercent: -7.02,
             advance: 30,
             decline: 70,
+            unchanged: 0,
             institutionalTotalNet: 3500000000, // 35億買超，>= TPEx 門檻(30億)，與指數反向
           );
           expect(r.tone, InterpretationTone.negative);
@@ -604,6 +621,7 @@ void main() {
           indexChangePercent: 3.5,
           advance: 70,
           decline: 30,
+          unchanged: 0,
           institutionalTotalNet: 0,
         );
         expect(r.tone, InterpretationTone.warning);
@@ -617,6 +635,7 @@ void main() {
           indexChangePercent: -2.99,
           advance: 400,
           decline: 500,
+          unchanged: 0,
           institutionalTotalNet: 25000000000, // 250億買超 >= TWSE 門檻(200億)
         );
         expect(r.tone, InterpretationTone.warning);
@@ -629,6 +648,7 @@ void main() {
           indexChangePercent: -3.00,
           advance: 45,
           decline: 55,
+          unchanged: 0,
           institutionalTotalNet: 0,
         );
         expect(r.tone, InterpretationTone.negative);
@@ -642,6 +662,7 @@ void main() {
           indexChangePercent: 5.5,
           advance: 600,
           decline: 200,
+          unchanged: 0,
           institutionalTotalNet: -22000000000, // 220億賣超，>= TWSE 門檻(200億)，與指數反向
         );
         expect(r.tone, InterpretationTone.warning);
@@ -650,6 +671,46 @@ void main() {
           'marketOverview.reading.synthesis.extremeUpDivergence',
         );
         expect(r.args, {'pct': '5.50', 'breadthPct': '75', 'netAmount': '220'});
+      });
+    },
+  );
+
+  group(
+    'MarketReadingService.interpretCompositeSynthesis — 顯示口徑含持平（對齊漲跌家數區）',
+    () {
+      // Rule 0 顯示口徑（breadthPct）：分母改含持平，對齊 AdvanceDeclineGauge
+      // 的 declPct = decline/(advance+decline+unchanged)。
+      // Rule 1 門檻判定（55% skew ratio）：分母維持排除持平（見下一測試），
+      // 兩者刻意不同口徑，各自獨立驗證。
+
+      test('97漲/32平/1095跌 → extreme-day breadthPct 含持平為 89%（非排除持平的 92%）', () {
+        final r = MarketReadingService.interpretCompositeSynthesis(
+          market: MarketCode.twse,
+          indexChangePercent: -6.00,
+          advance: 97,
+          decline: 1095,
+          unchanged: 32,
+          institutionalTotalNet: 0,
+        );
+        expect(r.tone, InterpretationTone.negative);
+        expect(r.messageKey, 'marketOverview.reading.synthesis.extremeDown');
+        expect(r.args, {'pct': '6.00', 'breadthPct': '89'});
+      });
+
+      test('rule 1 的 55% 門檻判定分母不受 unchanged 影響（與顯示口徑各自獨立）', () {
+        // 與既有「指數平盤 + 下跌家數佔比 >= 55% → weightSupport」案例相同
+        // advance/decline，額外帶入大量 unchanged（900）驗證 rule 1 的門檻判定
+        // 不受影響（其分母定義刻意排除持平，常數已依此口徑校準）。
+        final r = MarketReadingService.interpretCompositeSynthesis(
+          market: MarketCode.twse,
+          indexChangePercent: 0.1,
+          advance: 30,
+          decline: 70,
+          unchanged: 900,
+          institutionalTotalNet: 0,
+        );
+        expect(r.tone, InterpretationTone.negative);
+        expect(r.messageKey, 'marketOverview.reading.synthesis.weightSupport');
       });
     },
   );

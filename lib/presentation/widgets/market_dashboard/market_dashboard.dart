@@ -264,6 +264,7 @@ class _MarketDashboardState extends State<MarketDashboard> {
       indexChangePercent: indexChangePercent,
       advance: ad.advance,
       decline: ad.decline,
+      unchanged: ad.unchanged,
       institutionalTotalNet: institutionalTotalNet,
     );
     // prominent: true — 升層為市場欄位頂部的視覺焦點，與其餘 per-section
