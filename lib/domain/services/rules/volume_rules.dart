@@ -67,10 +67,15 @@ class VolumeSpikeRule extends StockRule {
   }
 }
 
-/// 規則：價格異動
+/// 規則：價格急漲
 ///
-/// 當單日價格漲跌幅超過 [TrendParams.priceSpikePercent]（5%）且伴隨
+/// 當單日漲幅超過 [TrendParams.priceSpikePercent]（5%）且伴隨
 /// [TrendParams.priceSpikeVolumeMult]（1.5 倍）均量配合時觸發。
+///
+/// **2026-07-18 修正（audit）**：原本用 `pctChange.abs()` 判斷，重挫日會
+/// 跟急漲日拿到相同的 +15 強勢分——36 次重挫觸發中 33% 為負報酬。收斂為
+/// 僅正向觸發；空方已由 PriceVolumeBearishDivergenceRule（量增價跌）與
+/// BreakdownRule（跌破支撐）覆蓋，不另闢負分 reason type。
 class PriceSpikeRule extends StockRule {
   const PriceSpikeRule();
 
@@ -95,7 +100,8 @@ class PriceSpikeRule extends StockRule {
 
     final pctChange = ((todayClose - yesterdayClose) / yesterdayClose) * 100;
 
-    if (pctChange.abs() < TrendParams.priceSpikePercent) {
+    // 僅正向（急漲）觸發，下跌不再計分（見上方 class doc 的 audit 說明）。
+    if (pctChange < TrendParams.priceSpikePercent) {
       return null;
     }
 
@@ -129,7 +135,7 @@ class PriceSpikeRule extends StockRule {
       type: ReasonType.priceSpike,
       score: RuleScores.priceSpike,
       description:
-          '股價單日漲跌幅超過 ${TrendParams.priceSpikePercent}%，量增 ${volumeMultiple.toStringAsFixed(1)} 倍',
+          '股價單日漲幅超過 ${TrendParams.priceSpikePercent}%，量增 ${volumeMultiple.toStringAsFixed(1)} 倍',
       evidence: {
         'pctChange': pctChange,
         'close': todayClose,

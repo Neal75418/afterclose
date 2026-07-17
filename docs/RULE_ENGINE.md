@@ -56,7 +56,7 @@ pie showData title 依類別分佈（66 reason / 64 規則）
 | TECH_BREAKOUT       | +25 | 突破壓力位（3% buffer + MA20 確認） |
 | TECH_BREAKDOWN      | -20 | 跌破支撐位（3% buffer + 量能確認；無 MA20 過濾，多空不對稱為現狀，對稱化需回測驗證） |
 | VOLUME_SPIKE        | +22 | 量 >= 4x 均量且價變 >= 1.5%      |
-| PRICE_SPIKE         | +15 | 日漲跌幅 >= 5%                 |
+| PRICE_SPIKE         | +15 | 日漲幅 >= 5%（僅正向；空方由 PRICE_VOLUME_BEARISH_DIVERGENCE / TECH_BREAKDOWN 覆蓋，2026-07 audit 修正） |
 | INSTITUTIONAL_BUY   | +18 | 法人買超轉向                     |
 | INSTITUTIONAL_SELL  | -12 | 法人賣超轉向                     |
 | NEWS_RELATED        |  +8 | 近期相關新聞                     |
