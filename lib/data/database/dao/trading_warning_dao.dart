@@ -68,12 +68,19 @@ mixin TradingWarningDaoMixin on $AppDatabase {
 
   /// 批次新增警示資料
   ///
-  /// 使用 insertOrIgnore：歷史警示資料的 PK 確定後不應異動，
-  /// 若已存在則跳過（保留 isActive = false 的過期狀態，避免重新同步時誤將已過期警示重新激活）。
+  /// 使用 insertOrReplace（self-healing 寫入，與 margin_trading / daily_price 等
+  /// 同型別表一致）：`date` 是「本輪同步日」而非不可變歷史鍵，且 App 同一天會
+  /// 多次同步。若 TWSE/TPEX 於兩輪之間更正同日處置公告（延長 disposalEndDate、
+  /// 修正 reasonDescription/disposalMeasures），insertOrIgnore 會永久保留第一筆、
+  /// 靜默吞掉更正。改用 insertOrReplace 讓同鍵重新同步即更新該列。
+  ///
+  /// 「避免重新同步時誤將已過期警示重新激活」的顧慮由 [updateExpiredWarnings]
+  /// 承接——它在每次 insertWarningData 後執行、以 disposalEndDate vs now 重新
+  /// 推導 isActive，與插入模式無關，故 insertOrReplace 對該顧慮同樣安全。
   Future<void> insertWarningData(List<TradingWarningCompanion> entries) async {
     await batch((b) {
       for (final entry in entries) {
-        b.insert(tradingWarning, entry, mode: InsertMode.insertOrIgnore);
+        b.insert(tradingWarning, entry, mode: InsertMode.insertOrReplace);
       }
     });
   }
