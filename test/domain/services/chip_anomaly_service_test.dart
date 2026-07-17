@@ -797,5 +797,123 @@ void main() {
         expect(result['TPEx'], isEmpty);
       });
     });
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // ETF 排除（宇宙定義過濾——同三模式 mode_recommendation_provider 的
+    // droppedEtf 理由：規則設計皆針對個股行為，ETF 非適用對象）
+    // ─────────────────────────────────────────────────────────────────────────
+
+    group('ETF 排除（籌碼異動宇宙定義過濾）', () {
+      Future<void> insertEtfStock(String symbol) async {
+        await db.upsertStocks([
+          StockMasterCompanion.insert(
+            symbol: symbol,
+            name: 'ETF測試標的',
+            market: 'TWSE',
+            industry: const Value('ETF'),
+          ),
+        ]);
+      }
+
+      test('法人集中大買（institutionalSurge）：ETF 應排除、非 ETF 同資料仍偵測', () async {
+        // 006203（元大MSCI台灣）為真實線上案例：ETF 不應出現在法人集中買賣
+        await insertEtfStock('006203');
+
+        Future<void> insertSurgeData(String symbol) async {
+          for (var i = 1; i <= 11; i++) {
+            await db.insertInstitutionalData([
+              DailyInstitutionalCompanion.insert(
+                symbol: symbol,
+                date: today.subtract(Duration(days: i)),
+                foreignNet: const Value(1000000.0),
+                investmentTrustNet: const Value(0.0),
+                dealerNet: const Value(0.0),
+              ),
+            ]);
+          }
+          await db.insertInstitutionalData([
+            DailyInstitutionalCompanion.insert(
+              symbol: symbol,
+              date: today,
+              foreignNet: const Value(6000000.0), // > 30日均(100萬) × 5 門檻
+              investmentTrustNet: const Value(0.0),
+              dealerNet: const Value(0.0),
+            ),
+          ]);
+        }
+
+        // 2330（setUp 已建、非 ETF）與 006203（ETF）給同一組法人大買資料
+        await insertSurgeData('2330');
+        await insertSurgeData('006203');
+
+        final result = await service.detectAnomaliesByMarket(today);
+        final twse = result['TWSE']!;
+
+        expect(
+          twse.any(
+            (a) =>
+                a.type == ChipAnomalyType.institutionalSurge &&
+                a.symbol == '006203',
+          ),
+          isFalse,
+          reason: 'ETF（006203）應從籌碼異動排除，同三模式宇宙定義過濾理由',
+        );
+        expect(
+          twse.any(
+            (a) =>
+                a.type == ChipAnomalyType.institutionalSurge &&
+                a.symbol == '2330',
+          ),
+          isTrue,
+          reason: '非 ETF 個股同資料應正常偵測（驗證過濾未誤殺其他標的）',
+        );
+      });
+
+      test('融券暴增（shortSurge）：ETF 應排除、非 ETF 同資料仍偵測', () async {
+        // 00940（元大台灣價值高息）為真實線上案例：ETF 不應出現在融券暴增
+        await insertEtfStock('00940');
+
+        Future<void> insertShortSurgeData(String symbol) async {
+          final historyDays = List.generate(
+            5,
+            (i) => today.subtract(Duration(days: i + 1)),
+          );
+          await db.insertMarginTradingData([
+            for (final d in historyDays)
+              MarginTradingCompanion.insert(
+                symbol: symbol,
+                date: d,
+                shortSell: const Value(100.0),
+              ),
+            MarginTradingCompanion.insert(
+              symbol: symbol,
+              date: today,
+              shortSell: const Value(400.0), // > 5日均(100) × 3 門檻
+            ),
+          ]);
+        }
+
+        await insertShortSurgeData('2330');
+        await insertShortSurgeData('00940');
+
+        final result = await service.detectAnomaliesByMarket(today);
+        final twse = result['TWSE']!;
+
+        expect(
+          twse.any(
+            (a) => a.type == ChipAnomalyType.shortSurge && a.symbol == '00940',
+          ),
+          isFalse,
+          reason: 'ETF（00940）應從籌碼異動排除，同三模式宇宙定義過濾理由',
+        );
+        expect(
+          twse.any(
+            (a) => a.type == ChipAnomalyType.shortSurge && a.symbol == '2330',
+          ),
+          isTrue,
+          reason: '非 ETF 個股同資料應正常偵測（驗證過濾未誤殺其他標的）',
+        );
+      });
+    });
   });
 }

@@ -61,6 +61,12 @@ class ChipAnomalyService {
   /// 偵測當日籌碼異動，依市場分組回傳
   ///
   /// 每種異動最多回傳 5 筆（避免大量結果淹沒 dashboard）。
+  ///
+  /// **ETF 排除（宇宙定義過濾）**：於此彙總處單點過濾，不逐類別各自加
+  /// `WHERE industry != 'ETF'`——同三模式選股（mode_recommendation_provider.dart
+  /// 的 `droppedEtf`）的宇宙定義理由：本 app 規則設計皆針對個股行為，ETF
+  /// 走勢平滑、非個股籌碼訊號的適用對象（實例：006203 元大MSCI台灣曾出現在
+  /// 法人集中買賣、00940 元大台灣價值高息曾出現在融券暴增）。
   Future<Map<String, List<ChipAnomaly>>> detectAnomaliesByMarket(
     DateTime date,
   ) async {
@@ -70,16 +76,21 @@ class ChipAnomalyService {
     };
 
     try {
-      final anomalies = await Future.wait([
+      final anomaliesFuture = Future.wait([
         _detectHighPledge(),
         _detectInsiderTransfers(date),
         _detectForeignNearLimit(),
         _detectShortSurge(date),
         _detectInstitutionalSurge(date),
       ]);
+      final etfSymbolsFuture = _loadEtfSymbols();
+
+      final anomalies = await anomaliesFuture;
+      final etfSymbols = await etfSymbolsFuture;
 
       for (final list in anomalies) {
         for (final anomaly in list) {
+          if (etfSymbols.contains(anomaly.symbol)) continue;
           result[anomaly.market]?.add(anomaly);
         }
       }
@@ -97,6 +108,21 @@ class ChipAnomalyService {
     }
 
     return result;
+  }
+
+  /// 載入 ETF 股票代碼集合，供 [detectAnomaliesByMarket] 彙總時單點過濾用。
+  ///
+  /// 查詢失敗時回傳空集合（permissive、不因這次查詢失敗擋掉其餘正常籌碼
+  /// 異動），與其餘 `_detect*` 方法的錯誤處理風格一致。
+  Future<Set<String>> _loadEtfSymbols() async {
+    try {
+      const query = "SELECT symbol FROM stock_master WHERE industry = 'ETF'";
+      final rows = await _db.customSelect(query).get();
+      return rows.map((row) => row.read<String>('symbol')).toSet();
+    } catch (e) {
+      AppLogger.warning(_tag, '載入 ETF 清單失敗', e);
+      return {};
+    }
   }
 
   /// 質押率「變動觸發」：僅在**新**發生時計入，避免持續高於門檻的股票天天
