@@ -1,8 +1,23 @@
 import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/services/analysis/trend_detection_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../helpers/price_data_generators.dart';
+
+/// 45 天平盤價格，近 20 天量能為前期的 2 倍 → 通過 1.5x 量能確認
+/// （前 25 天量 1000、近 20 天量 2000；close 平盤使 higherLow/lowerHigh 不獨立觸發）
+List<DailyPriceEntry> volumeConfirmedPrices({double basePrice = 100}) {
+  final now = DateTime.now();
+  return List.generate(45, (i) {
+    final recent = i >= 25;
+    return createTestPrice(
+      date: now.subtract(Duration(days: 45 - i - 1)),
+      close: basePrice,
+      volume: recent ? 2000 : 1000,
+    );
+  });
+}
 
 void main() {
   final service = TrendDetectionService();
@@ -65,10 +80,10 @@ void main() {
       expect(result, isFalse);
     });
 
-    test('triggers on breakout above range top in down trend', () {
-      final prices = generateFlatPrices(days: 50, basePrice: 100);
+    test('triggers on breakout above range top in down trend (量能確認)', () {
+      final prices = volumeConfirmedPrices();
       // rangeTop=100, breakoutLevel = 100 * 1.03 = 103
-      // todayClose=104 > 103 → true
+      // todayClose=104 > 103 且近期量能達前期 1.5x → true
       final result = service.checkWeakToStrong(
         prices,
         104.0,
@@ -77,6 +92,21 @@ void main() {
       );
       expect(result, isTrue);
     });
+
+    test(
+      'does not trigger breakout without volume confirmation (audit signal #4)',
+      () {
+        // 平盤量能（近期 == 前期）→ 未達 1.5x 量能確認 → 無量假突破不觸發
+        final prices = generateFlatPrices(days: 50, basePrice: 100);
+        final result = service.checkWeakToStrong(
+          prices,
+          104.0,
+          trendState: TrendState.down,
+          rangeTop: 100.0,
+        );
+        expect(result, isFalse);
+      },
+    );
 
     test('does not trigger when close is below breakout level', () {
       final prices = generateFlatPrices(days: 50, basePrice: 100);
@@ -107,10 +137,10 @@ void main() {
   // checkStrongToWeak
   // ==========================================
   group('checkStrongToWeak', () {
-    test('triggers on breakdown below support', () {
-      final prices = generateFlatPrices(days: 50, basePrice: 100);
+    test('triggers on breakdown below support (量能確認)', () {
+      final prices = volumeConfirmedPrices();
       // support=100, breakdownLevel = 100 * 0.97 = 97
-      // todayClose=96 < 97 → true
+      // todayClose=96 < 97 且量能達 1.5x → true
       final result = service.checkStrongToWeak(
         prices,
         96.0,
@@ -120,8 +150,8 @@ void main() {
       expect(result, isTrue);
     });
 
-    test('triggers on breakdown below range bottom', () {
-      final prices = generateFlatPrices(days: 50, basePrice: 100);
+    test('triggers on breakdown below range bottom (量能確認)', () {
+      final prices = volumeConfirmedPrices();
       // rangeBottom=100, breakdownLevel = 97, todayClose=96
       final result = service.checkStrongToWeak(
         prices,
@@ -131,6 +161,50 @@ void main() {
       );
       expect(result, isTrue);
     });
+
+    test(
+      'does not trigger breakdown without volume confirmation (audit signal #4)',
+      () {
+        // 平盤量能 → 未達 1.5x 量能確認 → 無量假跌破不觸發
+        final prices = generateFlatPrices(days: 50, basePrice: 100);
+        final result = service.checkStrongToWeak(
+          prices,
+          96.0,
+          trendState: TrendState.up,
+          support: 100.0,
+        );
+        expect(result, isFalse);
+      },
+    );
+
+    test(
+      'does not trigger support breakdown in down trend (需原本強勢, audit signal #4)',
+      () {
+        // 已在下跌趨勢 → 本就弱勢、跌破支撐屬延續而非強轉弱；即使量能確認也不觸發
+        final prices = volumeConfirmedPrices();
+        final result = service.checkStrongToWeak(
+          prices,
+          96.0,
+          trendState: TrendState.down,
+          support: 100.0,
+        );
+        expect(result, isFalse);
+      },
+    );
+
+    test(
+      'does not trigger range bottom breakdown in down trend (audit signal #4)',
+      () {
+        final prices = volumeConfirmedPrices();
+        final result = service.checkStrongToWeak(
+          prices,
+          96.0,
+          trendState: TrendState.down,
+          rangeBottom: 100.0,
+        );
+        expect(result, isFalse);
+      },
+    );
 
     test('does not trigger above breakdown level', () {
       final prices = generateFlatPrices(days: 50, basePrice: 100);

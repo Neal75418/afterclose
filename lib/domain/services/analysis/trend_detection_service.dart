@@ -52,9 +52,9 @@ class TrendDetectionService {
 
   /// 檢查弱轉強條件（W2S）
   ///
-  /// 滿足以下任一條件即為弱轉強：
-  /// - 突破區間頂部（需在下跌或盤整趨勢中）
-  /// - 形成更高的低點且站上 MA20（需在下跌或盤整趨勢中）
+  /// 僅在原本弱勢（下跌或盤整趨勢）時檢查；滿足以下任一條件即為弱轉強：
+  /// - 突破區間頂部（需量能確認）
+  /// - 形成更高的低點且站上 MA20
   bool checkWeakToStrong(
     List<DailyPriceEntry> prices,
     double todayClose, {
@@ -66,10 +66,12 @@ class TrendDetectionService {
       return false;
     }
 
-    // 突破區間頂部
+    // 突破區間頂部（需量能確認——與 BreakoutRule 對相同價位突破的 1.5x 量能
+    // 要求對稱，亦與本檔 _hasHigherLow 的量能確認一致；audit signal #4）
     if (rangeTop != null) {
       final breakoutLevel = rangeTop * (1 + TrendParams.breakoutBuffer);
-      if (todayClose > breakoutLevel) {
+      if (todayClose > breakoutLevel &&
+          _hasLevelBreachVolumeConfirmation(prices)) {
         return true;
       }
     }
@@ -80,10 +82,12 @@ class TrendDetectionService {
 
   /// 檢查強轉弱條件（S2W）
   ///
-  /// 滿足以下任一條件即為強轉弱：
-  /// - 跌破支撐位（任何趨勢皆檢查）
-  /// - 跌破區間底部（任何趨勢皆檢查）
-  /// - 形成更低的高點（僅在上升或盤整趨勢中檢查）
+  /// 僅在原本強勢（上升或盤整趨勢）時檢查——已在下跌趨勢代表本就弱勢，跌破
+  /// 支撐是「延續」而非「反轉」（延續由 BreakdownRule 承接），與 [checkWeakToStrong]
+  /// 對 trendState 的門檻對稱（audit signal #4）。滿足以下任一即為強轉弱：
+  /// - 跌破支撐位（需量能確認）
+  /// - 跌破區間底部（需量能確認）
+  /// - 形成更低的高點
   bool checkStrongToWeak(
     List<DailyPriceEntry> prices,
     double todayClose, {
@@ -91,36 +95,39 @@ class TrendDetectionService {
     double? support,
     double? rangeBottom,
   }) {
-    // 跌破支撐
+    if (trendState != TrendState.up && trendState != TrendState.range) {
+      return false;
+    }
+
+    // 跌破支撐（需量能確認——恐慌性跌破通常伴隨放量，與 BreakdownRule 對相同
+    // 價位跌破的 1.5x 量能要求對稱）
     if (support != null) {
       final breakdownLevel = support * (1 - TrendParams.breakdownBuffer);
-      if (todayClose < breakdownLevel) {
+      if (todayClose < breakdownLevel &&
+          _hasLevelBreachVolumeConfirmation(prices)) {
         AppLogger.debug(
           'TrendDetectionService',
-          '跌破支撐: close=$todayClose < support=$support * 0.97 = $breakdownLevel',
+          '跌破支撐(量能確認): close=$todayClose < support=$support * 0.97 = $breakdownLevel',
         );
         return true;
       }
     }
 
-    // 跌破區間底部
+    // 跌破區間底部（需量能確認）
     if (rangeBottom != null) {
       final breakdownLevel = rangeBottom * (1 - TrendParams.breakdownBuffer);
-      if (todayClose < breakdownLevel) {
+      if (todayClose < breakdownLevel &&
+          _hasLevelBreachVolumeConfirmation(prices)) {
         AppLogger.debug(
           'TrendDetectionService',
-          '跌破區間底部: close=$todayClose < rangeBottom=$rangeBottom * 0.97 = $breakdownLevel',
+          '跌破區間底部(量能確認): close=$todayClose < rangeBottom=$rangeBottom * 0.97 = $breakdownLevel',
         );
         return true;
       }
     }
 
-    // 形成更低的高點（只在上升或盤整趨勢中檢查）
-    if (trendState == TrendState.up || trendState == TrendState.range) {
-      return _hasLowerHigh(prices);
-    }
-
-    return false;
+    // 形成更低的高點（trendState 已保證為 up/range）
+    return _hasLowerHigh(prices);
   }
 
   // ==================================================
@@ -210,6 +217,26 @@ class TrendDetectionService {
     }
 
     // 條件 2：量能確認
+    return _hasVolumeConfirmation(recentPrices, priorPrices);
+  }
+
+  /// 價位突破/跌破的量能確認
+  ///
+  /// 與 [_hasHigherLow]/[_hasLowerHigh] 一致，以近期 vs 前期 20 日窗口比較量能，
+  /// 要求近期均量達前期的 [TrendParams.reversalVolumeConfirm] 倍。資料不足
+  /// （< [TrendParams.reversalMinDataPoints]）時回 false（與兩個手足子檢查的
+  /// 最低資料要求一致），避免無量假突破/假跌破觸發反轉訊號。
+  bool _hasLevelBreachVolumeConfirmation(List<DailyPriceEntry> prices) {
+    if (prices.length < TrendParams.reversalMinDataPoints) return false;
+
+    final recentPrices = prices
+        .skip(prices.length - TrendParams.reversalHalfWindow)
+        .toList();
+    final priorPrices = prices
+        .skip(prices.length - TrendParams.reversalMinDataPoints)
+        .take(TrendParams.reversalHalfWindow)
+        .toList();
+
     return _hasVolumeConfirmation(recentPrices, priorPrices);
   }
 

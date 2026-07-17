@@ -185,12 +185,16 @@ void main() {
 
   group('ReversalDetectionService', () {
     test('detect weak-to-strong on breakout above range top', () {
-      final prices = generateFlatPrices(days: 25, basePrice: 100.0);
-
-      final pricesWithBreakout = [
-        ...prices.take(prices.length - 1),
-        createTestPrice(date: DateTime.now(), close: 106.0),
-      ];
+      // 45 天：近 20 天量能為前期 2x（通過 1.5x 量能確認），最後一天突破 rangeTop
+      final now = DateTime.now();
+      final pricesWithBreakout = List.generate(45, (i) {
+        final isLast = i == 44;
+        return createTestPrice(
+          date: now.subtract(Duration(days: 45 - i - 1)),
+          close: isLast ? 106.0 : 100.0,
+          volume: i >= 25 ? 2000 : 1000,
+        );
+      });
 
       final reversal = coordinator.reversalService.detectReversalState(
         pricesWithBreakout,
@@ -202,12 +206,15 @@ void main() {
     });
 
     test('detect strong-to-weak on breakdown below support', () {
-      final prices = generateFlatPrices(days: 25, basePrice: 100.0);
-
-      final pricesWithBreakdown = [
-        ...prices.take(prices.length - 1),
-        createTestPrice(date: DateTime.now(), close: 94.0),
-      ];
+      final now = DateTime.now();
+      final pricesWithBreakdown = List.generate(45, (i) {
+        final isLast = i == 44;
+        return createTestPrice(
+          date: now.subtract(Duration(days: 45 - i - 1)),
+          close: isLast ? 94.0 : 100.0,
+          volume: i >= 25 ? 2000 : 1000,
+        );
+      });
 
       final reversal = coordinator.reversalService.detectReversalState(
         pricesWithBreakdown,
