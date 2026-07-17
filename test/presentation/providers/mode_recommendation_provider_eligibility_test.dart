@@ -657,31 +657,52 @@ void main() {
     });
   });
 
+  // **2026-07-17 fix**：isSignalTier 改吃 modeScores（跟 eligibility / 排名
+  // 同一組分數），不再吃 daily_analysis 的 blended 總分——後者含 neutral
+  // 警訊分數，會誤判（見 mode_recommendation_provider.dart isSignalTier
+  // docstring 的完整 mechanism 說明，以及整合測試
+  // mode_recommendation_neutral_drag_test.dart 的 7/17 audit 案例）。
   group('isSignalTier — 觀察層擋在 mode tab 之外', () {
-    DailyAnalysisEntry analysis({
-      double scoreShort = 0,
-      double scoreLong = 0,
-    }) => DailyAnalysisEntry(
-      symbol: 'X',
-      date: DateTime(2025, 1, 15),
-      trendState: 'UP',
-      reversalState: 'NONE',
-      scoreShort: scoreShort,
-      scoreLong: scoreLong,
-      computedAt: DateTime(2025, 1, 15),
-    );
-
-    test('null（無評分）→ false', () {
-      expect(isSignalTier(null), isFalse);
+    test('空 map（無 mode 訊號）→ false', () {
+      expect(isSignalTier(const {}), isFalse);
     });
 
-    test('雙 horizon < 12（觀察層 8–11）→ false', () {
-      expect(isSignalTier(analysis(scoreShort: 11, scoreLong: 8)), isFalse);
+    test('唯一 mode 雙 horizon < 12（觀察層 8–11）→ false', () {
+      expect(
+        isSignalTier({ScoringMode.momentumEntry: _score(short: 11, long: 8)}),
+        isFalse,
+      );
     });
 
-    test('任一 horizon ≥ 12（成立訊號）→ true', () {
-      expect(isSignalTier(analysis(scoreShort: 12, scoreLong: 3)), isTrue);
-      expect(isSignalTier(analysis(scoreShort: 5, scoreLong: 20)), isTrue);
+    test('唯一 mode 任一 horizon ≥ 12（成立訊號）→ true', () {
+      expect(
+        isSignalTier({ScoringMode.momentumEntry: _score(short: 12, long: 3)}),
+        isTrue,
+      );
+      expect(
+        isSignalTier({ScoringMode.strengthObserve: _score(short: 5, long: 20)}),
+        isTrue,
+      );
+    });
+
+    test('多 mode 皆 <12 → false（不是「取最高」而是每個 mode 各自判斷）', () {
+      expect(
+        isSignalTier({
+          ScoringMode.momentumEntry: _score(short: 11, long: 11),
+          ScoringMode.strengthObserve: _score(short: 9, long: 9),
+        }),
+        isFalse,
+      );
+    });
+
+    test('多 mode 其中一個 ≥12 → true（任一 mode 成立即可）', () {
+      expect(
+        isSignalTier({
+          ScoringMode.momentumEntry: _score(short: 5, long: 5),
+          ScoringMode.weaknessObserve: _score(short: 12, long: 12),
+        }),
+        isTrue,
+      );
     });
   });
 }

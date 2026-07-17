@@ -172,16 +172,41 @@ bool isMarketUptrend(
   int lookbackDays,
 ) => PriceCalculator.isMarketUptrend(priceHistories, lookbackDays);
 
-/// 是否為「成立訊號」層（任一 horizon ≥ [RuleParams.minScoreThreshold]）。
+/// 是否為「成立訊號」層(該股在**任一** mode 的 modeScoreShort/modeScoreLong
+/// 任一 horizon ≥ [RuleParams.minScoreThreshold])。
 ///
 /// daily_analysis 持久化門檻已降到 observationScoreThreshold（8）以供掃描頁
 /// 「觀察區」使用；mode tab 只收成立訊號（≥12），用此 predicate 還原該語意、
-/// 把觀察層（8–11）擋在三個訊號 tab 之外。analysis 為 null（無評分）視為不合格。
+/// 把觀察層（8–11）擋在三個訊號 tab 之外。空 map（無 mode 訊號）視為不合格。
+///
+/// **2026-07-17 fix — 不可用 daily_analysis 的 blended 總分判斷**：
+/// `DailyAnalysisEntry.scoreShort/scoreLong` 是該股**全部**觸發 reason 的
+/// 加總（見 `scoring_pipeline.scoreReasonsDualHorizon` → `RuleEngine.
+/// calculateScore`），含 neutral 警訊（RiskWarnings 類，多為負分，例如
+/// HIGH_PLEDGE_RATIO −18）。但 mode 排名 / eligibility 用的是
+/// [ModeStockScore.modeScoreShort/modeScoreLong]（只加總**該 mode 自己**的
+/// reason，neutral 不計入 — 見 [ModeRecommendation.warningReasons] 的
+/// docstring「警訊不 route 股票、不貢獻 mode score」）。用 blended 總分判斷
+/// tier 會讓兩種股票被錯誤處理：
+/// - 真正合格的 mode 訊號被同時觸發的 neutral 警訊拖到 blended <12、整檔
+///   從三個訊號 tab 消失（即使 modeScoreShort 自己遠超門檻）。7/17 audit
+///   實測：2105（Mode B INSTITUTIONAL_BUY_STREAK +20 被 KD_DEATH_CROSS −12
+///   拖到 blended 8）、6443（Mode A 三訊號合計 40 被兩條 neutral 警訊拖到
+///   blended 10）。
+/// - mode 訊號本身不到門檻（<12）的股票，靠不相關的 neutral **正分**（例如
+///   HIGH_DIVIDEND_YIELD +18、與 momentum 無關）把 blended 灌到 ≥12、誤放行
+///   進 eligibility（momentumEntry 的 isEligibleForMode 本身不檢查
+///   score>0，只擋在最後的 minRoutedAbsScore floor）。
+///
+/// 改用 modeScores 判斷後，兩個方向都修正 —— tier 判斷跟 eligibility /
+/// 排名用同一組分數，不再有兩套口徑不一致的問題。
 @visibleForTesting
-bool isSignalTier(DailyAnalysisEntry? analysis) =>
-    analysis != null &&
-    (analysis.scoreShort >= RuleParams.minScoreThreshold ||
-        analysis.scoreLong >= RuleParams.minScoreThreshold);
+bool isSignalTier(Map<ScoringMode, ModeStockScore> modeScores) =>
+    modeScores.values.any(
+      (s) =>
+          s.modeScoreShort >= RuleParams.minScoreThreshold ||
+          s.modeScoreLong >= RuleParams.minScoreThreshold,
+    );
 
 /// 判斷某檔股票是否「夠資格」指派到 [mode]。
 ///
@@ -396,8 +421,12 @@ final _modeAssignmentsProvider =
 
         // 觀察層（8–11 分）不路由進「訊號」mode tab。daily_analysis 持久化門檻已
         // 降到 observationScoreThreshold（8）供掃描頁「觀察區」使用，此處還原 mode
-        // tab 的「只收成立訊號」語意：任一 horizon ≥ minScoreThreshold 才路由。
-        if (!isSignalTier(data.analyses[symbol])) {
+        // tab 的「只收成立訊號」語意：任一 mode 的任一 horizon ≥ minScoreThreshold
+        // 才路由。用 `modes`（= modeScoreShort/modeScoreLong，跟下面 eligibility /
+        // 排名同一組分數）判斷，不能用 data.analyses[symbol] 的 blended 總分——
+        // 該總分含 neutral 警訊分數，會讓合格 mode 訊號被拖出 tier（見上方
+        // isSignalTier docstring 的 2026-07-17 fix 說明）。
+        if (!isSignalTier(modes)) {
           droppedObservation++;
           continue;
         }
