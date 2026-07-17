@@ -344,6 +344,8 @@ void main() {
       final p = buildPrices(count: 21);
       // Fix 1: 過去強勢 baseline（past close=90、ma20 預設 100 → 100>90*1.05=94.5）
       p[0] = candle(dayIdx: 0, open: 90, high: 91, low: 89, close: 90);
+      // Fix 2: 過去 5 日內至少 1 根紅 K（非瀑布跌）
+      p[15] = candle(dayIdx: 15, open: 98, high: 100, low: 97, close: 99);
       p[20] = candle(dayIdx: 20, open: c, high: c + 1, low: c - 1, close: c);
       return p;
     }
@@ -379,12 +381,27 @@ void main() {
         // past close=90、ma20=100 → 100 > 90*1.05=94.5 → 過去 20 日確實強勢。
         final p = buildPrices(count: 21);
         p[0] = candle(dayIdx: 0, open: 90, high: 91, low: 89, close: 90);
+        p[15] = candle(dayIdx: 15, open: 98, high: 100, low: 97, close: 99);
         p[20] = candle(dayIdx: 20, open: 100, high: 101, low: 99, close: 100);
         final r = rule.evaluate(kdCtx(kdK: 70, kdD: 65, prevKdK: 85), stock(p));
         expect(r, isNotNull);
         expect(r!.type, ReasonType.kdHighPullback);
       },
     );
+
+    // Fix 2（Critical audit #2）：KdHighLevelPullbackRule 也沒 call
+    // hasRecentBullishCandle——只有 MA20/MA10 兩條 rule 有這關。KD 條件全數
+    // 合格但過去 5 日連續收黑（瀑布跌）時理應 null，修前會誤 fire。
+    test('null on cascading decline (no bullish candle in past 5d)', () {
+      final p = closeAt(100);
+      p[15] = candle(dayIdx: 15, open: 113, high: 113, low: 110, close: 110);
+      p[16] = candle(dayIdx: 16, open: 110, high: 110, low: 107, close: 107);
+      p[17] = candle(dayIdx: 17, open: 107, high: 107, low: 104, close: 104);
+      p[18] = candle(dayIdx: 18, open: 104, high: 104, low: 101, close: 101);
+      p[19] = candle(dayIdx: 19, open: 101, high: 101, low: 99, close: 99);
+      final r = rule.evaluate(kdCtx(kdK: 70, kdD: 65, prevKdK: 85), stock(p));
+      expect(r, isNull);
+    });
 
     test('fires at window low boundary K=60 (inclusive)', () {
       final r = rule.evaluate(
@@ -501,6 +518,8 @@ void main() {
     }) {
       final p = buildPrices(count: 21);
       p[0] = candle(dayIdx: 0, open: 90, high: 91, low: 89, close: 90);
+      // Fix 2: 過去 5 日內至少 1 根紅 K（非瀑布跌）
+      p[15] = candle(dayIdx: 15, open: 98, high: 100, low: 97, close: 99);
       p[20] = candle(
         dayIdx: 20,
         open: 101,
@@ -518,6 +537,25 @@ void main() {
       expect(r!.type, ReasonType.hammerAtSupport);
       expect(r.score, 18);
     });
+
+    // Fix 2（Critical audit #2）：HammerAtSupportRule 沒 call
+    // hasRecentBullishCandle——只有 MA20/MA10 兩條 rule 有這關。實測案例：
+    // symbol 1310 2026-07-15 在連 5 黑（累積 -12.3%）瀑布跌後仍觸發
+    // HAMMER_AT_SUPPORT，正是這個 guard 的 doc 明文要擋的情境。
+    test(
+      'null on cascading decline (no bullish candle in past 5d) '
+      '(audit: symbol 1310 2026-07-15 fired after -12.3% waterfall decline)',
+      () {
+        final p = hammerPrices();
+        // 模擬瀑布跌：過去 5 日連續收黑、累積跌幅 ~-12%
+        p[15] = candle(dayIdx: 15, open: 113, high: 113, low: 110, close: 110);
+        p[16] = candle(dayIdx: 16, open: 110, high: 110, low: 107, close: 107);
+        p[17] = candle(dayIdx: 17, open: 107, high: 107, low: 104, close: 104);
+        p[18] = candle(dayIdx: 18, open: 104, high: 104, low: 101, close: 101);
+        p[19] = candle(dayIdx: 19, open: 101, high: 101, low: 99, close: 99);
+        expect(rule.evaluate(ctx(indGolden), stock(p)), isNull);
+      },
+    );
 
     test('null when low away from support (> 4%)', () {
       // low=94 距 ma20 100 = 6% > 4%；同時也離 ma60 95 = 1.05% ≤4% → 改 ma60 也遠
@@ -663,6 +701,8 @@ void main() {
       final hammerInd = const TechnicalIndicators(ma20: 100, ma60: 95);
       final hp = buildPrices(count: 21);
       hp[0] = candle(dayIdx: 0, open: 90, high: 91, low: 89, close: 90);
+      // Fix 2: 過去 5 日內至少 1 根紅 K（非瀑布跌）
+      hp[15] = candle(dayIdx: 15, open: 98, high: 100, low: 97, close: 99);
       hp[20] = candle(
         dayIdx: 20,
         open: 101,
@@ -691,6 +731,8 @@ void main() {
       final kp = buildPrices(count: 21);
       // Fix 1: 過去強勢 baseline，見 KdHighLevelPullbackRule group 內 closeAt()
       kp[0] = candle(dayIdx: 0, open: 90, high: 91, low: 89, close: 90);
+      // Fix 2: 過去 5 日內至少 1 根紅 K（非瀑布跌）
+      kp[15] = candle(dayIdx: 15, open: 98, high: 100, low: 97, close: 99);
       kp[20] = candle(dayIdx: 20, open: 100, high: 101, low: 99, close: 100);
       expect(kdRule.evaluate(regimeCtx(kdInd, true), stock(kp)), isNotNull);
       expect(kdRule.evaluate(regimeCtx(kdInd, false), stock(kp)), isNull);
@@ -763,6 +805,8 @@ void main() {
       final ind = const TechnicalIndicators(ma20: 100, ma60: 95);
       final prices = buildPrices(count: 21);
       prices[0] = candle(dayIdx: 0, open: 90, high: 91, low: 89, close: 90);
+      // Fix 2: 過去 5 日內至少 1 根紅 K（非瀑布跌）
+      prices[15] = candle(dayIdx: 15, open: 98, high: 100, low: 97, close: 99);
       prices[20] = candle(
         dayIdx: 20,
         open: 101,
@@ -791,6 +835,8 @@ void main() {
       final prices = buildPrices(count: 21);
       // Fix 1: 過去強勢 baseline，見 KdHighLevelPullbackRule group 內 closeAt()
       prices[0] = candle(dayIdx: 0, open: 90, high: 91, low: 89, close: 90);
+      // Fix 2: 過去 5 日內至少 1 根紅 K（非瀑布跌）
+      prices[15] = candle(dayIdx: 15, open: 98, high: 100, low: 97, close: 99);
       prices[20] = candle(
         dayIdx: 20,
         open: 100,

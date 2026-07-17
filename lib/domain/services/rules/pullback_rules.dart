@@ -374,6 +374,14 @@ class HammerAtSupportRule extends StockRule {
     // ---- Step 8: 非跌停 ----
     if (isLimitDownDay(data)) return null;
 
+    // ---- Step 9: 過去 5 日非瀑布跌（至少 1 根紅 K）----
+    //
+    // **2026-07-18 audit 修正（Critical #2）**：MA20/MA10 兩條手足規則都強制
+    // 這關、Hammer 規則原本漏掉。實測案例：symbol 1310 2026-07-15 在連 5 黑
+    // （累積 -12.3%）瀑布跌後仍觸發 HAMMER_AT_SUPPORT——這正是
+    // hasRecentBullishCandle doc 明文要擋的 panicky decline，不是「止跌」。
+    if (!hasRecentBullishCandle(data)) return null;
+
     // ---- Fire ----
     final volumeMA20 = ind.volumeMA20;
     final todayVolume = today.volume;
@@ -503,6 +511,13 @@ class KdHighLevelPullbackRule extends StockRule {
 
     // ---- Step 10: 非跌停 ----
     if (isLimitDownDay(data)) return null;
+
+    // ---- Step 11: 過去 5 日非瀑布跌（至少 1 根紅 K）----
+    //
+    // **2026-07-18 audit 修正（Critical #2）**：MA20/MA10 兩條手足規則都強制
+    // 這關、KD 規則原本漏掉，與 Hammer 規則同一缺陷（見 HammerAtSupportRule
+    // Step 9 註解）。
+    if (!hasRecentBullishCandle(data)) return null;
 
     return TriggeredReason(
       type: ReasonType.kdHighPullback,
