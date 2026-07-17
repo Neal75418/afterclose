@@ -213,6 +213,16 @@ abstract final class AnalysisParams {
   /// 不觸發，故另訂 30 億（約為上市門檻的 1/6～1/7，對應兩市場典型量級差）。
   static const double kSynthesisInstDivergenceAmountTpex = 3000000000.0;
 
+  /// 綜合判讀「極端日」門檻（漲跌幅絕對值百分比）— 最高優先規則
+  ///
+  /// |indexChangePercent| 達此值時觸發最高優先的「極端日」規則（見
+  /// [MarketReadingService.interpretCompositeSynthesis]），蓋過既有三規則。
+  ///
+  /// **語意**：極端日分界（台股單日 ±3% 罕見；語意啟發值非最佳化參數）。
+  /// 2026-07-17 歷史性 -6.47% 崩盤日，原三規則輸出「無明顯背離」/買超背離，
+  /// 雲淡風輕——需最高優先的極端日規則。
+  static const double kSynthesisExtremeDayPct = 3.0;
+
   // ==================================================
   // 大盤位階（均線乖離）門檻
   // ==================================================

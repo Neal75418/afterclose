@@ -198,6 +198,10 @@
         "oversold": "超跌，留意反彈"
       },
       "synthesis": {
+        "extremeDown": "重挫 {pct}%、{breadthPct}% 個股下跌——系統性風險日，個股多空訊號參考性降低",
+        "extremeDownDivergence": "重挫 {pct}%、{breadthPct}% 個股下跌——系統性風險日，個股多空訊號參考性降低；惟法人合計買超 {netAmount} 億與指數背離，極端日訊號待後續確認",
+        "extremeUp": "暴漲 {pct}%、{breadthPct}% 個股上漲——系統性亢奮日，個股多空訊號參考性降低",
+        "extremeUpDivergence": "暴漲 {pct}%、{breadthPct}% 個股上漲——系統性亢奮日，個股多空訊號參考性降低；惟法人合計賣超 {netAmount} 億與指數背離，極端日訊號待後續確認",
         "weightSupport": "指數平盤但逾半個股下跌——權值撐盤、內部偏弱",
         "weightPressure": "指數平盤但逾半個股上漲——權值壓盤、內部偏強",
         "divergenceSell": "指數上漲但外資/法人合計賣超顯著——籌碼與指數背離",

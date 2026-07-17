@@ -229,6 +229,12 @@ class MarketReadingService {
   /// 綜合指數漲跌、個股廣度（漲跌家數）與外資/法人合計方向，抓出「指數
   /// 表現 vs 個股/籌碼實際狀況」的背離訊號。窄規則、依序判斷，命中即回傳：
   ///
+  /// 0. **最高優先**：|[indexChangePercent]| >=
+  ///    [AnalysisParams.kSynthesisExtremeDayPct]（極端日，如崩盤/暴漲）
+  ///    → 系統性風險日/亢奮日，個股多空訊號參考性降低（negative / warning），
+  ///    蓋過以下 rule 1～3。若同時符合 rule 2 的法人背離條件（方向相反 +
+  ///    金額達市場門檻），於訊息末端附加「背離待後續確認」附註（沿用
+  ///    rule 2 同一組門檻常數）。
   /// 1. 指數平盤（|[indexChangePercent]| < [AnalysisParams.kSynthesisFlatIndexPct]）
   ///    且下跌（或上漲）家數占比 >= [AnalysisParams.kSynthesisInternalSkewRatio]
   ///    → 「權值撐盤/壓盤、內部偏弱/偏強」（negative / positive）
@@ -238,9 +244,10 @@ class MarketReadingService {
   ///    → 點名籌碼與指數背離（warning）
   /// 3. 其餘 → 中性「多空訊號無明顯背離」
   ///
-  /// [market] 使用 [MarketCode.twse] / [MarketCode.tpex]，決定 rule 2 的金額
-  /// 門檻（上櫃成交及法人量級遠小於上市，需獨立門檻）；[advance]/[decline]
-  /// 分母 <= 0 時占比預設 0.5（不觸發 rule 1，行為對齊 [interpretBreadth]）。
+  /// [market] 使用 [MarketCode.twse] / [MarketCode.tpex]，決定 rule 0 附註與
+  /// rule 2 的金額門檻（上櫃成交及法人量級遠小於上市，需獨立門檻）；
+  /// [advance]/[decline] 分母 <= 0 時占比預設 0.5（不觸發 rule 0/1 的偏向判斷，
+  /// 行為對齊 [interpretBreadth]）。
   static MarketReading interpretCompositeSynthesis({
     required String market,
     required double indexChangePercent,
@@ -248,6 +255,55 @@ class MarketReadingService {
     required int decline,
     required double institutionalTotalNet,
   }) {
+    // 金額門檻（依市場而定）；rule 0 的背離附註與 rule 2 皆沿用同一組門檻。
+    final amountThreshold = market == MarketCode.twse
+        ? AnalysisParams.kSynthesisInstDivergenceAmountTwse
+        : AnalysisParams.kSynthesisInstDivergenceAmountTpex;
+
+    // Rule 0（最高優先）：極端日 — 崩盤/暴漲等系統性行情下，個股多空訊號的
+    // 參考性大幅降低；即使 rule 1/2 的窄規則也會命中，仍應優先呈現「極端
+    // 日」框架，避免「無明顯背離」之類雲淡風輕的措辭掩蓋系統性風險。
+    if (indexChangePercent.abs() >= AnalysisParams.kSynthesisExtremeDayPct) {
+      final isDown = indexChangePercent < 0;
+      final total = advance + decline;
+      final breadthRatio = total > 0
+          ? (isDown ? decline / total : advance / total)
+          : 0.5;
+      final args = {
+        'pct': indexChangePercent.abs().toStringAsFixed(2),
+        'breadthPct': (breadthRatio * 100).toStringAsFixed(0),
+      };
+      final tone = isDown
+          ? InterpretationTone.negative
+          : InterpretationTone.warning;
+
+      // 是否同時符合 rule 2 的法人背離條件（方向與指數相反 + 金額達門檻）
+      final hasInstitutionalDivergence =
+          institutionalTotalNet.abs() >= amountThreshold &&
+          (isDown ? institutionalTotalNet > 0 : institutionalTotalNet < 0);
+
+      if (!hasInstitutionalDivergence) {
+        return MarketReading(
+          messageKey: isDown
+              ? 'marketOverview.reading.synthesis.extremeDown'
+              : 'marketOverview.reading.synthesis.extremeUp',
+          tone: tone,
+          args: args,
+        );
+      }
+      return MarketReading(
+        messageKey: isDown
+            ? 'marketOverview.reading.synthesis.extremeDownDivergence'
+            : 'marketOverview.reading.synthesis.extremeUpDivergence',
+        tone: tone,
+        args: {
+          ...args,
+          'netAmount': (institutionalTotalNet.abs() / 100000000)
+              .toStringAsFixed(0),
+        },
+      );
+    }
+
     // Rule 1：指數平盤 + 內部家數明顯偏向一邊
     if (indexChangePercent.abs() < AnalysisParams.kSynthesisFlatIndexPct) {
       final total = advance + decline;
@@ -269,10 +325,6 @@ class MarketReadingService {
     }
 
     // Rule 2：指數方向與法人合計方向相反，且金額顯著（門檻依市場而定）
-    final amountThreshold = market == MarketCode.twse
-        ? AnalysisParams.kSynthesisInstDivergenceAmountTwse
-        : AnalysisParams.kSynthesisInstDivergenceAmountTpex;
-
     if (indexChangePercent > 0 &&
         institutionalTotalNet < 0 &&
         institutionalTotalNet.abs() >= amountThreshold) {

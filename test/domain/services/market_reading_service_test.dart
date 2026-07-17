@@ -555,4 +555,102 @@ void main() {
       expect(r.messageKey, 'marketOverview.reading.synthesis.neutral');
     });
   });
+
+  group(
+    'MarketReadingService.interpretCompositeSynthesis — 極端日 Rule 0（最高優先）',
+    () {
+      // Rule 0：|index%| >= kSynthesisExtremeDayPct(3.0) → 最高優先，蓋過 rule 1/2/3。
+      // 若同時符合既有 rule2 法人背離條件（方向相反 + 金額達市場門檻），附加背離附註。
+
+      test('(a) -6.47% 崩盤 + 55% 個股下跌 + 法人同向賣超 → extremeDown（無背離附註）', () {
+        final r = MarketReadingService.interpretCompositeSynthesis(
+          market: MarketCode.twse,
+          indexChangePercent: -6.47,
+          advance: 45,
+          decline: 55,
+          institutionalTotalNet: -8000000000, // 80億賣超，與指數同向（非背離）
+        );
+        expect(r.tone, InterpretationTone.negative);
+        expect(r.messageKey, 'marketOverview.reading.synthesis.extremeDown');
+        expect(r.args, {'pct': '6.47', 'breadthPct': '55'});
+      });
+
+      test(
+        '(b) -7.02% 崩盤 + 法人逆向買超達 TPEx 門檻 → extremeDownDivergence（附背離附註）',
+        () {
+          final r = MarketReadingService.interpretCompositeSynthesis(
+            market: MarketCode.tpex,
+            indexChangePercent: -7.02,
+            advance: 30,
+            decline: 70,
+            institutionalTotalNet: 3500000000, // 35億買超，>= TPEx 門檻(30億)，與指數反向
+          );
+          expect(r.tone, InterpretationTone.negative);
+          expect(
+            r.messageKey,
+            'marketOverview.reading.synthesis.extremeDownDivergence',
+          );
+          expect(r.args, {
+            'pct': '7.02',
+            'breadthPct': '70',
+            'netAmount': '35',
+          });
+        },
+      );
+
+      test('(c) +3.5% 暴漲（對稱）→ extremeUp（無背離附註）', () {
+        final r = MarketReadingService.interpretCompositeSynthesis(
+          market: MarketCode.twse,
+          indexChangePercent: 3.5,
+          advance: 70,
+          decline: 30,
+          institutionalTotalNet: 0,
+        );
+        expect(r.tone, InterpretationTone.warning);
+        expect(r.messageKey, 'marketOverview.reading.synthesis.extremeUp');
+        expect(r.args, {'pct': '3.50', 'breadthPct': '70'});
+      });
+
+      test('(d) 邊界 -2.99%（未達 3% 門檻）→ 不觸發 rule0，落回既有 rule2 divergenceBuy', () {
+        final r = MarketReadingService.interpretCompositeSynthesis(
+          market: MarketCode.twse,
+          indexChangePercent: -2.99,
+          advance: 400,
+          decline: 500,
+          institutionalTotalNet: 25000000000, // 250億買超 >= TWSE 門檻(200億)
+        );
+        expect(r.tone, InterpretationTone.warning);
+        expect(r.messageKey, 'marketOverview.reading.synthesis.divergenceBuy');
+      });
+
+      test('(e) 恰為 -3.00%（inclusive >=）→ 觸發 extremeDown', () {
+        final r = MarketReadingService.interpretCompositeSynthesis(
+          market: MarketCode.twse,
+          indexChangePercent: -3.00,
+          advance: 45,
+          decline: 55,
+          institutionalTotalNet: 0,
+        );
+        expect(r.tone, InterpretationTone.negative);
+        expect(r.messageKey, 'marketOverview.reading.synthesis.extremeDown');
+        expect(r.args, {'pct': '3.00', 'breadthPct': '55'});
+      });
+
+      test('(f) +5.5% 暴漲 + 法人逆向賣超達 TWSE 門檻 → extremeUpDivergence（對稱覆蓋）', () {
+        final r = MarketReadingService.interpretCompositeSynthesis(
+          market: MarketCode.twse,
+          indexChangePercent: 5.5,
+          advance: 600,
+          decline: 200,
+          institutionalTotalNet: -22000000000, // 220億賣超，>= TWSE 門檻(200億)，與指數反向
+        );
+        expect(r.tone, InterpretationTone.warning);
+        expect(
+          r.messageKey,
+          'marketOverview.reading.synthesis.extremeUpDivergence',
+        );
+        expect(r.args, {'pct': '5.50', 'breadthPct': '75', 'netAmount': '220'});
+      });
+    },
+  );
 }
