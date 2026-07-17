@@ -195,7 +195,11 @@ class NewsRule extends StockRule {
     final now = context.evaluationTime;
     final recentNews = news.where((n) {
       final age = now.difference(n.publishedAt).inHours;
-      return age < RuleParams.newsLookbackHours;
+      // 排除未來時間的新聞（age < 0）：週末手動回補等路徑可能讓
+      // evaluationTime 早於實際 publishedAt（如週五評估、新聞週六才
+      // 發布）。舊邏輯只檢查上限，負值必定 < newsLookbackHours 而誤判
+      // 為「非常新」納入計算，等同提前反應尚未發生的消息。
+      return age >= 0 && age < RuleParams.newsLookbackHours;
     }).toList();
 
     if (recentNews.isEmpty) return null;

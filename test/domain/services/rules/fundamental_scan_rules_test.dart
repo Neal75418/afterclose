@@ -640,8 +640,9 @@ void main() {
         ),
       ];
       final data = createTestStockData(news: news);
+      // evaluationTime 錨於同一個 now，避免與 publishedAt 產生負值 age。
       final context = AnalysisContext(
-        evaluationTime: DateTime(2025, 6, 1),
+        evaluationTime: now,
         trendState: TrendState.range,
       );
 
@@ -666,8 +667,9 @@ void main() {
         ),
       ];
       final data = createTestStockData(news: news);
+      // evaluationTime 錨於同一個 now，避免與 publishedAt 產生負值 age。
       final context = AnalysisContext(
-        evaluationTime: DateTime(2025, 6, 1),
+        evaluationTime: now,
         trendState: TrendState.range,
       );
 
@@ -691,8 +693,9 @@ void main() {
         ),
       ];
       final data = createTestStockData(news: news);
+      // evaluationTime 錨於同一個 now，避免與 publishedAt 產生負值 age。
       final context = AnalysisContext(
-        evaluationTime: DateTime(2025, 6, 1),
+        evaluationTime: now,
         trendState: TrendState.range,
       );
 

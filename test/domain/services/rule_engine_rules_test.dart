@@ -802,8 +802,11 @@ void main() {
             category: 'EARNINGS',
           ),
         ];
+        // evaluationTime 需與 publishedAt 同錨於「現在」——固定過去日期
+        // 會讓 age 為負值，被 age >= 0 排除（2026-07-18 fix 前，此夾具其實
+        // 意外依賴了同一個未來新聞 bug 才「碰巧」通過）。
         final context = AnalysisContext(
-          evaluationTime: DateTime(2025, 6, 1),
+          evaluationTime: DateTime.now(),
           trendState: TrendState.range,
         );
         final data = StockData(symbol: 'TEST', prices: [], news: news);
@@ -827,8 +830,9 @@ void main() {
             category: 'EARNINGS',
           ),
         ];
+        // 同上：evaluationTime 錨於「現在」以維持與 publishedAt 一致。
         final context = AnalysisContext(
-          evaluationTime: DateTime(2025, 6, 1),
+          evaluationTime: DateTime.now(),
           trendState: TrendState.range,
         );
         final data = StockData(symbol: 'TEST', prices: [], news: news);
