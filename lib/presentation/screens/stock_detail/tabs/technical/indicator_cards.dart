@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:k_chart_plus/k_chart_plus.dart';
 
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/domain/services/ohlcv_data.dart';
 import 'package:afterclose/domain/services/technical_indicator_service.dart';
 
 import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/cards/rsi_card.dart';
@@ -13,23 +14,24 @@ import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/card
 import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/cards/atr_card.dart';
 
 /// 從 priceHistory 提取的 OHLCV 快取，避免每次 build 重複 filter/map
+///
+/// 改用 [PriceEntryOhlcv.extractOhlcv]（單一 filter 條件）取代過去四個各自
+/// 獨立的 `.where()`：舊實作對 prices/highs/lows 用「該欄位非 null」過濾，
+/// 但 volumes 用「volume 非 null」過濾——停牌列 volume=0.0（非 null）會被
+/// volumes 保留、卻被 prices/highs/lows 排除，兩者長度不一致，導致
+/// calculateOBV 的長度守衛回傳 []、OBV 卡片永久空白。統一單一 filter 條件
+/// 從源頭讓四個陣列必然等長。
 class _ExtractedPrices {
   _ExtractedPrices(List<DailyPriceEntry> history)
-    : prices = history
-          .where((p) => p.close != null)
-          .map((p) => p.close!)
-          .toList(),
-      highs = history.where((p) => p.high != null).map((p) => p.high!).toList(),
-      lows = history.where((p) => p.low != null).map((p) => p.low!).toList(),
-      volumes = history
-          .where((p) => p.volume != null)
-          .map((p) => p.volume!.toDouble())
-          .toList();
+    : _ohlcv = history.extractOhlcv();
 
-  final List<double> prices;
-  final List<double> highs;
-  final List<double> lows;
-  final List<double> volumes;
+  final OhlcvData _ohlcv;
+
+  List<double> get prices => _ohlcv.closes;
+  List<double> get highs => _ohlcv.highs;
+  List<double> get lows => _ohlcv.lows;
+  List<double> get volumes => _ohlcv.volumes;
+  List<bool> get gapBefore => _ohlcv.gapBefore;
 }
 
 /// 根據選擇的副指標與主指標，顯示詳細的技術指標卡片
@@ -107,7 +109,12 @@ class _IndicatorCardsSectionState extends State<IndicatorCardsSection> {
     final svc = widget.indicatorService;
 
     // 按需計算並快取指標（只在 priceHistory 變動時重新計算）
-    final rsi = _rsi ??= svc.calculateRSI(prices);
+    // gapBefore：停牌缺口不當成單一交易日變動採計，避免 RSI 曲線出現
+    // 虛假極端值（root cause 修復，見 ohlcv_data.dart / calculateRSI）
+    final rsi = _rsi ??= svc.calculateRSI(
+      prices,
+      gapBefore: extracted.gapBefore,
+    );
     final kd = _kd ??= svc.calculateKD(highs, lows, prices);
     final macd = _macd ??= svc.calculateMACD(prices);
     final boll = _boll ??= svc.calculateBollingerBands(prices);

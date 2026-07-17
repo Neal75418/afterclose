@@ -126,5 +126,51 @@ void main() {
       expect(find.text('OBV'), findsOneWidget);
       expect(find.text('ATR(14)'), findsOneWidget);
     });
+
+    testWidgets(
+      'OBV card still renders (not blank) when priceHistory has halt/gap rows',
+      (tester) async {
+        widenViewport(tester);
+        // 混入停牌列（close/high/low=null、volume=0）：舊版 _ExtractedPrices
+        // 對 prices/highs/lows/volumes 各自獨立 filter，volume!=null 對停牌
+        // 列仍為 true（0.0 非 null）而被保留，導致 volumes 比 prices 長，
+        // calculateOBV 的長度守衛回傳 []，OBV 卡片永久空白。
+        final history = <DailyPriceEntry>[
+          for (int i = 0; i < 30; i++)
+            if (i % 6 == 5)
+              DailyPriceEntry(
+                symbol: '2330',
+                date: DateTime(2026, 1, 1 + i),
+                close: null,
+                high: null,
+                low: null,
+                volume: 0.0,
+              )
+            else
+              DailyPriceEntry(
+                symbol: '2330',
+                date: DateTime(2026, 1, 1 + i),
+                open: 100.0 + (i % 5),
+                high: 105.0 + (i % 5),
+                low: 95.0 + (i % 5),
+                close: 100.0 + (i % 5) * 2 - 4,
+                volume: 1000000.0 + i * 50000,
+              ),
+        ];
+
+        await tester.pumpWidget(
+          buildTestApp(
+            IndicatorCardsSection(
+              priceHistory: history,
+              secondaryIndicators: {},
+              mainIndicators: {},
+              indicatorService: indicatorService,
+            ),
+          ),
+        );
+
+        expect(find.text('OBV'), findsOneWidget);
+      },
+    );
   });
 }
