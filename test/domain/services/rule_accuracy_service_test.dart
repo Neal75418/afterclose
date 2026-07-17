@@ -824,6 +824,170 @@ void main() {
   );
 
   // ========================================================================
+  // Zero-price guard — divide-by-zero false hit (blocking review finding)
+  // ========================================================================
+  //
+  // Entry 運算式 `open ?? close` 只在 open 為 **null** 時才 fallback 到 close
+  // —— FinMind 部分價格列 open=0.0（非 null；calibration.db 實測 19,030 筆 /
+  // 0.61%，其中 358 筆 close>0）。舊 guard 只查 `entryPrice == null`，讓
+  // entry=0 通過 → returnRate = ((exitClose-0)/0)*100 = +Infinity，而
+  // `Infinity >= threshold` 恆真 → false hit，把該 (rule, period) 的
+  // avgReturn 污染成 +Infinity/NaN（UI 顯示「平均5日報酬 +Infinity%」）。
+  // Exit 端同型 bug：exit=0（停牌/異常列，非缺值）舊 guard 只查 null，會被
+  // 當成 -100% 真實虧損記錄，其實只是資料缺陷。兩者修法一致：guard 從
+  // `== null` 擴充為 `== null || <= 0`，計入 skippedNoEntryPrice /
+  // skippedNoExitPrice 同一計數器（沿用既有語意，不新增第三種分類）。
+
+  group('Zero-price guard — divide-by-zero false hit (blocking review '
+      'finding)', () {
+    test('entry price of exactly 0.0 (open=0.0, FinMind bad row) is excluded, '
+        'not treated as a valid entry (would divide-by-zero to +Infinity '
+        'return and a false hit)', () async {
+      final entryDate = DateTime.utc(2026, 1, 5);
+      final nextTradingDate = TaiwanCalendar.addTradingDays(entryDate, 1);
+      final exitDate = TaiwanCalendar.addTradingDays(entryDate, 5);
+
+      await db.upsertStocks([
+        StockMasterCompanion.insert(
+          symbol: '2330',
+          name: 'Test',
+          market: 'TWSE',
+        ),
+      ]);
+      await db.insertPrices([
+        DailyPriceCompanion.insert(
+          symbol: '2330',
+          date: entryDate,
+          close: const Value(100.0),
+        ),
+        // FinMind 異常列：open=0.0（非 null！）`open ?? close` 不會 fallback。
+        DailyPriceCompanion.insert(
+          symbol: '2330',
+          date: nextTradingDate,
+          open: const Value(0.0),
+          close: const Value(100.0),
+        ),
+        DailyPriceCompanion.insert(
+          symbol: '2330',
+          date: exitDate,
+          close: const Value(105.0),
+        ),
+      ]);
+      await db.insertReasons([
+        DailyReasonCompanion.insert(
+          symbol: '2330',
+          date: entryDate,
+          reasonType: 'ZERO_OPEN_RULE',
+          rank: 0,
+          evidenceJson: '{}',
+        ),
+      ]);
+      await db.insertAnalysis(
+        DailyAnalysisCompanion.insert(
+          symbol: '2330',
+          date: entryDate,
+          trendState: 'UP',
+          scoreShort: const Value(99.0),
+          scoreLong: const Value(99.0),
+        ),
+      );
+
+      await service.updateRuleAccuracyStats();
+
+      final allRows = await db.select(db.ruleAccuracy).get();
+      expect(
+        allRows.where((r) => r.ruleId == 'ZERO_OPEN_RULE'),
+        isEmpty,
+        reason:
+            'entry=0.0 必須視為缺值排除；未修前會算出 (105-0)/0*100 = '
+            '+Infinity，Infinity >= threshold 恆真 → false hit 污染 '
+            'avgReturn 為 +Infinity/NaN',
+      );
+    });
+
+    test('exit price of exactly 0.0 (halted/bad row) is excluded, not '
+        'recorded as a -100% loss', () async {
+      final entryDate = DateTime.utc(2026, 1, 5);
+      final nextTradingDate = TaiwanCalendar.addTradingDays(entryDate, 1);
+      final exitDate = TaiwanCalendar.addTradingDays(entryDate, 5);
+
+      await db.upsertStocks([
+        StockMasterCompanion.insert(
+          symbol: '2330',
+          name: 'Test',
+          market: 'TWSE',
+        ),
+      ]);
+      await db.insertPrices([
+        DailyPriceCompanion.insert(
+          symbol: '2330',
+          date: entryDate,
+          close: const Value(100.0),
+        ),
+        DailyPriceCompanion.insert(
+          symbol: '2330',
+          date: nextTradingDate,
+          open: const Value(100.0),
+          close: const Value(100.0),
+        ),
+        // 出場日 close=0.0：停牌/異常列，非「無資料」。
+        DailyPriceCompanion.insert(
+          symbol: '2330',
+          date: exitDate,
+          close: const Value(0.0),
+        ),
+      ]);
+      await db.insertReasons([
+        DailyReasonCompanion.insert(
+          symbol: '2330',
+          date: entryDate,
+          reasonType: 'ZERO_EXIT_RULE',
+          rank: 0,
+          evidenceJson: '{}',
+        ),
+      ]);
+      await db.insertAnalysis(
+        DailyAnalysisCompanion.insert(
+          symbol: '2330',
+          date: entryDate,
+          trendState: 'UP',
+          scoreShort: const Value(99.0),
+          scoreLong: const Value(99.0),
+        ),
+      );
+
+      await service.updateRuleAccuracyStats();
+
+      final allRows = await db.select(db.ruleAccuracy).get();
+      final zeroExitRows = allRows
+          .where((r) => r.ruleId == 'ZERO_EXIT_RULE')
+          .toList();
+
+      // Exit guard 是 (reason × period) 粒度，不像 entry 影響整個 reason
+      // ——1D 的出場日剛好等於 nextTradingDate（同一列，close=100，未受
+      // 汙染的合法資料），該筆合法觀測不應被牽連排除。
+      final oneDay = zeroExitRows.where((r) => r.period == '1D');
+      expect(
+        oneDay,
+        isNotEmpty,
+        reason:
+            '1D 出場價落在 nextTradingDate（close=100，未受影響）——'
+            '不應被 5D 那筆的 exit=0 牽連排除',
+      );
+
+      // 5D 出場日 close=0.0（本測試刻意構造的停牌/異常列）必須被排除。
+      final fiveDay = zeroExitRows.where((r) => r.period == '5D');
+      expect(
+        fiveDay,
+        isEmpty,
+        reason:
+            'exit=0.0 必須視為缺值排除；未修前會算出 (0-100)/100*100 = '
+            '-100%，把資料缺陷誤記為真實最大虧損',
+      );
+    });
+  });
+
+  // ========================================================================
   // getRuleStats / getRuleSummaryText read-path
   // ========================================================================
 

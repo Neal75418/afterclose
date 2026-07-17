@@ -465,9 +465,19 @@ class ReplayCalibrator {
       if (entryPrice == null || entryPrice <= 0) continue;
 
       // Forward return: i + shortDays, i + longDays
+      //
+      // review finding（2026-07-18，sibling of 上方 entry guard）：close=0.0
+      // 為停牌/異常列而非缺值，舊 guard 只查 `== null` 會讓它被當成合法出場
+      // 價，算出 (0/entry-1)*100 = -100% 的假最大虧損。`<= 0` 與 entry guard
+      // 及 [RuleAccuracyService] 的 exit guard 對齊。
       final shortExit = prices[i + shortDays].close;
       final longExit = prices[i + longDays].close;
-      if (shortExit == null || longExit == null) continue;
+      if (shortExit == null ||
+          shortExit <= 0 ||
+          longExit == null ||
+          longExit <= 0) {
+        continue;
+      }
 
       var shortReturn = (shortExit / entryPrice - 1) * 100;
       var longReturn = (longExit / entryPrice - 1) * 100;

@@ -19,6 +19,9 @@ import 'package:afterclose/data/database/app_database.dart';
 ///   `_computeUnbiasedRuleStats` 內 "(1) Lookahead bias" 註解。
 /// - Survivorship bias（下市股尾端訊號靜默剔除）：**已修復**，見 "(2)"
 ///   註解與 [CalibrationThresholds.stalePriceThresholdDays]。
+/// - Zero/negative price false hit（entry/exit 為 0 時除以零得 +Infinity，
+///   或 exit=0 被算成假 -100% 虧損）：**已修復**（review finding，
+///   2026-07-18），見下方 entry/exit guard 的 `<= 0` 分支。
 /// - **Co-occurrence inflation：仍未修復**（已知限制，本次不處理）。同
 ///   (symbol, date) 多條規則同時觸發時，同一個 forward return 被計入每條
 ///   規則，hit_rate 可能被少數共現事件膨脹；完整修正（按規則對 return
@@ -96,7 +99,8 @@ class RuleAccuracyService {
   ///    → 整個 symbol 的 reason 排除（survivorship bias fix，見上方偏誤註解）
   /// 5. 對每個 reason × 每個 holding period：
   ///    - 查 entry（訊號隔日 open，缺值 fallback close；lookahead bias fix）
-  ///      / exit close（exit date 由 [TaiwanCalendar.addTradingDays] 算）
+  ///      / exit close（exit date 由 [TaiwanCalendar.addTradingDays] 算）；
+  ///      兩者皆需 `> 0`，否則視同缺值排除（zero-price guard，見上方偏誤註解）
   ///    - 計算 returnRate + isSuccess（via [_isSuccessFor]）
   ///    - 累加至 `(ruleId, period)` 的 accumulator
   /// 6. Transaction: 清空舊 `rule_accuracy` 行 → 寫入新統計
@@ -295,10 +299,18 @@ class RuleAccuracyService {
       final nextTradingDate = DateContext.normalize(
         TaiwanCalendar.addTradingDays(entryDate, 1),
       );
+      // review finding（2026-07-18，sibling of audit finding #6）：`open ??
+      // close` 只在 open 為 **null** 時才 fallback；FinMind 部分價格列
+      // open=0.0（非 null，calibration.db 實測 19,030 筆 / 0.61%，其中 358
+      // 筆 close>0）。舊 guard 只查 `== null`，讓 entry=0 通過，下方
+      // `(exitClose-entryPrice)/entryPrice` 除以零得 +Infinity，
+      // `Infinity >= threshold` 恆真 → false hit，把整個 (rule, period) 的
+      // avgReturn 污染成 +Infinity/NaN。`<= 0` 與 `tool/replay_calibrator.dart`
+      // 的 entry guard 對齊。
       final entryPrice =
           symbolPrices[nextTradingDate]?.open ??
           symbolPrices[nextTradingDate]?.close;
-      if (entryPrice == null) {
+      if (entryPrice == null || entryPrice <= 0) {
         biasCounters.skippedNoEntryPrice++;
         continue;
       }
@@ -307,8 +319,10 @@ class RuleAccuracyService {
         final exitDate = DateContext.normalize(
           TaiwanCalendar.addTradingDays(entryDate, period),
         );
+        // 同型 bug，exit 端：close=0.0（停牌/異常列）舊 guard 只查
+        // `== null`，會被當成合法出場價算出 -100% 的假最大虧損。
         final exitClose = symbolPrices[exitDate]?.close;
-        if (exitClose == null) {
+        if (exitClose == null || exitClose <= 0) {
           biasCounters.skippedNoExitPrice++;
           continue;
         }
@@ -502,14 +516,19 @@ class _BiasCounters {
   /// symbol 在 priceMap 中完全缺資料的 reason 數（多為極早期 / 下市股）
   int skippedNoSymbolPrices = 0;
 
-  /// 訊號隔日缺 open/close 資料的 reason 數（多為尚未成熟的最新訊號、或隔日
-  /// 停牌）。Lookahead bias fix（audit finding #6）後 entry 改用隔日資料，
-  /// 此計數器涵蓋「算不出隔日進場價」的所有情況——不得退回同日 close 頂替。
+  /// 訊號隔日缺 open/close 資料、**或資料為 0/負值**的 reason 數（多為尚未
+  /// 成熟的最新訊號、隔日停牌，或 FinMind 異常列 open=0.0）。Lookahead bias
+  /// fix（audit finding #6）後 entry 改用隔日資料，此計數器涵蓋「算不出
+  /// 隔日進場價」的所有情況——不得退回同日 close 頂替。`<= 0` 分支見 review
+  /// finding（2026-07-18）：`open ?? close` 不會 fallback 掉 open=0.0（非
+  /// null），未擋會除以零產生 +Infinity 污染 avgReturn。
   int skippedNoEntryPrice = 0;
 
-  /// 出場日 close 缺資料的 (reason × period) 數
+  /// 出場日 close 缺資料、**或為 0/負值**的 (reason × period) 數
   ///
   /// **Survivorship bias 主要來源**：下市 / 長停股票後續沒價格 → 永遠被
-  /// drop，winner 永遠有 exit price。這個計數揭露被靜默剔除的程度。
+  /// drop，winner 永遠有 exit price。這個計數揭露被靜默剔除的程度。`<= 0`
+  /// 分支見 review finding（2026-07-18）：停牌/異常列 close=0.0 若不擋會被
+  /// 算成 -100% 假最大虧損。
   int skippedNoExitPrice = 0;
 }

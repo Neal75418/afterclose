@@ -307,6 +307,80 @@ void main() {
     );
   });
 
+  group('ReplayCalibrator — zero-price guard (blocking review finding, '
+      'sibling of audit finding #6)', () {
+    // Exit 端同型 bug：`_replaySymbol` 的 exit guard 舊版只查
+    // `shortExit == null || longExit == null`，一個停牌/異常列 close=0.0
+    // （非缺值 null）會被當成合法出場價，算出 (0/entry-1)*100 = -100%，把
+    // 資料缺陷誤記為真實最大虧損。entry 端（line ~465）已在 lookahead bias
+    // fix 時一併補上 `<= 0`，此處補上 exit 端讓兩者一致。
+    test('exit close of exactly 0.0 (halted/bad row) excludes the observation, '
+        'not recorded as a -100% loss', () async {
+      const symbol = 'HALT';
+      const signalIndex = 30; // > minHistoryDays(20)
+      const totalDays = signalIndex + 65; // 訊號日 + 60D forward + margin
+
+      await db.upsertStocks([
+        StockMasterCompanion.insert(
+          symbol: symbol,
+          name: 'Test $symbol',
+          market: 'TWSE',
+        ),
+      ]);
+
+      final first = DateTime(2024, 1, 1);
+      final prices = <DailyPriceCompanion>[];
+      for (var i = 0; i < totalDays; i++) {
+        final date = first.add(Duration(days: i));
+        // 5D 出場日（signalIndex + 5）：停牌/異常列，close=0.0（非缺值）。
+        // 其餘天數（含訊號日、隔日進場、60D 出場）平盤 100 填充。
+        final value = i == signalIndex + 5 ? 0.0 : 100.0;
+        prices.add(
+          DailyPriceCompanion.insert(
+            symbol: symbol,
+            date: date,
+            open: Value(value),
+            close: Value(value),
+          ),
+        );
+      }
+      await db.insertPrices(prices);
+
+      final signalDate = first.add(const Duration(days: signalIndex));
+      when(() => mockRuleEngine.evaluateStock(any(), any())).thenReturn(const [
+        TriggeredReason(
+          type: ReasonType.techBreakout,
+          score: 25,
+          description: 'halt test',
+        ),
+      ]);
+
+      final calibrator = ReplayCalibrator(
+        db: db,
+        config: ReplayConfig(
+          dbPath: ':memory:',
+          minHistoryDays: 20,
+          excessReturn: false,
+          // dateFilter 縮到單一交易日，讓這筆精心構造的觀測是唯一 firing。
+          dateFilter: (start: signalDate, end: signalDate),
+        ),
+        analysisService: mockAnalysis,
+        ruleEngine: mockRuleEngine,
+        logger: (_) {},
+      );
+      final result = await calibrator.run();
+
+      expect(
+        result.ruleStats[ReasonType.techBreakout.code],
+        isNull,
+        reason:
+            'exit close=0.0（停牌/異常列，非缺值 null）必須視為無效排除；'
+            '未修前只查 null，會把 (0/100-1)*100 = -100% 記為真實最大虧損',
+      );
+      expect(result.totalFirings, 0);
+    });
+  });
+
   group('ReplayCalibrator — survivorship bias fix: stale symbol excluded '
       '(audit finding #7a)', () {
     test('symbol whose latest price is stale (>30 calendar days behind '
