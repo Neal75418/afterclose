@@ -205,24 +205,35 @@ class HammerRule extends StockRule {
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     if (data.prices.isEmpty) return null;
-    // 必須處於下跌趨勢
+    // 僅在下跌或盤整趨勢有效（上漲趨勢的錘子形狀為吊人線，交由 HangingManRule）
     if (context.trendState == TrendState.up) return null;
 
     final today = data.prices.last;
-    if (isHammerShape(today)) {
-      return TriggeredReason(
-        type: ReasonType.patternHammer,
-        score: RuleScores.patternHammerBullish,
-        description: '低檔錘子線 (下影線長)',
-        evidence: {
-          'open': today.open,
-          'close': today.close,
-          'high': today.high,
-          'low': today.low,
-        },
-      );
+    if (!isHammerShape(today)) return null;
+
+    // 位置守衛（audit data #3）：錘子線為「低檔」反轉訊號，收盤須落在
+    // 支撐-壓力區間的下半部（近支撐）。否則盤整區近壓力的錘子形狀會被誤判為
+    // 「低檔錘子線」灌 +18 多方分。區間邊界未知時 permissive 不擋
+    // （與 codebase null → 放行語意一致）。
+    final close = today.close;
+    final lower = context.supportLevel ?? context.rangeBottom;
+    final upper = context.resistanceLevel ?? context.rangeTop;
+    if (close != null && lower != null && upper != null && upper > lower) {
+      final position = (close - lower) / (upper - lower);
+      if (position > PatternParams.hammerMaxBandPosition) return null;
     }
-    return null;
+
+    return TriggeredReason(
+      type: ReasonType.patternHammer,
+      score: RuleScores.patternHammerBullish,
+      description: '低檔錘子線 (下影線長)',
+      evidence: {
+        'open': today.open,
+        'close': today.close,
+        'high': today.high,
+        'low': today.low,
+      },
+    );
   }
 }
 

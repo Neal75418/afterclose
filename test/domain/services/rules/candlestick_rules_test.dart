@@ -329,6 +329,44 @@ void main() {
       const data = StockData(symbol: 'TEST', prices: []);
       expect(rule.evaluate(context, data), isNull);
     });
+
+    test(
+      'does not trigger when hammer sits high in S/R band (near resistance)',
+      () {
+        // audit data #3 實例：2542 於 2026-07-17 close 在 S/R band 61.9% 處
+        // （近壓力）卻觸發「低檔錘子線」+18。支撐 90、壓力 110（寬 20）、
+        // close 102.4 → position 0.62 > 0.5，非低檔，應被位置守衛擋下。
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
+          trendState: TrendState.range,
+          supportLevel: 90.0,
+          resistanceLevel: 110.0,
+        );
+        final hammer = createHammerCandle(date: DateTime.now(), close: 102.4);
+        final data = StockData(symbol: 'TEST', prices: [hammer]);
+
+        expect(rule.evaluate(context, data), isNull);
+      },
+    );
+
+    test(
+      'triggers when hammer sits low in S/R band (near support) in range',
+      () {
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
+          trendState: TrendState.range,
+          supportLevel: 90.0,
+          resistanceLevel: 110.0,
+        );
+        // close 92 → position (92-90)/20 = 0.10，近支撐
+        final hammer = createHammerCandle(date: DateTime.now(), close: 92.0);
+        final data = StockData(symbol: 'TEST', prices: [hammer]);
+
+        final result = rule.evaluate(context, data);
+        expect(result, isNotNull);
+        expect(result!.type, equals(ReasonType.patternHammer));
+      },
+    );
   });
 
   // ==========================================

@@ -17,6 +17,14 @@ abstract final class PatternParams {
   /// 上影線不可超過實體的 0.5 倍。
   static const double hammerUpperShadowMaxRatio = 0.5;
 
+  /// 錘子線在支撐-壓力區間中的最大位置（0.5 = 下半部）
+  ///
+  /// 錘子線為「低檔」反轉訊號，收盤須落在 [support, resistance] 區間的下半部
+  /// （近支撐）才符合「低檔錘子線」語意。位置 = (close - lower)/(upper - lower)，
+  /// 超過此值視為近壓力、不觸發（高檔錘子形狀交由 HangingManRule 處理）。
+  /// audit data #3：2542 於 2026-07-17 close 在 band 61.9%（近壓力）卻誤觸發。
+  static const double hammerMaxBandPosition = 0.5;
+
   /// 三白兵/三黑鴉每根 K 線最小實體比例（1%）
   ///
   /// 每根 K 線的 |open - close| / close 須 >= 1%，
