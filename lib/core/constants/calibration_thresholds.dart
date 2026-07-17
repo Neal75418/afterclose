@@ -141,4 +141,23 @@ abstract final class CalibrationThresholds {
   /// 有效樣本量級是「觸發日」數 —— clustered t 對日均值序列計算，樣本
   /// 下限也以日數計。
   static const int minDistinctDates = 30;
+
+  // ==========================================================================
+  // Survivorship bias（audit finding #7a，2026-07-18）
+  // ==========================================================================
+
+  /// Symbol 最新價格早於 dataset 自身 max date 這麼多「日曆天」，視為停止
+  /// 提供新資料（下市 / 長停）—— 該 symbol 的**所有**訊號都從 rule_accuracy
+  /// 統計排除，而非只排除算不出 exit return 的尾端 reason。
+  ///
+  /// **為什麼是「整個 symbol」而非「只排除算不出 return 的 reason」**：舊行為
+  /// 只在缺 exit price 時 `continue`（單一 reason × period 粒度），只能排除
+  /// 「剛好落在下市點附近」的訊號，卻保留該股下市前**仍算得出（較早、較
+  /// 正常）**的訊號——恰是 winner 全留、崩盤前夕靜默消失的經典存活者偏差
+  /// 樣式。整股排除才不會挑好留壞：與其呈現「已知不完整」的片面數字，
+  /// 不如完全不採計。
+  ///
+  /// **30 天為保守閾值**：正常交易的股票最多幾天無成交（連假 + 緩衝），
+  /// 30 天涵蓋任何可能的長假期，同時不會誤殺短暫停牌股。
+  static const int stalePriceThresholdDays = 30;
 }

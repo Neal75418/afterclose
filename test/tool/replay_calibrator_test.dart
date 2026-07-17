@@ -307,6 +307,53 @@ void main() {
     );
   });
 
+  group('ReplayCalibrator — survivorship bias fix: stale symbol excluded '
+      '(audit finding #7a)', () {
+    test('symbol whose latest price is stale (>30 calendar days behind '
+        'dataset max) is excluded entirely from the universe', () async {
+      // STALE：100 天從 2024-01-01 開始 → 最新價格約 2024-04-09（模擬
+      // 下市 / 長停，之後再無新資料）。
+      await seedStock('STALE', priceDays: 100);
+      // FRESH：100 天從 2024-06-01 開始（與 STALE 最新價格差距遠超過
+      // 30 天門檻）→ 把 dataset 的 max date 推到夠新。
+      await seedStock('FRESH', priceDays: 100, firstDate: DateTime(2024, 6, 1));
+
+      when(() => mockRuleEngine.evaluateStock(any(), any())).thenReturn(const [
+        TriggeredReason(
+          type: ReasonType.techBreakout,
+          score: 25,
+          description: 'x',
+        ),
+      ]);
+
+      final calibrator = ReplayCalibrator(
+        db: db,
+        config: const ReplayConfig(
+          dbPath: ':memory:',
+          minHistoryDays: 20,
+          excessReturn: false,
+        ),
+        analysisService: mockAnalysis,
+        ruleEngine: mockRuleEngine,
+        logger: (_) {},
+      );
+      final result = await calibrator.run();
+
+      expect(
+        result.symbolsProcessed,
+        1,
+        reason:
+            'STALE 最新價格遠早於 dataset max date（模擬下市/長停）→ '
+            '整股排除，universe 只剩 FRESH',
+      );
+      expect(
+        result.ruleStats[ReasonType.techBreakout.code]!.short.triggerCount,
+        greaterThan(0),
+        reason: 'FRESH 仍是有效樣本，不該被 stale 過濾誤傷',
+      );
+    });
+  });
+
   group('ReplayCalibrator — unbiased sampling', () {
     test('records ALL firings without Top-20 filter', () async {
       // Two stocks, both trigger the SAME negative-signal rule

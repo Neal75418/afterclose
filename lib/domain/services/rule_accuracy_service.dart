@@ -9,9 +9,23 @@ import 'package:afterclose/data/database/app_database.dart';
 
 /// 規則準確度追蹤服務
 ///
-/// 從 `daily_reason` 直接聚合，計算每條規則的命中率和平均報酬率（unbiased
-/// per-rule 統計），寫入 `rule_accuracy` 表供 stock-detail 規則命中率 UI 消費。
-/// 支援多持有天數 (1, 3, 5, 10, 20, 60 交易日)。
+/// 從 `daily_reason` 直接聚合，計算每條規則的命中率和平均報酬率，寫入
+/// `rule_accuracy` 表供 stock-detail 規則命中率 UI 消費。支援多持有天數
+/// (1, 3, 5, 10, 20, 60 交易日)。
+///
+/// **誠實揭露：不是「unbiased」統計**（2026-07-18 audit 修訂前的 class doc
+/// 曾如此宣稱，與同檔案內的已知偏誤註解自相矛盾）。目前狀態：
+/// - Lookahead bias（entry 用訊號當日 close）：**已修復**，見下方
+///   `_computeUnbiasedRuleStats` 內 "(1) Lookahead bias" 註解。
+/// - Survivorship bias（下市股尾端訊號靜默剔除）：**已修復**，見 "(2)"
+///   註解與 [CalibrationThresholds.stalePriceThresholdDays]。
+/// - **Co-occurrence inflation：仍未修復**（已知限制，本次不處理）。同
+///   (symbol, date) 多條規則同時觸發時，同一個 forward return 被計入每條
+///   規則，hit_rate 可能被少數共現事件膨脹；完整修正（按規則對 return
+///   加權降權）超出目前範圍。`_BiasCounters` / `co_occurrence_index` 揭露
+///   程度，但只寫 log，不直接影響數字。緩解措施：[getRuleSummaryText]
+///   在樣本數低於 [CalibrationThresholds.sampleSizeCutThreshold] 時附上
+///   低信心註記——降低小樣本規則被誤讀為「精準」的風險，但不消除偏誤本身。
 ///
 /// **成功判定**：per-period threshold 取代寬鬆的 `>0` 基準，避免「勉強沒虧」
 /// 被算成命中。Threshold 來源為 [CalibrationThresholds.successThresholds]，
@@ -76,12 +90,15 @@ class RuleAccuracyService {
   /// 1. 撈所有 `daily_reason` rows
   /// 2. **Empty guard**：若為空 → warning log 後**不動 `rule_accuracy`** 直接 return
   ///    （防止誤清既有 valid stats — 詳見下方「Empty guard」段落）
-  /// 3. 為相關 symbols 建 price lookup map `{symbol: {normalized_date: close}}`
-  /// 4. 對每個 reason × 每個 holding period：
-  ///    - 查 entry close / exit close（exit date 由 [TaiwanCalendar.addTradingDays] 算）
+  /// 3. 為相關 symbols 建 price lookup map `{symbol: {normalized_date: (open, close)}}`
+  /// 4. **Stale-symbol 過濾**（audit finding #7a）：symbol 最新價格早於
+  ///    dataset max date 超過 [CalibrationThresholds.stalePriceThresholdDays]
+  ///    → 整個 symbol 的 reason 排除（survivorship bias fix，見上方偏誤註解）
+  /// 5. 對每個 reason × 每個 holding period：
+  ///    - 查 entry（訊號隔日 open，缺值 fallback close；lookahead bias fix）
+  ///      / exit close（exit date 由 [TaiwanCalendar.addTradingDays] 算）
   ///    - 計算 returnRate + isSuccess（via [_isSuccessFor]）
   ///    - 累加至 `(ruleId, period)` 的 accumulator
-  /// 5. 同時累加 `ALL` period（跨所有 periods 合併）
   /// 6. Transaction: 清空舊 `rule_accuracy` 行 → 寫入新統計
   ///
   /// ## Empty guard（2026-04 Stage 2 code review followup）
@@ -182,6 +199,27 @@ class RuleAccuracyService {
             ))
             .get();
 
+    // Survivorship bias fix（audit finding #7a）：symbol 最新價格早於 dataset
+    // 自身 max date 超過 [CalibrationThresholds.stalePriceThresholdDays]（下市
+    // / 長停）→ 整個 symbol 從統計排除，而非只排除算不出 exit return 的尾端
+    // reason（詳見常數 docstring：只排除尾端會把「贏家全留、崩盤前夕靜默
+    // 消失」的存活者偏差樣式留在統計裡）。兩個查詢都是全表 unbounded（latest
+    // price 可能落在上面的 bounded window 之外），與 priceRows 的窗查詢無關。
+    final datasetMaxDate = await _db.getLatestDataDate();
+    final staleSymbols = <String>{};
+    if (datasetMaxDate != null) {
+      final latestPrices = await _db.getLatestPricesBatch(allSymbols);
+      final staleCutoff = datasetMaxDate.subtract(
+        const Duration(days: CalibrationThresholds.stalePriceThresholdDays),
+      );
+      for (final symbol in allSymbols) {
+        final latest = latestPrices[symbol]?.date;
+        if (latest == null || latest.isBefore(staleCutoff)) {
+          staleSymbols.add(symbol);
+        }
+      }
+    }
+
     // 建 price lookup：{symbol: {normalized_date: (open, close)}}
     //
     // 同時保留 open（entry 用，見下方 lookahead bias fix）與 close（exit 用）。
@@ -209,10 +247,15 @@ class RuleAccuracyService {
     // 舊 docstring 曾聲稱此修法「需 daily_price 加 open 欄位（成本大）」——
     // 該 blocker 不成立：open 欄位早已存在且 99% 已填值，audit 已證實。
     //
-    // **(2) Survivorship bias**：missing exit close 靜默 continue。下市 /
-    // 長停的股票永遠在 sample 外，winner 永遠有後續價格。下方 `_BiasCounters`
-    // 累計 skippedNoExitPrice 揭露被 silently drop 的比例，calibration
-    // reviewer 可用此判斷 hit_rate 是否被 bias inflated。
+    // **(2) Survivorship bias（已修復，audit finding #7a，2026-07-18）**：
+    // 舊行為只在 missing exit close 時靜默 continue（單一 reason × period
+    // 粒度），只排除「剛好落在下市點附近」的訊號，卻留下該股下市前仍算得出
+    // 的（較早、較正常）訊號——winner 全留、崩盤前夕靜默消失。現在改用
+    // staleSymbols 整股排除：symbol 最新價格早於 dataset max date 超過
+    // [CalibrationThresholds.stalePriceThresholdDays]（下市 / 長停）即整股
+    // 排除。下方 `_BiasCounters` 累計 skippedStaleSymbol（整股排除）與
+    // skippedNoExitPrice（仍保留——正常股「訊號太新、還沒到出場日」的
+    // immature case）分開揭露，兩者語意不同不應混為一談。
     //
     // **(3) Co-occurrence inflation**：同 (symbol, date) 多條規則同時觸發
     // 時，**同一個** forward return 被計入每條規則 → Calibrator 的
@@ -232,6 +275,11 @@ class RuleAccuracyService {
     biasCounters.uniqueEntries = uniqueEntries.length;
 
     for (final reason in reasons) {
+      if (staleSymbols.contains(reason.symbol)) {
+        biasCounters.skippedStaleSymbol++;
+        continue;
+      }
+
       final symbolPrices = priceMap[reason.symbol];
       if (symbolPrices == null) {
         biasCounters.skippedNoSymbolPrices++;
@@ -287,6 +335,7 @@ class RuleAccuracyService {
       'bias_telemetry total_reasons=${biasCounters.totalReasons} '
           'unique_(symbol,date)=${biasCounters.uniqueEntries} '
           'co_occurrence_index=${coOccurrenceIndex.toStringAsFixed(2)} '
+          'skipped_stale_symbol=${biasCounters.skippedStaleSymbol} '
           'skipped_no_symbol_prices=${biasCounters.skippedNoSymbolPrices} '
           'skipped_no_entry_price=${biasCounters.skippedNoEntryPrice} '
           'skipped_no_exit_price=${biasCounters.skippedNoExitPrice}',
@@ -359,7 +408,18 @@ class RuleAccuracyService {
 
   /// 取得規則摘要文字（用於 UI 顯示）
   ///
-  /// 例如：「命中率 65%，平均 5 日報酬 +2.3%」
+  /// 例如：「命中率 65%，平均 5 日報酬 +2.3%」。樣本數低於
+  /// [CalibrationThresholds.sampleSizeCutThreshold]（與 calibration cut 共用
+  /// 同一門檻）時附上低信心註記——例如「命中率 70%，平均 5 日報酬 +2.3%
+  /// （樣本數 10 筆，信心度較低）」。
+  ///
+  /// **為什麼需要（audit finding #7b）**：這是 `rule_accuracy` 唯一的 UI
+  /// 消費端——bias telemetry（co-occurrence inflation 等）只寫 AppLogger.info
+  /// log，使用者永遠看不到。樣本數越小，被少數幾個 co-occurrence 共現事件
+  /// 主導、hit_rate 被膨脹的風險越高；此處無法反推「這條規則本身」的
+  /// co-occurrence 程度（telemetry 是聚合值，非 per-rule），但樣本數本身
+  /// 是可得、便宜、方向正確的 proxy：n 越小，任何未修正的偏誤（含
+  /// co-occurrence）對這個數字的影響占比越大。
   Future<String?> getRuleSummaryText(
     String ruleId, {
     int holdingDays = defaultHoldingDays,
@@ -370,8 +430,13 @@ class RuleAccuracyService {
     final hitRateStr = stats.hitRate.toStringAsFixed(0);
     final returnSign = stats.avgReturn >= 0 ? '+' : '';
     final returnStr = '$returnSign${stats.avgReturn.toStringAsFixed(1)}%';
+    final summary = '命中率 $hitRateStr%，平均 $holdingDays 日報酬 $returnStr';
 
-    return '命中率 $hitRateStr%，平均 $holdingDays 日報酬 $returnStr';
+    if (stats.triggerCount < CalibrationThresholds.sampleSizeCutThreshold) {
+      return '$summary（樣本數 ${stats.triggerCount} 筆，信心度較低）';
+    }
+
+    return summary;
   }
 
   String _formatDate(DateTime date) {
@@ -427,6 +492,12 @@ class _BiasCounters {
   /// `totalReasons / uniqueEntries = co_occurrence_index`，> 1 意味
   /// 同事件多規則 entanglement，per-rule hit_rate 會 share 同一 return。
   int uniqueEntries = 0;
+
+  /// symbol 最新價格早於 dataset max date 超過
+  /// [CalibrationThresholds.stalePriceThresholdDays] 而整股排除的 reason 數
+  /// （survivorship bias fix，audit finding #7a——下市 / 長停股，不只排除
+  /// 尾端算不出 exit 的訊號，整股排除避免留下「贏家全留」的偏誤樣本）
+  int skippedStaleSymbol = 0;
 
   /// symbol 在 priceMap 中完全缺資料的 reason 數（多為極早期 / 下市股）
   int skippedNoSymbolPrices = 0;

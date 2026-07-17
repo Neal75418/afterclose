@@ -14,6 +14,7 @@
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:afterclose/core/constants/calibration_thresholds.dart';
 import 'package:afterclose/core/utils/taiwan_calendar.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/services/rule_accuracy_service.dart';
@@ -733,6 +734,96 @@ void main() {
   });
 
   // ========================================================================
+  // Survivorship bias fix — stale-price symbol excluded (audit finding #7a)
+  // ========================================================================
+  //
+  // 舊行為：missing-exit-price 只在單一 reason × period 粒度靜默 continue，
+  // 只排除「剛好落在下市點附近」的訊號，卻留下該股下市前仍算得出的（較早、
+  // 較正常）訊號——winner 全留、崩盤前夕靜默消失的存活者偏差。新行為：
+  // symbol 最新價格早於 dataset max date 超過 stalePriceThresholdDays（30
+  // 天）→ 整個 symbol 排除，不挑好留壞。
+
+  group(
+    'Survivorship bias fix — stale-price symbol excluded (audit finding #7a)',
+    () {
+      test('symbol whose latest price is stale (>30 calendar days behind '
+          'dataset max date) is excluded entirely, even with a flattering '
+          'return', () async {
+        // STALE：只到 2026-01-12 附近就沒有更新價格（模擬下市 / 長停）。
+        // 刻意給高報酬——若排除機制沒生效，這筆會製造一個假命中。
+        await seedReason(
+          symbol: 'STALE',
+          entryDate: DateTime.utc(2026, 1, 5),
+          reasonType: 'STALE_RULE',
+          rank: 0,
+          periodDays: 5,
+          returnRatePct: 10.0,
+        );
+
+        // FRESH：entryDate 晚 STALE 出場日超過 30 天，把 dataset 的
+        // max(daily_price.date) 推到夠新，讓 STALE 的最新價格顯得過期。
+        await seedReason(
+          symbol: 'FRESH',
+          entryDate: DateTime.utc(2026, 3, 1),
+          reasonType: 'FRESH_RULE',
+          rank: 0,
+          periodDays: 5,
+          returnRatePct: 5.0,
+        );
+
+        await service.updateRuleAccuracyStats();
+
+        final allRows = await db.select(db.ruleAccuracy).get();
+        expect(
+          allRows.where((r) => r.ruleId == 'STALE_RULE'),
+          isEmpty,
+          reason:
+              'STALE 最新價格遠早於 dataset max date（模擬下市/長停）→ '
+              '整個 symbol 應被排除，不能因為單筆報酬漂亮就留下',
+        );
+        expect(
+          allRows.where((r) => r.ruleId == 'FRESH_RULE'),
+          isNotEmpty,
+          reason: 'FRESH 是 dataset 當前最新資料來源，不應被誤判為 stale',
+        );
+      });
+
+      test(
+        'symbol with fresh-enough price (within threshold) still counts',
+        () async {
+          // 兩檔股票資料最新日只差幾天（< 30 天門檻）——都不該被排除。
+          await seedReason(
+            symbol: 'A',
+            entryDate: DateTime.utc(2026, 1, 5),
+            reasonType: 'RULE_A',
+            rank: 0,
+            periodDays: 5,
+            returnRatePct: 5.0,
+          );
+          await seedReason(
+            symbol: 'B',
+            entryDate: DateTime.utc(2026, 1, 8),
+            reasonType: 'RULE_B',
+            rank: 0,
+            periodDays: 5,
+            returnRatePct: 5.0,
+          );
+
+          await service.updateRuleAccuracyStats();
+
+          final allRows = await db.select(db.ruleAccuracy).get();
+          expect(
+            allRows.where((r) => r.ruleId == 'RULE_A'),
+            isNotEmpty,
+            reason: '兩檔資料新舊差距 < 30 天門檻，都不該被判定為 stale',
+          );
+          expect(allRows.where((r) => r.ruleId == 'RULE_B'), isNotEmpty);
+        },
+      );
+    },
+  );
+
+  // ========================================================================
   // getRuleStats / getRuleSummaryText read-path
   // ========================================================================
 
@@ -779,21 +870,96 @@ void main() {
       expect(text, isNull, reason: 'triggerCount < 5 → no summary');
     });
 
-    test('getRuleSummaryText formats hit rate + avg return', () async {
+    test('getRuleSummaryText formats hit rate + avg return (no caveat when '
+        'sample ≥ sampleSizeCutThreshold)', () async {
       await db
           .into(db.ruleAccuracy)
           .insert(
             RuleAccuracyCompanion.insert(
               ruleId: 'TECH_BREAKOUT',
               period: '5D',
-              triggerCount: const Value(10),
-              successCount: const Value(7),
+              triggerCount: const Value(35),
+              successCount: const Value(25),
               avgReturn: const Value(2.34),
             ),
           );
 
       final text = await service.getRuleSummaryText('TECH_BREAKOUT');
-      expect(text, '命中率 70%，平均 5 日報酬 +2.3%');
+      expect(text, '命中率 71%，平均 5 日報酬 +2.3%');
+    });
+
+    // ======================================================================
+    // Low-confidence caveat (audit finding #7b) — getRuleSummaryText is the
+    // one UI-facing consumer of rule_accuracy; unlike the bias telemetry
+    // (only AppLogger.info'd, never surfaced), a small-sample rule's summary
+    // must itself carry a caveat instead of presenting the number as if it
+    // were as trustworthy as a well-sampled rule.
+    // ======================================================================
+
+    test(
+      'getRuleSummaryText appends low-confidence caveat when sample n is '
+      'below CalibrationThresholds.sampleSizeCutThreshold (audit finding #7b)',
+      () async {
+        await db
+            .into(db.ruleAccuracy)
+            .insert(
+              RuleAccuracyCompanion.insert(
+                ruleId: 'TECH_BREAKOUT',
+                period: '5D',
+                triggerCount: const Value(10), // < 30 cut threshold
+                successCount: const Value(7),
+                avgReturn: const Value(2.34),
+              ),
+            );
+
+        final text = await service.getRuleSummaryText('TECH_BREAKOUT');
+        expect(text, isNotNull);
+        expect(
+          text,
+          contains('命中率 70%，平均 5 日報酬 +2.3%'),
+          reason: '核心數字不因低信心註記而消失',
+        );
+        expect(text, contains('10'), reason: '低信心註記須帶出實際樣本數，而非只是模糊警語');
+        expect(
+          text!.length,
+          greaterThan('命中率 70%，平均 5 日報酬 +2.3%'.length),
+          reason: 'n=10 < sampleSizeCutThreshold(30) → 必須附加低信心註記',
+        );
+      },
+    );
+
+    test('getRuleSummaryText boundary: n == sampleSizeCutThreshold has no '
+        'caveat, n one below does', () async {
+      Future<String?> textForN(int n) async {
+        await db.delete(db.ruleAccuracy).go();
+        await db
+            .into(db.ruleAccuracy)
+            .insert(
+              RuleAccuracyCompanion.insert(
+                ruleId: 'BOUNDARY_RULE',
+                period: '5D',
+                triggerCount: Value(n),
+                successCount: Value(n ~/ 2),
+                avgReturn: const Value(1.0),
+              ),
+            );
+        return service.getRuleSummaryText('BOUNDARY_RULE');
+      }
+
+      final atThreshold = await textForN(
+        CalibrationThresholds.sampleSizeCutThreshold,
+      );
+      final belowThreshold = await textForN(
+        CalibrationThresholds.sampleSizeCutThreshold - 1,
+      );
+
+      expect(
+        atThreshold!.length,
+        lessThan(belowThreshold!.length),
+        reason:
+            'n == threshold（含）不該有註記；n = threshold-1 應該有 → '
+            '前者字串較短',
+      );
     });
   });
 }

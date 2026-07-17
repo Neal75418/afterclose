@@ -682,6 +682,41 @@ class ReplayCalibrator {
       if (inst.isNotEmpty) institutionalBySymbol[symbol] = inst;
     }
 
+    // Survivorship bias fix（audit finding #7a）：`getAllActiveStocks()`
+    // 的 is_active 過濾在實務上沒有真的排除下市股（deactivateStocksNotIn
+    // 沒有可靠觸發）；即使它觸發了，也會把該股「早期仍正常交易」的歷史
+    // 一併丟掉，讓 survivorship bias 更糟（見
+    // CalibrationThresholds.stalePriceThresholdDays docstring 的完整說明）。
+    // 改用「最新價格是否夠新」的獨立判準——symbol 最新價格早於 dataset
+    // 自身 max date 超過 stalePriceThresholdDays（下市 / 長停）即整股排除，
+    // 而非依賴 stock_master 的 is_active 旗標。
+    final datasetMaxDate = pricesBySymbol.values
+        .map((prices) => prices.last.date)
+        .fold<DateTime?>(
+          null,
+          (max, d) => max == null || d.isAfter(max) ? d : max,
+        );
+    if (datasetMaxDate != null) {
+      final staleCutoff = datasetMaxDate.subtract(
+        const Duration(days: CalibrationThresholds.stalePriceThresholdDays),
+      );
+      final staleSymbols = pricesBySymbol.entries
+          .where((e) => e.value.last.date.isBefore(staleCutoff))
+          .map((e) => e.key)
+          .toList();
+      if (staleSymbols.isNotEmpty) {
+        for (final symbol in staleSymbols) {
+          pricesBySymbol.remove(symbol);
+          institutionalBySymbol.remove(symbol);
+        }
+        _log(
+          '🗑️  Stale-price 排除（最新價格 > '
+          '${CalibrationThresholds.stalePriceThresholdDays} 天無更新，'
+          '疑似下市/長停）：${staleSymbols.length} symbols',
+        );
+      }
+    }
+
     // Monthly revenue / EPS / valuation — per symbol 查詢
     final bigBang = DateTime(2000);
     for (final symbol in pricesBySymbol.keys) {
