@@ -234,7 +234,7 @@ void main() {
     });
 
     test('null when close <= ma20 (deep — let MA20 rule handle)', () {
-      // close=94 <= ma20=95 → 不算淺回檔
+      // close=94 <= ma20=95 × 1.03（MA20 拉回帶上緣）=97.85 → 不算淺回檔
       final prices = goldenPrices();
       prices[20] = candle(
         dayIdx: 20,
@@ -246,6 +246,26 @@ void main() {
       );
       expect(rule.evaluate(ctx(goldenInd), stock(prices)), isNull);
     });
+
+    // Fix 3（High audit #3）：close 在 ma20 與「MA20 拉回帶上緣」之間（此例
+    // 97 ∈ (95, 97.85]）舊版會誤放行（close > ma20 即可）、與 MA20 規則的
+    // 拉回帶重疊，是 symbol 6179 2026-07-16 雙 fire 的同型態。修後應 null。
+    test(
+      'null when close between ma20 and MA20 band ceiling '
+      '(Fix 3: was wrongly allowed pre-fix, overlapped with MA20 rule band)',
+      () {
+        final prices = goldenPrices();
+        prices[20] = candle(
+          dayIdx: 20,
+          open: 98,
+          high: 98,
+          low: 96,
+          close: 97,
+          volume: 800,
+        );
+        expect(rule.evaluate(ctx(goldenInd), stock(prices)), isNull);
+      },
+    );
 
     test('null when not mid-term bull stack (ma10 <= ma20)', () {
       final ind = const TechnicalIndicators(
@@ -314,6 +334,91 @@ void main() {
         volumeMA20: 1000,
       );
       expect(rule.evaluate(ctx(ind), stock(goldenPrices())), isNull);
+    });
+  });
+
+  // ============================================================
+  // Fix 3（High audit #3）：MA20 vs MA10 互斥性
+  //
+  // 審計實測：symbol 6179 於 2026-07-16 同時觸發 PULLBACK_TO_MA20（+15）與
+  // PULLBACK_TO_MA10（+12），單一次回檔事件被雙重計分 +27。原因：MA10 rule
+  // 舊版只要求 close > ma20，但 MA20 rule 的拉回帶上緣可達 +3%——當 ma10 與
+  // ma20 僅相距 ~0-1.8%（趨勢趨緩/盤整）時，兩規則的 proximity band 在
+  // close-vs-ma20 軸上會重疊，同一個 close 可以同時落入兩帶。
+  // ============================================================
+  group('Mutual exclusivity: MA20 vs MA10（Fix 3 — 6179 案例）', () {
+    const ma20Rule = HealthyPullbackToMa20Rule();
+    const ma10Rule = HealthyPullbackToMa10Rule();
+
+    // 共用 fixture：day0=90（兩規則的過去強勢錨點皆過關）、day15 紅 K（非瀑布
+    // 跌）、day19=昨收、day20=今日（依 todayClose/yesterdayClose 覆寫）。
+    TechnicalIndicators sharedInd({
+      required double ma5,
+      required double ma10,
+      required double ma20,
+      required double ma60,
+    }) => TechnicalIndicators(
+      ma5: ma5,
+      ma10: ma10,
+      ma20: ma20,
+      ma60: ma60,
+      volumeMA20: 1000,
+    );
+
+    List<DailyPriceEntry> sharedPrices({
+      required double yesterdayClose,
+      required double todayClose,
+    }) => buildPrices(
+      count: 21,
+      overrides: {
+        0: candle(dayIdx: 0, open: 90, high: 91, low: 89, close: 90),
+        15: candle(dayIdx: 15, open: 98, high: 100, low: 97, close: 99),
+        19: candle(
+          dayIdx: 19,
+          open: yesterdayClose,
+          high: yesterdayClose + 1,
+          low: yesterdayClose - 1,
+          close: yesterdayClose,
+        ),
+        20: candle(
+          dayIdx: 20,
+          open: todayClose,
+          high: todayClose + 1,
+          low: todayClose - 1,
+          close: todayClose,
+          volume: 800,
+        ),
+      },
+    );
+
+    test('6179 形狀：ma10 僅高於 ma20 1%、close 落在兩規則拉回帶重疊區 → 只 fire 一條', () {
+      // ma20=100、ma10=101（審計「0~1.8%」重疊帶內）、close=101：
+      // 距 MA20 +1%（在 [-1.5%,+3%] 帶內）、距 MA10 0%（在 [-1.5%,+2.5%] 帶
+      // 內）——修前 close(101) > ma20(100) 即放行，MA10 規則會誤跟著 fire。
+      final ind = sharedInd(ma5: 105, ma10: 101, ma20: 100, ma60: 95);
+      final prices = sharedPrices(yesterdayClose: 103, todayClose: 101);
+      final ma20Result = ma20Rule.evaluate(ctx(ind), stock(prices));
+      final ma10Result = ma10Rule.evaluate(ctx(ind), stock(prices));
+      expect(ma20Result, isNotNull, reason: 'MA20 規則應 fire（距 MA20 +1% 在拉回帶內）');
+      expect(
+        ma10Result,
+        isNull,
+        reason: 'MA10 規則應被排除（close 未突破 MA20 拉回帶上緣 +3%）',
+      );
+    });
+
+    test('clear MA20-only：距 MA20 -1%（深回檔）→ 只 MA20 fire', () {
+      final ind = sharedInd(ma5: 105, ma10: 104, ma20: 100, ma60: 95);
+      final prices = sharedPrices(yesterdayClose: 100.5, todayClose: 99);
+      expect(ma20Rule.evaluate(ctx(ind), stock(prices)), isNotNull);
+      expect(ma10Rule.evaluate(ctx(ind), stock(prices)), isNull);
+    });
+
+    test('clear MA10-only：距 MA20 +6%（遠超帶上緣）但貼 MA10 → 只 MA10 fire', () {
+      final ind = sharedInd(ma5: 110, ma10: 106, ma20: 100, ma60: 95);
+      final prices = sharedPrices(yesterdayClose: 108, todayClose: 106);
+      expect(ma20Rule.evaluate(ctx(ind), stock(prices)), isNull);
+      expect(ma10Rule.evaluate(ctx(ind), stock(prices)), isNotNull);
     });
   });
 

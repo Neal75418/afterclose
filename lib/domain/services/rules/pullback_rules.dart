@@ -195,8 +195,18 @@ class HealthyPullbackToMa20Rule extends StockRule {
 /// 常空白。MA10 是「buy the dip」經典淺回檔帶、日常頻率高。score +12（淺＝最低
 /// tier）。
 ///
-/// **與 [HealthyPullbackToMa20Rule] 互斥**：要求 close > ma20（價還沒跌到深支撐），
-/// MA20 rule 要 close 在 ma20 附近 → 同一檔不會雙 fire（趨勢市 ma10 與 ma20 分離）。
+/// **與 [HealthyPullbackToMa20Rule] 互斥**：要求 close 突破 MA20 規則拉回帶
+/// 上緣（close > ma20 × (1 + [PullbackParams.ma20PullbackBandHigh])），而非
+/// 僅要求 close > ma20。MA20 規則的拉回帶是 [-1.5%, +3%]、即使 close 已高於
+/// ma20 仍可能落在該帶內；用帶上緣當 MA10 規則下界後，兩規則在
+/// close-vs-ma20 軸上保證不重疊——無論 ma10 實際比 ma20 高多少都成立。
+///
+/// **2026-07-18 audit 修正（High #3）**：舊版僅要求 close > ma20，未考慮 MA20
+/// 拉回帶上緣可達 +3%。實測 symbol 6179 於 2026-07-16 同一次回檔事件同時
+/// 觸發兩條規則（+15+12=+27 雙重計分）——當時 ma10 僅高於 ma20 ~1%（審計
+/// 泛稱「0~1.8%」重疊帶），close 同時落入兩規則的拉回帶。設計意圖 MA10 =
+/// 比 MA20 更淺／更緊的回檔，理應在「連 MA20 帶都沒進」的更高價位才適用，
+/// 而非跟 MA20 帶搶同一段價格。
 ///
 /// **已校準（2026-07-09）**：5D 勝率 42.7% 無孤立 edge、60D +1.08%（z=2.6
 /// 顯著，四條中最強）。閾值維持直覺值，見檔頭與 docs/CALIBRATION.md。
@@ -244,8 +254,11 @@ class HealthyPullbackToMa10Rule extends StockRule {
     // ---- Step 2: 中期多頭排列（不要求 ma5>ma10、因 ma5 正回落）----
     if (!(ma10 > ma20 && ma20 > ma60)) return null;
 
-    // ---- Step 3: 淺回檔分界 — close 仍在 MA20 上方（與 MA20 深回檔互斥）----
-    if (todayClose <= ma20) return null;
+    // ---- Step 3: 淺回檔分界 — close 突破 MA20 拉回帶上緣（與 MA20 深回檔
+    // 互斥，見 class doc rationale）----
+    if (todayClose <= ma20 * (1 + PullbackParams.ma20PullbackBandHigh)) {
+      return null;
+    }
 
     // ---- Step 4: 過去 20 日強勢（錨在 ma10）----
     if (!wasStrongOverPeriod(data, ma10)) return null;
