@@ -2,6 +2,7 @@ import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/services/analysis/support_resistance_service.dart';
+import 'package:afterclose/domain/services/ohlcv_data.dart';
 import 'package:afterclose/domain/services/technical_indicator_service.dart';
 
 /// 警示評估所需的上下文資料
@@ -379,11 +380,16 @@ class AlertEvaluationService {
   bool _checkRsiOverbought(List<DailyPriceEntry> prices, double targetRsi) {
     if (prices.length < AlertParams.rsiMinDataPoints) return false;
 
-    final closePrices = prices.map((p) => p.close).whereType<double>().toList();
-    if (closePrices.length < AlertParams.rsiMinDataPoints) return false;
+    final ohlcv = prices.extractOhlcv();
+    if (ohlcv.closes.length < AlertParams.rsiMinDataPoints) return false;
 
-    // 使用 TechnicalIndicatorService 計算 RSI
-    final rsiValues = _indicatorService.calculateRSI(closePrices, period: 14);
+    // 使用 TechnicalIndicatorService 計算 RSI（gapBefore 避免跨停牌缺口的
+    // 價差被誤採計為單一交易日變動，產生虛假極端 RSI 觸發警示）
+    final rsiValues = _indicatorService.calculateRSI(
+      ohlcv.closes,
+      period: 14,
+      gapBefore: ohlcv.gapBefore,
+    );
 
     final latestRsi = rsiValues.last;
     if (latestRsi == null) return false;
@@ -395,10 +401,14 @@ class AlertEvaluationService {
   bool _checkRsiOversold(List<DailyPriceEntry> prices, double targetRsi) {
     if (prices.length < AlertParams.rsiMinDataPoints) return false;
 
-    final closePrices = prices.map((p) => p.close).whereType<double>().toList();
-    if (closePrices.length < AlertParams.rsiMinDataPoints) return false;
+    final ohlcv = prices.extractOhlcv();
+    if (ohlcv.closes.length < AlertParams.rsiMinDataPoints) return false;
 
-    final rsiValues = _indicatorService.calculateRSI(closePrices, period: 14);
+    final rsiValues = _indicatorService.calculateRSI(
+      ohlcv.closes,
+      period: 14,
+      gapBefore: ohlcv.gapBefore,
+    );
 
     final latestRsi = rsiValues.last;
     if (latestRsi == null) return false;
@@ -413,13 +423,11 @@ class AlertEvaluationService {
   bool _checkKdGoldenCross(List<DailyPriceEntry> prices) {
     if (prices.length < AlertParams.kdMinDataPoints) return false;
 
-    // 只取 high/low/close 皆非 null 的 entry，確保三個陣列索引對齊
-    final valid = prices.where(
-      (p) => p.high != null && p.low != null && p.close != null,
-    );
-    final highs = valid.map((p) => p.high!).toList();
-    final lows = valid.map((p) => p.low!).toList();
-    final closes = valid.map((p) => p.close!).toList();
+    final ohlcv = prices.extractOhlcv();
+    final highs = ohlcv.highs;
+    final lows = ohlcv.lows;
+    final closes = ohlcv.closes;
+    final gapBefore = ohlcv.gapBefore;
 
     if (highs.length < 11) return false;
 
@@ -436,6 +444,10 @@ class AlertEvaluationService {
     // 檢查最近 2 天內是否發生過黃金交叉
     final startIndex = kd.k.length >= 3 ? kd.k.length - 3 : 0;
     for (int i = startIndex; i < kd.k.length - 1; i++) {
+      // i 與 i+1 之間若跨停牌缺口，i 並非真正的「前一交易日」，略過避免
+      // 把跨數日的漂移誤判為交叉
+      if (gapBefore[i + 1]) continue;
+
       final prevK = kd.k[i];
       final prevD = kd.d[i];
       final nextK = kd.k[i + 1];
@@ -459,13 +471,11 @@ class AlertEvaluationService {
   bool _checkKdDeathCross(List<DailyPriceEntry> prices) {
     if (prices.length < AlertParams.kdMinDataPoints) return false;
 
-    // 只取 high/low/close 皆非 null 的 entry，確保三個陣列索引對齊
-    final valid = prices.where(
-      (p) => p.high != null && p.low != null && p.close != null,
-    );
-    final highs = valid.map((p) => p.high!).toList();
-    final lows = valid.map((p) => p.low!).toList();
-    final closes = valid.map((p) => p.close!).toList();
+    final ohlcv = prices.extractOhlcv();
+    final highs = ohlcv.highs;
+    final lows = ohlcv.lows;
+    final closes = ohlcv.closes;
+    final gapBefore = ohlcv.gapBefore;
 
     if (highs.length < 11) return false;
 
@@ -482,6 +492,8 @@ class AlertEvaluationService {
     // 檢查最近 2 天內是否發生過死亡交叉
     final startIndex = kd.k.length >= 3 ? kd.k.length - 3 : 0;
     for (int i = startIndex; i < kd.k.length - 1; i++) {
+      if (gapBefore[i + 1]) continue;
+
       final prevK = kd.k[i];
       final prevD = kd.d[i];
       final nextK = kd.k[i + 1];
