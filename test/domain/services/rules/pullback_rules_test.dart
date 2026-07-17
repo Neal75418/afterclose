@@ -342,6 +342,8 @@ void main() {
     );
     List<DailyPriceEntry> closeAt(double c) {
       final p = buildPrices(count: 21);
+      // Fix 1: 過去強勢 baseline（past close=90、ma20 預設 100 → 100>90*1.05=94.5）
+      p[0] = candle(dayIdx: 0, open: 90, high: 91, low: 89, close: 90);
       p[20] = candle(dayIdx: 20, open: c, high: c + 1, low: c - 1, close: c);
       return p;
     }
@@ -355,6 +357,34 @@ void main() {
       expect(r!.type, ReasonType.kdHighPullback);
       expect(r.score, 12);
     });
+
+    // Fix 1（Critical audit #1）：KD 規則是四條 pullback rule 中唯一沒 call
+    // wasStrongOverPeriod 的——手足 MA20/MA10/Hammer 都強制這關。實測 13 檔真
+    // 實 KD_HIGH_PULLBACK fire 中 9 檔（2006/2845/2867/5871/9921/3005/2637/
+    // 2520/5351，~70-77%）過去 20 日根本不算強勢，只有 2332 明確過關。
+    test('null when NOT strong over past 20d '
+        '(audit: KD rule was missing wasStrongOverPeriod gate)', () {
+      // KD 條件全數合格，但 past close=99、ma20=100 → 100 !> 99*1.05=103.95
+      // → 過去 20 日不算強勢，理應 null（修前會誤 fire）。
+      final p = buildPrices(count: 21);
+      p[0] = candle(dayIdx: 0, open: 99, high: 100, low: 98, close: 99);
+      p[20] = candle(dayIdx: 20, open: 100, high: 101, low: 99, close: 100);
+      final r = rule.evaluate(kdCtx(kdK: 70, kdD: 65, prevKdK: 85), stock(p));
+      expect(r, isNull);
+    });
+
+    test(
+      'fires when genuinely strong over past 20d (was-strong gate passes)',
+      () {
+        // past close=90、ma20=100 → 100 > 90*1.05=94.5 → 過去 20 日確實強勢。
+        final p = buildPrices(count: 21);
+        p[0] = candle(dayIdx: 0, open: 90, high: 91, low: 89, close: 90);
+        p[20] = candle(dayIdx: 20, open: 100, high: 101, low: 99, close: 100);
+        final r = rule.evaluate(kdCtx(kdK: 70, kdD: 65, prevKdK: 85), stock(p));
+        expect(r, isNotNull);
+        expect(r!.type, ReasonType.kdHighPullback);
+      },
+    );
 
     test('fires at window low boundary K=60 (inclusive)', () {
       final r = rule.evaluate(
@@ -659,6 +689,8 @@ void main() {
         ma60: 95,
       );
       final kp = buildPrices(count: 21);
+      // Fix 1: 過去強勢 baseline，見 KdHighLevelPullbackRule group 內 closeAt()
+      kp[0] = candle(dayIdx: 0, open: 90, high: 91, low: 89, close: 90);
       kp[20] = candle(dayIdx: 20, open: 100, high: 101, low: 99, close: 100);
       expect(kdRule.evaluate(regimeCtx(kdInd, true), stock(kp)), isNotNull);
       expect(kdRule.evaluate(regimeCtx(kdInd, false), stock(kp)), isNull);
@@ -757,6 +789,8 @@ void main() {
         ),
       );
       final prices = buildPrices(count: 21);
+      // Fix 1: 過去強勢 baseline，見 KdHighLevelPullbackRule group 內 closeAt()
+      prices[0] = candle(dayIdx: 0, open: 90, high: 91, low: 89, close: 90);
       prices[20] = candle(
         dayIdx: 20,
         open: 100,

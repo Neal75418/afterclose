@@ -458,13 +458,22 @@ class KdHighLevelPullbackRule extends StockRule {
     // ---- Step 3: 多頭排列 ----
     if (ma20 <= ma60) return null;
 
-    // ---- Step 4: 前日 KD 在高檔（prevKdK >= 78）----
+    // ---- Step 4: 過去 20 日強勢 ----
+    //
+    // **2026-07-18 audit 修正（Critical #1）**：三個手足規則（MA20/MA10/
+    // Hammer）都強制這關、KD 規則原本漏掉。實測 13 檔真實 KD_HIGH_PULLBACK
+    // fire 中 9 檔（2006/2845/2867/5871/9921/3005/2637/2520/5351，~70-77%）
+    // 過去 20 日根本不算強勢，只有 2332 明確過關——「之前強、現在剛回檔」
+    // 的訊號前提失守，補齊與手足一致的 gate。
+    if (!wasStrongOverPeriod(data, ma20)) return null;
+
+    // ---- Step 5: 前日 KD 在高檔（prevKdK >= 78）----
     //
     // **2026-06-20 早期體檢修正（CALIBRATION_PENDING）**：原 >= 80 太緊、80 邊緣
     // 回落進不來。放寬到 78 容納剛從超買區滑落的 case。
     if (prevKdK < PullbackParams.kdHighPrevMin) return null;
 
-    // ---- Step 5: 今日 K 回落到 [60, 80) 區間 ----
+    // ---- Step 6: 今日 K 回落到 [60, 80) 區間 ----
     //
     // **2026-06-20 早期體檢修正**：原 [50, 75] 含數學矛盾 — KD 平滑因子寫死 1/3
     // （technical_indicator_service kSmoothFactor），prevKdK≥78 時單日 K 下限 =
@@ -476,23 +485,23 @@ class KdHighLevelPullbackRule extends StockRule {
       return null;
     }
 
-    // ---- Step 6: 未死叉（kdK > kdD）----
+    // ---- Step 7: 未死叉（kdK > kdD）----
     //
     // 語意核心保留。窗口上移到 [60,80) 後 K 仍在 D 上方機率大增、不再像舊窗口
     // [50,75] 那樣「掉進區間的都已死叉」自相殘殺。
     if (kdK <= kdD) return null;
 
-    // ---- Step 7: 收盤未破 MA20 過深（>= ma20 * 0.99）----
+    // ---- Step 8: 收盤未破 MA20 過深（>= ma20 * 0.99）----
     if (todayClose < ma20 * PullbackParams.kdCloseMinMa20Ratio) return null;
 
-    // ---- Step 8: K 值漸降非崩跌（單日 K 跌幅 <= 30）----
+    // ---- Step 9: K 值漸降非崩跌（單日 K 跌幅 <= 30）----
     //
     // **2026-06-20 早期體檢修正**：原 <= 20 跟 [60,80) 窗口衝突（prevKdK 高時
     // drop 自然 > 20）、是窗口變窄元兇。放寬到 30 保留 panic 防護但不殺窗口。
     final kdKDailyDrop = prevKdK - kdK;
     if (kdKDailyDrop > PullbackParams.kdMaxDailyDrop) return null;
 
-    // ---- Step 9: 非跌停 ----
+    // ---- Step 10: 非跌停 ----
     if (isLimitDownDay(data)) return null;
 
     return TriggeredReason(
