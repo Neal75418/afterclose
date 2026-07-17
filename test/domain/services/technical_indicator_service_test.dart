@@ -1,5 +1,7 @@
 import 'dart:math';
 
+import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/domain/services/ohlcv_data.dart';
 import 'package:afterclose/domain/services/technical_indicator_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -282,6 +284,84 @@ void main() {
       final prices = List.generate(30, (i) => 100.0 + i * 0.1);
       final result = service.calculateRSI(prices, period: 14);
       expect(result.length, equals(30));
+    });
+
+    // ----------------------------------------------------------------
+    // Gap-bridging root cause: 停牌列被 extractOhlcv() 丟棄後，若不帶
+    // gapBefore，相鄰陣列元素的價差會被當成單一交易日變動計算，產生
+    // 虛假極端值。以下驗證 gapBefore 讓計算與 latestRSI 的缺口語意一致。
+    // ----------------------------------------------------------------
+
+    test('without gapBefore, a mid-series gap fabricates a phantom extreme RSI '
+        '(documents the bug being fixed)', () {
+      final oscillating = List.generate(
+        20,
+        (i) => 100.0 + (i.isEven ? 0.3 : -0.3),
+      );
+      // 停牌數日後爆量反彈（實務上是「跨數個交易日的真實累積漲幅」，
+      // 但因停牌列已被丟棄，陣列上與前一筆緊鄰）
+      final withJump = [...oscillating, 250.0];
+
+      final bridged = service.calculateRSI(withJump, period: 14);
+
+      expect(bridged.last, greaterThan(90.0));
+    });
+
+    test('gapBefore skips the delta across the gap instead of fabricating it '
+        '(frozen at the pre-gap value, not the bridged spike)', () {
+      final oscillating = List.generate(
+        20,
+        (i) => 100.0 + (i.isEven ? 0.3 : -0.3),
+      );
+      final withJump = [...oscillating, 250.0];
+      final gapBefore = List<bool>.filled(withJump.length, false);
+      gapBefore[20] = true; // 缺口在最後一筆之前
+
+      final bridged = service.calculateRSI(withJump, period: 14);
+      final gapAware = service.calculateRSI(
+        withJump,
+        period: 14,
+        gapBefore: gapBefore,
+      );
+
+      // 跨缺口那步凍結：與缺口前一筆完全相同（未套用平滑衰減，未採計價差）
+      expect(gapAware.last, equals(gapAware[19]));
+      // 遠低於未修正（跨缺口誤採計）算出的虛假極端值
+      expect(gapAware.last, lessThan(60.0));
+      expect(gapAware.last, lessThan(bridged.last!));
+    });
+
+    test('calculateRSI(gapBefore:) matches latestRSI when replayed over the '
+        'same raw DailyPriceEntry series with a mid-series gap', () {
+      final now = DateTime(2026, 6, 1);
+      DailyPriceEntry entryAt(int i, {double? close}) => createTestPrice(
+        date: now.add(Duration(days: i)),
+        close: close,
+      );
+
+      final entries = <DailyPriceEntry>[
+        // 前 20 筆完整（涵蓋 seed window period=14），確保 calculateRSI
+        // 的 valid-close-index seed window 與 latestRSI 的 raw-index seed
+        // window 落在同一段資料上，兩者理論上應算出相同結果
+        for (int i = 0; i < 20; i++)
+          entryAt(i, close: 100.0 + (i.isEven ? 0.3 : -0.3)),
+        // 缺口發生在 seed window 之後：兩日停牌（無成交）
+        entryAt(20, close: null),
+        entryAt(21, close: null),
+        // 復牌後續漲
+        for (int i = 22; i < 30; i++) entryAt(i, close: 100.0 + (i - 21) * 1.5),
+      ];
+
+      final ohlcv = entries.extractOhlcv();
+      final gapAwareSeries = service.calculateRSI(
+        ohlcv.closes,
+        period: 14,
+        gapBefore: ohlcv.gapBefore,
+      );
+      final reference = TechnicalIndicatorService.latestRSI(entries);
+
+      expect(reference, isNotNull);
+      expect(gapAwareSeries.last, closeTo(reference!, 0.0001));
     });
   });
 
@@ -653,6 +733,71 @@ void main() {
       final result = TechnicalIndicatorService.latestVolumeMA([], 20);
       expect(result.volumeMA, isNull);
       expect(result.todayVolume, isNull);
+    });
+
+    // ----------------------------------------------------------------
+    // Gap-bridging root cause: 停牌列 volume=0.0（非 null），舊邏輯僅濾
+    // null 會把停牌日當成 0 成交量的有效觀測值計入分母，稀釋均量。
+    // 口徑須與 volume_rules.dart 的均量計算（濾 0 + volMaMinValidDayRatio
+    // 下限）一致。
+    // ----------------------------------------------------------------
+
+    test(
+      'excludes zero-volume halt days from the average (fair average, not diluted)',
+      () {
+        final now = DateTime.now();
+        // 20 筆窗口：3 筆停牌（volume=0），17 筆正常成交（volume=1000）
+        // 17/20 = 85% ≥ volMaMinValidDayRatio(80%) 下限，聚焦驗證「排除 0」
+        // 本身而不同時觸發下限 null（下限另有專屬測試）
+        final haltIndexes = {0, 7, 14};
+        final prices = List.generate(20, (i) {
+          return createTestPrice(
+            date: now.subtract(Duration(days: 20 - i)),
+            close: 100.0,
+            volume: haltIndexes.contains(i) ? 0.0 : 1000.0,
+          );
+        });
+
+        final result = TechnicalIndicatorService.latestVolumeMA(prices, 20);
+
+        // 稀釋算法會得到 17000/20 = 850；正確口徑應為 17000/17 = 1000
+        expect(result.volumeMA, closeTo(1000.0, 0.001));
+      },
+    );
+
+    test(
+      'returns null when valid (non-zero) days fall below volMaMinValidDayRatio floor',
+      () {
+        final now = DateTime.now();
+        // 20 筆窗口只有 10 筆有效成交（10 < 20*0.8=16 下限）
+        final prices = List.generate(20, (i) {
+          return createTestPrice(
+            date: now.subtract(Duration(days: 20 - i)),
+            close: 100.0,
+            volume: i < 10 ? 0.0 : 1000.0,
+          );
+        });
+
+        final result = TechnicalIndicatorService.latestVolumeMA(prices, 20);
+
+        expect(result.volumeMA, isNull);
+      },
+    );
+
+    test('returns a value when valid days exactly meet the floor ratio', () {
+      final now = DateTime.now();
+      // 20 筆窗口恰好 16 筆有效成交（= 20*0.8 下限，含）
+      final prices = List.generate(20, (i) {
+        return createTestPrice(
+          date: now.subtract(Duration(days: 20 - i)),
+          close: 100.0,
+          volume: i < 4 ? 0.0 : 1000.0,
+        );
+      });
+
+      final result = TechnicalIndicatorService.latestVolumeMA(prices, 20);
+
+      expect(result.volumeMA, closeTo(1000.0, 0.001));
     });
   });
 

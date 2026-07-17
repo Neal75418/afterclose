@@ -2,6 +2,7 @@ import 'dart:collection';
 import 'dart:math';
 
 import 'package:afterclose/core/constants/analysis_params.dart';
+import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/data/database/app_database.dart';
 
 /// 大盤位階（均線排列）分類
@@ -163,18 +164,31 @@ class TechnicalIndicatorService {
 
   /// 計算相對強弱指標 (RSI)
   ///
-  /// [period] 預設為 14 日
-  List<double?> calculateRSI(List<double> prices, {int period = 14}) {
+  /// [period] 預設為 14 日。
+  ///
+  /// [gapBefore]（選填，通常來自 [OhlcvData.gapBefore]）：與 [prices] 等長，
+  /// `gapBefore[i] == true` 表示 `prices[i]` 與 `prices[i-1]` 之間跨越了
+  /// 停牌/無成交缺口。此時該筆價差**不會**被採計進漲跌幅平均——避免把
+  /// 「跨數個交易日的累積價差」誤當成單一交易日變動，產生虛假極端 RSI。
+  /// 語意與 [latestRSI] 的缺口處理一致（該步驟凍結、不衰減、不採計）。
+  /// 省略時維持過去行為（不做缺口偵測），向後相容既有呼叫端。
+  List<double?> calculateRSI(
+    List<double> prices, {
+    int period = 14,
+    List<bool>? gapBefore,
+  }) {
     if (prices.length < period + 1) {
       return List.filled(prices.length, null);
     }
 
     final result = <double?>[];
 
-    // 計算價格變動
+    // 計算價格變動，並標記每筆變動是否跨越缺口
     final changes = <double>[];
+    final isGapDelta = <bool>[];
     for (int i = 1; i < prices.length; i++) {
       changes.add(prices[i] - prices[i - 1]);
+      isGapDelta.add(gapBefore != null && i < gapBefore.length && gapBefore[i]);
     }
 
     // 第一個 RSI 需要 period + 1 個資料點
@@ -183,9 +197,13 @@ class TechnicalIndicatorService {
     }
 
     // 計算初始平均漲跌幅
+    // 跨缺口的變動不採計進分子，但分母固定為 period（與 latestRSI 的
+    // seed window 一致：缺口視為「無資訊」而非「單日零變動」，寧可讓
+    // 平均略為保守也不虛增波動）
     double avgGain = 0;
     double avgLoss = 0;
     for (int i = 0; i < period; i++) {
+      if (isGapDelta[i]) continue;
       if (changes[i] > 0) {
         avgGain += changes[i];
       } else {
@@ -210,6 +228,13 @@ class TechnicalIndicatorService {
 
     // 使用平滑平均計算後續 RSI
     for (int i = period; i < changes.length; i++) {
+      if (isGapDelta[i]) {
+        // 跨缺口：凍結目前平均（不套用平滑衰減、不採計此步價差），
+        // RSI 維持缺口前的最後數值，直到下一筆真正相鄰的交易日出現
+        result.add(rsi);
+        continue;
+      }
+
       final change = changes[i];
       final gain = change > 0 ? change : 0.0;
       final loss = change < 0 ? change.abs() : 0.0;
@@ -227,6 +252,7 @@ class TechnicalIndicatorService {
         final rs = avgGain / avgLoss;
         subsequentRsi = 100 - (100 / (1 + rs));
       }
+      rsi = subsequentRsi;
       result.add(subsequentRsi);
     }
 
@@ -237,6 +263,15 @@ class TechnicalIndicatorService {
   ///
   /// [kPeriod] K 值週期，預設 9 日
   /// [dPeriod] D 值週期，預設 3 日
+  ///
+  /// 注意（gap-bridging root cause 修復的範圍界定）：此函式**不**做缺口
+  /// 偵測。RSV 視窗以「N 個有效交易日」為準本就是標準 Stochastic 語意，
+  /// 停牌期間無資料可採，沿用停牌前最後 K/D 並在復牌當日與新 RSV 混合
+  /// 也是時間序列指標處理缺口的標準做法——K/D 數值本身沒有虛增問題。
+  /// 真正的問題在於**呼叫端**把 `k[len-2]` 當成「前一交易日」用於交叉/
+  /// 單日跌幅判斷，若前一筆其實跨了停牌缺口就會誤判；此防呆已在呼叫端
+  /// 用 [OhlcvData.gapBefore] 處理（見 AnalysisCoordinatorService.
+  /// calculateTechnicalIndicators、AlertEvaluationService 的 KD 交叉檢查）。
   ({List<double?> k, List<double?> d}) calculateKD(
     List<double> highs,
     List<double> lows,
@@ -645,6 +680,11 @@ class TechnicalIndicatorService {
   /// [prices] 每日收盤價列表
   /// [period] 計算週期
   /// 回傳 (volumeMA, 今日成交量)
+  ///
+  /// 停牌/無成交列的 volume 為 0.0（非 null），計算均量時會排除（而非計為
+  /// 0 的有效觀測值稀釋均量），且要求窗口內至少 [RuleParams.volMaMinValidDayRatio]
+  /// 比例的有效交易日，否則回傳 null——口徑與 volume_rules.dart 的
+  /// VolumeSpikeRule/PriceSpikeRule 均量計算一致（同一份缺口語意的共用邏輯）。
   static ({double? volumeMA, double? todayVolume}) latestVolumeMA(
     List<DailyPriceEntry> prices,
     int period,
@@ -658,12 +698,17 @@ class TechnicalIndicatorService {
     int count = 0;
     for (int i = prices.length - period; i < prices.length; i++) {
       final vol = prices[i].volume;
-      if (vol != null) {
+      if (vol != null && vol > 0) {
         volSum += vol;
         count++;
       }
     }
 
-    return (volumeMA: count > 0 ? volSum / count : null, todayVolume: todayVol);
+    final minValidDays = (period * RuleParams.volMaMinValidDayRatio).floor();
+    if (count < minValidDays) {
+      return (volumeMA: null, todayVolume: todayVol);
+    }
+
+    return (volumeMA: volSum / count, todayVolume: todayVol);
   }
 }

@@ -127,17 +127,21 @@ class AnalysisCoordinatorService {
       return null;
     }
 
-    // 擷取 OHLC 資料
-    final (:closes, :highs, :lows, volumes: _) = prices.extractOhlcv();
+    // 擷取 OHLC 資料（含 gapBefore：哪些有效交易日前跨了停牌缺口）
+    final (:closes, :highs, :lows, :gapBefore, volumes: _) = prices
+        .extractOhlcv();
 
     if (closes.length < IndicatorParams.rsiPeriod + 2) {
       return null;
     }
 
-    // 計算 RSI
+    // 計算 RSI — 傳入 gapBefore 讓跨缺口的價差不被當成單一交易日變動
+    // （見 latestRSI 的缺口處理語意；root cause: 停牌列被 extractOhlcv 丟棄後，
+    // 若不帶缺口資訊，相鄰陣列元素可能實際橫跨多個交易日）
     final rsiValues = indicatorService.calculateRSI(
       closes,
       period: IndicatorParams.rsiPeriod,
+      gapBefore: gapBefore,
     );
     final currentRsi = rsiValues.isNotEmpty ? rsiValues.last : null;
 
@@ -156,8 +160,14 @@ class AnalysisCoordinatorService {
     if (kd.k.length >= 2 && kd.d.length >= 2) {
       currentK = kd.k.last;
       currentD = kd.d.last;
-      prevK = kd.k[kd.k.length - 2];
-      prevD = kd.d[kd.d.length - 2];
+      // prevK/prevD 僅在「今日」與其前一個有效交易日之間沒有停牌缺口時，
+      // 才真正代表「前一交易日」——否則 kd.k[len-2] 可能是好幾個交易日前的
+      // 舊值，KD 交叉規則、KdHighLevelPullbackRule 的 prevKdK-kdK 單日跌幅
+      // 都會誤判，寧可回傳 null 讓規則自然略過（rules 已對 null 做防禦）
+      if (!gapBefore.last) {
+        prevK = kd.k[kd.k.length - 2];
+        prevD = kd.d[kd.d.length - 2];
+      }
     } else if (kd.k.isNotEmpty && kd.d.isNotEmpty) {
       currentK = kd.k.last;
       currentD = kd.d.last;
