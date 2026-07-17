@@ -66,8 +66,10 @@ class TrendDetectionService {
       return false;
     }
 
-    // 突破區間頂部（需量能確認——與 BreakoutRule 對相同價位突破的 1.5x 量能
-    // 要求對稱，亦與本檔 _hasHigherLow 的量能確認一致；audit signal #4）
+    // 突破區間頂部（需量能確認——與本檔 _hasHigherLow 的量能確認一致；
+    // 共用 BreakoutRule 的 1.5x 常數 reversalVolumeConfirm，但語意不同：
+    // 此處比「近 20 日均量 vs 前 20 日均量」、資料不足擋下，BreakoutRule
+    // 比「今日量 vs 20 日均量」、資料不足放行；audit signal #4）
     if (rangeTop != null) {
       final breakoutLevel = rangeTop * (1 + TrendParams.breakoutBuffer);
       if (todayClose > breakoutLevel &&
@@ -100,7 +102,7 @@ class TrendDetectionService {
     }
 
     // 跌破支撐（需量能確認——恐慌性跌破通常伴隨放量，與 BreakdownRule 對相同
-    // 價位跌破的 1.5x 量能要求對稱）
+    // 價位跌破共用 BreakoutRule 的 1.5x 常數，語意見上方 checkWeakToStrong 註解）
     if (support != null) {
       final breakdownLevel = support * (1 - TrendParams.breakdownBuffer);
       if (todayClose < breakdownLevel &&
