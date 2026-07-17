@@ -308,6 +308,69 @@ void main() {
 
         expect(result, isNull);
       });
+
+      test('does not trigger on a crash even with volume confirmation '
+          '(audit: 36 次重挫觸發中 33% 為負報酬，重挫不應與急漲同分)', () {
+        // 跌 10%，成交量 2 倍（遠超過 1.5 倍門檻）——若門檻僅檢查
+        // pctChange.abs() 會誤把重挫當急漲加分。空方已由
+        // PriceVolumeBearishDivergenceRule / BreakdownRule 覆蓋。
+        final now = DateTime.now();
+        final prices = List.generate(21, (i) {
+          if (i < 20) {
+            return createTestPrice(
+              date: now.subtract(Duration(days: 20 - i)),
+              close: 100.0,
+              volume: 1000.0,
+            );
+          } else {
+            return createTestPrice(
+              date: now,
+              close: 90.0, // -10%
+              volume: 2000.0, // 2x 均量
+            );
+          }
+        });
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
+          trendState: TrendState.range,
+        );
+        final data = StockData(symbol: 'TEST', prices: prices);
+
+        final result = rule.evaluate(context, data);
+
+        expect(result, isNull);
+      });
+
+      test('still triggers on a symmetric surge with volume confirmation', () {
+        // 漲 10%（跟上面的跌 10% 對照），確認正向門檻邏輯本身不受影響。
+        final now = DateTime.now();
+        final prices = List.generate(21, (i) {
+          if (i < 20) {
+            return createTestPrice(
+              date: now.subtract(Duration(days: 20 - i)),
+              close: 100.0,
+              volume: 1000.0,
+            );
+          } else {
+            return createTestPrice(
+              date: now,
+              close: 110.0, // +10%
+              volume: 2000.0, // 2x 均量
+            );
+          }
+        });
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
+          trendState: TrendState.range,
+        );
+        final data = StockData(symbol: 'TEST', prices: prices);
+
+        final result = rule.evaluate(context, data);
+
+        expect(result, isNotNull);
+        expect(result!.type, ReasonType.priceSpike);
+        expect(result.score, equals(RuleScores.priceSpike));
+      });
     });
 
     group('InstitutionalShiftRule', () {
