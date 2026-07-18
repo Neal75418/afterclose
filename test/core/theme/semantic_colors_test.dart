@@ -176,6 +176,27 @@ void main() {
     });
   });
 
+  group('Quality 類綠色已完成遷移', () {
+    test('DesignTokens success 兩主題皆非綠色相', () {
+      for (final c in [DesignTokens.successLight, DesignTokens.successDark]) {
+        final h = ColorContrast.hue(c);
+        expect(
+          h >= 88 && h <= 175,
+          isFalse,
+          reason:
+              'success 仍為綠色 ${h.toStringAsFixed(1)}°，'
+              '會與「下跌」語意混淆',
+        );
+      }
+    });
+
+    test('warning 色僅宣告一處', () {
+      // AppTheme.warningColor 與 DesignTokens.warningDark 曾各自宣告不同值
+      // （#FF9800 36° vs #FB923C 27°），合併後兩者必須同值。
+      expect(DesignTokens.warningDark, WarningColors.warning);
+    });
+  });
+
   group('圖表色盤色族間距', () {
     test('不同色族間距 >= 35 度、同色族對比比值 >= 1.5', () {
       const bg = SemanticColors.darkBackground;

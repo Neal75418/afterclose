@@ -52,17 +52,17 @@ class AppTheme {
   static const errorColor = Color(0xFFE74C3C);
 
   // 語意色
-  /// 正面/成功 - 綠色（信心度高等）
-  static const successColor = Color(0xFF4CAF50);
+  /// 正面/成功 —— 非方向性語意，使用品牌紫
+  static const successColor = QualityColors.brand;
 
-  /// 警示 - 橘色（風險因子、中等分數等）
-  static const warningColor = Color(0xFFFF9800);
+  /// 警示 —— 委派 WarningColors，避免雙處宣告漂移
+  static const warningColor = WarningColors.warning;
 
-  /// 注意 - 琥珀色（觀望等級分數等）
-  static const cautionColor = Color(0xFFFFC107);
+  /// 注意
+  static const cautionColor = WarningColors.caution;
 
-  /// 股利正面指標 - 綠色
-  static const dividendColor = Color(0xFF27AE60);
+  /// 股利正面指標 —— 非方向性語意，使用品牌紫
+  static const dividendColor = QualityColors.brand;
 
   /// 中性灰 —— 用於非漲跌的平穩狀態
   static const neutralSlateColor = QualityColors.muted;

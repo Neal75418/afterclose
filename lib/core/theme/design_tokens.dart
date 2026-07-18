@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:afterclose/core/theme/semantic_colors.dart';
+
 /// 設計系統核心常數
 ///
 /// 統一管理應用程式中的間距、圓角、透明度等設計參數，
@@ -185,25 +187,23 @@ abstract final class DesignTokens {
   // 抽 token 統一管理：明暗兩組顏色針對對應背景挑 ≥7:1 對比（AAA），
   // 並提供 `successColor(theme)` / `warningColor(theme)` helper 自動切換。
 
-  /// Success 語意色（亮 theme，例如 ListTile / Today timestamp dot）
+  /// Success 語意色（淺色主題）
   ///
-  /// `#2E7D32`（green 800）對 `#FFFFFF` 對比 ~8.6:1，符合 AAA。
-  static const Color successLight = Color(0xFF2E7D32);
+  /// 「成功／高信心」屬非方向性語意，不使用綠色 —— 綠色在本 app
+  /// 代表下跌。改用品牌紫，與股價語意徹底分離。
+  static const Color successLight = QualityColors.brandOnLight;
 
-  /// Success 語意色（暗 theme）
-  ///
-  /// `#4ADE80`（emerald 400）對 `#1E293B`（slate 800）對比 ~9.2:1。
-  static const Color successDark = Color(0xFF4ADE80);
+  /// Success 語意色（深色主題）
+  static const Color successDark = QualityColors.brand;
 
-  /// Warning 語意色（亮 theme，partial 用）
-  ///
-  /// `#E65100`（orange 900）對 `#FFFFFF` 對比 ~7.8:1。
-  static const Color warningLight = Color(0xFFE65100);
+  /// Warning 語意色（淺色主題）
+  static const Color warningLight = WarningColors.warningOnLight;
 
-  /// Warning 語意色（暗 theme）
+  /// Warning 語意色（深色主題）
   ///
-  /// `#FB923C`（orange 400）對 `#1E293B` 對比 ~7.6:1。
-  static const Color warningDark = Color(0xFFFB923C);
+  /// 與 `WarningColors.warning` 同值 —— 此處曾與 `AppTheme.warningColor`
+  /// 各自宣告不同值（#FB923C 27° vs #FF9800 36°），造成同語意雙色漂移。
+  static const Color warningDark = WarningColors.warning;
 
   // ==================================================
   // 圖表色盤

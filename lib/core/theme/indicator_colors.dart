@@ -1,5 +1,7 @@
 import 'dart:ui';
 
+import 'package:afterclose/core/theme/semantic_colors.dart';
+
 /// 技術指標圖表與相關元件的色彩常數
 ///
 /// 統一管理所有指標相關的硬編碼顏色，確保一致性並便於維護。
@@ -28,8 +30,8 @@ abstract final class IndicatorColors {
   // 指標標籤顏色
   // ==================================================
 
-  /// OBV 指標標籤色（Emerald）
-  static const obvLabel = Color(0xFF10B981);
+  /// OBV 指標標籤色（藍，分類語意）
+  static const obvLabel = Color(0xFF3B82F6);
 
   /// ATR 指標標籤色（Violet）
   static const atrLabel = Color(0xFF8B5CF6);
@@ -38,14 +40,14 @@ abstract final class IndicatorColors {
   // 波動度色階
   // ==================================================
 
-  /// 低波動（ATR）— Green
-  static const volatilityLow = Color(0xFF10B981);
+  /// 低波動（ATR）—— 非方向性，使用中性灰
+  static const volatilityLow = Color(0xFF71717A);
 
-  /// 中波動（ATR）— Amber
-  static const volatilityMedium = Color(0xFFF59E0B);
+  /// 中波動（ATR）—— 波動度是「請注意」而非多空訊號
+  static const volatilityMedium = WarningColors.caution;
 
-  /// 高波動（ATR）— Red
-  static const volatilityHigh = Color(0xFFEF4444);
+  /// 高波動（ATR）—— 波動度是「請注意」而非多空訊號，不使用紅色
+  static const volatilityHigh = WarningColors.warning;
 
   // 籌碼評等色階已移至 PriceColors.chipRating()。
   // 該色階屬方向性語意（籌碼強弱＝多空），與漲跌共用紅綠色彩語言，
