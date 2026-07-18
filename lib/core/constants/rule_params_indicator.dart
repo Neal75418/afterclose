@@ -9,20 +9,20 @@ abstract final class IndicatorParams {
   /// RSI 週期（預設 14）
   static const int rsiPeriod = 14;
 
-  /// RSI 超買門檻（RSI 高於此值避免買入）
-  static const double rsiOverbought = 75.0;
-
-  /// RSI 超賣門檻（RSI 低於此值避免賣出）
-  static const double rsiOversold = 20.0;
-
-  /// RSI 極度超買（高風險區）
+  /// RSI 超買/超賣「極端區」門檻 — 兩側刻意不對稱，勿改成對稱。
   ///
-  /// 標準超買起點為 75，85 以上即為極度超買。
+  /// 命名雖同為 extreme，兩側距中心（50）刻意不等距：
+  /// - 超買側 85：真正的「超買力竭」門檻（距中心 +35），僅在極端過熱時示警（-8）。
+  /// - 超賣側 30：實為「輕度超賣的反彈觸發」門檻（距中心 -20），比慣例超賣線
+  ///   （20~25）寬鬆，故「extreme oversold」名不符實；為對超賣反彈保持靈敏而刻意
+  ///   設寬（+10 較易觸發）。此為刻意的多頭傾斜，非對稱錯誤——請勿為對齊 85 而下修 30。
+  ///
+  /// 註：值與分數的調整屬訊號校準（需回測），不在此命名/文件清理範圍。
   static const double rsiExtremeOverbought = 85.0;
 
-  /// RSI 極度超賣（潛在反彈區）
+  /// RSI 超賣訊號門檻（30）— 見 [rsiExtremeOverbought] 的不對稱說明。
   ///
-  /// RSI 30 以下即為超賣區。
+  /// 30 = 輕度超賣的反彈觸發點（非慣例 20~25 的「極度超賣」）。
   static const double rsiExtremeOversold = 30.0;
 
   /// RSI 中性區上界（K 線型態過濾用）

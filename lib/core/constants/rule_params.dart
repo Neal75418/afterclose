@@ -26,7 +26,7 @@ export 'package:afterclose/core/constants/rule_scores.dart';
 /// - **比例值**（0.0~1.0）：用於乘法運算，如 `price * (1 + ratio)`
 ///   例：`breakoutBuffer = 0.03`（3%）、`maDeviationThreshold = 0.05`（5%）
 /// - **百分比值**（0~100）：用於直接比較，如 `if (rsi >= threshold)`
-///   例：`rsiOverbought = 75.0`、`dayTradingHighThreshold = 50.0`
+///   例：`scanRsiOverboughtThreshold = 75.0`、`dayTradingHighThreshold = 50.0`
 /// - **倍數值**：用於量能比較，如 `volume >= avg * multiplier`
 ///   例：`volumeSpikeMult = 4.0`、`priceSpikeVolumeMult = 1.5`
 abstract final class RuleParams {
