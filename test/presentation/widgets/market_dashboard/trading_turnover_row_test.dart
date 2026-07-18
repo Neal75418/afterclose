@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/providers/market_overview_provider.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/trading_turnover_row.dart';
 
@@ -63,6 +64,29 @@ void main() {
       );
 
       expect(find.textContaining('12,000.00'), findsOneWidget);
+    });
+
+    testWidgets('5日均微幅正變動（+0.4%）0 位捨入為 0：不顯示 +0%、中性色', (tester) async {
+      tester.view.physicalSize = const Size(3000, 2400);
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      const data = TradingTurnover(totalTurnover: 5e10);
+      // changePercent = (1004 - 1000) / 1000 * 100 = 0.4% → 0 位捨入為 0
+      const comparison = TurnoverComparison(
+        todayTurnover: 1004,
+        avg5dTurnover: 1000,
+      );
+      await tester.pumpWidget(
+        buildTestApp(
+          const TradingTurnoverRow(data: data, turnoverComparison: comparison),
+        ),
+      );
+
+      expect(find.textContaining('+0%'), findsNothing);
+      final badge = tester.widget<Text>(
+        find.textContaining('marketOverview.avg5d'),
+      );
+      expect(badge.style?.color, AppTheme.neutralColor);
     });
 
     // Regression — 2026-06 screenshot 顯示左卡片 5日均 badge 右側溢出 1.1px。

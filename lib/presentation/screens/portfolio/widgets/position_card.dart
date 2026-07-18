@@ -16,10 +16,14 @@ class PositionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isPositive = position.unrealizedPnl >= 0;
-    final pnlColor = position.unrealizedPnl == 0
+    // 依顯示精度捨入後判方向：平盤/微負值→中性色，與數字一致。
+    final roundedPnl = AppNumberFormat.roundForDisplay(
+      position.unrealizedPnl,
+      0,
+    );
+    final pnlColor = roundedPnl == 0
         ? theme.colorScheme.onSurface
-        : (isPositive ? AppTheme.upColor : AppTheme.downColor);
+        : (roundedPnl > 0 ? AppTheme.upColor : AppTheme.downColor);
 
     return InkWell(
       onTap: onTap,
@@ -91,7 +95,7 @@ class PositionCard extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  '(${isPositive ? "+" : ""}${position.unrealizedPnlPct.toStringAsFixed(1)}%)',
+                  '(${AppNumberFormat.signedPercent(position.unrealizedPnlPct, decimals: 1)})',
                   style: theme.textTheme.labelSmall?.copyWith(color: pnlColor),
                 ),
               ],

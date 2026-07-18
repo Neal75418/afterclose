@@ -15,8 +15,11 @@ class PortfolioSummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isPositive = summary.totalPnl >= 0;
-    final pnlColor = isPositive ? AppTheme.upColor : AppTheme.downColor;
+    // 依顯示精度捨入後判方向：平盤（0）→ 中性色、不帶 +，與下方 _PnlItem 一致。
+    final roundedPnl = AppNumberFormat.roundForDisplay(summary.totalPnl, 0);
+    final pnlColor = roundedPnl == 0
+        ? theme.colorScheme.onSurface
+        : (roundedPnl > 0 ? AppTheme.upColor : AppTheme.downColor);
 
     return Container(
       padding: const EdgeInsets.all(DesignTokens.spacing16),
@@ -55,7 +58,7 @@ class PortfolioSummaryCard extends StatelessWidget {
               ),
               const SizedBox(width: DesignTokens.spacing8),
               Text(
-                '${isPositive ? "+" : ""}NT\$${_formatNumber(summary.totalPnl)}',
+                '${roundedPnl > 0 ? "+" : ""}NT\$${_formatNumber(summary.totalPnl)}',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: pnlColor,
                   fontWeight: FontWeight.w600,
@@ -63,7 +66,7 @@ class PortfolioSummaryCard extends StatelessWidget {
               ),
               const SizedBox(width: DesignTokens.spacing4),
               Text(
-                '(${isPositive ? "+" : ""}${summary.totalPnlPct.toStringAsFixed(1)}%)',
+                '(${AppNumberFormat.signedPercent(summary.totalPnlPct, decimals: 1)})',
                 style: theme.textTheme.bodySmall?.copyWith(color: pnlColor),
               ),
             ],
@@ -117,10 +120,11 @@ class _PnlItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isPositive = value >= 0;
-    final color = value == 0
+    // 依顯示精度（0 位）捨入後判方向：平盤/微負值→中性色、顯示 0（不帶 +/-）。
+    final rounded = AppNumberFormat.roundForDisplay(value, 0);
+    final color = rounded == 0
         ? theme.colorScheme.onSurface
-        : (isPositive ? AppTheme.upColor : AppTheme.downColor);
+        : (rounded > 0 ? AppTheme.upColor : AppTheme.downColor);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -133,7 +137,7 @@ class _PnlItem extends StatelessWidget {
         ),
         const SizedBox(height: DesignTokens.spacing2),
         Text(
-          value == 0 ? '0' : AppNumberFormat.signedInteger(value),
+          rounded == 0 ? '0' : AppNumberFormat.signedInteger(value),
           style: theme.textTheme.bodySmall?.copyWith(
             color: color,
             fontWeight: FontWeight.w600,

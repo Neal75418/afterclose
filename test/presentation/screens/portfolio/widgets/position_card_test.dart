@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/providers/portfolio_provider.dart';
 import 'package:afterclose/presentation/screens/portfolio/widgets/position_card.dart';
 
@@ -81,6 +82,24 @@ void main() {
 
       expect(find.text('2330'), findsOneWidget);
       expect(find.byType(PositionCard), findsOneWidget);
+    });
+
+    testWidgets('平盤未實現損益顯示中性、無 +0 與 (+0.0%)', (tester) async {
+      widenViewport(tester);
+      await tester.pumpWidget(
+        buildTestApp(
+          PositionCard(
+            // currentPrice == avgCost → unrealizedPnl == 0
+            position: createPosition(avgCost: 500.0, currentPrice: 500.0),
+            onTap: () {},
+          ),
+        ),
+      );
+
+      expect(find.textContaining('(+0.0%)'), findsNothing);
+      expect(find.text('(0.0%)'), findsOneWidget);
+      final pnl = tester.widget<Text>(find.text('0'));
+      expect(pnl.style?.color, AppTheme.lightTheme.colorScheme.onSurface);
     });
 
     testWidgets('handles null currentPrice', (tester) async {

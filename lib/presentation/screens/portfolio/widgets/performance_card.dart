@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/utils/number_formatter.dart';
 import 'package:afterclose/domain/services/portfolio_analytics_service.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 
@@ -135,10 +136,11 @@ class _ReturnItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isPositive = value >= 0;
-    final color = value == 0
+    // 依顯示精度（2 位）捨入後判方向：平盤/微負值→中性色、不帶 +，與數字一致。
+    final rounded = AppNumberFormat.roundForDisplay(value, 2);
+    final color = rounded == 0
         ? theme.colorScheme.onSurface
-        : (isPositive ? AppTheme.upColor : AppTheme.downColor);
+        : (rounded > 0 ? AppTheme.upColor : AppTheme.downColor);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -164,7 +166,7 @@ class _ReturnItem extends StatelessWidget {
         ),
         const SizedBox(height: DesignTokens.spacing2),
         Text(
-          '${isPositive ? "+" : ""}${value.toStringAsFixed(2)}%',
+          AppNumberFormat.signedPercent(value, decimals: 2),
           style: theme.textTheme.bodySmall?.copyWith(
             color: color,
             fontWeight: FontWeight.w600,
@@ -192,19 +194,22 @@ class _MetricItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 配色沿用 displayValue 的方向（isInverted 如最大回撤），依顯示精度捨入
+    // 後判方向：平盤→中性色。文字一律 round-then-sign（signedPercent/
+    // signedInteger）：平盤不帶 +、微負值不出現 -0.00；isInverted 值恆 <= 0，
+    // signedPercent 本就不會補 + 號，語意不變。
     final displayValue = isInverted ? -value : value;
-    final isPositive = displayValue >= 0;
-    final color = displayValue == 0
+    final rounded = AppNumberFormat.roundForDisplay(
+      displayValue,
+      isPercentage ? 2 : 0,
+    );
+    final color = rounded == 0
         ? theme.colorScheme.onSurface
-        : (isPositive ? AppTheme.upColor : AppTheme.downColor);
+        : (rounded > 0 ? AppTheme.upColor : AppTheme.downColor);
 
-    String formatted;
-    if (isPercentage) {
-      final sign = value >= 0 ? (isInverted ? '' : '+') : '';
-      formatted = '$sign${value.toStringAsFixed(2)}%';
-    } else {
-      formatted = '${isPositive ? "+" : ""}${value.toStringAsFixed(0)}';
-    }
+    final String formatted = isPercentage
+        ? AppNumberFormat.signedPercent(value, decimals: 2)
+        : AppNumberFormat.signedInteger(value);
 
     return Container(
       padding: const EdgeInsets.all(DesignTokens.spacing12),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:afterclose/core/l10n/app_strings.dart';
+import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/widgets/stock_preview_sheet.dart';
 
 import '../../helpers/widget_test_helpers.dart';
@@ -182,13 +183,30 @@ void main() {
       expect(find.text('850.00'), findsNothing);
     });
 
-    testWidgets('shows +0.00% for zero price change', (tester) async {
+    testWidgets('平盤（0%）顯示 0.00%：無 + 號、中性色、非漲箭頭', (tester) async {
       await tester.pumpWidget(
         buildTestApp(StockPreviewSheet(data: createData(priceChange: 0))),
       );
       await tester.pump(const Duration(seconds: 1));
 
-      expect(find.text('+0.00%'), findsOneWidget);
+      expect(find.text('+0.00%'), findsNothing);
+      final pct = tester.widget<Text>(find.text('0.00%'));
+      expect(pct.style?.color, AppTheme.neutralColor);
+      expect(find.byIcon(Icons.arrow_drop_up), findsNothing);
+      expect(find.byIcon(Icons.trending_flat), findsOneWidget);
+    });
+
+    testWidgets('微負值（-0.004）捨入後歸零：無 + 號、中性色、非漲箭頭', (tester) async {
+      await tester.pumpWidget(
+        buildTestApp(StockPreviewSheet(data: createData(priceChange: -0.004))),
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.text('+0.00%'), findsNothing);
+      final pct = tester.widget<Text>(find.text('0.00%'));
+      expect(pct.style?.color, AppTheme.neutralColor);
+      expect(find.byIcon(Icons.arrow_drop_up), findsNothing);
+      expect(find.byIcon(Icons.trending_flat), findsOneWidget);
     });
 
     testWidgets('shows view details button text', (tester) async {

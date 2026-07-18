@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/ohlcv_card.dart';
 
@@ -112,6 +113,38 @@ void main() {
 
       expect(find.byIcon(Icons.trending_up), findsNothing);
       expect(find.byIcon(Icons.trending_down), findsNothing);
+    });
+
+    testWidgets('平盤（0%）顯示中性 badge：無 + 號、trending_flat、中性色', (tester) async {
+      widenViewport(tester);
+      await tester.pumpWidget(
+        buildTestApp(OhlcvCard(latestPrice: createPrice(), priceChange: 0)),
+      );
+
+      // 平盤不得帶 + 號
+      expect(find.text('+0.00%'), findsNothing);
+      expect(find.textContaining('0.00%'), findsWidgets);
+      // 中性箭頭，不得為漲/跌箭頭
+      expect(find.byIcon(Icons.trending_flat), findsOneWidget);
+      expect(find.byIcon(Icons.trending_up), findsNothing);
+      expect(find.byIcon(Icons.trending_down), findsNothing);
+      // 收盤價配色為中性
+      final closeText = tester.widget<Text>(find.text('580.00'));
+      expect(closeText.style?.color, AppTheme.neutralColor);
+    });
+
+    testWidgets('微負值（-0.004）捨入後歸零，中性色且無漲箭頭', (tester) async {
+      widenViewport(tester);
+      await tester.pumpWidget(
+        buildTestApp(
+          OhlcvCard(latestPrice: createPrice(), priceChange: -0.004),
+        ),
+      );
+
+      expect(find.byIcon(Icons.trending_up), findsNothing);
+      expect(find.byIcon(Icons.trending_flat), findsOneWidget);
+      final closeText = tester.widget<Text>(find.text('580.00'));
+      expect(closeText.style?.color, AppTheme.neutralColor);
     });
   });
 }

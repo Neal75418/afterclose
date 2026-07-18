@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:afterclose/core/utils/number_formatter.dart';
 import 'package:afterclose/domain/services/market_reading_service.dart';
 import 'package:afterclose/presentation/providers/market_overview_provider.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/market_reading_line.dart';
@@ -175,13 +176,14 @@ class _Avg5dBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isUp = changePercent > 0;
-    final color = isUp
+    // 依顯示精度（0 位）捨入後判方向：微幅變動（如 +0.4%）捨入為 0 時中性、
+    // 不帶 +，避免顯示「0%」卻著漲色。
+    final rounded = AppNumberFormat.roundForDisplay(changePercent, 0);
+    final color = rounded > 0
         ? AppTheme.upColor
-        : changePercent < 0
+        : rounded < 0
         ? AppTheme.downColor
         : AppTheme.neutralColor;
-    final sign = isUp ? '+' : '';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -190,7 +192,7 @@ class _Avg5dBadge extends StatelessWidget {
         color: color.withValues(alpha: 0.1),
       ),
       child: Text(
-        '${'marketOverview.avg5d'.tr()} $sign${changePercent.toStringAsFixed(0)}%',
+        '${'marketOverview.avg5d'.tr()} ${AppNumberFormat.signedFixed(changePercent, decimals: 0)}%',
         style: theme.textTheme.labelSmall?.copyWith(
           color: color,
           fontWeight: FontWeight.w600,

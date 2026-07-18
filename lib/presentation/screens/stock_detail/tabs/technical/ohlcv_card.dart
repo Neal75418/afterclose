@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/utils/number_formatter.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/chip/chip_helpers.dart'
@@ -21,7 +22,15 @@ class OhlcvCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isUp = (priceChange ?? 0) >= 0;
+    // 與顯示文字同精度（2 位）捨入後判方向：平盤/微負值（-0.004→0.00%）一律中性，
+    // 收盤價配色、badge 箭頭與 +/- 號皆據此推導，與數字一致。
+    final displayedChange = priceChange == null
+        ? null
+        : AppNumberFormat.roundForDisplay(priceChange!, 2);
+    final priceColor = AppTheme.getPriceColor(
+      displayedChange,
+      theme.brightness,
+    );
 
     return Card(
       child: Padding(
@@ -29,7 +38,7 @@ class OhlcvCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildHeader(context, theme, isUp),
+            _buildHeader(context, theme, priceColor, displayedChange),
             const SizedBox(height: DesignTokens.spacing16),
             // 價格格線
             Row(
@@ -74,7 +83,7 @@ class OhlcvCard extends StatelessWidget {
                   child: _PriceCell(
                     label: 'stockDetail.close'.tr(),
                     value: latestPrice?.close,
-                    valueColor: isUp ? AppTheme.upColor : AppTheme.downColor,
+                    valueColor: priceColor,
                     isBold: true,
                   ),
                 ),
@@ -111,7 +120,16 @@ class OhlcvCard extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context, ThemeData theme, bool isUp) {
+  Widget _buildHeader(
+    BuildContext context,
+    ThemeData theme,
+    Color priceColor,
+    double? displayedChange,
+  ) {
+    final change = displayedChange ?? 0;
+    final IconData arrow = change > 0
+        ? Icons.trending_up
+        : (change < 0 ? Icons.trending_down : Icons.trending_flat);
     return Row(
       children: [
         Icon(
@@ -134,26 +152,20 @@ class OhlcvCard extends StatelessWidget {
               vertical: DesignTokens.spacing4,
             ),
             decoration: BoxDecoration(
-              color: (isUp ? AppTheme.upColor : AppTheme.downColor).withValues(
-                alpha: 0.1,
-              ),
+              color: priceColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(DesignTokens.radiusXs),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  isUp ? Icons.trending_up : Icons.trending_down,
-                  size: 14,
-                  color: isUp ? AppTheme.upColor : AppTheme.downColor,
-                ),
+                Icon(arrow, size: 14, color: priceColor),
                 const SizedBox(width: DesignTokens.spacing4),
                 Text(
-                  _formatChangeBadge(isUp),
+                  _formatChangeBadge(),
                   style: TextStyle(
                     fontSize: DesignTokens.fontSizeSm,
                     fontWeight: FontWeight.bold,
-                    color: isUp ? AppTheme.upColor : AppTheme.downColor,
+                    color: priceColor,
                   ),
                 ),
               ],
@@ -164,13 +176,15 @@ class OhlcvCard extends StatelessWidget {
   }
 
   /// 格式化 OHLCV 卡片標題的漲跌 badge
-  String _formatChangeBadge(bool isUp) {
-    final sign = isUp ? '+' : '';
-    final pctText = '$sign${priceChange!.toStringAsFixed(2)}%';
+  ///
+  /// 百分比與絕對變動皆經 round-then-sign：平盤/微負值捨入歸零後不帶 `+`、
+  /// 也不會出現 `-0.00`，與 badge 中性配色一致。
+  String _formatChangeBadge() {
+    final pctText = AppNumberFormat.signedPercent(priceChange!, decimals: 2);
     final close = latestPrice?.close;
     if (close != null && priceChange != 0) {
       final absChange = close * priceChange! / (100 + priceChange!);
-      final absText = '${isUp ? '+' : ''}${absChange.toStringAsFixed(2)}';
+      final absText = AppNumberFormat.signedFixed(absChange, decimals: 2);
       return '$absText ($pctText)';
     }
     return pctText;

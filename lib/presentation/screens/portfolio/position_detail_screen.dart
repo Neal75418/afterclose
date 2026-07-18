@@ -98,10 +98,11 @@ class PositionDetailScreen extends ConsumerWidget {
   }
 
   Widget _buildPositionSummary(ThemeData theme, PortfolioPositionData pos) {
-    final isPositive = pos.unrealizedPnl >= 0;
-    final pnlColor = pos.unrealizedPnl == 0
+    // 依顯示精度捨入後判方向：平盤/微負值→中性色、不帶 +，與數字一致。
+    final roundedPnl = AppNumberFormat.roundForDisplay(pos.unrealizedPnl, 0);
+    final pnlColor = roundedPnl == 0
         ? theme.colorScheme.onSurface
-        : (isPositive ? AppTheme.upColor : AppTheme.downColor);
+        : (roundedPnl > 0 ? AppTheme.upColor : AppTheme.downColor);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -145,15 +146,17 @@ class PositionDetailScreen extends ConsumerWidget {
               ),
               _InfoTile(
                 label: 'portfolio.unrealizedPnl'.tr(),
-                value:
-                    '${isPositive ? "+" : ""}${pos.unrealizedPnl.toStringAsFixed(0)}',
+                value: AppNumberFormat.signedFixed(
+                  pos.unrealizedPnl,
+                  decimals: 0,
+                ),
                 theme: theme,
                 valueColor: pnlColor,
               ),
               _InfoTile(
                 label: '',
                 value:
-                    '(${isPositive ? "+" : ""}${pos.unrealizedPnlPct.toStringAsFixed(1)}%)',
+                    '(${AppNumberFormat.signedPercent(pos.unrealizedPnlPct, decimals: 1)})',
                 theme: theme,
                 valueColor: pnlColor,
               ),

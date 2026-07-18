@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/fundamentals/fundamentals_helpers.dart';
 
 import '../../../../../helpers/widget_test_helpers.dart';
@@ -37,14 +38,28 @@ void main() {
       expect(find.text('-2.7%'), findsOneWidget);
     });
 
-    testWidgets('shows zero growth with plus sign', (tester) async {
+    testWidgets('平盤（0）顯示 0.0%：無 + 號、中性色', (tester) async {
       await tester.pumpWidget(
         buildTestApp(
           Builder(builder: (context) => buildGrowthBadge(context, 0.0)),
         ),
       );
 
-      expect(find.text('+0.0%'), findsOneWidget);
+      expect(find.text('+0.0%'), findsNothing);
+      final t = tester.widget<Text>(find.text('0.0%'));
+      expect(t.style?.color, AppTheme.neutralColor);
+    });
+
+    testWidgets('微負值（-0.004）捨入後歸零：無 + 號、中性色', (tester) async {
+      await tester.pumpWidget(
+        buildTestApp(
+          Builder(builder: (context) => buildGrowthBadge(context, -0.004)),
+        ),
+      );
+
+      expect(find.text('+0.0%'), findsNothing);
+      final t = tester.widget<Text>(find.text('0.0%'));
+      expect(t.style?.color, AppTheme.neutralColor);
     });
 
     testWidgets('significant positive growth (>=10%) has bold text', (

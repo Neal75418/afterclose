@@ -194,6 +194,22 @@ void main() {
       expect(find.textContaining('+'), findsAtLeastNWidgets(1));
     });
 
+    testWidgets('平盤未實現損益顯示中性、無 +0 與 (+0.0%)', (tester) async {
+      widenViewport(tester);
+      final positions = [
+        // currentPrice == avgCost → unrealizedPnl == 0
+        createPosition(quantity: 1000, avgCost: 500.0, currentPrice: 500.0),
+      ];
+      await tester.pumpWidget(
+        buildTestWidget(portfolioState: PortfolioState(positions: positions)),
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.text('+0'), findsNothing);
+      expect(find.textContaining('(+0.0%)'), findsNothing);
+      expect(find.text('(0.0%)'), findsOneWidget);
+    });
+
     testWidgets('shows negative PnL', (tester) async {
       widenViewport(tester);
       final positions = [

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/domain/services/portfolio_analytics_service.dart';
 import 'package:afterclose/presentation/screens/portfolio/widgets/performance_card.dart';
 
@@ -109,6 +110,64 @@ void main() {
       );
 
       expect(find.text('+12.50%'), findsOneWidget);
+    });
+
+    testWidgets('平盤期間報酬（0%）中性、無 + 號', (tester) async {
+      widenViewport(tester);
+      await tester.pumpWidget(
+        buildTestApp(
+          PerformanceCard(
+            performance: createPerformance(
+              periodReturns: const PeriodReturns(
+                daily: 0,
+                weekly: 2.1,
+                monthly: 8.3,
+                yearly: 15.0,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('+0.00%'), findsNothing);
+      final daily = tester.widget<Text>(find.text('0.00%'));
+      expect(daily.style?.color, AppTheme.lightTheme.colorScheme.onSurface);
+    });
+
+    testWidgets('微負期間報酬（-0.004）捨入歸零、中性、無 -0.00%', (tester) async {
+      widenViewport(tester);
+      await tester.pumpWidget(
+        buildTestApp(
+          PerformanceCard(
+            performance: createPerformance(
+              periodReturns: const PeriodReturns(
+                daily: -0.004,
+                weekly: 2.1,
+                monthly: 8.3,
+                yearly: 15.0,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('-0.00%'), findsNothing);
+      expect(find.text('+0.00%'), findsNothing);
+      final daily = tester.widget<Text>(find.text('0.00%'));
+      expect(daily.style?.color, AppTheme.lightTheme.colorScheme.onSurface);
+    });
+
+    testWidgets('平盤總報酬（0%）中性、無 + 號', (tester) async {
+      widenViewport(tester);
+      await tester.pumpWidget(
+        buildTestApp(
+          PerformanceCard(performance: createPerformance(totalReturn: 0)),
+        ),
+      );
+
+      expect(find.text('+0.00%'), findsNothing);
+      final total = tester.widget<Text>(find.text('0.00%'));
+      expect(total.style?.color, AppTheme.lightTheme.colorScheme.onSurface);
     });
 
     testWidgets('shows info icon for annualized yearly return', (tester) async {

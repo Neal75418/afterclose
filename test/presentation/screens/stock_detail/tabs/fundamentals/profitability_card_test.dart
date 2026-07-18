@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/fundamentals/profitability_card.dart';
 
 import '../../../../../helpers/widget_test_helpers.dart';
@@ -54,6 +55,25 @@ void main() {
 
       expect(find.byType(Card), findsOneWidget);
       expect(find.text('15.5%'), findsOneWidget);
+    });
+
+    testWidgets('平盤指標（0%）顯示中性色', (tester) async {
+      await tester.pumpWidget(
+        buildTestApp(const ProfitabilityCard(metrics: {'ROE': 0})),
+      );
+
+      final t = tester.widget<Text>(find.text('0.0%'));
+      expect(t.style?.color, AppTheme.neutralColor);
+    });
+
+    testWidgets('微負指標（-0.004）捨入歸零：中性色、無 -0.0%', (tester) async {
+      await tester.pumpWidget(
+        buildTestApp(const ProfitabilityCard(metrics: {'ROE': -0.004})),
+      );
+
+      expect(find.text('-0.0%'), findsNothing);
+      final t = tester.widget<Text>(find.text('0.0%'));
+      expect(t.style?.color, AppTheme.neutralColor);
     });
   });
 }

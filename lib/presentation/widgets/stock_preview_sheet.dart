@@ -8,6 +8,7 @@ import 'package:afterclose/core/extensions/trend_state_extension.dart';
 import 'package:afterclose/core/theme/breakpoints.dart';
 import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/utils/number_formatter.dart';
 import 'package:afterclose/presentation/widgets/common/drag_handle.dart';
 import 'package:afterclose/presentation/widgets/reason_tags.dart';
 import 'package:afterclose/presentation/widgets/score_ring.dart';
@@ -100,11 +101,17 @@ class StockPreviewSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = context.isDark;
+    // 與顯示文字同精度（2 位）捨入後判方向：平盤/微負值（-0.004→0.00%）一律
+    // 中性配色、中性箭頭，與 +/- 號一致。
+    final displayedChange = data.priceChange == null
+        ? null
+        : AppNumberFormat.roundForDisplay(data.priceChange!, 2);
     final priceColor = AppTheme.getPriceColor(
-      data.priceChange,
+      displayedChange,
       theme.brightness,
     );
-    final isPositive = (data.priceChange ?? 0) >= 0;
+    final isNeutral = displayedChange == null || displayedChange == 0;
+    final isPositive = (displayedChange ?? 0) > 0;
 
     return Semantics(
       label: _buildSemanticLabel(),
@@ -228,15 +235,20 @@ class StockPreviewSheet extends StatelessWidget {
                                   // 裝飾圖示 — 文字已包含正負號
                                   ExcludeSemantics(
                                     child: Icon(
-                                      isPositive
-                                          ? Icons.arrow_drop_up
-                                          : Icons.arrow_drop_down,
+                                      isNeutral
+                                          ? Icons.trending_flat
+                                          : (isPositive
+                                                ? Icons.arrow_drop_up
+                                                : Icons.arrow_drop_down),
                                       color: priceColor,
                                       size: 20,
                                     ),
                                   ),
                                   Text(
-                                    '${isPositive ? '+' : ''}${data.priceChange!.toStringAsFixed(2)}%',
+                                    AppNumberFormat.signedPercent(
+                                      data.priceChange!,
+                                      decimals: 2,
+                                    ),
                                     style: theme.textTheme.titleSmall?.copyWith(
                                       color: priceColor,
                                       fontWeight: FontWeight.bold,

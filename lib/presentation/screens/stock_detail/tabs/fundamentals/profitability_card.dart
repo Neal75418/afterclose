@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:afterclose/core/utils/number_formatter.dart';
 
 /// 單一獲利指標的資料容器（標籤 + 百分比值）。
 class ProfitMetric {
@@ -78,32 +79,35 @@ class ProfitabilityCard extends StatelessWidget {
             ),
             const SizedBox(height: DesignTokens.spacing12),
             Row(
-              children: items
-                  .map(
-                    (m) => Expanded(
-                      child: Column(
-                        children: [
-                          Text(
-                            m.label,
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                          const SizedBox(height: DesignTokens.spacing4),
-                          Text(
-                            '${m.value.toStringAsFixed(1)}%',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: m.value >= 0
-                                  ? AppTheme.upColor
-                                  : AppTheme.downColor,
-                            ),
-                          ),
-                        ],
+              children: items.map((m) {
+                // 依顯示精度（1 位）捨入後判方向並統一配色與文字：
+                // 平盤/微負值（-0.004→0.0%）中性色、且不出現 -0.0% 負零。
+                final rounded = AppNumberFormat.roundForDisplay(m.value, 1);
+                final displayValue = rounded == 0 ? 0.0 : m.value;
+                return Expanded(
+                  child: Column(
+                    children: [
+                      Text(
+                        m.label,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
-                    ),
-                  )
-                  .toList(),
+                      const SizedBox(height: DesignTokens.spacing4),
+                      Text(
+                        '${displayValue.toStringAsFixed(1)}%',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.getPriceColor(
+                            rounded,
+                            theme.brightness,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
             ),
           ],
         ),

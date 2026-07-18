@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:afterclose/core/utils/number_formatter.dart';
 
 /// 基本面區塊共用的輔助 Widget。
 
@@ -22,9 +23,10 @@ Widget buildGrowthBadge(BuildContext context, double? growth) {
     );
   }
 
-  final isPositive = growth >= 0;
-  final color = isPositive ? AppTheme.upColor : AppTheme.downColor;
-  final prefix = isPositive ? '+' : '';
+  // 依顯示精度（1 位）捨入後判方向：平盤/微負值（-0.004→0.0%）→ 中性色、
+  // 不帶 +，與數字一致。
+  final rounded = AppNumberFormat.roundForDisplay(growth, 1);
+  final color = AppTheme.getPriceColor(rounded, theme.brightness);
   final isSignificant = growth.abs() >= 10;
 
   return Align(
@@ -41,7 +43,7 @@ Widget buildGrowthBadge(BuildContext context, double? growth) {
         borderRadius: BorderRadius.circular(DesignTokens.radiusXs),
       ),
       child: Text(
-        '$prefix${growth.toStringAsFixed(1)}%',
+        AppNumberFormat.signedPercent(growth, decimals: 1),
         style: TextStyle(
           fontSize: DesignTokens.fontSizeSm,
           fontWeight: isSignificant ? FontWeight.bold : FontWeight.w500,
