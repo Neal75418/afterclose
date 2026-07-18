@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:afterclose/core/theme/color_contrast.dart';
+import 'package:afterclose/core/theme/semantic_colors.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/chip/institutional_section.dart';
 
@@ -74,6 +76,25 @@ void main() {
       expect(find.byIcon(Icons.language), findsOneWidget);
       expect(find.byIcon(Icons.account_balance), findsOneWidget);
       expect(find.byIcon(Icons.store), findsOneWidget);
+    });
+  });
+
+  group('法人分類色移除 —— CategoryColors.neutral 色彩語意守門', () {
+    test('法人分類標記不佔用股價語意色相', () {
+      // 注意：`#A1A1AA`（Zinc 400）R=161 G=161 B=170，B 分量不同，
+      // 並非純灰階 —— 其色相為 240°。此處要求的是「不落在紅綠禁區」，
+      // 不是「必須為純灰階」。與 PriceColors.flat 不同：後者的設計意圖
+      // 明確要求純灰階（刻意不佔用任何色相），故其值為 #A1A1A1。
+      final h = ColorContrast.hue(CategoryColors.neutral);
+      expect(h >= 345 || h <= 15, isFalse);
+      expect(h >= 88 && h <= 175, isFalse);
+    });
+
+    test('法人分類標記對卡片底達 AA 4.5:1', () {
+      expect(
+        ColorContrast.ratio(CategoryColors.neutral, SemanticColors.darkSurface),
+        greaterThanOrEqualTo(4.5),
+      );
     });
   });
 }

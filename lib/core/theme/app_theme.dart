@@ -70,15 +70,15 @@ class AppTheme {
   /// 通知標記 —— 原為 #6C63FF（243°），與品牌紫 255° 僅隔 12° 難以區分
   static const notificationColor = WarningColors.caution;
 
-  // 法人類別顏色
-  /// 外資 - 藍色
-  static const foreignColor = Color(0xFF3498DB);
-
-  /// 投信 - 紫色
-  static const investmentTrustColor = Color(0xFF9B59B6);
-
-  /// 自營商 - 橘色
-  static const dealerColor = Color(0xFFE67E22);
+  // 法人分類色已移除。
+  //
+  // 外資／投信／自營商原本各有專屬色（#3498DB / #9B59B6 / #E67E22），
+  // 但實際只用於 14px 圖示、8px 圓點與 alpha 0.3 邊框，且每個實例都
+  // 緊鄰文字標籤，顏色屬冗餘的第三重編碼。
+  //
+  // 移除同時消除四組色相過近問題，其中最嚴重的是自營橘 27° 與上漲紅
+  // 355° 僅隔 32° 且出現在同一張卡片上（橘圖示配紅數字）。
+  // 身分改由圖示形狀（language / account_balance / store）與文字標籤區分。
 
   // 深色主題表面顏色（Tailwind Zinc — 飽和度 4%，不與股價色競爭色相）
   static const _surfaceDark = SemanticColors.darkSurface; // Zinc 800

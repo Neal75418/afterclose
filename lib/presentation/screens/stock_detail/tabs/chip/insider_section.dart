@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:afterclose/core/theme/semantic_colors.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/chip/chip_helpers.dart';
 import 'package:afterclose/presentation/screens/stock_detail/widgets/mini_trend_chart.dart';
@@ -180,8 +181,8 @@ class InsiderSection extends StatelessWidget {
               MiniTrendChart(
                 dataPoints: insiderRatioHistory,
                 height: 56,
-                lineColor: AppTheme.foreignColor,
-                fillColor: AppTheme.foreignColor.withValues(alpha: 0.08),
+                lineColor: CategoryColors.neutral,
+                fillColor: CategoryColors.neutral.withValues(alpha: 0.08),
               ),
             ],
           ],

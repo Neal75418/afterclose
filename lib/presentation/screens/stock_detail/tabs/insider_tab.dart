@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:afterclose/core/theme/semantic_colors.dart';
 import 'package:afterclose/core/utils/number_formatter.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
@@ -23,9 +24,15 @@ const _kSignificantChangeThreshold = 1.0;
 
 /// 顏色常數
 ///
-/// 重用 brand tokens 避免硬寫 hex；視覺意圖是 chart line accent。
-const _kInsiderRatioColor = AppTheme.foreignColor;
-const _kPledgeRatioColor = AppTheme.investmentTrustColor;
+/// 兩者為 MetricCard 的 accentColor（圖示＋裝飾邊框），非分類標記，
+/// 故取自 chartPalette 而非 CategoryColors.neutral，避免兩張卡片
+/// 視覺上完全無法區分。
+///
+/// 非 const：對 const List 取索引在 Dart 不是編譯期常數運算式
+/// （`const chartPalette[0]` 會是 const_initialized_with_non_constant_value
+/// 編譯錯誤），故宣告為 final。
+final _kInsiderRatioColor = CategoryColors.chartPalette[0]; // 藍 500
+final _kPledgeRatioColor = CategoryColors.chartPalette[2]; // 紫 500
 
 /// 董監持股分頁 - 持股比例、質押比例、持股變化
 class InsiderTab extends ConsumerStatefulWidget {

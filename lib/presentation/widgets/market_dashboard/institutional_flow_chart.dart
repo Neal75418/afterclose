@@ -5,6 +5,7 @@ import 'package:afterclose/core/constants/rule_params_institutional.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/providers/market_overview_provider.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:afterclose/core/theme/semantic_colors.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/mini_bar_chart.dart';
 
 /// 格式化金額（元 → 億/千萬/百萬）
@@ -33,7 +34,7 @@ String _formatAmount(double value) {
 
 /// 法人動向卡片
 ///
-/// 以三張小卡呈現外資/投信/自營淨買賣，帶彩色左邊框 + 合計行
+/// 以三張小卡呈現外資/投信/自營淨買賣，帶左邊框裝飾條 + 合計行
 class InstitutionalFlowChart extends StatelessWidget {
   const InstitutionalFlowChart({
     super.key,
@@ -63,19 +64,19 @@ class InstitutionalFlowChart extends StatelessWidget {
       _FlowItem(
         'marketOverview.foreign'.tr(),
         data.foreignNet,
-        AppTheme.foreignColor,
+        CategoryColors.neutral,
         streak: streak?.foreignStreak,
       ),
       _FlowItem(
         'marketOverview.trust'.tr(),
         data.trustNet,
-        AppTheme.investmentTrustColor,
+        CategoryColors.neutral,
         streak: streak?.trustStreak,
       ),
       _FlowItem(
         'marketOverview.dealer'.tr(),
         data.dealerNet,
-        AppTheme.dealerColor,
+        CategoryColors.neutral,
         streak: streak?.dealerStreak,
         // 自營淨額由造市庫存 + 權證避險 delta 主導，連續買超近乎結構性恆正，
         // 非看多訊號，標註提示降低誤讀。
@@ -222,8 +223,14 @@ class _FlowCard extends StatelessWidget {
                           children: [
                             Text(
                               item.label,
+                              // 文字不得直接套用 item.color（現為
+                              // CategoryColors.neutral，對淺色主題卡片底僅
+                              // 2.43:1，一般文字未達 AA 4.5:1）——item.color
+                              // 統一為單一中性灰後，僅保留給左側邊框條這類
+                              // 裝飾用途，文字改用主題自帶、已對兩主題卡片
+                              // 底校準過對比度的 onSurfaceVariant。
                               style: theme.textTheme.labelSmall?.copyWith(
-                                color: item.color,
+                                color: theme.colorScheme.onSurfaceVariant,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -267,10 +274,11 @@ class _FlowCard extends StatelessWidget {
                     // 兩側等量放，視覺上立刻看出正負與相對量級。
                     //
                     // 色彩語意：條的填色沿用上方金額數字已用的 valueColor
-                    // （買超右/紅、賣超左/綠，台股慣例）而非法人類別色
-                    // （item.color，僅用於左側邊框條 + 名稱，標示「哪個法人」）
-                    // ——買賣方向是明確的漲跌判斷，理應走 red/green，類別色
-                    // 留給「哪個法人」這個和方向無關的身份標示。
+                    // （買超右/紅、賣超左/綠，台股慣例）而非 item.color
+                    // ——買賣方向是明確的漲跌判斷，理應走 red/green。
+                    // item.color（CategoryColors.neutral）現僅剩左側邊框條
+                    // 一處裝飾用途，三個法人類別統一同色，不再承擔身份區分；
+                    // 「哪個法人」改由文字內容本身（label 字樣）辨識。
                     ClipRRect(
                       borderRadius: BorderRadius.circular(3),
                       child: SizedBox(
