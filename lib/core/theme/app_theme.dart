@@ -111,11 +111,11 @@ class AppTheme {
       scaffoldBackgroundColor: _backgroundDark,
 
       // AppBar
-      appBarTheme: AppBarTheme(
+      appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: false,
-        titleTextStyle: const TextStyle(
+        titleTextStyle: TextStyle(
           fontSize: 24,
           fontWeight: FontWeight.bold,
           color: SemanticColors.darkTextPrimary,
