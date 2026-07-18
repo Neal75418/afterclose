@@ -66,6 +66,20 @@ void main() {
       args.add('--skip-fundamentals');
     }
 
+    // 當沖 phase 開關（見 backfill.dart 的 day_trading phase doc）
+    if (Platform.environment['BACKFILL_SKIP_DAY_TRADING'] == '1') {
+      args.add('--skip-day-trading');
+    }
+    // 只補當沖：既有 DB 已有價格、多輪累積當沖歷史時用
+    if (Platform.environment['BACKFILL_ONLY_DAY_TRADING'] == '1') {
+      args.add('--only-day-trading');
+    }
+    final dayTradingMaxDays =
+        Platform.environment['BACKFILL_DAY_TRADING_MAX_DAYS'];
+    if (dayTradingMaxDays != null && dayTradingMaxDays.isNotEmpty) {
+      args.addAll(['--day-trading-max-days', dayTradingMaxDays]);
+    }
+
     // Token is read from FINMIND_TOKEN env var inside backfill.dart's
     // _parseArgs — no need to pass explicitly here.
     final code = await backfill.runBackfillCli(args);

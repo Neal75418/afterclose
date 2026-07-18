@@ -288,7 +288,7 @@ class AppDatabase extends $AppDatabase
   ///
   /// ## 何時 bump fingerprint
   ///
-  /// **任何 schema 改動都要 bump `_schemaFingerprint` 的字串值**：
+  /// **任何 schema 改動都要 bump `appSchemaFingerprint` 的字串值**：
   /// - 新增 / 刪除 / 重命名 column
   /// - 改 primary key / unique key / index
   /// - 新增 / 刪除 table
@@ -355,7 +355,7 @@ class AppDatabase extends $AppDatabase
     ).get();
     final stored = result.isEmpty ? null : result.first.read<String>('value');
 
-    if (stored == _schemaFingerprint) {
+    if (stored == appSchemaFingerprint) {
       return; // fingerprint 一致，跳過
     }
 
@@ -373,7 +373,7 @@ class AppDatabase extends $AppDatabase
       AppLogger.warning(
         'AppDatabase',
         'Schema fingerprint mismatch — resetting tables '
-            '(stored=$stored, expected=$_schemaFingerprint)',
+            '(stored=$stored, expected=$appSchemaFingerprint)',
       );
       for (final table in allTables.toList().reversed) {
         final name = table.actualTableName;
@@ -405,13 +405,13 @@ class AppDatabase extends $AppDatabase
       // 第一次建立 DB — onCreate 已經跑過 createAll，這邊只需記錄 fingerprint
       AppLogger.info(
         'AppDatabase',
-        'Initial schema fingerprint: $_schemaFingerprint',
+        'Initial schema fingerprint: $appSchemaFingerprint',
       );
     }
 
     await customStatement(
       'INSERT OR REPLACE INTO _drift_schema_fingerprint (id, value) VALUES (1, ?)',
-      [_schemaFingerprint],
+      [appSchemaFingerprint],
     );
   }
 }
@@ -424,7 +424,11 @@ class AppDatabase extends $AppDatabase
 ///
 /// Format: `<stage>-<feature>-<YYYY-MM-DD>`. Any string change triggers a
 /// reset — the value itself is opaque.
-const String _schemaFingerprint = 'stage5b-news-mention-daily-2026-07-15';
+///
+/// Public（而非 private）是因為 `tool/backfill.dart` 要在**開啟 DB 之前**
+/// 比對它：對 app 而言 reset 只是重抓 derived data，對 `tool/calibration.db`
+/// 卻是九年歷史當場歸零。見該檔的 `_checkSchemaFingerprint`。
+const String appSchemaFingerprint = 'stage5b-news-mention-daily-2026-07-15';
 
 // 原 `QueryExecutor _openConnection()` 已搬到 `app_database_flutter.dart`
 // 並改為 public `openDriftFlutterConnection()`，避免 `drift_flutter` import

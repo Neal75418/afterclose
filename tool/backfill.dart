@@ -24,13 +24,17 @@
 //     --symbols 2330,2317,2454 \
 //     --dry-run
 //
-// ## Backfill 資料源（5 個）
+//   # 只補當沖歷史（既有 DB 已有價格時；不需 FinMind token）
+//   dart run tool/backfill.dart --only-day-trading --years 9
+//
+// ## Backfill 資料源（6 個）
 //
 //   1. daily_price           via PriceRepository.syncStockPrices
 //   2. daily_institutional   via InstitutionalRepository.syncInstitutionalData
-//   3. monthly_revenue       via FundamentalRepository.syncMonthlyRevenue
-//   4. financial_data (EPS)  via FundamentalRepository.syncFinancialStatements
-//   5. stock_valuation (PER) via FundamentalRepository.syncValuationData
+//   3. day_trading           via TradingRepository.syncAllDayTradingFromTwse
+//   4. monthly_revenue       via FundamentalRepository.syncMonthlyRevenue
+//   5. financial_data (EPS)  via FundamentalRepository.syncFinancialStatements
+//   6. stock_valuation (PER) via FundamentalRepository.syncValuationData
 //
 // `dividend_history` 暫不 backfill — 它只用於 52 週新高/新低的股息
 // 調整，非 calibration 的必要輸入。
@@ -58,8 +62,10 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:drift/drift.dart' show Value;
+import 'package:sqlite3/sqlite3.dart';
 
 import 'package:afterclose/core/utils/date_context.dart';
+import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/clock.dart';
@@ -72,10 +78,12 @@ import 'package:afterclose/data/repositories/fundamental_repository.dart';
 import 'package:afterclose/data/repositories/institutional_repository.dart';
 import 'package:afterclose/data/repositories/price_repository.dart';
 import 'package:afterclose/data/repositories/stock_repository.dart';
+import 'package:afterclose/data/repositories/trading_repository.dart';
 import 'package:afterclose/domain/repositories/fundamental_repository.dart';
 import 'package:afterclose/domain/repositories/institutional_repository.dart';
 import 'package:afterclose/domain/repositories/price_repository.dart';
 import 'package:afterclose/domain/repositories/stock_repository.dart';
+import 'package:afterclose/domain/repositories/trading_repository.dart';
 
 // ============================================================================
 // Public data models (importable by tests)
@@ -95,7 +103,20 @@ class BackfillConfig {
     this.endDateOverride,
     this.pricesViaFinMind = false,
     this.skipFundamentals = false,
+    this.skipDayTrading = false,
+    this.onlyDayTrading = false,
+    this.dayTradingMaxDaysPerRun = defaultDayTradingMaxDaysPerRun,
   });
+
+  /// 當沖 phase 單輪回補上限（交易日數）。0 = 不設限，跑完整個日期區間。
+  ///
+  /// 250 ≈ 一年交易日。取這個值的理由是實測而非湊整：TWSE per-day 端點在
+  /// 5s 節流下，前次 operational run 的 institutional phase 跑到第 128 天
+  /// 才吃到「API 回傳 HTML 而非 JSON，疑似限流」；MarketIndexSyncer 的深度
+  /// 回補則在 50 次呼叫後撞限流中止。單輪壓在 ~250 天讓多數 run 能自然跑完
+  /// 而不是中途 abort，靠 resume guard 多輪收斂到 9 年（~9 輪），
+  /// 比一次排 2,230 天然後在中段被砍掉更可預測。
+  static const int defaultDayTradingMaxDaysPerRun = 250;
 
   /// SQLite 檔案路徑
   final String dbPath;
@@ -148,6 +169,18 @@ class BackfillConfig {
   /// 基本面是 FinMind quota 最大宗（~3× 價格用量）。第一階段 walk-forward
   /// 只驗證價格類規則時可跳過，省下大量配額；基本面留作選配第二階段。
   final bool skipFundamentals;
+
+  /// 跳過當沖 phase。
+  final bool skipDayTrading;
+
+  /// 只跑當沖 phase（跳過價格／法人／基本面）。
+  ///
+  /// 針對「calibration.db 已有 9 年價格、只缺當沖」的既有 DB：多輪累積當沖
+  /// 歷史時不需要也不該重跑其他 phase。
+  final bool onlyDayTrading;
+
+  /// 當沖 phase 單輪最多回補幾個交易日（0 = 不設限）。
+  final int dayTradingMaxDaysPerRun;
 }
 
 /// 單一 phase 的執行結果
@@ -201,6 +234,7 @@ class BackfillDeps {
     required this.institutionalRepo,
     required this.fundamentalRepo,
     this.finMind,
+    this.tradingRepo,
   });
 
   final AppDatabase db;
@@ -208,6 +242,12 @@ class BackfillDeps {
   final IPriceRepository priceRepo;
   final IInstitutionalRepository institutionalRepo;
   final IFundamentalRepository fundamentalRepo;
+
+  /// 當沖 repository — 僅 day_trading phase 需要。
+  ///
+  /// 可選（同 [finMind] 慣例）：未注入時 day_trading phase 整段略過並留 log，
+  /// 不讓既有 caller 因為新增 phase 而爆掉。
+  final ITradingRepository? tradingRepo;
 
   /// FinMind client — 僅 `pricesViaFinMind` 模式需要（歷史價格 per-symbol 回補）。
   final FinMindClient? finMind;
@@ -238,13 +278,20 @@ class Backfiller {
     final phases = <PhaseResult>[];
 
     // Phase 0: 確保 stock_master 表有內容
-    if (!config.skipStockListSync) {
+    //
+    // onlyDayTrading 不需要：TWTB4U 一次回全市場、TradingRepository 也不吃
+    // targetSymbols，跑 stock list sync 只會平白消耗 FinMind 配額。
+    if (!config.skipStockListSync && !config.onlyDayTrading) {
       await _syncStockList();
     }
 
     // 決定 symbol 範圍
-    final symbols = await _resolveSymbols();
-    _log('📋 Target symbols: ${symbols.length}');
+    final symbols = config.onlyDayTrading
+        ? const <String>[]
+        : await _resolveSymbols();
+    if (!config.onlyDayTrading) {
+      _log('📋 Target symbols: ${symbols.length}');
+    }
 
     if (config.dryRun) {
       _log('🔍 Dry run — 不實際執行 backfill');
@@ -267,6 +314,23 @@ class Backfiller {
           endDate.subtract(Duration(days: config.years * 365)),
     );
     _log('📅 Date range: ${_formatDate(startDate)} → ${_formatDate(endDate)}');
+
+    // onlyDayTrading：既有 calibration.db 已有 9 年價格、只缺當沖時，
+    // 多輪累積走這條路徑，不重跑任何其他 phase。
+    if (config.onlyDayTrading) {
+      final dayTrading = await _backfillDayTradingBatch(
+        startDate: startDate,
+        endDate: endDate,
+      );
+      if (dayTrading != null) phases.add(dayTrading);
+      final totalDuration = DateTime.now().difference(overallStart);
+      final result = BackfillResult(
+        phases: phases,
+        totalDuration: totalDuration,
+      );
+      _logSummary(result);
+      return result;
+    }
 
     // Phase 1: prices — TWSE 上市 / TPEx 上櫃皆走 per-day batch
     //
@@ -320,6 +384,18 @@ class Backfiller {
         endDate: endDate,
       ),
     );
+    // Phase 2.5: day_trading — TWSE TWTB4U per-day batch
+    //
+    // 必須排在價格 phase 之後：當沖比例 = 當沖成交股數 ÷ 同日
+    // daily_price.volume，分母沒落地就只能寫 0（TWTB4U 本身不提供比例）。
+    if (!config.skipDayTrading) {
+      final dayTrading = await _backfillDayTradingBatch(
+        startDate: startDate,
+        endDate: endDate,
+      );
+      if (dayTrading != null) phases.add(dayTrading);
+    }
+
     // 基本面 3 phase 是 FinMind quota 最大宗 — skipFundamentals 時跳過，
     // 只跑價格 + 法人（第一階段 walk-forward 只驗價格類規則）。
     if (!config.skipFundamentals) {
@@ -576,6 +652,145 @@ class Backfiller {
       phase: 'institutional',
       // Per-day 模式：用 daysProcessed 填 symbolsProcessed（同
       // _backfillTpexPricesBatch 慣例）
+      symbolsProcessed: daysProcessed,
+      symbolsSucceeded: daysSucceeded,
+      rowsInserted: rowsInserted,
+      // failedSymbols 此處為失敗的日期字串
+      failedSymbols: failedDays,
+      duration: duration,
+    );
+  }
+
+  /// 當沖歷史 batch backfill（TWSE TWTB4U per-day）
+  ///
+  /// 為什麼需要這個 phase：`calibration.db` 有 310 萬筆價格／9 年歷史，但
+  /// `day_trading` 是 **0 列** —— 當沖資料從未進過 calibration pipeline，
+  /// 而 app 端 `ApiConfig.tradingBackfillLookbackDays = 40` 只維護滾動 40 天
+  /// 窗。2026-07-18 的當沖門檻研究因此只拿得到 29 個交易日、20D 只剩 9 個
+  /// 重疊窗，無法對任何門檻下結論。
+  ///
+  /// 端點可行性（2026-07-18 實測 8 個日期，含 2017-05-11 / 2018-04-17 /
+  /// 2020-04-17 / 2023-04-17）：TWTB4U **仍支援歷史 date 參數**，回應
+  /// `date` 欄位與請求一致、rows 901~1213，深度可回到 2017-05-11——正好
+  /// 涵蓋 `calibration.db` 價格起點。這點與 STOCK_DAY_ALL 不同（後者
+  /// 2026-06 起忽略 date、一律回最新日，見 [BackfillConfig.pricesViaFinMind]）。
+  ///
+  /// 設計對齊 [_backfillInstitutionalBatch]（per-day batch + resume guard +
+  /// 限流 rethrow）與 `MarketIndexSyncer.backfillDeepHistory`（由新至舊、
+  /// 單輪上限、多輪收斂）。
+  ///
+  /// 冪等性由兩層保證：
+  /// 1. 本方法的 resume guard（該日已有 > [DataFreshness.twseBatchThreshold]
+  ///    列即跳過，連 API 都不打）
+  /// 2. `day_trading` 的 PK 為 (symbol, date) + `InsertMode.insertOrReplace`
+  ///
+  /// 回傳 null 表示 phase 未執行（未注入 [BackfillDeps.tradingRepo]）。
+  Future<PhaseResult?> _backfillDayTradingBatch({
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    final tradingRepo = deps.tradingRepo;
+    if (tradingRepo == null) {
+      _log('⏭️  未注入 tradingRepo — 跳過 day_trading phase');
+      return null;
+    }
+
+    _log('');
+    _log('▶️  Phase [day_trading] — per-day TWSE TWTB4U batch');
+    final phaseStart = DateTime.now();
+    final failedDays = <String>[];
+    var rowsInserted = 0;
+    var daysProcessed = 0;
+    var daysSucceeded = 0;
+    var apiCalls = 0;
+    var consecutiveZeroDays = 0;
+    var lastLogAt = DateTime.now();
+
+    // 由新至舊走訪（同 MarketIndexSyncer.backfillDeepHistory）：限流中止時
+    // 優先保住較近期的區段——研究通常從最近往回取窗，近期資料先到手比
+    // 「2017 年補完但近三年還缺」有用得多。
+    final maxDays = config.dayTradingMaxDaysPerRun;
+    var current = endDate;
+    while (!current.isBefore(startDate)) {
+      if (maxDays > 0 && daysProcessed >= maxDays) {
+        _log('  ⏸️  [day_trading] 已達單輪上限 $maxDays 個交易日 — 本輪結束，重跑可續補');
+        break;
+      }
+      if (!TaiwanCalendar.isTradingDay(current)) {
+        current = current.subtract(const Duration(days: 1));
+        continue;
+      }
+
+      final dayStr = _formatDate(current);
+
+      // Resume：該日已有足量當沖 rows → 跳過，連 API 都不打。門檻沿用
+      // TradingRepository 自身的 freshness 門檻，避免兩層判斷不一致造成
+      // 「這裡放行、repo 內部又跳過」的空轉。
+      final existing = await deps.db.getDayTradingCountForDate(current);
+      if (existing > DataFreshness.twseBatchThreshold) {
+        daysSucceeded++;
+        daysProcessed++;
+        current = current.subtract(const Duration(days: 1));
+        continue;
+      }
+
+      try {
+        if (apiCalls > 0 && config.interDayDelayMs > 0) {
+          await Future.delayed(Duration(milliseconds: config.interDayDelayMs));
+        }
+        final count = await tradingRepo.syncAllDayTradingFromTwse(
+          date: current,
+        );
+        apiCalls++;
+        rowsInserted += count;
+        daysSucceeded++;
+
+        if (count == 0) {
+          consecutiveZeroDays++;
+          if (consecutiveZeroDays >= _maxConsecutiveZeroDays) {
+            _log(
+              '⛔ Phase [day_trading] 連續 $_maxConsecutiveZeroDays 個交易日 0 筆 — '
+              '疑似端點失效（TWTB4U 若開始忽略 date 參數，TwseClient 的日期'
+              '守衛會整批丟棄）→ abort phase',
+            );
+            failedDays.add('$dayStr(連續零筆中止)');
+            daysProcessed++;
+            break;
+          }
+        } else {
+          consecutiveZeroDays = 0;
+        }
+      } on RateLimitException catch (e) {
+        _log('⛔ Phase [day_trading] $dayStr 觸發 API rate limit — abort: $e');
+        rethrow;
+      } on NetworkException catch (e) {
+        _log('⛔ Phase [day_trading] $dayStr 網路錯誤 — abort: $e');
+        rethrow;
+      } catch (e) {
+        failedDays.add(dayStr);
+        _log('  ⚠️  $dayStr failed: $e');
+      }
+      daysProcessed++;
+
+      final now = DateTime.now();
+      if (now.difference(lastLogAt).inSeconds >= 10) {
+        final elapsed = now.difference(phaseStart);
+        _log(
+          '  📊 [day_trading] $daysProcessed trading days '
+          '(through $dayStr), elapsed ${_formatDuration(elapsed)}, '
+          'rows=$rowsInserted, failed=${failedDays.length}',
+        );
+        lastLogAt = now;
+      }
+
+      current = current.subtract(const Duration(days: 1));
+    }
+
+    final duration = DateTime.now().difference(phaseStart);
+    return PhaseResult(
+      phase: 'day_trading',
+      // Per-day 模式：用 daysProcessed 填 symbolsProcessed（同
+      // _backfillInstitutionalBatch 慣例）
       symbolsProcessed: daysProcessed,
       symbolsSucceeded: daysSucceeded,
       rowsInserted: rowsInserted,
@@ -1061,6 +1276,7 @@ Future<void> main(List<String> args) async {
 ///   3 — 完成但有 symbol 失敗（partial success）
 ///   4 — rate limit 觸發
 ///   5 — network error
+///   6 — schema fingerprint 不符（未開 DB，避免歷史資料被 reset 清空）
 Future<int> runBackfillCli(List<String> args) async {
   final config = _parseArgs(args);
   if (config == null) {
@@ -1080,6 +1296,12 @@ Future<int> runBackfillCli(List<String> args) async {
     print('📦 建立新的 calibration DB: ${config.dbPath}');
   } else {
     print('📦 開啟既有 calibration DB: ${config.dbPath}');
+    // ⚠️ 開 DB 前必須先擋：AppDatabase 的 fingerprint reset 是不可逆的。
+    final mismatch = _checkSchemaFingerprint(config.dbPath);
+    if (mismatch != null) {
+      stderr.writeln(mismatch);
+      return 6;
+    }
   }
 
   final db = AppDatabase.forToolFile(config.dbPath);
@@ -1115,6 +1337,13 @@ Future<int> runBackfillCli(List<String> args) async {
       clock: clock,
     );
 
+    final tradingRepo = TradingRepository(
+      database: db,
+      twseClient: twse,
+      tpexClient: tpex,
+      clock: clock,
+    );
+
     final deps = BackfillDeps(
       db: db,
       stockRepo: stockRepo,
@@ -1122,6 +1351,7 @@ Future<int> runBackfillCli(List<String> args) async {
       institutionalRepo: institutionalRepo,
       fundamentalRepo: fundamentalRepo,
       finMind: finMind,
+      tradingRepo: tradingRepo,
     );
 
     final backfiller = Backfiller(config: config, deps: deps);
@@ -1148,6 +1378,67 @@ Future<int> runBackfillCli(List<String> args) async {
   }
 }
 
+/// 開 DB 前比對 schema fingerprint，不一致就中止並回傳錯誤訊息（null = 安全）。
+///
+/// 為什麼需要這道關卡：[AppDatabase] 的 `_ensureSchemaFingerprint` 在
+/// fingerprint 不符時，會把所有**非 user-input whitelist** 的 Drift 表
+/// `DROP` 後重建。對 app 而言這是可接受的——那些都是 derived data，隔天
+/// syncer 重抓即可。對 `tool/calibration.db` 卻是**九年歷史當場歸零**：
+/// 310 萬筆價格 + 250 萬筆法人，重抓要數十小時而且 FinMind 免費配額根本
+/// 不夠。
+///
+/// 2026-07-18 實測（在副本上）：`calibration.db` 存的 fingerprint 是
+/// `stage5b-dual-horizon-2026-04-11`、code 已是
+/// `stage5b-news-mention-daily-2026-07-15`，開一次 tool 之後
+/// `daily_price` / `stock_master` / `daily_institutional` 全部變 0 列。
+/// 檔案大小不變（freelist 未回收），**從外觀完全看不出資料已經沒了**。
+///
+/// 修法不是在這裡自動 reset，而是要人工確認 schema 差異後補齊 + 更新
+/// fingerprint（見錯誤訊息內的指引）。自動化這件事等於把「無聲毀資料」
+/// 從一種路徑換到另一種。
+String? _checkSchemaFingerprint(String dbPath) {
+  final db = sqlite3.open(dbPath, mode: OpenMode.readOnly);
+  try {
+    final hasTable = db.select(
+      "SELECT name FROM sqlite_master WHERE type='table' "
+      "AND name='_drift_schema_fingerprint'",
+    );
+    // 沒有 fingerprint 表 = 這個 DB 還沒被現行機制管理過，交給
+    // AppDatabase 自己初始化（它會走 `stored == null` 的 else 分支、只寫入
+    // 不 drop）。
+    if (hasTable.isEmpty) return null;
+
+    final rows = db.select(
+      'SELECT value FROM _drift_schema_fingerprint WHERE id = 1',
+    );
+    if (rows.isEmpty) return null;
+
+    final stored = rows.first['value'] as String?;
+    if (stored == null || stored == appSchemaFingerprint) return null;
+
+    return '''
+❌ Schema fingerprint 不符 — 已中止，未開啟 DB。
+   DB   : $dbPath
+   stored  = $stored
+   expected= $appSchemaFingerprint
+
+   直接開啟會觸發 AppDatabase 的 schema reset：所有非 user-input 表
+   （daily_price / stock_master / daily_institutional / day_trading ...）
+   會被 DROP 重建，歷史資料全數消失且檔案大小不變、事後難以察覺。
+
+💡 處理方式：
+   1. 先備份：sqlite3 "file:$dbPath?mode=ro" "VACUUM INTO '<backup>.db'"
+   2. 比對 schema 差異（對照一個用現行 code 新建的空 DB）：
+      SELECT type,name,sql FROM sqlite_master WHERE name NOT LIKE 'sqlite_%';
+   3. 差異若只是「新增表 / 新增索引」，手動補上該表與索引後執行：
+      UPDATE _drift_schema_fingerprint SET value='$appSchemaFingerprint' WHERE id=1;
+   4. 若有既存表的欄位變動，必須先 ALTER TABLE 對齊再更新 fingerprint。
+''';
+  } finally {
+    db.close();
+  }
+}
+
 // ============================================================================
 // CLI arg parsing
 // ============================================================================
@@ -1162,6 +1453,9 @@ BackfillConfig? _parseArgs(List<String> args) {
   DateTime? endDateOverride;
   var pricesViaFinMind = false;
   var skipFundamentals = false;
+  var skipDayTrading = false;
+  var onlyDayTrading = false;
+  var dayTradingMaxDaysPerRun = BackfillConfig.defaultDayTradingMaxDaysPerRun;
 
   for (var i = 0; i < args.length; i++) {
     final arg = args[i];
@@ -1169,6 +1463,18 @@ BackfillConfig? _parseArgs(List<String> args) {
       case '--db':
         if (i + 1 >= args.length) return null;
         dbPath = args[++i];
+      case '--skip-day-trading':
+        skipDayTrading = true;
+      case '--only-day-trading':
+        onlyDayTrading = true;
+      case '--day-trading-max-days':
+        if (i + 1 >= args.length) return null;
+        final parsed = int.tryParse(args[++i]);
+        if (parsed == null || parsed < 0) {
+          stderr.writeln('❌ Invalid --day-trading-max-days: must be >= 0');
+          return null;
+        }
+        dayTradingMaxDaysPerRun = parsed;
       case '--prices-via-finmind':
         // 歷史回補必用：STOCK_DAY_ALL batch 已不支援歷史日期
         pricesViaFinMind = true;
@@ -1217,15 +1523,22 @@ BackfillConfig? _parseArgs(List<String> args) {
     }
   }
 
+  if (onlyDayTrading && skipDayTrading) {
+    stderr.writeln('❌ --only-day-trading 與 --skip-day-trading 互斥');
+    return null;
+  }
+
   // Token 優先順序：CLI flag > env var
   finMindToken ??= Platform.environment['FINMIND_TOKEN'];
-  if (finMindToken == null || finMindToken.isEmpty) {
+  // --only-day-trading 全程只打 TWSE TWTB4U，不碰 FinMind → 不強制要 token。
+  if ((finMindToken == null || finMindToken.isEmpty) && !onlyDayTrading) {
     stderr.writeln(
       '❌ FinMind token required. Use --finmind-token <token> or set '
       'FINMIND_TOKEN env var.',
     );
     return null;
   }
+  finMindToken ??= '';
 
   // start/end override 健全性檢查
   if (startDateOverride != null &&
@@ -1252,6 +1565,9 @@ BackfillConfig? _parseArgs(List<String> args) {
     endDateOverride: endDateOverride,
     pricesViaFinMind: pricesViaFinMind,
     skipFundamentals: skipFundamentals,
+    skipDayTrading: skipDayTrading,
+    onlyDayTrading: onlyDayTrading,
+    dayTradingMaxDaysPerRun: dayTradingMaxDaysPerRun,
   );
 }
 
@@ -1259,7 +1575,8 @@ void _printUsage(IOSink sink) {
   sink.writeln(
     'Usage: dart run tool/backfill.dart '
     '[--db <path>] [--years <N>] [--finmind-token <token>] '
-    '[--symbols <csv>] [--dry-run]',
+    '[--symbols <csv>] [--dry-run] '
+    '[--skip-day-trading | --only-day-trading] [--day-trading-max-days <N>]',
   );
   sink.writeln('');
   sink.writeln('Historical data backfill for Stage 4 calibration.');

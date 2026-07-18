@@ -14,6 +14,7 @@ import 'package:afterclose/domain/repositories/fundamental_repository.dart';
 import 'package:afterclose/domain/repositories/institutional_repository.dart';
 import 'package:afterclose/domain/repositories/price_repository.dart';
 import 'package:afterclose/domain/repositories/stock_repository.dart';
+import 'package:afterclose/domain/repositories/trading_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -29,12 +30,15 @@ class _MockInstitutionalRepo extends Mock implements IInstitutionalRepository {}
 
 class _MockFundamentalRepo extends Mock implements IFundamentalRepository {}
 
+class _MockTradingRepo extends Mock implements ITradingRepository {}
+
 void main() {
   late _MockDb db;
   late _MockStockRepo stockRepo;
   late _MockPriceRepo priceRepo;
   late _MockInstitutionalRepo institutionalRepo;
   late _MockFundamentalRepo fundamentalRepo;
+  late _MockTradingRepo tradingRepo;
   late BackfillDeps deps;
   late List<String> logs;
 
@@ -48,6 +52,7 @@ void main() {
     priceRepo = _MockPriceRepo();
     institutionalRepo = _MockInstitutionalRepo();
     fundamentalRepo = _MockFundamentalRepo();
+    tradingRepo = _MockTradingRepo();
 
     deps = BackfillDeps(
       db: db,
@@ -55,6 +60,7 @@ void main() {
       priceRepo: priceRepo,
       institutionalRepo: institutionalRepo,
       fundamentalRepo: fundamentalRepo,
+      tradingRepo: tradingRepo,
     );
 
     logs = [];
@@ -129,12 +135,27 @@ void main() {
     ).thenAnswer((_) async => 0);
     // Default: 該日尚無既有法人 rows → 不觸發 institutional per-day skip
     when(() => db.countInstitutionalByDate(any())).thenAnswer((_) async => 0);
+    // Default: 當沖 batch 預設 no-op（每天 0 rows），與 price/institutional
+    // batch 的 stub 慣例一致。連續 0 會觸發 day_trading 的端點失效斷路器，
+    // 由專屬測試驗證。
+    when(
+      () => tradingRepo.syncAllDayTradingFromTwse(
+        date: any(named: 'date'),
+        force: any(named: 'force'),
+      ),
+    ).thenAnswer((_) async => 0);
+    // Default: 該日尚無既有當沖 rows → 不觸發 day_trading per-day skip
+    when(() => db.getDayTradingCountForDate(any())).thenAnswer((_) async => 0);
   });
 
   BackfillConfig makeConfig({
     List<String>? symbols = const ['2330', '2317', '2454'],
     bool dryRun = false,
     DateTime? endDateOverride,
+    DateTime? startDateOverride,
+    bool skipDayTrading = false,
+    bool onlyDayTrading = false,
+    int dayTradingMaxDaysPerRun = 0,
   }) {
     return BackfillConfig(
       dbPath: ':memory:', // not actually opened in unit test
@@ -143,6 +164,10 @@ void main() {
       symbolsWhitelist: symbols,
       dryRun: dryRun,
       endDateOverride: endDateOverride,
+      startDateOverride: startDateOverride,
+      skipDayTrading: skipDayTrading,
+      onlyDayTrading: onlyDayTrading,
+      dayTradingMaxDaysPerRun: dayTradingMaxDaysPerRun,
       skipStockListSync: true, // 避免 unit test 呼叫 stock master sync
       // 跳過 inter-day delay：500 trading days × 1.5s 預設會讓單測 timeout
       interDayDelayMs: 0,
@@ -154,16 +179,19 @@ void main() {
   }
 
   group('Backfiller happy path', () {
-    test('executes 5 phases in order with correct symbol whitelist', () async {
+    test('executes 6 phases in order with correct symbol whitelist', () async {
       final backfiller = makeBackfiller(makeConfig());
       final result = await backfiller.run();
 
       // Phase 1.5 後 prices:twse 也改 per-day batch（與 prices:tpex 對稱）。
       // 預設 stockMap 為空 → 全部 symbol 走 TWSE 路徑 → prices:tpex 不發。
-      expect(result.phases.length, 5);
+      // day_trading 排在 institutional 之後、基本面之前：當沖比例的分母是
+      // 同日 daily_price.volume，必須等價格 phase 落地後才算得出來。
+      expect(result.phases.length, 6);
       expect(result.phases.map((p) => p.phase).toList(), [
         'prices:twse',
         'institutional',
+        'day_trading',
         'revenue',
         'financial',
         'valuation',
@@ -804,6 +832,252 @@ void main() {
           targetSymbols: any(named: 'targetSymbols'),
         ),
       ).called(greaterThan(0));
+    });
+  });
+
+  group('Backfiller day_trading phase（當沖歷史回補）', () {
+    /// 只跑 day_trading phase 的 config：把價格/法人/基本面都排除掉，
+    /// 讓斷言聚焦在當沖迴圈本身。
+    BackfillConfig dayTradingOnly({
+      DateTime? start,
+      DateTime? end,
+      int maxDaysPerRun = 0,
+    }) {
+      return makeConfig(
+        onlyDayTrading: true,
+        startDateOverride: start ?? DateTime(2026, 6, 1),
+        endDateOverride: end ?? DateTime(2026, 6, 30),
+        dayTradingMaxDaysPerRun: maxDaysPerRun,
+      );
+    }
+
+    test('逐交易日呼叫 syncAllDayTradingFromTwse，且跳過非交易日', () async {
+      when(
+        () => tradingRepo.syncAllDayTradingFromTwse(
+          date: any(named: 'date'),
+          force: any(named: 'force'),
+        ),
+      ).thenAnswer((_) async => 900);
+
+      final backfiller = makeBackfiller(dayTradingOnly());
+      final result = await backfiller.run();
+
+      final captured = verify(
+        () => tradingRepo.syncAllDayTradingFromTwse(
+          date: captureAny(named: 'date'),
+          force: any(named: 'force'),
+        ),
+      ).captured.cast<DateTime>();
+
+      expect(captured, isNotEmpty);
+      // 2026-06-01 ~ 06-30 共 30 個日曆天，週末必須被 TaiwanCalendar 濾掉
+      expect(captured.length, lessThan(30));
+      for (final d in captured) {
+        expect(
+          d.weekday,
+          isNot(anyOf(DateTime.saturday, DateTime.sunday)),
+          reason: '$d 是週末，不該被抓',
+        );
+      }
+      expect(result.phases.single.phase, 'day_trading');
+      expect(result.phases.single.rowsInserted, 900 * captured.length);
+    });
+
+    test('onlyDayTrading 不跑價格/法人/基本面 phase', () async {
+      final backfiller = makeBackfiller(dayTradingOnly());
+      final result = await backfiller.run();
+
+      expect(result.phases.map((p) => p.phase).toList(), ['day_trading']);
+      verifyNever(
+        () => priceRepo.backfillTwsePricesByDate(
+          date: any(named: 'date'),
+          targetSymbols: any(named: 'targetSymbols'),
+        ),
+      );
+      verifyNever(
+        () => institutionalRepo.backfillInstitutionalByDate(
+          date: any(named: 'date'),
+          targetSymbols: any(named: 'targetSymbols'),
+        ),
+      );
+      verifyNever(
+        () => fundamentalRepo.syncMonthlyRevenue(
+          symbol: any(named: 'symbol'),
+          startDate: any(named: 'startDate'),
+          endDate: any(named: 'endDate'),
+        ),
+      );
+    });
+
+    test('skipDayTrading → 完全不跑當沖 phase', () async {
+      final backfiller = makeBackfiller(makeConfig(skipDayTrading: true));
+      final result = await backfiller.run();
+
+      expect(result.phases.map((p) => p.phase), isNot(contains('day_trading')));
+      verifyNever(
+        () => tradingRepo.syncAllDayTradingFromTwse(
+          date: any(named: 'date'),
+          force: any(named: 'force'),
+        ),
+      );
+    });
+
+    test('該日已有足量當沖 rows → 跳過、完全不打 API（resume）', () async {
+      // > DataFreshness.twseBatchThreshold(100) → 視為該日已回補完成
+      when(
+        () => db.getDayTradingCountForDate(any()),
+      ).thenAnswer((_) async => 950);
+
+      final backfiller = makeBackfiller(dayTradingOnly());
+      final result = await backfiller.run();
+
+      verifyNever(
+        () => tradingRepo.syncAllDayTradingFromTwse(
+          date: any(named: 'date'),
+          force: any(named: 'force'),
+        ),
+      );
+      // 跳過的日子仍算「成功」，否則 resume 後的 run 會誤報全失敗
+      expect(result.phases.single.symbolsSucceeded, greaterThan(0));
+      expect(result.phases.single.failedSymbols, isEmpty);
+    });
+
+    test('每輪上限 dayTradingMaxDaysPerRun 生效（分批回補）', () async {
+      when(
+        () => tradingRepo.syncAllDayTradingFromTwse(
+          date: any(named: 'date'),
+          force: any(named: 'force'),
+        ),
+      ).thenAnswer((_) async => 900);
+
+      final backfiller = makeBackfiller(dayTradingOnly(maxDaysPerRun: 3));
+      final result = await backfiller.run();
+
+      verify(
+        () => tradingRepo.syncAllDayTradingFromTwse(
+          date: any(named: 'date'),
+          force: any(named: 'force'),
+        ),
+      ).called(3);
+      expect(result.phases.single.symbolsProcessed, 3);
+    });
+
+    test('由新到舊回補：先抓最近的交易日', () async {
+      when(
+        () => tradingRepo.syncAllDayTradingFromTwse(
+          date: any(named: 'date'),
+          force: any(named: 'force'),
+        ),
+      ).thenAnswer((_) async => 900);
+
+      final backfiller = makeBackfiller(dayTradingOnly(maxDaysPerRun: 3));
+      await backfiller.run();
+
+      final captured = verify(
+        () => tradingRepo.syncAllDayTradingFromTwse(
+          date: captureAny(named: 'date'),
+          force: any(named: 'force'),
+        ),
+      ).captured.cast<DateTime>();
+
+      // 由新至舊單向走訪（同 MarketIndexSyncer.backfillDeepHistory）：
+      // 限流中止時優先保住「較近期、研究較常用」的區段
+      expect(captured.length, 3);
+      for (var i = 1; i < captured.length; i++) {
+        expect(captured[i].isBefore(captured[i - 1]), isTrue);
+      }
+    });
+
+    test('RateLimitException → 立即 rethrow（交由 CLI 回 exit 4）', () async {
+      when(
+        () => tradingRepo.syncAllDayTradingFromTwse(
+          date: any(named: 'date'),
+          force: any(named: 'force'),
+        ),
+      ).thenThrow(const RateLimitException('限流'));
+
+      final backfiller = makeBackfiller(dayTradingOnly());
+
+      expect(() => backfiller.run(), throwsA(isA<RateLimitException>()));
+    });
+
+    test('NetworkException → 立即 rethrow', () async {
+      when(
+        () => tradingRepo.syncAllDayTradingFromTwse(
+          date: any(named: 'date'),
+          force: any(named: 'force'),
+        ),
+      ).thenThrow(const NetworkException('斷線'));
+
+      final backfiller = makeBackfiller(dayTradingOnly());
+
+      expect(() => backfiller.run(), throwsA(isA<NetworkException>()));
+    });
+
+    test('單日其他例外 → 記入 failedSymbols 但不中斷迴圈', () async {
+      var call = 0;
+      when(
+        () => tradingRepo.syncAllDayTradingFromTwse(
+          date: any(named: 'date'),
+          force: any(named: 'force'),
+        ),
+      ).thenAnswer((_) async {
+        call++;
+        if (call == 2) throw Exception('parse boom');
+        return 900;
+      });
+
+      final backfiller = makeBackfiller(dayTradingOnly(maxDaysPerRun: 4));
+      final result = await backfiller.run();
+
+      final phase = result.phases.single;
+      expect(phase.failedSymbols.length, 1);
+      expect(phase.symbolsProcessed, 4, reason: '單日失敗不該中斷整個 phase');
+      expect(phase.symbolsSucceeded, 3);
+    });
+
+    test('連續 0 筆達門檻 → 判定端點失效並中止 phase（fail-fast）', () async {
+      // TwseClient 對 TWTB4U 有 fail-closed 日期守衛：端點若像 STOCK_DAY_ALL
+      // 一樣開始忽略 date 參數，會整批丟棄回 0 筆。斷路器就是為了讓這種
+      // 靜默失效在 ~1 分鐘內現形，而不是燒 3 小時抓空氣。
+      when(
+        () => tradingRepo.syncAllDayTradingFromTwse(
+          date: any(named: 'date'),
+          force: any(named: 'force'),
+        ),
+      ).thenAnswer((_) async => 0);
+
+      final backfiller = makeBackfiller(
+        // 給足 60 天空間，確認是斷路器而非日期範圍讓它停下來
+        dayTradingOnly(start: DateTime(2026, 4, 1), end: DateTime(2026, 6, 30)),
+      );
+      final result = await backfiller.run();
+
+      final phase = result.phases.single;
+      // 門檻 10：必須 > 春節連假群集（~8 個平日）才不會誤殺
+      expect(phase.symbolsProcessed, 10);
+      expect(phase.failedSymbols, isNotEmpty);
+      expect(logs.any((l) => l.contains('連續')), isTrue);
+    });
+
+    test('tradingRepo 未注入 → 略過 phase 而非 crash（fail-soft）', () async {
+      final depsNoTrading = BackfillDeps(
+        db: db,
+        stockRepo: stockRepo,
+        priceRepo: priceRepo,
+        institutionalRepo: institutionalRepo,
+        fundamentalRepo: fundamentalRepo,
+      );
+      final backfiller = Backfiller(
+        config: makeConfig(),
+        deps: depsNoTrading,
+        logger: logs.add,
+      );
+
+      final result = await backfiller.run();
+
+      expect(result.phases.map((p) => p.phase), isNot(contains('day_trading')));
+      expect(logs.any((l) => l.contains('day_trading')), isTrue);
     });
   });
 }
