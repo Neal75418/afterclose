@@ -136,6 +136,35 @@ void main() {
       expect(result.score, equals(RuleScores.dayTradingHigh));
     });
 
+    // 2026-07-18 實證修正：高當沖不得再貢獻「偏多」分數。
+    // 自有資料（production DB 32,097 筆 / 29 個交易日）1D 前瞻報酬：
+    // 50-70% bucket excess −0.495%、勝率 37.4% —— 全表最差的一格。
+    // 舊 +12 來自 2026-07-18 修掉的 lookahead bias（進場價用訊號日 close
+    // 而非隔日 open）：舊慣例下 5D excess +0.120，改正後翻為 −0.229。
+    // 規則仍 fire（證據 chip / 風險徽章保留），但分數不得為正。
+    test('高當沖不再貢獻偏多分數（實證：50-70% 為 1D 最差 bucket）', () {
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+        marketData: MarketDataContext(dayTradingRatio: 55.0), // 50-70 range
+      );
+      final data = StockData(
+        symbol: 'TEST',
+        prices: [
+          createTestPrice(date: DateTime.now(), close: 100.0, volume: 15000000),
+        ],
+      );
+
+      final result = rule.evaluate(context, data);
+
+      // 規則仍需 fire —— 保留「這檔當沖很高」的資訊價值
+      expect(result, isNotNull);
+      expect(result!.type, equals(ReasonType.dayTradingHigh));
+      // 但不得再是正分（偏多）
+      expect(result.score, lessThanOrEqualTo(0), reason: '高當沖是投機/波動旗標，非偏多訊號');
+      expect(RuleScores.dayTradingHigh, lessThanOrEqualTo(0));
+    });
+
     test('does not trigger when ratio is below high threshold', () {
       final context = AnalysisContext(
         evaluationTime: DateTime(2025, 6, 1),

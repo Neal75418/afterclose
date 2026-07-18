@@ -68,9 +68,12 @@ void main() {
       );
     });
 
-    test('dayTradingHigh 是 +12 正分、但語意警訊 → 強制 moderate', () {
-      // 守護「不能用負分界定」的鐵律
-      expect(ReasonType.dayTradingHigh.score, greaterThan(0));
+    test('dayTradingHigh 非負分、但語意警訊 → 強制 moderate', () {
+      // 守護「不能用負分界定」的鐵律。
+      // 2026-07-18 由 +12 demote 至 0（實證：50-70% 是 1D 最差 bucket、
+      // excess −0.495%、勝率 37.4%），但「非負分卻是警訊」的前提不變 —— 0 分
+      // 同樣選不到，仍必須靠 allowlist 強制納入。
+      expect(ReasonType.dayTradingHigh.score, greaterThanOrEqualTo(0));
       expect(
         RiskWarnings.severityOf(ReasonType.dayTradingHigh),
         RiskSeverity.moderate,

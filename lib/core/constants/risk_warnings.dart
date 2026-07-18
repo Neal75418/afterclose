@@ -17,8 +17,9 @@ enum RiskSeverity {
 /// 這裡定義「哪些 neutral 訊號該以風險徽章浮回卡片」+ 各自嚴重度。
 ///
 /// **界定鐵律 — 不能用「取所有 neutral」或「取所有負分」**：
-/// - [ReasonType.dayTradingHigh] hardcoded **+12**（正分）但語意是「高換手 / 投機
-///   接刀」警訊 → 必須 allowlist 強制納入（看語意不看分數）。
+/// - [ReasonType.dayTradingHigh] 分數為 **0**（2026-07-18 由 +12 demote，見
+///   [RuleScores.dayTradingHigh]）但語意是「高換手 / 投機接刀」警訊 → 必須
+///   allowlist 強制納入（看語意不看分數；0 分同樣選不到）。
 /// - [ReasonType.revenueYoySurge] +20 / [ReasonType.highDividendYield] +18 等是
 ///   **利多**、絕不納入警訊桶。
 /// - [ReasonType.concentrationHigh] / [ReasonType.week52Low] 是 noise、不納入。
@@ -74,7 +75,7 @@ abstract final class RiskWarnings {
     ReasonType.foreignConcentrationWarning, // 外資集中警示 (-8)
     ReasonType.patternDojiBearish, // 高檔十字 (-5)
     ReasonType.dayTradingExtreme, // 極端當沖 (-5)
-    ReasonType.dayTradingHigh, // 高當沖 (+12，語意警訊、強制納入)
+    ReasonType.dayTradingHigh, // 高當沖 (0 分，語意警訊、強制納入)
   };
 
   /// 全部 warning-class（severe ∪ moderate）
