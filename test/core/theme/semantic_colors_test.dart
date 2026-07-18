@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/color_contrast.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/theme/semantic_colors.dart';
@@ -109,6 +110,30 @@ void main() {
         greaterThanOrEqualTo(4.5),
       );
     });
+
+    test('品牌文字色對「12% 疊色卡片背景」的合成色達 AA 4.5:1（PinnedThesis 深色情境）', () {
+      // pinned_thesis_section.dart 深色主題「有效狀態」徽章文字色是
+      // DesignTokens.successColor(theme)（深色主題委派至 successDark，即
+      // QualityColors.brand），底色是同一個 successDark 以生產碼字面值 12%
+      // alpha（pinned_thesis_section.dart 未走 DesignTokens.opacityNN 命名、
+      // 直接寫字面值 0.12）疊加卡片背景（darkCard）後的合成色。
+      //
+      // successDark 由舊值 #4ADE80（emerald，對此疊色情境曾達 6.62:1）
+      // 遷移為 brand（#A78BFA）後，對比度收窄至 4.5038237667945165:1
+      // （`ColorContrast` 精算，非四捨五入）——餘裕僅約 0.0038（不到
+      // 0.1%）。任何未來的 Card 底色調整、alpha 微調或品牌色相微調都可能
+      // 讓它悄悄跌破 4.5:1，需要獨立守門，不能只靠上面「平面背景」或
+      // ReasonTags 疊色情境的品牌色測試涵蓋——那些驗證的是不同的顏色配對。
+      final composite = ColorContrast.compositeOver(
+        DesignTokens.successDark,
+        darkCard,
+        0.12,
+      );
+      expect(
+        ColorContrast.ratio(DesignTokens.successDark, composite),
+        greaterThanOrEqualTo(4.5),
+      );
+    });
   });
 
   group('第二層：對比度守門 —— 淺色主題', () {
@@ -192,8 +217,12 @@ void main() {
 
     test('warning 色僅宣告一處', () {
       // AppTheme.warningColor 與 DesignTokens.warningDark 曾各自宣告不同值
-      // （#FF9800 36° vs #FB923C 27°），合併後兩者必須同值。
+      // （#FF9800 36° vs #FB923C 27°），合併後兩者必須同值。兩側都要斷言
+      // ——先前只斷言 DesignTokens.warningDark 一側，AppTheme.warningColor
+      // 單獨改回舊值 #FF9800 不會被抓到（整份測試檔仍全綠），防不住註解
+      // 宣稱要防的雙處宣告漂移。
       expect(DesignTokens.warningDark, WarningColors.warning);
+      expect(AppTheme.warningColor, WarningColors.warning);
     });
   });
 

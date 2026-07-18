@@ -184,8 +184,11 @@ abstract final class DesignTokens {
   // 各自 hardcode `Colors.green.shade600` / `Colors.orange.shade700`，dark
   // mode 對比僅勉強壓 WCAG AA（4.96:1）、不同 widget 容易飄。
   //
-  // 抽 token 統一管理：明暗兩組顏色針對對應背景挑 ≥7:1 對比（AAA），
-  // 並提供 `successColor(theme)` / `warningColor(theme)` helper 自動切換。
+  // 抽 token 統一管理，並提供 `successColor(theme)` / `warningColor(theme)`
+  // helper 自動切換。4 色分別對其主題的 background／surface 兩種背景實測
+  // （`ColorContrast.ratio`）：8 組配對中僅 2 組達 AAA（≥7:1）——successLight
+  // 對 lightBackground 7.10:1、warningDark 對 darkBackground 8.25:1；其餘
+  // 6 組落在 4.76-6.94，達 AA（≥4.5:1）但未達 AAA，並非全數 ≥7:1。
 
   /// Success 語意色（淺色主題）
   ///
