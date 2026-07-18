@@ -52,8 +52,8 @@ class SectionHeader extends StatelessWidget {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: isDark
-                    ? [AppTheme.secondaryColor, AppTheme.primaryColor]
-                    : [AppTheme.primaryColor, AppTheme.secondaryColor],
+                    ? [AppTheme.brandDecorative, AppTheme.primaryColor]
+                    : [AppTheme.primaryColor, AppTheme.brandDecorative],
               ),
               borderRadius: BorderRadius.circular(2),
             ),

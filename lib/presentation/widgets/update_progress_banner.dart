@@ -22,7 +22,7 @@ class UpdateProgressBanner extends StatelessWidget {
     final isDark = context.isDark;
 
     // 依據主題的漸層顏色（統一使用 AppTheme 常數）
-    const gradientColors = [AppTheme.primaryColor, AppTheme.secondaryColor];
+    const gradientColors = [AppTheme.primaryColor, AppTheme.brandDecorative];
 
     final backgroundColor = isDark
         ? theme.colorScheme.surfaceContainerLow

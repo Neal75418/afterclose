@@ -484,7 +484,7 @@ class SettingsScreen extends ConsumerWidget {
         height: 64,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [AppTheme.primaryColor, AppTheme.secondaryColor],
+            colors: [AppTheme.primaryColor, AppTheme.brandDecorative],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),

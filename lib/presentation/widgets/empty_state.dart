@@ -202,7 +202,7 @@ class EmptyStates {
       subtitle: S.emptyNoNewsHint,
       actionLabel: onRefresh != null ? S.refresh : null,
       onAction: onRefresh,
-      iconColor: AppTheme.secondaryColor,
+      iconColor: AppTheme.primaryColor,
     );
   }
 

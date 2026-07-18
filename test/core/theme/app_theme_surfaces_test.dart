@@ -1,9 +1,33 @@
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/theme/color_contrast.dart';
 import 'package:afterclose/core/theme/semantic_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('深色主題 primary 對背景達 AA、onPrimary 為深色', () {
+    final theme = AppTheme.darkTheme;
+    expect(
+      ColorContrast.ratio(
+        theme.colorScheme.primary,
+        theme.scaffoldBackgroundColor,
+      ),
+      greaterThanOrEqualTo(4.5),
+    );
+    expect(
+      ColorContrast.ratio(
+        theme.colorScheme.onPrimary,
+        theme.colorScheme.primary,
+      ),
+      greaterThanOrEqualTo(4.5),
+    );
+  });
+
+  test('主題內不再出現 Material 預設 teal', () {
+    final theme = AppTheme.darkTheme;
+    expect(theme.colorScheme.secondary, isNot(const Color(0xFF03DAC6)));
+  });
+
   test('深色主題表面色飽和度低於 10%', () {
     final theme = AppTheme.darkTheme;
     for (final c in [

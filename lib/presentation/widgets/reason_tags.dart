@@ -110,14 +110,14 @@ class _ReasonTag extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: isDark
-            ? AppTheme.secondaryColor.withValues(alpha: DesignTokens.opacity25)
+            ? AppTheme.brandDecorative.withValues(alpha: DesignTokens.opacity25)
             : AppTheme.primaryColor.withValues(alpha: DesignTokens.opacity10),
         borderRadius: BorderRadius.circular(
           isCompact ? DesignTokens.radiusSm : DesignTokens.radiusMd,
         ),
         border: isDark
             ? Border.all(
-                color: AppTheme.secondaryColor.withValues(
+                color: AppTheme.brandDecorative.withValues(
                   alpha: DesignTokens.opacity40,
                 ),
                 width: 1,
@@ -131,9 +131,10 @@ class _ReasonTag extends StatelessWidget {
                     ? theme.textTheme.labelSmall
                     : theme.textTheme.labelMedium)
                 ?.copyWith(
-                  color: isDark
-                      ? AppTheme.secondaryColor
-                      : AppTheme.primaryColor,
+                  // 文字承載對比義務，改用 colorScheme.primary（深色主題解析為
+                  // brand／淺色主題解析為 brandOnLight），而非固定的
+                  // AppTheme.primaryColor —— 後者僅對深色背景校準過對比度。
+                  color: theme.colorScheme.primary,
                   fontWeight: FontWeight.w500,
                 ),
       ),

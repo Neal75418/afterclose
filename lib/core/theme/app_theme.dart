@@ -16,11 +16,11 @@ class AppTheme {
   // 色彩調色盤（Material Design 標準）
   // ==================================================
 
-  /// 主品牌色 - Material Blue
-  static const primaryColor = Color(0xFF2196F3);
+  /// 主品牌色（Violet 400）。深色主題採 M3 色調邏輯：淺色 primary + 深色 onPrimary。
+  static const primaryColor = QualityColors.brand;
 
-  /// 次要強調色 - Material Teal
-  static const secondaryColor = Color(0xFF03DAC6);
+  /// 品牌裝飾色（Violet 500）—— 僅用於邊框、低透明度底色，不承載文字。
+  static const brandDecorative = QualityColors.brandDecorative;
 
   /// 第三強調色 - Material Deep Orange
   static const tertiaryColor = Color(0xFFFF5722);
@@ -61,11 +61,11 @@ class AppTheme {
   /// 股利正面指標 - 綠色
   static const dividendColor = Color(0xFF27AE60);
 
-  /// 中性灰 - 用於非漲跌的平穩狀態
-  static const neutralSlateColor = Color(0xFF64748B);
+  /// 中性灰 —— 用於非漲跌的平穩狀態
+  static const neutralSlateColor = QualityColors.muted;
 
-  /// 通知紫 - 用於推播通知
-  static const notificationColor = Color(0xFF6C63FF);
+  /// 通知標記 —— 原為 #6C63FF（243°），與品牌紫 255° 僅隔 12° 難以區分
+  static const notificationColor = WarningColors.caution;
 
   // 法人類別顏色
   /// 外資 - 藍色
@@ -99,8 +99,10 @@ class AppTheme {
       brightness: Brightness.dark,
       // ignore: prefer_const_constructors - ColorScheme.dark is a factory constructor
       colorScheme: ColorScheme.dark(
-        primary: primaryColor,
-        secondary: secondaryColor,
+        primary: QualityColors.brand,
+        onPrimary: QualityColors.onBrand,
+        secondary: QualityColors.brand,
+        onSecondary: QualityColors.onBrand,
         tertiary: tertiaryColor,
         surface: _surfaceDark,
         onSurface: SemanticColors.darkTextPrimary,
@@ -219,7 +221,7 @@ class AppTheme {
         contentTextStyle: const TextStyle(
           color: SemanticColors.darkTextPrimary,
         ),
-        actionTextColor: secondaryColor,
+        actionTextColor: QualityColors.brand,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
@@ -243,8 +245,9 @@ class AppTheme {
       brightness: Brightness.light,
       // ignore: prefer_const_constructors - ColorScheme.light is a factory constructor
       colorScheme: ColorScheme.light(
-        primary: primaryColor,
-        secondary: secondaryColor,
+        primary: QualityColors.brandOnLight,
+        onPrimary: const Color(0xFFFFFFFF),
+        secondary: QualityColors.brandOnLight,
         tertiary: tertiaryColor,
         surface: _surfaceLight,
         onSurface: const Color(0xFF1A1A2E),
