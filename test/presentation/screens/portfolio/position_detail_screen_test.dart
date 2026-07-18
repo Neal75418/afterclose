@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/providers/portfolio_provider.dart';
 import 'package:afterclose/presentation/screens/portfolio/position_detail_screen.dart';
@@ -208,6 +209,53 @@ void main() {
       expect(find.text('+0'), findsNothing);
       expect(find.textContaining('(+0.0%)'), findsNothing);
       expect(find.text('(0.0%)'), findsOneWidget);
+    });
+
+    // 已實現損益的配色原本走 `realizedPnl >= 0 ? upColor : downColor`，
+    // 尚未賣出的持股 realizedPnl 恰為 0 卻被著成漲色（紅）。與同一方法內
+    // 上方 pnlColor 的三分法慣例對齊：平盤走中性色。
+    testWidgets('平盤已實現損益（0）不著漲色', (tester) async {
+      widenViewport(tester);
+      final positions = [
+        createPosition(quantity: 1000, avgCost: 500.0, realizedPnl: 0),
+      ];
+      await tester.pumpWidget(
+        buildTestWidget(portfolioState: PortfolioState(positions: positions)),
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      final tile = find
+          .ancestor(
+            of: find.text('portfolio.realizedPnl'),
+            matching: find.byType(Column),
+          )
+          .first;
+      final valueText = tester.widget<Text>(
+        find.descendant(of: tile, matching: find.text('0')),
+      );
+      expect(valueText.style?.color, isNot(AppTheme.upColor));
+    });
+
+    testWidgets('真實已實現獲利仍著漲色（未過度中性化）', (tester) async {
+      widenViewport(tester);
+      final positions = [
+        createPosition(quantity: 1000, avgCost: 500.0, realizedPnl: 50000),
+      ];
+      await tester.pumpWidget(
+        buildTestWidget(portfolioState: PortfolioState(positions: positions)),
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      final tile = find
+          .ancestor(
+            of: find.text('portfolio.realizedPnl'),
+            matching: find.byType(Column),
+          )
+          .first;
+      final valueText = tester.widget<Text>(
+        find.descendant(of: tile, matching: find.text('50000')),
+      );
+      expect(valueText.style?.color, AppTheme.upColor);
     });
 
     testWidgets('shows negative PnL', (tester) async {

@@ -100,6 +100,12 @@ class PositionDetailScreen extends ConsumerWidget {
   Widget _buildPositionSummary(ThemeData theme, PortfolioPositionData pos) {
     // 依顯示精度捨入後判方向：平盤/微負值→中性色、不帶 +，與數字一致。
     final roundedPnl = AppNumberFormat.roundForDisplay(pos.unrealizedPnl, 0);
+    // 已實現損益同樣依顯示精度（0 位）捨入後判方向——未賣出的持股
+    // realizedPnl 恰為 0，不應著漲色。
+    final roundedRealizedPnl = AppNumberFormat.roundForDisplay(
+      pos.realizedPnl,
+      0,
+    );
     final pnlColor = roundedPnl == 0
         ? theme.colorScheme.onSurface
         : (roundedPnl > 0 ? AppTheme.upColor : AppTheme.downColor);
@@ -169,9 +175,11 @@ class PositionDetailScreen extends ConsumerWidget {
                 label: 'portfolio.realizedPnl'.tr(),
                 value: pos.realizedPnl.toStringAsFixed(0),
                 theme: theme,
-                valueColor: pos.realizedPnl >= 0
-                    ? AppTheme.upColor
-                    : AppTheme.downColor,
+                valueColor: roundedRealizedPnl == 0
+                    ? theme.colorScheme.onSurface
+                    : (roundedRealizedPnl > 0
+                          ? AppTheme.upColor
+                          : AppTheme.downColor),
               ),
               _InfoTile(
                 label: 'portfolio.dividendIncome'.tr(),

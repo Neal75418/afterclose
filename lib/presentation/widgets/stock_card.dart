@@ -8,6 +8,7 @@ import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/extensions/trend_state_extension.dart';
 import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/utils/number_formatter.dart';
 import 'package:afterclose/core/utils/price_limit.dart';
 import 'package:afterclose/core/constants/reason_type.dart';
 import 'package:afterclose/presentation/widgets/reason_tags.dart';
@@ -139,8 +140,12 @@ class _StockCardState extends State<StockCard> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // 先捨入到價格區塊的顯示精度（2 位）再取色，否則微負值會出現
+    // 「文字 0.00% 卻著跌色」的矛盾（同 stock_preview_sheet 慣例）。
     final priceColor = AppTheme.getPriceColor(
-      widget.priceChange,
+      widget.priceChange == null
+          ? null
+          : AppNumberFormat.roundForDisplay(widget.priceChange!, 2),
       theme.brightness,
     );
 

@@ -6,10 +6,27 @@ import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
 
+/// 依數值取柱色——嚴格三分法（與 institutional_flow_chart 一致）
+///
+/// `> 0` 漲色 / `< 0` 跌色 / `== 0` 中性色。平盤不著漲跌色，避免零值柱
+/// 被誤讀為買超。抽成純函式供測試直接驗證（柱色畫在 canvas 上，無法從
+/// widget tree 觀察）。
+Color miniBarColor(
+  double value, {
+  required Color upColor,
+  required Color downColor,
+  required Color neutralColor,
+}) {
+  if (value > 0) return upColor;
+  if (value < 0) return downColor;
+  return neutralColor;
+}
+
 /// 迷你柱狀圖（CustomPainter 實作，輕量無 fl_chart 依賴）
 ///
 /// 用於法人買賣超、成交額等 30 日趨勢顯示。
-/// 正值使用 [AppTheme.upColor]，負值使用 [AppTheme.downColor]。
+/// 正值使用 [AppTheme.upColor]，負值使用 [AppTheme.downColor]，
+/// 平盤使用 [AppTheme.neutralColor]。
 /// 若所有值同號（如成交額皆為正），則使用 [positiveOnlyColor]。
 class MiniBarChart extends StatelessWidget {
   const MiniBarChart({
@@ -50,6 +67,7 @@ class MiniBarChart extends StatelessWidget {
                 ? AppTheme.upColor
                 : (positiveOnlyColor ?? theme.colorScheme.primary),
             downColor: AppTheme.downColor,
+            neutralColor: AppTheme.neutralColor,
             hasNegative: hasNegative,
             barRadius: barRadius,
           ),
@@ -64,6 +82,7 @@ class _BarChartPainter extends CustomPainter {
     required this.values,
     required this.upColor,
     required this.downColor,
+    required this.neutralColor,
     required this.hasNegative,
     required this.barRadius,
   });
@@ -71,6 +90,7 @@ class _BarChartPainter extends CustomPainter {
   final List<double> values;
   final Color upColor;
   final Color downColor;
+  final Color neutralColor;
   final bool hasNegative;
   final double barRadius;
 
@@ -133,14 +153,22 @@ class _BarChartPainter extends CustomPainter {
       }
 
       final paint = Paint()
-        ..color = (v >= 0 ? upColor : downColor).withValues(alpha: 0.7);
+        ..color = miniBarColor(
+          v,
+          upColor: upColor,
+          downColor: downColor,
+          neutralColor: neutralColor,
+        ).withValues(alpha: 0.7);
 
+      // 平盤柱貼齊零線、兩端皆不倒角（不偽裝成向上或向下的柱）
+      final isUpBar = v > 0;
+      final isDownBar = v < 0;
       final rect = RRect.fromRectAndCorners(
         Rect.fromLTRB(x, barTop, x + barWidth, barBottom),
-        topLeft: v >= 0 ? radius : Radius.zero,
-        topRight: v >= 0 ? radius : Radius.zero,
-        bottomLeft: v < 0 ? radius : Radius.zero,
-        bottomRight: v < 0 ? radius : Radius.zero,
+        topLeft: isUpBar ? radius : Radius.zero,
+        topRight: isUpBar ? radius : Radius.zero,
+        bottomLeft: isDownBar ? radius : Radius.zero,
+        bottomRight: isDownBar ? radius : Radius.zero,
       );
 
       canvas.drawRRect(rect, paint);
@@ -159,5 +187,6 @@ class _BarChartPainter extends CustomPainter {
   bool shouldRepaint(_BarChartPainter oldDelegate) =>
       !listEquals(values, oldDelegate.values) ||
       upColor != oldDelegate.upColor ||
-      downColor != oldDelegate.downColor;
+      downColor != oldDelegate.downColor ||
+      neutralColor != oldDelegate.neutralColor;
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/indicator_colors.dart';
 import 'package:afterclose/presentation/widgets/stock_card.dart';
 
@@ -51,6 +52,46 @@ void main() {
       );
 
       expect(find.text('櫃'), findsNothing);
+    });
+
+    // 配色與文字必須同時中性 —— flat-value sign/color 缺陷類第三輪
+    //
+    // 卡片的 priceColor 由 StockCard 算好後傳進 StockCardPriceSection，
+    // 原本直接吃未捨入的 priceChange：文字顯示 0.00% 但整塊仍著跌色（綠），
+    // 文字與配色互相矛盾。修正後與 stock_preview_sheet 同一慣例——先捨入
+    // 到顯示精度再取色。
+    testWidgets('微負值 -0.004：漲跌區塊用中性色（不著跌色）', (tester) async {
+      tester.view.physicalSize = const Size(3000, 2400);
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      await tester.pumpWidget(
+        buildTestApp(
+          const StockCard(
+            symbol: '2330',
+            latestClose: 100,
+            priceChange: -0.004,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final changeText = tester.widget<Text>(find.textContaining('0.00%'));
+      expect(changeText.style?.color, AppTheme.neutralColor);
+    });
+
+    testWidgets('真實下跌仍著跌色（未過度中性化）', (tester) async {
+      tester.view.physicalSize = const Size(3000, 2400);
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      await tester.pumpWidget(
+        buildTestApp(
+          const StockCard(symbol: '2330', latestClose: 97, priceChange: -3.0),
+        ),
+      );
+      await tester.pump();
+
+      final changeText = tester.widget<Text>(find.textContaining('-3.00%'));
+      expect(changeText.style?.color, isNot(AppTheme.neutralColor));
     });
 
     testWidgets('極窄卡片下雙 score 徽章等比縮小不溢位', (tester) async {

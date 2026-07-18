@@ -3,8 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:k_chart_plus/k_chart_plus.dart';
 import 'package:k_chart_plus/chart_translations.dart';
 
+// k_chart_plus 也匯出名為 `S` 的類別，需前綴避免衝突
+import 'package:afterclose/core/l10n/app_strings.dart' as l10n;
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/indicator_colors.dart';
+import 'package:afterclose/core/utils/number_formatter.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 
@@ -231,7 +234,11 @@ class _KLineChartWidgetState extends State<KLineChartWidget> {
     // 計算漲跌幅
     final change = last.close - first.close;
     final changePercent = first.close > 0 ? (change / first.close * 100) : 0.0;
-    final trend = change >= 0 ? 'stockDetail.up'.tr() : 'stockDetail.down'.tr();
+    // 以「實際播報出來的數字」（2 位）判方向，走三分法：平盤與捨入歸零
+    // 都播報「持平」，避免出現「上漲 0.00%」這種自相矛盾的播報。
+    final trend = l10n.S.priceChangeLabel(
+      AppNumberFormat.roundForDisplay(changePercent, 2),
+    );
 
     return 'stockDetail.chartSummary'.tr(
       namedArgs: {

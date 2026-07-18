@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:afterclose/core/utils/number_formatter.dart';
 import 'package:afterclose/core/utils/price_limit.dart';
 
 /// 股票卡片的價格區塊 Widget
@@ -38,8 +39,13 @@ class StockCardPriceSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isPositive = (priceChange ?? 0) >= 0;
-    final isNeutral = priceChange == null || priceChange == 0;
+    // 與顯示文字同精度（2 位）捨入後判方向：平盤與微負值（-0.004→0.00%）
+    // 一律中性——不指方向、不帶正負號，與 stock_preview_sheet 同一慣例。
+    final displayedChange = priceChange == null
+        ? null
+        : AppNumberFormat.roundForDisplay(priceChange!, 2);
+    final isPositive = (displayedChange ?? 0) > 0;
+    final isNeutral = displayedChange == null || displayedChange == 0;
     final isLimitUp = showLimitMarkers && PriceLimit.isLimitUp(priceChange);
     final isLimitDown = showLimitMarkers && PriceLimit.isLimitDown(priceChange);
     final absChange = _absoluteChange;
@@ -102,8 +108,8 @@ class StockCardPriceSection extends StatelessWidget {
                   ),
                 Text(
                   compact
-                      ? _formatCompactChangeText(isPositive, isNeutral)
-                      : _formatChangeText(absChange, isPositive, isNeutral),
+                      ? _formatCompactChangeText()
+                      : _formatChangeText(absChange),
                   style: theme.textTheme.labelMedium?.copyWith(
                     color: priceColor,
                     fontWeight: FontWeight.bold,
@@ -118,20 +124,18 @@ class StockCardPriceSection extends StatelessWidget {
     );
   }
 
-  /// 格式化漲跌文字：有絕對金額時顯示「2.50 (+1.67%)」，否則僅顯示百分比
-  String _formatChangeText(double? absChange, bool isPositive, bool isNeutral) {
-    final sign = isPositive && !isNeutral ? '+' : '';
-    final pctText = '$sign${priceChange!.toStringAsFixed(2)}%';
-    if (absChange != null) {
-      final absText = '${isPositive ? '+' : ''}${absChange.toStringAsFixed(2)}';
-      return '$absText ($pctText)';
-    }
-    return pctText;
+  /// 格式化漲跌文字：有絕對金額時顯示「+2.50 (+1.67%)」，否則僅顯示百分比
+  ///
+  /// 正負號交由 [AppNumberFormat] 的「先捨入再判正負」處理，平盤與捨入
+  /// 歸零一律回正零（`0.00`），不會出現 `-0.00`。
+  String _formatChangeText(double? absChange) {
+    final pctText = AppNumberFormat.signedPercent(priceChange!, decimals: 2);
+    if (absChange == null) return pctText;
+    final absText = AppNumberFormat.signedFixed(absChange, decimals: 2);
+    return '$absText ($pctText)';
   }
 
   /// 緊湊模式漲跌文字：僅顯示百分比「+1.67%」
-  String _formatCompactChangeText(bool isPositive, bool isNeutral) {
-    final sign = isPositive && !isNeutral ? '+' : '';
-    return '$sign${priceChange!.toStringAsFixed(2)}%';
-  }
+  String _formatCompactChangeText() =>
+      AppNumberFormat.signedPercent(priceChange!, decimals: 2);
 }

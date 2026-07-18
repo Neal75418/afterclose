@@ -459,8 +459,6 @@
     "yield": "殖利率",
     "yieldLabel": "現金殖利率",
     "noKlineData": "暫無K線資料",
-    "up": "上漲",
-    "down": "下跌",
     "chartSummary": "近{days}日K線圖，最高{high}元，最低{low}元，收盤{close}元，{trend}{change}%",
     "chartHint": "雙指縮放可調整時間範圍",
     "unitBillion": "億",
@@ -557,8 +555,7 @@
     "neutral": "持平",
     "limitUp": "漲停",
     "limitDown": "跌停",
-    "value": "{price} 元",
-    "changePercent": "{sign}{change}%"
+    "value": "{price} 元"
   },
   "reasons": {
     "label": "推薦理由",
@@ -705,6 +702,7 @@
     "price": "價格 {price} 元",
     "priceChangeUp": "上漲 {change} 百分比",
     "priceChangeDown": "下跌 {change} 百分比",
+    "priceChangeNeutral": "持平",
     "score": "評分 {score} 分",
     "signals": "訊號: {signals}",
     "addToWatchlist": "加入自選",

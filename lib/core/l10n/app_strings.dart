@@ -1,5 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 
+import 'package:afterclose/core/utils/number_formatter.dart';
+
 /// 應用程式字串集中管理（基於 easy_localization）
 ///
 /// 此類別為所有 UI 字串的單一來源，
@@ -213,11 +215,18 @@ class S {
       'accessibility.stock'.tr(namedArgs: {'symbol': symbol});
   static String accessibilityPrice(double price) =>
       'accessibility.price'.tr(namedArgs: {'price': price.toStringAsFixed(2)});
+
+  /// 漲跌幅的無障礙播報：**先依顯示精度（2 位）捨入再判方向**。
+  ///
+  /// 平盤與捨入歸零一律播報「持平」，避免畫面顯示中性的 `0.00%`、
+  /// 螢幕閱讀器卻念「上漲 0.00 百分比」的矛盾。
   static String accessibilityPriceChange(double change) {
-    final key = change >= 0
+    final rounded = AppNumberFormat.roundForDisplay(change, 2);
+    if (rounded == 0) return 'accessibility.priceChangeNeutral'.tr();
+    final key = rounded > 0
         ? 'accessibility.priceChangeUp'
         : 'accessibility.priceChangeDown';
-    return key.tr(namedArgs: {'change': change.abs().toStringAsFixed(2)});
+    return key.tr(namedArgs: {'change': rounded.abs().toStringAsFixed(2)});
   }
 
   static String accessibilityScore(int score) =>
