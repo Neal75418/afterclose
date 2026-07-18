@@ -146,6 +146,10 @@ WarningColors.warning / .caution
 | `#3498DB` foreignColor | 外資標記 | — | 移除，改用 `#A1A1AA` |
 | `#9B59B6` investmentTrustColor | 投信標記 | — | 移除，改用 `#A1A1AA` |
 | `#E67E22` dealerColor | 自營標記 | — | 移除，改用 `#A1A1AA` |
+| `#6C63FF` notificationColor | 通知標記 | Warning | `#FCD34D` |
+| `#64748B` neutralSlateColor | 平穩狀態 | Quality | `#71717A` |
+
+`notificationColor` 色相 243.5°，與新品牌色 255° 僅隔 12°，兩者無法區分，故改用琥珀。`neutralSlateColor` 為 Slate 殘留，改用 Zinc 對應階。
 
 ## 測試策略
 
