@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:afterclose/core/theme/semantic_colors.dart';
 
 /// AfterClose 應用程式主題系統
 ///
@@ -76,11 +77,11 @@ class AppTheme {
   /// 自營商 - 橘色
   static const dealerColor = Color(0xFFE67E22);
 
-  // 深色主題表面顏色 (Midnight Slate)
-  static const _surfaceDark = Color(0xFF1E293B); // Slate 800
-  static const _backgroundDark = Color(0xFF0F172A); // Slate 900
-  static const _cardDark = Color(0xFF1E293B); // Slate 800
-  static const _cardDarkSurface = Color(0xFF334155); // Slate 700
+  // 深色主題表面顏色（Tailwind Zinc — 飽和度 4%，不與股價色競爭色相）
+  static const _surfaceDark = SemanticColors.darkSurface; // Zinc 800
+  static const _backgroundDark = SemanticColors.darkBackground; // Zinc 900
+  static const _cardDark = SemanticColors.darkSurface; // Zinc 800
+  static const _cardDarkSurface = SemanticColors.darkElevated; // Zinc 700
 
   // 淺色主題表面顏色
   static const _surfaceLight = Color(0xFFF8F9FA);
@@ -102,22 +103,22 @@ class AppTheme {
         secondary: secondaryColor,
         tertiary: tertiaryColor,
         surface: _surfaceDark,
-        onSurface: const Color(0xFFF1F5F9), // Slate 100
-        onSurfaceVariant: const Color(0xFF94A3B8), // Slate 400
+        onSurface: SemanticColors.darkTextPrimary,
+        onSurfaceVariant: SemanticColors.darkTextSecondary,
         error: const Color(0xFFFF6B6B),
-        outline: const Color(0xFF475569), // Slate 600
+        outline: SemanticColors.darkOutline,
       ),
       scaffoldBackgroundColor: _backgroundDark,
 
       // AppBar
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: false,
-        titleTextStyle: TextStyle(
+        titleTextStyle: const TextStyle(
           fontSize: 24,
           fontWeight: FontWeight.bold,
-          color: Color(0xFFF1F5F9),
+          color: SemanticColors.darkTextPrimary,
         ),
       ),
 
@@ -144,9 +145,9 @@ class AppTheme {
         height: 70,
         iconTheme: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return const IconThemeData(color: Color(0xFFF1F5F9));
+            return const IconThemeData(color: SemanticColors.darkTextPrimary);
           }
-          return const IconThemeData(color: Color(0xFF94A3B8));
+          return const IconThemeData(color: SemanticColors.darkTextSecondary);
         }),
       ),
 
@@ -164,7 +165,7 @@ class AppTheme {
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
-            side: const BorderSide(color: Color(0xFF475569)),
+            side: const BorderSide(color: SemanticColors.darkOutline),
           ),
         ),
       ),
@@ -194,7 +195,10 @@ class AppTheme {
       // 標籤
       chipTheme: ChipThemeData(
         backgroundColor: _cardDarkSurface,
-        labelStyle: const TextStyle(fontSize: 12, color: Color(0xFFF1F5F9)),
+        labelStyle: const TextStyle(
+          fontSize: 12,
+          color: SemanticColors.darkTextPrimary,
+        ),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
@@ -204,7 +208,7 @@ class AppTheme {
 
       // 分隔線
       dividerTheme: const DividerThemeData(
-        color: Color(0xFF334155),
+        color: SemanticColors.darkElevated,
         thickness: 1,
         space: 1,
       ),
@@ -212,7 +216,9 @@ class AppTheme {
       // 提示訊息列
       snackBarTheme: SnackBarThemeData(
         backgroundColor: _cardDarkSurface,
-        contentTextStyle: const TextStyle(color: Color(0xFFF1F5F9)),
+        contentTextStyle: const TextStyle(
+          color: SemanticColors.darkTextPrimary,
+        ),
         actionTextColor: secondaryColor,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -398,8 +404,8 @@ class AppTheme {
   /// 高分股票的頂級金屬漸層
   static LinearGradient get premiumGradient => LinearGradient(
     colors: [
-      const Color(0xFF1E293B),
-      const Color(0xFF334155).withValues(alpha: 0.5),
+      SemanticColors.darkSurface,
+      SemanticColors.darkElevated.withValues(alpha: 0.5),
     ],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
@@ -418,7 +424,7 @@ class AppTheme {
         gradient: premiumGradient,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: const Color(0xFF475569).withValues(alpha: 0.5),
+          color: SemanticColors.darkOutline.withValues(alpha: 0.5),
           width: 1,
         ),
         boxShadow: [
@@ -440,7 +446,7 @@ class AppTheme {
       color: isDark ? _cardDark : _cardLight,
       borderRadius: BorderRadius.circular(16),
       border: Border.all(
-        color: isDark ? const Color(0xFF334155) : const Color(0xFFE8E8F0),
+        color: isDark ? SemanticColors.darkElevated : const Color(0xFFE8E8F0),
         width: 1,
       ),
     );
