@@ -51,4 +51,99 @@ void main() {
     expect(theme.scaffoldBackgroundColor, SemanticColors.darkBackground);
     expect(theme.colorScheme.surface, SemanticColors.darkSurface);
   });
+
+  group('ColorScheme 未指定欄位不落回 Material 預設（issue: secondary 曾靜默帶回 teal）', () {
+    test('淺色主題 onSecondary／onTertiary 對各自承載色達 AA 4.5:1', () {
+      // ColorScheme.light() 的 onSecondary 字面預設值是 Colors.black；
+      // onTertiary 本身無字面預設（建構子參數是 Color? 且無預設值），
+      // 是透過 getter fallback（onTertiary ??= onSecondary，見 Flutter SDK
+      // color_scheme.dart）間接繼承同一個黑。若不明確覆寫，會經
+      // onSecondaryContainer／onTertiaryContainer 兩個衍生欄位散布到
+      // stock_card 市場標籤、watchlist 數量徽章、stock_detail_header
+      // 產業標籤等實際文字上。
+      final scheme = AppTheme.lightTheme.colorScheme;
+      expect(
+        ColorContrast.ratio(scheme.onSecondary, scheme.secondary),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        ColorContrast.ratio(scheme.onTertiary, scheme.tertiary),
+        greaterThanOrEqualTo(4.5),
+      );
+    });
+
+    test('淺色主題 onErrorContainer 對 errorContainer 達 AA 4.5:1', () {
+      // alerts_tab.dart 用 onErrorContainer 承載錯誤說明本文。
+      // onErrorContainer 未指定時落回 onError 的 Material 預設字面值
+      // Colors.white；errorContainer 未指定時落回的是 error——本檔明確
+      // 指定的 #E53935，並非 Material 預設。白字對 #E53935 僅 4.23:1，
+      // 不合格。
+      final scheme = AppTheme.lightTheme.colorScheme;
+      expect(
+        ColorContrast.ratio(scheme.onErrorContainer, scheme.errorContainer),
+        greaterThanOrEqualTo(4.5),
+      );
+    });
+
+    test('深色與淺色主題 outlineVariant 貼近低對比 chrome，非 Material 預設的強烈反差', () {
+      // 未指定時會經 onBackground 落回 Colors.white（深色）／
+      // Colors.black（淺色），對各自的 colorScheme.surface 形成
+      // 14.9:1（深色）／19.9:1（淺色，surface 是 #F8F9FA 非純白，21:1
+      // 是純黑對純白card/scaffold 的數字）的極端反差，與此系統刻意選用的
+      // 低對比 chrome（其餘 outline 類色對表面實測約 1.2-1.4:1）完全不
+      // 搭調，會在 comparison/market_dashboard 等 21 個檔案的邊框與圖表
+      // 格線上突兀跳出。
+      //
+      // 用「對表面的對比度遠低於 3:1 圖形物件門檻」而非「不等於某個
+      // Material 常數」斷言：後者只攔得住原字面值，攔不住換成另一個
+      // 同樣過亮/過暗、依然突兀的顏色。
+      final dark = AppTheme.darkTheme.colorScheme;
+      final light = AppTheme.lightTheme.colorScheme;
+      expect(
+        ColorContrast.ratio(dark.outlineVariant, dark.surface),
+        lessThan(3.0),
+      );
+      expect(
+        ColorContrast.ratio(light.outlineVariant, light.surface),
+        lessThan(3.0),
+      );
+    });
+  });
+
+  group('on-color 與實際疊色底的配對（issue: onSecondary 改白後，疊色底站點反而不合格）', () {
+    test('淺色主題：FilterChip 選中底色與 empty_state 資料需求標籤，onSurface 皆達 AA 4.5:1', () {
+      // 這兩處的實際底色都不是實心 secondaryContainer，而是疊色：
+      // - chipTheme.selectedColor 是 primaryColor 疊 15% alpha 於白之上
+      //   （見 app_theme.dart 淺色 chipTheme）
+      // - empty_state 的資料需求標籤是 secondaryContainer 疊 60% alpha
+      // onSecondaryContainer 是為「文字疊在實心 secondaryContainer 之上」
+      // 校準的（見上面「淺色主題 onSecondary／onTertiary」測試），對這兩個
+      // 疊色合成背景分別只有 1.14:1／3.09:1，故 scan_screen.dart／
+      // news_screen.dart 的 FilterChip 選中標籤與 empty_state.dart 的
+      // 資料需求標籤改用 onSurface。深色主題不受影響（chipTheme 未覆寫
+      // selectedColor，落回實心 secondaryContainer；empty_state 的
+      // onSecondaryContainer 也未改變），故不在此驗證。
+      final scheme = AppTheme.lightTheme.colorScheme;
+
+      final chipSelectedBg = ColorContrast.compositeOver(
+        AppTheme.primaryColor,
+        SemanticColors.lightBackground,
+        0.15,
+      );
+      expect(
+        ColorContrast.ratio(scheme.onSurface, chipSelectedBg),
+        greaterThanOrEqualTo(4.5),
+      );
+
+      final emptyStateTagBg = ColorContrast.compositeOver(
+        scheme.secondaryContainer,
+        SemanticColors.lightBackground,
+        0.6,
+      );
+      expect(
+        ColorContrast.ratio(scheme.onSurface, emptyStateTagBg),
+        greaterThanOrEqualTo(4.5),
+      );
+    });
+  });
 }

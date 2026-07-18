@@ -600,7 +600,14 @@ class _EmptyStateWithMetaState extends State<_EmptyStateWithMeta> {
                       child: Text(
                         req,
                         style: theme.textTheme.labelSmall?.copyWith(
-                          color: theme.colorScheme.onSecondaryContainer,
+                          // 底色是 secondaryContainer 疊 60% alpha，非實心，
+                          // 淺色主題疊白後 onSecondaryContainer（白字）僅
+                          // 3.09:1，不合格；改用 onSurface 達 5.52:1。深色
+                          // 主題未受影響（onSecondaryContainer 沒變過），
+                          // 維持原樣。
+                          color: theme.brightness == Brightness.dark
+                              ? theme.colorScheme.onSecondaryContainer
+                              : theme.colorScheme.onSurface,
                         ),
                       ),
                     );

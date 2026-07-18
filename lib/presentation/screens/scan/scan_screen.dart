@@ -207,6 +207,16 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
   /// 篩選標籤列：全部 / 目前篩選 / 產業 / 更多篩選
   Widget _buildFilterChips(BuildContext context, ScanState state) {
     final theme = Theme.of(context);
+    // FilterChip 選中時的底色是 chipTheme.selectedColor，不是 M3 預設的實心
+    // secondaryContainer——深色主題沒覆寫它，落回實心 secondaryContainer，
+    // onSecondaryContainer 正確（6.51:1）；淺色主題覆寫成
+    // primaryColor@15% 疊白的淡紫色（見 app_theme.dart chipTheme），
+    // onSecondaryContainer 對這個合成色只有 1.14:1（幾乎看不見），故淺色
+    // 主題改用 onSurface（chipTheme.labelStyle 預設色，對淡紫合成色
+    // 14.98:1）。
+    final selectedLabelColor = context.isDark
+        ? theme.colorScheme.onSecondaryContainer
+        : theme.colorScheme.onSurface;
 
     return Padding(
       padding: const EdgeInsets.symmetric(
@@ -222,7 +232,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
               label: Text(ScanFilter.all.labelKey.tr()),
               labelStyle: TextStyle(
                 color: state.filter == ScanFilter.all
-                    ? theme.colorScheme.onSecondaryContainer
+                    ? selectedLabelColor
                     : theme.colorScheme.onSurface,
               ),
               selected: state.filter == ScanFilter.all,

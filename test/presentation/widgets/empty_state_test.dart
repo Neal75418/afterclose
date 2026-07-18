@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:afterclose/core/l10n/app_strings.dart';
+import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
 
 import '../../helpers/widget_test_helpers.dart';
@@ -269,6 +270,50 @@ void main() {
 
       expect(find.byIcon(Icons.filter_alt_off_outlined), findsOneWidget);
       expect(find.text('Score > 80'), findsOneWidget);
+    });
+
+    testWidgets('淺色主題資料需求標籤文字色為 onSurface（非 onSecondaryContainer）', (
+      tester,
+    ) async {
+      // 底色是 secondaryContainer 疊 60% alpha，非實心；onSecondaryContainer
+      // 對這個合成色只有 3.09:1，不合格，故改用 onSurface（5.52:1）。
+      await tester.pumpWidget(
+        buildTestApp(
+          EmptyStates.noFilterResultsWithMeta(
+            filterName: 'Test Filter',
+            conditionDescription: 'Score > 80',
+            dataRequirements: ['收盤價'],
+          ),
+        ),
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      final tagText = tester.widget<Text>(find.text('收盤價'));
+      expect(tagText.style?.color, AppTheme.lightTheme.colorScheme.onSurface);
+      expect(
+        tagText.style?.color,
+        isNot(AppTheme.lightTheme.colorScheme.onSecondaryContainer),
+      );
+    });
+
+    testWidgets('深色主題資料需求標籤文字色維持 onSecondaryContainer', (tester) async {
+      await tester.pumpWidget(
+        buildTestApp(
+          EmptyStates.noFilterResultsWithMeta(
+            filterName: 'Test Filter',
+            conditionDescription: 'Score > 80',
+            dataRequirements: ['收盤價'],
+          ),
+          brightness: Brightness.dark,
+        ),
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      final tagText = tester.widget<Text>(find.text('收盤價'));
+      expect(
+        tagText.style?.color,
+        AppTheme.darkTheme.colorScheme.onSecondaryContainer,
+      );
     });
 
     testWidgets('shows threshold info when provided', (tester) async {

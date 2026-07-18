@@ -388,6 +388,15 @@ class _SourceFilterChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // FilterChip 選中時的底色是 chipTheme.selectedColor，不是 M3 預設的實心
+    // secondaryContainer——深色主題沒覆寫它，落回實心 secondaryContainer，
+    // onSecondaryContainer 正確；淺色主題覆寫成 primaryColor@15% 疊白的
+    // 淡紫色（見 app_theme.dart chipTheme），onSecondaryContainer 對這個
+    // 合成色只有 1.14:1（幾乎看不見），故淺色主題改用 onSurface
+    // （chipTheme.labelStyle 預設色，對淡紫合成色 14.98:1）。
+    final selectedLabelColor = theme.brightness == Brightness.dark
+        ? theme.colorScheme.onSecondaryContainer
+        : theme.colorScheme.onSurface;
 
     return Padding(
       padding: const EdgeInsets.symmetric(
@@ -405,7 +414,7 @@ class _SourceFilterChips extends StatelessWidget {
                 label: Text('${source.label} (${sourceCounts[source] ?? 0})'),
                 labelStyle: theme.textTheme.labelMedium?.copyWith(
                   color: source == selectedSource
-                      ? theme.colorScheme.onSecondaryContainer
+                      ? selectedLabelColor
                       : theme.colorScheme.onSurface,
                 ),
                 onSelected: (_) {

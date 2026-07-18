@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:afterclose/core/theme/color_contrast.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/theme/semantic_colors.dart';
 import 'package:afterclose/domain/models/chip_strength.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -89,6 +90,24 @@ void main() {
       for (final c in WarningColors.darkOnly) {
         expect(ColorContrast.ratio(c, darkBg), greaterThanOrEqualTo(4.5));
       }
+    });
+
+    test('品牌文字色對「裝飾底疊加卡片背景」的合成色達 AA 4.5:1（ReasonTags 深色情境）', () {
+      // reason_tags.dart 深色主題底色不是平面卡片背景——是 brandDecorative
+      // 以 DesignTokens.opacity25（實際生產 alpha）疊加卡片背景（darkCard，
+      // 即 SemanticColors.darkSurface）後的合成色。上面幾個測試只驗證品牌
+      // 文字對「平面」背景（darkBg／darkCard）的對比度，brand（#A78BFA）
+      // 對此合成色僅 4.1:1，兩者是不同的顏色配對，不能互相替代——這正是
+      // 上一輪疊色情境退步完全沒被攔下的原因。
+      final composite = ColorContrast.compositeOver(
+        QualityColors.brandDecorative,
+        darkCard,
+        DesignTokens.opacity25,
+      );
+      expect(
+        ColorContrast.ratio(QualityColors.brandOnDecorative, composite),
+        greaterThanOrEqualTo(4.5),
+      );
     });
   });
 

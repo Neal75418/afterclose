@@ -131,10 +131,17 @@ class _ReasonTag extends StatelessWidget {
                     ? theme.textTheme.labelSmall
                     : theme.textTheme.labelMedium)
                 ?.copyWith(
-                  // 文字承載對比義務，改用 colorScheme.primary（深色主題解析為
-                  // brand／淺色主題解析為 brandOnLight），而非固定的
-                  // AppTheme.primaryColor —— 後者僅對深色背景校準過對比度。
-                  color: theme.colorScheme.primary,
+                  // 文字承載對比義務。深色主題的底色（見上方 decoration）是
+                  // brandDecorative 以 25% alpha 疊加卡片背景的合成色，而非
+                  // 平面背景——colorScheme.primary（解析為 brand）只對平面
+                  // 背景校準過對比度，對此合成色僅 4.1:1，故改用專為此疊色
+                  // 情境校準的 brandOnDecorative（見
+                  // test/core/theme/semantic_colors_test.dart 疊色守門測試）。
+                  // 淺色主題底色是 primaryColor 10% 疊白，colorScheme.primary
+                  // （解析為 brandOnLight）仍合格，維持不變。
+                  color: isDark
+                      ? AppTheme.brandOnDecorative
+                      : theme.colorScheme.primary,
                   fontWeight: FontWeight.w500,
                 ),
       ),

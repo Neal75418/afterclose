@@ -22,6 +22,9 @@ class AppTheme {
   /// 品牌裝飾色（Violet 500）—— 僅用於邊框、低透明度底色，不承載文字。
   static const brandDecorative = QualityColors.brandDecorative;
 
+  /// 深色主題中，疊加在 [brandDecorative] 裝飾底之上的文字色（Violet 300）。
+  static const brandOnDecorative = QualityColors.brandOnDecorative;
+
   /// 第三強調色 - Material Deep Orange
   static const tertiaryColor = Color(0xFFFF5722);
 
@@ -109,6 +112,22 @@ class AppTheme {
         onSurfaceVariant: SemanticColors.darkTextSecondary,
         error: const Color(0xFFFF6B6B),
         outline: SemanticColors.darkOutline,
+        // 未指定時 ColorScheme.dark() 會經 onBackground 落回 Colors.white
+        // （Flutter SDK color_scheme.dart：outlineVariant ??= onBackground，
+        // onBackground 參數本身預設 Colors.white）——與此系統刻意選用的低
+        // 對比 chrome（其餘 outline 類色皆 <=1.5:1 對表面）形成 14.9:1 的
+        // 強烈落差，會在 21 個檔案的邊框/分隔線/圖表格線上突兀跳出。
+        // 沿用既有的「次一階邊框」慣例（等同 dividerTheme 深色值）。
+        outlineVariant: SemanticColors.darkElevated,
+        // 已知範圍外缺口（未在本輪修復，記錄供下一輪參考）：
+        // surfaceContainerLowest/Low/(本身)/High/Highest 五階同樣未指定，
+        // 全數 `?? surface` 塌成同一色，導致 5 階 elevation ladder 變
+        // no-op（例：stock_detail/tabs/alerts_tab.dart 的非啟用狀態圖示
+        // 底色與 chip_strength_indicator.dart 的進度軌道底色，皆與所在
+        // Card 背景同色，對比 1.0:1，視覺上完全隱形）。此問題早於本次
+        // 修復即存在、非本次改動引入，且修法需要設計一套全新五階色階
+        // （非僅補一個值），範圍超出本輪「未指定欄位落回 teal 類問題」
+        // 的修復範圍，故僅記錄不在此修，待另一輪處理。
       ),
       scaffoldBackgroundColor: _backgroundDark,
 
@@ -248,12 +267,39 @@ class AppTheme {
         primary: QualityColors.brandOnLight,
         onPrimary: const Color(0xFFFFFFFF),
         secondary: QualityColors.brandOnLight,
+        // ColorScheme.light() 的 onSecondary 未指定會落回 Material 預設
+        // Colors.black，對 brandOnLight（#6D28D9）僅 2.96:1——且不只
+        // onSecondary 本身，onSecondaryContainer（衍生自 onSecondary，見
+        // Flutter SDK：onSecondaryContainer ??= onSecondary）在
+        // stock_card 市場標籤、watchlist 數量徽章等 10 處實際文字上也會
+        // 一併沿用同一個不合格的黑。改與 onPrimary 對稱，對 brandOnLight
+        // 達 7.10:1。
+        onSecondary: const Color(0xFFFFFFFF),
         tertiary: tertiaryColor,
+        // onTertiary 未指定會落回 onSecondary（Flutter SDK：
+        // onTertiary ??= onSecondary）。若不明確指定，上面 onSecondary
+        // 改白之後會被動跟著變白，但白對 tertiaryColor（#FF5722）只有
+        // 3.16:1，反而讓目前用黑字（純黑 6.64:1，見 stock_detail_header
+        // 產業標籤、news_screen 更多標籤）合格的組合退步。故與
+        // onSecondary 明確脫鉤——沿用既有的 onSurface 深色文字值
+        // #1A1A2E（5.39:1，非純黑但同樣過 AA，換取與主題其餘深色文字
+        // 一致，不必為此另立一個只差在這裡用的顏色）。
+        onTertiary: const Color(0xFF1A1A2E),
         surface: _surfaceLight,
         onSurface: const Color(0xFF1A1A2E),
         onSurfaceVariant: const Color(0xFF666680),
         error: const Color(0xFFE53935),
+        // onError 未指定會落回 Colors.white，對 error（#E53935）僅
+        // 4.23:1——onErrorContainer（衍生自 onError）承載 alerts_tab.dart
+        // 的錯誤說明本文，未達 4.5:1。改用純黑達 4.97:1；主題慣用的深色
+        // 文字 #1A1A2E（見上方 onTertiary）在此僅 4.04:1，不夠，故此處
+        // 例外用純黑而非沿用 #1A1A2E——之後做顏色收斂時請勿把這裡「統一」
+        // 成 #1A1A2E，會靜默跌破 4.5:1。
+        onError: const Color(0xFF000000),
         outline: const Color(0xFFE0E0E8),
+        // 理由同深色主題：未指定會落回 Colors.black，對白底表面形成
+        // 21:1 的極端反差。沿用既有的分隔線／卡片邊框淺灰值。
+        outlineVariant: const Color(0xFFE8E8F0),
       ),
       scaffoldBackgroundColor: _backgroundLight,
 

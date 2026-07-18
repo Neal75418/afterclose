@@ -52,6 +52,49 @@ void main() {
     });
   });
 
+  group('compositeOver', () {
+    test('alpha 1.0 回傳前景色', () {
+      const fg = Color(0xFF8B5CF6);
+      const bg = Color(0xFF27272A);
+      final result = ColorContrast.compositeOver(fg, bg, 1.0);
+      expect(result.r, closeTo(fg.r, 1e-9));
+      expect(result.g, closeTo(fg.g, 1e-9));
+      expect(result.b, closeTo(fg.b, 1e-9));
+    });
+
+    test('alpha 0.0 回傳背景色', () {
+      const fg = Color(0xFF8B5CF6);
+      const bg = Color(0xFF27272A);
+      final result = ColorContrast.compositeOver(fg, bg, 0.0);
+      expect(result.r, closeTo(bg.r, 1e-9));
+      expect(result.g, closeTo(bg.g, 1e-9));
+      expect(result.b, closeTo(bg.b, 1e-9));
+    });
+
+    test('黑疊 50% 於白之上為中灰', () {
+      final result = ColorContrast.compositeOver(
+        const Color(0xFF000000),
+        const Color(0xFFFFFFFF),
+        0.5,
+      );
+      expect(result.r, closeTo(0.5, 1e-9));
+      expect(result.g, closeTo(0.5, 1e-9));
+      expect(result.b, closeTo(0.5, 1e-9));
+    });
+
+    test('reason_tags 深色情境合成色與手算結果一致（約 #40345D）', () {
+      // brandDecorative(#8B5CF6) 以 25% alpha 疊加卡片背景(#27272A)。
+      final result = ColorContrast.compositeOver(
+        const Color(0xFF8B5CF6),
+        const Color(0xFF27272A),
+        0.25,
+      );
+      expect(result.r * 255, closeTo(0x40, 0.6));
+      expect(result.g * 255, closeTo(0x34, 0.6));
+      expect(result.b * 255, closeTo(0x5D, 0.6));
+    });
+  });
+
   group('hue', () {
     test('三原色色相正確', () {
       expect(ColorContrast.hue(const Color(0xFFFF0000)), closeTo(0.0, 0.01));

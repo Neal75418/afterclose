@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/providers/scan_provider.dart';
 import 'package:afterclose/presentation/providers/settings_provider.dart';
 import 'package:afterclose/presentation/screens/scan/scan_screen.dart';
@@ -165,6 +166,42 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
 
       expect(find.byType(FilterChip), findsAtLeastNWidgets(1));
+    });
+
+    testWidgets('淺色主題選中的「全部」標籤文字色為 onSurface（非 onSecondaryContainer）', (
+      tester,
+    ) async {
+      // chipTheme.selectedColor（淺色主題）是 primaryColor 疊 15% alpha
+      // 於白之上的淡紫色，非實心 secondaryContainer；onSecondaryContainer
+      // 對這個合成色只有 1.14:1（見 app_theme_surfaces_test.dart 的疊色
+      // 守門測試），故選中標籤文字必須是 onSurface，不能退回
+      // onSecondaryContainer。
+      widenViewport(tester);
+      await tester.pumpWidget(buildTestWidget()); // 預設 filter = all（選中）
+      await tester.pump(const Duration(seconds: 1));
+
+      final allChip = tester.widget<FilterChip>(find.byType(FilterChip).first);
+      final labelColor = allChip.labelStyle?.color;
+      expect(labelColor, AppTheme.lightTheme.colorScheme.onSurface);
+      expect(
+        labelColor,
+        isNot(AppTheme.lightTheme.colorScheme.onSecondaryContainer),
+      );
+    });
+
+    testWidgets('深色主題選中的「全部」標籤文字色維持 onSecondaryContainer', (tester) async {
+      // 深色主題 chipTheme 沒覆寫 selectedColor，落回 M3 預設實心
+      // secondaryContainer，onSecondaryContainer 對它本來就合格
+      // （6.51:1），不應被本次修復意外改動。
+      widenViewport(tester);
+      await tester.pumpWidget(buildTestWidget(brightness: Brightness.dark));
+      await tester.pump(const Duration(seconds: 1));
+
+      final allChip = tester.widget<FilterChip>(find.byType(FilterChip).first);
+      expect(
+        allChip.labelStyle?.color,
+        AppTheme.darkTheme.colorScheme.onSecondaryContainer,
+      );
     });
 
     testWidgets('shows more filters action chip', (tester) async {

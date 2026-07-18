@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/providers/news_heat_provider.dart';
 import 'package:afterclose/presentation/providers/news_provider.dart';
@@ -191,6 +192,31 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
 
       expect(find.byType(FilterChip), findsNothing);
+    });
+
+    testWidgets('淺色主題選中的來源標籤文字色為 onSurface（非 onSecondaryContainer）', (
+      tester,
+    ) async {
+      // chipTheme.selectedColor（淺色主題）是 primaryColor 疊 15% alpha
+      // 於白之上的淡紫色，非實心 secondaryContainer；onSecondaryContainer
+      // 對這個合成色只有 1.14:1，故選中標籤文字必須是 onSurface。
+      widenViewport(tester);
+      final newsItems = [
+        createNewsItem(source: '鉅亨網', publishedAt: DateTime.now()),
+      ];
+      await tester.pumpWidget(
+        buildTestWidget(newsState: NewsState(allNews: newsItems)),
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      // NewsSource.all 恆為第一個顯示的 chip，且預設為選中來源
+      final allChip = tester.widget<FilterChip>(find.byType(FilterChip).first);
+      final labelColor = allChip.labelStyle?.color;
+      expect(labelColor, AppTheme.lightTheme.colorScheme.onSurface);
+      expect(
+        labelColor,
+        isNot(AppTheme.lightTheme.colorScheme.onSecondaryContainer),
+      );
     });
 
     testWidgets('refreshing with existing news keeps list, no shimmer', (

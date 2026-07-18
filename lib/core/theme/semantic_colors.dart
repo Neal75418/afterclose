@@ -80,6 +80,16 @@ abstract final class QualityColors {
   /// 不承載文字，故不適用 WCAG 文字門檻。
   static const brandDecorative = Color(0xFF8B5CF6);
 
+  /// 深色主題中，疊加在 [brandDecorative] 裝飾底之上的文字色。
+  ///
+  /// [brandDecorative] 以 25% alpha 疊加卡片背景（[SemanticColors.darkSurface]）
+  /// 後的合成色為 `#40345D`，[brand]（`#A78BFA`）對該合成色僅 4.1:1，不合格
+  /// ——[brand] 只對平面背景（scaffold／card）校準過對比度，疊色後的合成背景
+  /// 是完全不同的顏色配對。改用 Violet 300 對同一合成色達 6.1:1。
+  ///
+  /// 不得用於平面背景之上的品牌文字——平面背景請用 [brand]／[brandOnDark]。
+  static const brandOnDecorative = Color(0xFFC4B5FD);
+
   /// 低強度／停用／低波動
   static const muted = Color(0xFF71717A);
 
@@ -90,6 +100,7 @@ abstract final class QualityColors {
     brandOnDark,
     brandOnLight,
     brandDecorative,
+    brandOnDecorative,
     muted,
   ];
 }
