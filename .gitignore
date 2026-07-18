@@ -137,3 +137,6 @@ secrets/
 # VS Code workspace files
 *.code-workspace
 tool/.calibrate.lock/
+
+# Brainstorming visual companion mockups (local only)
+.superpowers/
