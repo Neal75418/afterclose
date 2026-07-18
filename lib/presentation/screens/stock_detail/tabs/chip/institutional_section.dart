@@ -34,7 +34,7 @@ class InstitutionalSection extends StatelessWidget {
         if (history.isEmpty)
           buildEmptyState(context, 'chip.noData'.tr())
         else ...[
-          _buildTrendChart(),
+          _buildTrendChart(context),
           const SizedBox(height: DesignTokens.spacing12),
           _buildTable(context),
         ],
@@ -84,7 +84,7 @@ class InstitutionalSection extends StatelessWidget {
     );
   }
 
-  Widget _buildTrendChart() {
+  Widget _buildTrendChart(BuildContext context) {
     final deduped = _getDeduplicatedData(history);
     if (deduped.length < 2) return const SizedBox.shrink();
 
@@ -94,9 +94,12 @@ class InstitutionalSection extends StatelessWidget {
         .map((e) => (e.foreignNet ?? 0) + (e.investmentTrustNet ?? 0))
         .toList();
 
+    // 這裡不在 Card 內、直接坐落在 ChipTab 的 surface 底色上（非白色）——
+    // 不得沿用 CategoryColors.neutral（對 surface 底僅 2.43:1，圖形物件
+    // 3.0:1 門檻不過）。改走主題 onSurfaceVariant，理由同 insider_section.dart。
     return MiniTrendChart(
       dataPoints: totalNets,
-      lineColor: CategoryColors.neutral,
+      lineColor: Theme.of(context).colorScheme.onSurfaceVariant,
     );
   }
 

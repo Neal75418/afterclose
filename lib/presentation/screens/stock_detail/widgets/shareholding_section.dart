@@ -2,7 +2,6 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/design_tokens.dart';
-import 'package:afterclose/core/theme/semantic_colors.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/fundamentals/fundamentals_helpers.dart'
     show buildEmptyState;
@@ -112,9 +111,14 @@ class ShareholdingSection extends StatelessWidget {
         const SizedBox(height: DesignTokens.spacing8),
 
         // Trend chart
+        //
+        // 這裡不在 Card 內、直接坐落在 ChipTab 的 surface 底色上（非白色）
+        // ——不得沿用 CategoryColors.neutral（對 surface 底僅 2.43:1，圖形
+        // 物件 3.0:1 門檻不過）。改走主題 onSurfaceVariant，理由同
+        // insider_section.dart／institutional_section.dart。
         MiniTrendChart(
           dataPoints: chartData,
-          lineColor: CategoryColors.neutral,
+          lineColor: theme.colorScheme.onSurfaceVariant,
         ),
       ],
     );

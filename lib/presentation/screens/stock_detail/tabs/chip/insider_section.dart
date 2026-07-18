@@ -181,7 +181,13 @@ class InsiderSection extends StatelessWidget {
               MiniTrendChart(
                 dataPoints: insiderRatioHistory,
                 height: 56,
-                lineColor: CategoryColors.neutral,
+                // 文字/圖形物件對比度一律走主題色，不得直接套用
+                // CategoryColors.neutral——見 institutional_flow_chart.dart
+                // 的 _FlowItem.label 同一手法：淺色主題 onSurfaceVariant
+                // (#666680) 對本卡片白底 5.56:1，深色主題與 neutral 同值
+                // (#A1A1AA) 視覺零變化。fillColor 維持 neutral，純裝飾用途
+                // （8% alpha 面積填色）不承載資訊，不適用 WCAG 門檻。
+                lineColor: theme.colorScheme.onSurfaceVariant,
                 fillColor: CategoryColors.neutral.withValues(alpha: 0.08),
               ),
             ],
