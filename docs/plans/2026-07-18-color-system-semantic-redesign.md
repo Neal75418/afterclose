@@ -1004,8 +1004,14 @@ import 'package:afterclose/core/theme/semantic_colors.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('法人分類標記為灰階，不佔用色相', () {
-    expect(ColorContrast.hue(CategoryColors.neutral), -1.0);
+  test('法人分類標記不佔用股價語意色相', () {
+    // 注意：`#A1A1AA`（Zinc 400）R=161 G=161 B=170，B 分量不同，
+    // 並非純灰階 —— 其色相為 240°。此處要求的是「不落在紅綠禁區」，
+    // 不是「必須為純灰階」。與 PriceColors.flat 不同：後者的設計意圖
+    // 明確要求純灰階（刻意不佔用任何色相），故其值為 #A1A1A1。
+    final h = ColorContrast.hue(CategoryColors.neutral);
+    expect(h >= 345 || h <= 15, isFalse);
+    expect(h >= 88 && h <= 175, isFalse);
   });
 
   test('法人分類標記對卡片底達 AA 4.5:1', () {
