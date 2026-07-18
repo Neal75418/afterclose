@@ -1,7 +1,6 @@
 import 'dart:math' as math;
-import 'dart:ui';
 
-import 'package:flutter/painting.dart'; // HSLColor
+import 'package:flutter/painting.dart'; // Color, HSLColor
 
 /// WCAG 2.1 對比度與色相計算。
 ///
