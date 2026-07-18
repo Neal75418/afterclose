@@ -5,6 +5,7 @@ import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/theme/breakpoints.dart';
+import 'package:afterclose/core/utils/number_formatter.dart';
 import 'package:afterclose/presentation/providers/market_overview_provider.dart';
 
 /// 產業表現區域
@@ -27,18 +28,6 @@ class IndustryPerformanceRow extends StatelessWidget {
 
   /// 桌面 Wrap 模式最多顯示的產業數量（前 N + 後 N，對稱）
   static const _desktopMaxItems = 8;
-
-  /// 依顯示精度捨入（供文字與配色共用同一個值——顯示 0.0% 就不得著漲跌色）
-  static double roundForDisplay(double value, int decimals) =>
-      double.parse(value.toStringAsFixed(decimals));
-
-  /// 格式化帶正負號的百分比：**先依 [decimals] 捨入再判正負**，
-  /// 避免微負值（如 -0.04 取一位）顯示成「-0.0%」負零。
-  static String formatSignedPct(double value, int decimals) {
-    final rounded = roundForDisplay(value, decimals);
-    if (rounded == 0) return '${0.0.toStringAsFixed(decimals)}%';
-    return '${rounded > 0 ? '+' : ''}${rounded.toStringAsFixed(decimals)}%';
-  }
 
   /// 卡片固定高度：容納「產業名／漲跌幅+家數／5日動能（選填）」三行內容
   static const _cardHeight = 84.0;
@@ -89,10 +78,10 @@ class IndustryPerformanceRow extends StatelessWidget {
             if (changePct != null) ...[
               Text('marketOverview.industryIndexAnchor'.tr(), style: hintStyle),
               Text(
-                IndustryPerformanceRow.formatSignedPct(changePct, 2),
+                AppNumberFormat.signedPercent(changePct, decimals: 2),
                 style: hintStyle?.copyWith(
                   color: context.priceColor(
-                    IndustryPerformanceRow.roundForDisplay(changePct, 2),
+                    AppNumberFormat.roundForDisplay(changePct, 2),
                   ),
                   fontWeight: FontWeight.w600,
                 ),
@@ -189,7 +178,7 @@ class _IndustryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     // 與顯示文字同精度捨入後再判方向（避免 -0.004 顯示 0.00% 卻著跌色）
-    final displayedPct = IndustryPerformanceRow.roundForDisplay(
+    final displayedPct = AppNumberFormat.roundForDisplay(
       industry.avgChangePct,
       2,
     );
@@ -239,9 +228,9 @@ class _IndustryCard extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        IndustryPerformanceRow.formatSignedPct(
+                        AppNumberFormat.signedPercent(
                           industry.avgChangePct,
-                          2,
+                          decimals: 2,
                         ),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: color,
@@ -322,10 +311,10 @@ class _IndustryCard extends StatelessWidget {
                   if (industry.momentum5d != null)
                     Text(
                       '${'marketOverview.industryMomentum5d'.tr()} '
-                      '${IndustryPerformanceRow.formatSignedPct(industry.momentum5d!, 1)}',
+                      '${AppNumberFormat.signedPercent(industry.momentum5d!, decimals: 1)}',
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: context.priceColor(
-                          IndustryPerformanceRow.roundForDisplay(
+                          AppNumberFormat.roundForDisplay(
                             industry.momentum5d!,
                             1,
                           ),
