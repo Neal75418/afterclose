@@ -109,6 +109,29 @@ void main() {
       }
     });
 
+    test('圖表色盤每色對「MetricCard 圖示 10% 疊色 card」的合成背景達圖形物件門檻 3:1（深色主題）', () {
+      // 淺色主題已驗證 MetricCard 疊色情境（見下方淺色主題分組），深色
+      // 主題卻從未驗證對應的合成背景——這正是同一種「只驗證其中一種背景」
+      // 疏漏在深淺主題間再次出現的地方。fundamentals_tab.dart 的 P/E／
+      // P/B／殖利率三張 MetricCard（Task 9 由字面值色改為取自本色盤）與
+      // insider_tab.dart 皆落在這個情境，若不獨立守門，任何未來調色都可能
+      // 讓深色主題的合成對比悄悄跌破 3.0:1 卻不被任何測試攔下。
+      for (final c in CategoryColors.chartPaletteDark) {
+        final composite = ColorContrast.compositeOver(
+          c,
+          darkCard,
+          DesignTokens.opacity10,
+        );
+        expect(
+          ColorContrast.ratio(c, composite),
+          greaterThanOrEqualTo(3.0),
+          reason:
+              'chartPaletteDark ${c.toARGB32().toRadixString(16)} '
+              '疊色後對 MetricCard 合成背景（深色）對比不足',
+        );
+      }
+    });
+
     test('警示色（深色主題）對深色背景達 AA 4.5:1', () {
       // 用 darkOnly 而非 all——warningOnLight 是淺色主題專用色，
       // 預定背景是白底，對深色背景驗證不適用，見下方淺色主題分組。

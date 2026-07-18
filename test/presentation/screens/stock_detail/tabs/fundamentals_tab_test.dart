@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:afterclose/core/theme/semantic_colors.dart';
 import 'package:afterclose/data/models/finmind/per.dart';
 import 'package:afterclose/data/models/finmind/revenue.dart';
 import 'package:afterclose/presentation/providers/settings_provider.dart';
@@ -197,6 +198,69 @@ void main() {
       expect(find.byType(FundamentalsTab), findsOneWidget);
       // Revenue table is rendered (not the empty/loading state)
       expect(find.byType(SectionHeader), findsAtLeastNWidgets(3));
+    });
+
+    // 既有缺陷（Task 9 修復）：P/E `#3498DB`、殖利率 `AppTheme.dividendColor`
+    // (`#A78BFA`) 對淺色主題 surfaceContainerLow 對比不足（純色背景分別
+    // 2.9912:1／2.5817:1，疊色後 2.7080:1／2.3730:1，皆低於 MetricCard 圖示
+    // 3.0:1 門檻）；P/B `#9B59B6` 則是深色主題疊色後對 surfaceContainerLow
+    // 僅 2.8907:1 不足（`ColorContrast` 精算，brief 表格未列出的第三個
+    // 缺陷）。三者皆應改用 CategoryColors.chartPaletteFor(brightness) 取色，
+    // 與 insider_tab.dart 的既有做法一致。
+    testWidgets('metric card accent colors use chartPalette (dark theme)', (
+      tester,
+    ) async {
+      widenViewport(tester);
+      final state = const StockDetailState().copyWith(
+        latestPER: const FinMindPER(
+          stockId: '2330',
+          date: '2026-02-20',
+          per: 18.5,
+          pbr: 4.32,
+          dividendYield: 2.15,
+        ),
+      );
+      await tester.pumpWidget(
+        buildTestWidget(stockState: state, brightness: Brightness.dark),
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      final cards = tester
+          .widgetList<MetricCard>(find.byType(MetricCard))
+          .toList();
+      expect(cards, hasLength(3));
+      final palette = CategoryColors.chartPaletteFor(Brightness.dark);
+      expect(cards[0].accentColor, palette[0], reason: 'P/E 應取藍 500');
+      expect(cards[1].accentColor, palette[1], reason: 'P/B 應取橘 500');
+      expect(cards[2].accentColor, palette[2], reason: '殖利率應取紫 500');
+    });
+
+    testWidgets('metric card accent colors use chartPalette (light theme)', (
+      tester,
+    ) async {
+      widenViewport(tester);
+      final state = const StockDetailState().copyWith(
+        latestPER: const FinMindPER(
+          stockId: '2330',
+          date: '2026-02-20',
+          per: 18.5,
+          pbr: 4.32,
+          dividendYield: 2.15,
+        ),
+      );
+      await tester.pumpWidget(
+        buildTestWidget(stockState: state, brightness: Brightness.light),
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      final cards = tester
+          .widgetList<MetricCard>(find.byType(MetricCard))
+          .toList();
+      expect(cards, hasLength(3));
+      final palette = CategoryColors.chartPaletteFor(Brightness.light);
+      expect(cards[0].accentColor, palette[0], reason: 'P/E 應取藍 600');
+      expect(cards[1].accentColor, palette[1], reason: 'P/B 應取橘 600');
+      expect(cards[2].accentColor, palette[2], reason: '殖利率應取紫 600');
     });
   });
 }

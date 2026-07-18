@@ -4,6 +4,18 @@ All notable changes to AfterClose will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Changed
+
+- 色彩系統依語意分類重構：紅綠專屬多空語意，非方向性語意改用品牌紫
+- 籌碼評等色階翻轉為台股慣例（強勢＝紅、弱勢＝綠）
+- 深色主題表面改用中性灰，品牌色改 Violet
+
+### Fixed
+
+- 基本面頁 P/E／P/B／殖利率指標卡圖示對比不足，改用圖表色盤色達 WCAG 圖形物件門檻 3.0:1
+
 ## [0.6.0] — 2026-07-09 — Today 三模式選股 analyst-grounded 重設計
 
 > 取代舊「短/長線」雙 horizon tab，改為對應「股票在趨勢中的階段」（Weinstein /

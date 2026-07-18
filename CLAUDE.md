@@ -63,6 +63,8 @@ dart format .                                                  # 格式化 (pre-
 | `lib/data/database/dao/batch_query_mixin.dart`   | 批次查詢共享工具 (groupBySymbol)                       |
 | `lib/domain/services/rule_accuracy_service.dart` | 推薦績效回測引擎 (多週期驗證)                               |
 | `lib/domain/services/thesis/`                    | 釘選論點失效（timeStop；hardStop/trendBreak 被 gate 砍）  |
+| `lib/core/theme/semantic_colors.dart`            | 色彩語意分類（紅綠專屬股價，見守門測試）              |
+| `lib/core/theme/color_contrast.dart`             | WCAG 對比度／色相／疊色計算，`semantic_colors.dart` 與其守門測試共用同一份公式來源 |
 
 ---
 

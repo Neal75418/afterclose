@@ -2,8 +2,8 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:afterclose/core/theme/semantic_colors.dart';
 import 'package:afterclose/presentation/providers/settings_provider.dart';
 import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
 import 'package:afterclose/presentation/widgets/section_header.dart';
@@ -14,6 +14,31 @@ import 'package:afterclose/presentation/screens/stock_detail/tabs/fundamentals/f
 import 'package:afterclose/presentation/screens/stock_detail/tabs/fundamentals/profitability_card.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/fundamentals/revenue_table.dart';
 import 'package:afterclose/presentation/widgets/metric_card.dart';
+
+/// 關鍵指標卡片的 accentColor（圖示＋裝飾邊框）。
+///
+/// 既有缺陷（非本次色彩語意重構引入，Task 9 修復）：三者原為與色盤無關的
+/// 字面值色（本益比 `#3498DB`、股價淨值比 `#9B59B6`、殖利率沿用
+/// `AppTheme.dividendColor` `#A78BFA`），對 MetricCard 圖示（圖形物件，
+/// 門檻 3.0:1）對比不足：本益比、殖利率對淺色主題 `surfaceContainerLow`
+/// （`#F8F9FA`）純色背景分別僅 2.9912:1／2.5817:1，疊色後（`accentColor`
+/// 10% alpha 疊 `surfaceContainerLow`）收窄至 2.7080:1／2.3730:1；股價淨值
+/// 比則是深色主題疊色後對 `surfaceContainerLow`（`#27272A`）僅 2.8907:1
+/// （`ColorContrast` 精算）。改用 [CategoryColors.chartPaletteFor] 取色，
+/// 與 insider_tab.dart 的既有做法一致，三者分屬三色相（藍／橘／紫）避免
+/// 同列相鄰卡片撞色。
+///
+/// 非頂層常數：chartPalette 依主題明暗解析，理由同 insider_tab.dart——
+/// MetricCard 圖示底色實際落在 `theme.colorScheme.surfaceContainerLow`，
+/// 只取單一主題那組色盤在另一主題下對比不保證足夠。
+Color _kPerColor(Brightness brightness) =>
+    CategoryColors.chartPaletteFor(brightness)[0]; // 藍 500／600
+
+Color _kPbrColor(Brightness brightness) =>
+    CategoryColors.chartPaletteFor(brightness)[1]; // 橘 500／600
+
+Color _kYieldColor(Brightness brightness) =>
+    CategoryColors.chartPaletteFor(brightness)[2]; // 紫 500／600
 
 /// 基本面分頁 - 本益比、股價淨值比、營收、股利
 class FundamentalsTab extends ConsumerStatefulWidget {
@@ -159,6 +184,7 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
     FundamentalsState fundamentals,
   ) {
     final per = fundamentals.latestPER;
+    final brightness = Theme.of(context).brightness;
 
     return Row(
       children: [
@@ -169,7 +195,7 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
                 ? per.per.toStringAsFixed(1)
                 : '-',
             icon: Icons.analytics,
-            accentColor: const Color(0xFF3498DB),
+            accentColor: _kPerColor(brightness),
             subtitle: 'stockDetail.perLabel'.tr(),
           ),
         ),
@@ -181,7 +207,7 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
                 ? per.pbr.toStringAsFixed(2)
                 : '-',
             icon: Icons.account_balance,
-            accentColor: const Color(0xFF9B59B6),
+            accentColor: _kPbrColor(brightness),
             subtitle: 'stockDetail.pbrLabel'.tr(),
           ),
         ),
@@ -193,7 +219,7 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
                 ? '${per.dividendYield.toStringAsFixed(2)}%'
                 : '-',
             icon: Icons.percent,
-            accentColor: AppTheme.dividendColor,
+            accentColor: _kYieldColor(brightness),
             subtitle: 'stockDetail.yieldLabel'.tr(),
           ),
         ),
