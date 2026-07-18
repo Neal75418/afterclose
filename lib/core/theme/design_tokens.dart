@@ -212,19 +212,11 @@ abstract final class DesignTokens {
   // 圖表色盤
   // ==================================================
 
-  /// 通用圖表色盤（8 色循環使用）
+  /// 通用圖表色盤 —— 委派至 [CategoryColors.chartPalette]。
   ///
-  /// 用於比較圖表、配置圓餅圖等需要多色區分的場景。
-  static const chartPalette = [
-    Color(0xFF2196F3), // Blue
-    Color(0xFFFF9800), // Orange
-    Color(0xFF9C27B0), // Purple
-    Color(0xFF4CAF50), // Green
-    Color(0xFFF44336), // Red
-    Color(0xFF00BCD4), // Cyan
-    Color(0xFFFFEB3B), // Yellow
-    Color(0xFF795548), // Brown
-  ];
+  /// 原本 8 色含紅 `#F44336` 與綠 `#4CAF50`，在 `price_overlay_chart`
+  /// 這類股價疊圖上會被誤讀為漲跌。收斂為 6 色且全數避開股價色相區。
+  static const chartPalette = CategoryColors.chartPalette;
 
   /// 依 theme 模式取 success 語意色
   static Color successColor(ThemeData theme) {

@@ -260,4 +260,18 @@ void main() {
       }
     });
   });
+
+  group('圖表色盤收斂（Task 8）', () {
+    test('DesignTokens.chartPalette 委派至 CategoryColors', () {
+      expect(DesignTokens.chartPalette, CategoryColors.chartPalette);
+    });
+
+    test('股價疊圖不得出現股價語意色', () {
+      // price_overlay_chart 以 chartPalette 繪製多檔股價線，
+      // 若含綠色會被讀成「該檔在跌」。
+      for (final c in DesignTokens.chartPalette) {
+        expect(_inPriceHueZone(c), isFalse);
+      }
+    });
+  });
 }
