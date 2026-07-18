@@ -762,24 +762,70 @@ teal #03DAC6 色相 174° 落在股價綠色語意區。改用 Violet 400
 
 - [ ] **Step 1: 寫失敗測試**
 
+測試對象必須是 **widget 實際渲染出的顏色**，不是 `PriceColors.chipRating` 常數——後者在 Task 2 已實作，對它斷言的測試一寫出來就是綠的，看不到失敗就不算 TDD。本 Task 的交付是 widget 改用新映射，故測試也必須落在 widget 上。
+
 建立 `test/presentation/screens/stock_detail/widgets/chip_strength_indicator_test.dart`：
 
 ```dart
 import 'package:afterclose/core/theme/semantic_colors.dart';
 import 'package:afterclose/domain/models/chip_strength.dart';
+import 'package:afterclose/presentation/screens/stock_detail/widgets/chip_strength_indicator.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../../../helpers/widget_test_helpers.dart';
+
 void main() {
-  test('籌碼強勢為紅（台股慣例：與上漲同色）', () {
-    expect(PriceColors.chipRating(ChipRating.strong), PriceColors.up);
+  setUpAll(() async {
+    await setupTestLocalization();
   });
 
-  test('籌碼弱勢為綠（台股慣例：與下跌同色）', () {
-    expect(PriceColors.chipRating(ChipRating.weak), PriceColors.down);
+  void widenViewport(WidgetTester tester) {
+    tester.view.physicalSize = const Size(5000, 4000);
+    addTearDown(() => tester.view.resetPhysicalSize());
+  }
+
+  Future<Color?> renderedRatingColor(
+    WidgetTester tester,
+    ChipRating rating,
+  ) async {
+    widenViewport(tester);
+    await tester.pumpWidget(
+      buildTestApp(
+        ChipStrengthIndicator(
+          strength: ChipStrengthResult(
+            score: 50,
+            rating: rating,
+            attitude: InstitutionalAttitude.neutral,
+          ),
+        ),
+      ),
+    );
+    final icon = tester.widget<Icon>(
+      find.byIcon(Icons.battery_charging_full),
+    );
+    return icon.color;
+  }
+
+  testWidgets('籌碼強勢渲染為紅色（台股慣例：與上漲同色）', (tester) async {
+    expect(
+      await renderedRatingColor(tester, ChipRating.strong),
+      PriceColors.up,
+    );
   });
 
-  test('籌碼中性為灰階，不佔用色相', () {
-    expect(PriceColors.chipRating(ChipRating.neutral), PriceColors.flat);
+  testWidgets('籌碼弱勢渲染為綠色（台股慣例：與下跌同色）', (tester) async {
+    expect(
+      await renderedRatingColor(tester, ChipRating.weak),
+      PriceColors.down,
+    );
+  });
+
+  testWidgets('籌碼中性渲染為灰階，不佔用色相', (tester) async {
+    expect(
+      await renderedRatingColor(tester, ChipRating.neutral),
+      PriceColors.flat,
+    );
   });
 }
 ```
@@ -787,10 +833,7 @@ void main() {
 - [ ] **Step 2: 執行測試確認失敗**
 
 Run: `flutter test test/presentation/screens/stock_detail/widgets/chip_strength_indicator_test.dart`
-Expected: 若 Task 2 已完成則 PASS。此時改為驗證 widget 端仍使用舊常數：
-
-Run: `grep -n 'IndicatorColors.rating' lib/presentation/screens/stock_detail/widgets/chip_strength_indicator.dart`
-Expected: 5 行命中 —— 代表 widget 尚未遷移
+Expected: FAIL —— 三個測試全紅。強勢實際渲染 `#4CAF50`（綠）但預期 `#FF4757`（紅）、弱勢實際 `#F44336`（紅）但預期 `#2ED573`（綠）、中性實際 `#FFC107`（黃）但預期 `#A1A1AA`（灰）。這三個失敗正是本 Task 要修的語意反轉。
 
 - [ ] **Step 3: 實作**
 
