@@ -66,8 +66,17 @@ abstract final class AlertParams {
 
   // --------------------------------------------------
   // 新增警示時的預設目標值
-  // （RSI 沿用 IndicatorParams 的 70/30 門檻，單一事實來源）
   // --------------------------------------------------
+
+  /// RSI 超買警示預設門檻（70）— Wilder 慣例的 RSI 警示線。
+  ///
+  /// 警示系統自有的 70，與 [IndicatorParams] 規則引擎的 RSI 帶
+  /// （`rsiNeutralHigh=70` K 線過濾用、`rsiExtremeOversold=30` 反彈訊號用）**語意無關**，
+  /// 僅數值恰好相同。刻意獨立宣告，避免有人調整規則引擎門檻時連帶移動使用者警示線。
+  static const double defaultRsiOverbought = 70.0;
+
+  /// RSI 超賣警示預設門檻（30）— Wilder 慣例的 RSI 警示線。見 [defaultRsiOverbought]。
+  static const double defaultRsiOversold = 30.0;
 
   /// MA 交叉警示預設均線天數（20 日）
   static const double defaultMaCrossDays = 20.0;

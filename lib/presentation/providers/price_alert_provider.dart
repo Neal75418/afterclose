@@ -3,7 +3,6 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/constants/rule_params_alert.dart';
-import 'package:afterclose/core/constants/rule_params_indicator.dart';
 import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/sentinel.dart';
@@ -107,10 +106,10 @@ enum AlertType {
     _ => '',
   };
 
-  /// 取得此警示類型的預設目標值（常數集中於 AlertParams / IndicatorParams）
+  /// 取得此警示類型的預設目標值（常數集中於 AlertParams）
   double? get defaultTargetValue => switch (this) {
-    AlertType.rsiOverbought => IndicatorParams.rsiNeutralHigh,
-    AlertType.rsiOversold => IndicatorParams.rsiExtremeOversold,
+    AlertType.rsiOverbought => AlertParams.defaultRsiOverbought,
+    AlertType.rsiOversold => AlertParams.defaultRsiOversold,
     AlertType.crossAboveMa ||
     AlertType.crossBelowMa => AlertParams.defaultMaCrossDays,
     AlertType.volumeSpike => AlertParams.defaultVolumeSpikeMultiplier,
