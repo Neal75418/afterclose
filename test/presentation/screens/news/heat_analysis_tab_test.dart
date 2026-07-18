@@ -325,6 +325,35 @@ void main() {
     expect(find.textContaining('%'), findsOneWidget);
   });
 
+  testWidgets('平盤（0）漲跌幅顯示 0.00%，不帶 + 號', (tester) async {
+    widenViewport(tester);
+    const data = NewsHeatAnalysis(
+      themes: [],
+      stocks: [
+        StockHeat(
+          symbol: '2408',
+          mentions7d: 9,
+          mentionsPrev21d: 2,
+          isSurging: false,
+          distinctSources7d: 3,
+          hasRiskNews: false,
+          isNewEntrant: false,
+          surgeRatio: 1.0,
+        ),
+      ],
+      stockNames: {'2408': '南亞科'},
+      modeBySymbol: {},
+      priceChangeBySymbol: {'2408': 0.0},
+      warningBySymbol: {},
+      surgeReliable: false,
+    );
+    await tester.pumpWidget(build(data));
+    await tester.pumpAndSettle();
+
+    expect(find.text('+0.00%'), findsNothing, reason: '平盤不得帶 +');
+    expect(find.text('0.00%'), findsOneWidget);
+  });
+
   testWidgets('surgeReliable=false 時隱藏所有爆量徽章（含主題卡）', (tester) async {
     widenViewport(tester);
     final base = analysis();

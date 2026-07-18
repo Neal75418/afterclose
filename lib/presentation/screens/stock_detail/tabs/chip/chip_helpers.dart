@@ -17,8 +17,12 @@ Widget buildSummaryCard(
   Color accentColor,
 ) {
   final theme = Theme.of(context);
-  final isPositive = value >= 0;
-  final valueColor = isPositive ? AppTheme.upColor : AppTheme.downColor;
+  // 平盤（0）著中性色，不得著漲跌方向色（與 formatNet 的「0」文字一致）
+  final valueColor = value > 0
+      ? AppTheme.upColor
+      : value < 0
+      ? AppTheme.downColor
+      : AppTheme.neutralColor;
 
   return Container(
     padding: const EdgeInsets.all(DesignTokens.spacing12),
@@ -116,8 +120,12 @@ Widget buildDataRow(
 }
 
 Widget buildNetValue(BuildContext context, double value) {
-  final isPositive = value >= 0;
-  final color = isPositive ? AppTheme.upColor : AppTheme.downColor;
+  // 平盤（0）著中性色，不得著漲跌方向色
+  final color = value > 0
+      ? AppTheme.upColor
+      : value < 0
+      ? AppTheme.downColor
+      : AppTheme.neutralColor;
 
   return Text(
     formatNet(value),
@@ -142,20 +150,21 @@ String formatLots(double lots) {
   return '${lots.toStringAsFixed(0)}${'stockDetail.unitShares'.tr()}';
 }
 
-/// 格式化淨值，自動加正負號並轉換為張數單位
+/// 格式化淨值，自動加正負號並轉換為張數單位。
+/// 平盤（0）不帶符號（顯示「0」而非「+0」）。
 String formatNet(double value) {
-  final prefix = value >= 0 ? '+' : '-';
+  final prefix = value > 0 ? '+' : (value < 0 ? '-' : '');
   final lots = value.abs() / 1000;
-  if (lots < 1) return '${value >= 0 ? '+' : ''}${value.toStringAsFixed(0)}';
+  if (lots < 1) return '${value > 0 ? '+' : ''}${value.toStringAsFixed(0)}';
   return '$prefix${formatLots(lots)}';
 }
 
 /// 格式化餘額（已為張數單位）
 String formatBalance(double value) => formatLots(value);
 
-/// 格式化持股變動（以千股為單位）
+/// 格式化持股變動（以千股為單位）。平盤（0）不帶 `+`。
 String formatSharesChange(double value) {
-  final prefix = value >= 0 ? '+' : '';
+  final prefix = value > 0 ? '+' : '';
   final absValue = value.abs();
   if (absValue >= 1000) {
     return '$prefix${(value / 1000).toStringAsFixed(1)}${'stockDetail.unitThousand'.tr()}${'stockDetail.unitShares'.tr()}';

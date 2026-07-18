@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:afterclose/core/constants/app_routes.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/breakpoints.dart';
+import 'package:afterclose/core/utils/number_formatter.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/data/database/app_database.dart';
@@ -312,14 +313,14 @@ class _EventDetailSheetState extends ConsumerState<EventDetailSheet> {
           if (change != null) ...[
             const SizedBox(width: DesignTokens.spacing8),
             Text(
-              '${change >= 0 ? '+' : ''}${change.toStringAsFixed(2)}',
+              AppNumberFormat.signedFixed(change, decimals: 2),
               style: theme.textTheme.bodySmall?.copyWith(color: priceColor),
             ),
           ],
           if (changePercent != null) ...[
             const SizedBox(width: DesignTokens.spacing4),
             Text(
-              '(${changePercent >= 0 ? '+' : ''}${changePercent.toStringAsFixed(2)}%)',
+              '(${AppNumberFormat.signedPercent(changePercent, decimals: 2)})',
               style: theme.textTheme.bodySmall?.copyWith(color: priceColor),
             ),
           ],

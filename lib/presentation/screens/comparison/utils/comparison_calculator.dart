@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/utils/number_formatter.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/models/stock_summary.dart';
 
@@ -65,10 +66,12 @@ abstract final class ComparisonCalculator {
     }
 
     final pct = ((endPrice / startPrice) - 1) * 100;
-    final display = '${pct >= 0 ? "+" : ""}${pct.toStringAsFixed(1)}%';
-    final color = pct > 0
+    // 與顯示文字同精度捨入後再判方向，避免平盤「+0.0%」或微負值著色矛盾
+    final rounded = AppNumberFormat.roundForDisplay(pct, 1);
+    final display = AppNumberFormat.signedPercent(pct, decimals: 1);
+    final color = rounded > 0
         ? AppTheme.upColor
-        : pct < 0
+        : rounded < 0
         ? AppTheme.downColor
         : null;
 
@@ -96,10 +99,11 @@ abstract final class ComparisonCalculator {
     }
 
     final lots = (total / 1000).round();
-    final display = '${lots >= 0 ? "+" : ""}$lots';
-    final color = total > 0
+    // 顯示以「張」為單位；配色須與捨入後張數一致（<500 股顯示 0 張即中性）
+    final display = '${lots > 0 ? "+" : ""}$lots';
+    final color = lots > 0
         ? AppTheme.upColor
-        : total < 0
+        : lots < 0
         ? AppTheme.downColor
         : null;
 

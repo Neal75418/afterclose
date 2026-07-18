@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:afterclose/core/constants/app_routes.dart';
 import 'package:afterclose/core/constants/scoring_mode.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/utils/number_formatter.dart';
 import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/services/news/heat_calculator.dart';
@@ -298,11 +299,10 @@ class _FocusStockTile extends StatelessWidget {
   }
 }
 
-/// 格式化當日漲跌幅：正值帶 `+` 號（如 `+2.35%`），負值沿用 `-` 字面（如 `-1.20%`）。
-String _formatPriceChange(double change) {
-  final sign = change >= 0 ? '+' : '';
-  return '$sign${change.toStringAsFixed(2)}%';
-}
+/// 格式化當日漲跌幅：正值帶 `+`（如 `+2.35%`），負值沿用 `-`（如 `-1.20%`），
+/// 平盤與微負值捨入歸零時顯示 `0.00%`（不帶 `+`、非 `-0.00%`）。
+String _formatPriceChange(double change) =>
+    AppNumberFormat.signedPercent(change, decimals: 2);
 
 class _SurgeBadge extends StatelessWidget {
   const _SurgeBadge();

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/theme/indicator_colors.dart';
+import 'package:afterclose/core/utils/number_formatter.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/cards/indicator_card_container.dart';
 
 class MACDCard extends StatelessWidget {
@@ -27,6 +28,13 @@ class MACDCard extends StatelessWidget {
       (v) => v != null,
       orElse: () => null,
     );
+    // 與顯示文字同精度捨入後判方向：零軸穿越（histogram≈0）著中性色而非漲色
+    final histColor = latestHist == null
+        ? AppTheme.neutralColor
+        : AppTheme.getPriceColor(
+            AppNumberFormat.roundForDisplay(latestHist, 2),
+            theme.brightness,
+          );
 
     String macdSignal = 'stockDetail.macdNeutral'.tr();
     Color macdColor = theme.colorScheme.onSurface;
@@ -68,15 +76,12 @@ class MACDCard extends StatelessWidget {
               ),
               Text(
                 latestHist != null
-                    ? (latestHist >= 0 ? '+' : '') +
-                          latestHist.toStringAsFixed(2)
+                    ? AppNumberFormat.signedFixed(latestHist, decimals: 2)
                     : '-',
                 style: theme.textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                   fontFamily: 'RobotoMono',
-                  color: (latestHist ?? 0) >= 0
-                      ? AppTheme.upColor
-                      : AppTheme.downColor,
+                  color: histColor,
                 ),
               ),
             ],
@@ -95,13 +100,7 @@ class MACDCard extends StatelessWidget {
                 value: latestSignal,
                 color: IndicatorColors.chartSecondary,
               ),
-              LabeledValue(
-                label: 'HIST',
-                value: latestHist,
-                color: (latestHist ?? 0) >= 0
-                    ? AppTheme.upColor
-                    : AppTheme.downColor,
-              ),
+              LabeledValue(label: 'HIST', value: latestHist, color: histColor),
             ],
           ),
         ],

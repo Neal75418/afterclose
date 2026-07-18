@@ -179,7 +179,7 @@ class S {
   static String priceValue(double price) =>
       'price.value'.tr(namedArgs: {'price': price.toStringAsFixed(2)});
   static String priceChangePercent(double change) {
-    final sign = change >= 0 ? '+' : '';
+    final sign = change > 0 ? '+' : '';
     return 'price.changePercent'.tr(
       namedArgs: {'sign': sign, 'change': change.toStringAsFixed(2)},
     );

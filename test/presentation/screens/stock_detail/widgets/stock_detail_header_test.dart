@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/providers/stock_detail_state.dart';
 import 'package:afterclose/presentation/screens/stock_detail/widgets/stock_detail_header.dart';
@@ -236,6 +237,56 @@ void main() {
       );
 
       expect(find.textContaining('stockDetail.dataMissing'), findsNothing);
+    });
+  });
+
+  group('平盤/微負值：不得顯示上漲箭頭或漲色（flagship 色彩語意）', () {
+    StockHeaderData headerWithChange(double pc) => StockHeaderData(
+      stockName: '台積電',
+      stockMarket: 'TWSE',
+      stockIndustry: '半導體',
+      latestClose: 600.0,
+      priceChange: pc,
+      trendState: 'BULLISH', // 讓趨勢 chip 用非 flat 圖示，避免與價格箭頭混淆
+      dataDate: defaultDate,
+    );
+
+    testWidgets('平盤（priceChange==0）→ 中性色 0.00%、無北向(上漲)箭頭', (tester) async {
+      widenViewport(tester);
+      await tester.pumpWidget(
+        buildTestApp(
+          StockDetailHeader(data: headerWithChange(0.0), symbol: '2330'),
+        ),
+      );
+
+      expect(find.byIcon(Icons.north), findsNothing, reason: '平盤不得顯示上漲箭頭');
+      expect(find.text('+0.00%'), findsNothing, reason: '平盤不得帶 + 號');
+      expect(find.text('0.00%'), findsOneWidget);
+      final pctText = tester.widget<Text>(find.text('0.00%'));
+      expect(
+        pctText.style?.color,
+        AppTheme.neutralColor,
+        reason: '平盤數字顯示中性色，箭頭/漸層須與之一致',
+      );
+    });
+
+    testWidgets('微負值（-0.004）捨入歸零 → 0.00%（非 -0.00%）、無南向(下跌)箭頭', (tester) async {
+      widenViewport(tester);
+      await tester.pumpWidget(
+        buildTestApp(
+          StockDetailHeader(data: headerWithChange(-0.004), symbol: '2330'),
+        ),
+      );
+
+      expect(find.byIcon(Icons.south), findsNothing, reason: '捨入歸零不得顯示下跌箭頭');
+      expect(
+        find.textContaining('-0.00'),
+        findsNothing,
+        reason: '不得出現負零 -0.00%',
+      );
+      expect(find.text('0.00%'), findsOneWidget);
+      final pctText = tester.widget<Text>(find.text('0.00%'));
+      expect(pctText.style?.color, AppTheme.neutralColor);
     });
   });
 }

@@ -7,6 +7,7 @@ import 'package:afterclose/core/constants/stock_patterns.dart';
 import 'package:afterclose/core/extensions/trend_state_extension.dart';
 import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/core/utils/date_context.dart';
+import 'package:afterclose/core/utils/number_formatter.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
@@ -134,8 +135,17 @@ class StockDetailHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final priceChange = data.priceChange;
-    final isPositive = (priceChange ?? 0) >= 0;
-    final priceColor = AppTheme.getPriceColor(priceChange, theme.brightness);
+    // 與顯示文字同精度（2 位）捨入後再判方向，讓箭頭/漸層/配色與數字一致：
+    // 平盤或微負值（-0.004→顯示 0.00%）一律中性，不顯示漲跌箭頭或方向色。
+    final displayedChange = priceChange == null
+        ? null
+        : AppNumberFormat.roundForDisplay(priceChange, 2);
+    final isNeutral = displayedChange == null || displayedChange == 0;
+    final isPositive = (displayedChange ?? 0) > 0;
+    final priceColor = AppTheme.getPriceColor(
+      displayedChange,
+      theme.brightness,
+    );
 
     return Semantics(
       label: _buildSemanticLabel(),
@@ -164,7 +174,13 @@ class StockDetailHeader extends StatelessWidget {
                     ],
                   ),
                 ),
-                _buildPriceColumn(theme, priceChange, isPositive, priceColor),
+                _buildPriceColumn(
+                  theme,
+                  priceChange,
+                  isPositive,
+                  isNeutral,
+                  priceColor,
+                ),
               ],
             ),
             const SizedBox(height: DesignTokens.spacing12),
@@ -188,9 +204,9 @@ class StockDetailHeader extends StatelessWidget {
     if (change != null) {
       final absChange = _calculateAbsoluteChange(close, change);
       final absText = absChange != null
-          ? '${S.accessibilityAbsoluteChange('${absChange >= 0 ? "+" : ""}${absChange.toStringAsFixed(2)}')}, '
+          ? '${S.accessibilityAbsoluteChange(AppNumberFormat.signedFixed(absChange, decimals: 2))}, '
           : '';
-      final pctText = '${change >= 0 ? "+" : ""}${change.toStringAsFixed(2)}%';
+      final pctText = AppNumberFormat.signedPercent(change, decimals: 2);
       parts.add(S.accessibilityPriceChangeDetail(absText, pctText));
     }
     final trend = data.trendState;
@@ -293,10 +309,10 @@ class StockDetailHeader extends StatelessWidget {
     ThemeData theme,
     double? priceChange,
     bool isPositive,
+    bool isNeutral,
     Color priceColor,
   ) {
     final absChange = _calculateAbsoluteChange(data.latestClose, priceChange);
-    final isNeutral = priceChange == null || priceChange == 0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -317,16 +333,12 @@ class StockDetailHeader extends StatelessWidget {
               vertical: DesignTokens.spacing4,
             ),
             decoration: BoxDecoration(
+              // 漸層取自 priceColor（平盤=中性灰、漲=紅、跌=綠），與邊框/文字一致
               gradient: LinearGradient(
-                colors: isPositive
-                    ? [
-                        AppTheme.upColor.withValues(alpha: 0.2),
-                        AppTheme.upColor.withValues(alpha: 0.1),
-                      ]
-                    : [
-                        AppTheme.downColor.withValues(alpha: 0.2),
-                        AppTheme.downColor.withValues(alpha: 0.1),
-                      ],
+                colors: [
+                  priceColor.withValues(alpha: 0.2),
+                  priceColor.withValues(alpha: 0.1),
+                ],
               ),
               borderRadius: BorderRadius.circular(DesignTokens.radiusSm),
               border: Border.all(color: priceColor.withValues(alpha: 0.3)),
@@ -335,18 +347,15 @@ class StockDetailHeader extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  isPositive ? Icons.north : Icons.south,
+                  isNeutral
+                      ? Icons.trending_flat
+                      : (isPositive ? Icons.north : Icons.south),
                   size: 14,
                   color: priceColor,
                 ),
                 const SizedBox(width: DesignTokens.spacing4),
                 Text(
-                  _formatDetailChangeText(
-                    absChange,
-                    priceChange,
-                    isPositive,
-                    isNeutral,
-                  ),
+                  _formatDetailChangeText(absChange, priceChange, isNeutral),
                   style: theme.textTheme.titleMedium?.copyWith(
                     color: priceColor,
                     fontWeight: FontWeight.bold,
@@ -451,18 +460,16 @@ class StockDetailHeader extends StatelessWidget {
     );
   }
 
-  /// 格式化詳情頁漲跌文字：有絕對金額時顯示「+2.50 (+1.67%)」
+  /// 格式化詳情頁漲跌文字：有絕對金額時顯示「+2.50 (+1.67%)」。
+  /// 平盤（捨入歸零）只顯示中性的「0.00%」，不帶 + 也不顯示負零。
   String _formatDetailChangeText(
     double? absChange,
     double priceChange,
-    bool isPositive,
     bool isNeutral,
   ) {
-    final sign = isPositive && !isNeutral ? '+' : '';
-    final pctText = '$sign${priceChange.toStringAsFixed(2)}%';
-    if (absChange != null) {
-      final absText = '${isPositive ? '+' : ''}${absChange.toStringAsFixed(2)}';
-      return '$absText ($pctText)';
+    final pctText = AppNumberFormat.signedPercent(priceChange, decimals: 2);
+    if (absChange != null && !isNeutral) {
+      return '${AppNumberFormat.signedFixed(absChange, decimals: 2)} ($pctText)';
     }
     return pctText;
   }

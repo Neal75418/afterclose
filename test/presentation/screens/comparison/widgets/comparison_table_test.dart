@@ -211,5 +211,46 @@ void main() {
 
       expect(find.byIcon(Icons.emoji_events), findsOneWidget);
     });
+
+    testWidgets('平盤（0%）漲跌幅顯示 0.0%，不帶 + 號', (tester) async {
+      widenViewport(tester);
+      // 兩檔皆前收==今收 → 當日漲跌幅為 0%
+      final state = ComparisonState(
+        symbols: const ['2330', '2317'],
+        analysesMap: {
+          '2330': createAnalysis('2330'),
+          '2317': createAnalysis('2317'),
+        },
+        latestPricesMap: {
+          '2330': createPrice('2330', 600),
+          '2317': createPrice('2317', 100),
+        },
+        priceHistoriesMap: {
+          '2330': [
+            createPrice(
+              '2330',
+              600,
+              date: defaultDate.subtract(const Duration(days: 1)),
+            ),
+            createPrice('2330', 600),
+          ],
+          '2317': [
+            createPrice(
+              '2317',
+              100,
+              date: defaultDate.subtract(const Duration(days: 1)),
+            ),
+            createPrice('2317', 100),
+          ],
+        },
+      );
+
+      await tester.pumpWidget(
+        buildTestApp(scrollable(ComparisonTable(state: state))),
+      );
+
+      expect(find.text('+0.0%'), findsNothing, reason: '平盤不得帶 +');
+      expect(find.text('0.0%'), findsWidgets);
+    });
   });
 }

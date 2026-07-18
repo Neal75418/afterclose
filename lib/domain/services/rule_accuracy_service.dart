@@ -4,6 +4,7 @@ import 'package:afterclose/core/constants/calibration_thresholds.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/logger.dart';
+import 'package:afterclose/core/utils/number_formatter.dart';
 import 'package:afterclose/core/utils/taiwan_calendar.dart';
 import 'package:afterclose/data/database/app_database.dart';
 
@@ -442,8 +443,10 @@ class RuleAccuracyService {
     if (stats == null || stats.triggerCount < 5) return null;
 
     final hitRateStr = stats.hitRate.toStringAsFixed(0);
-    final returnSign = stats.avgReturn >= 0 ? '+' : '';
-    final returnStr = '$returnSign${stats.avgReturn.toStringAsFixed(1)}%';
+    final returnStr = AppNumberFormat.signedPercent(
+      stats.avgReturn,
+      decimals: 1,
+    );
     final summary = '命中率 $hitRateStr%，平均 $holdingDays 日報酬 $returnStr';
 
     if (stats.triggerCount < CalibrationThresholds.sampleSizeCutThreshold) {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/domain/services/technical_indicator_service.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/cards/macd_card.dart';
 
@@ -48,6 +49,26 @@ void main() {
       );
 
       expect(find.text('MACD(12,26,9)'), findsOneWidget);
+    });
+
+    testWidgets('平盤 histogram（0）不帶 + 號且著中性色（零軸穿越）', (tester) async {
+      widenViewport(tester);
+      await tester.pumpWidget(
+        buildTestApp(
+          const MACDCard(macd: (macd: [1.0], signal: [1.0], histogram: [0.0])),
+        ),
+      );
+
+      expect(find.text('+0.00'), findsNothing, reason: '平盤 histogram 不得帶 +');
+      final zeros = tester.widgetList<Text>(find.text('0.00'));
+      expect(zeros, isNotEmpty);
+      for (final t in zeros) {
+        expect(
+          t.style?.color,
+          AppTheme.neutralColor,
+          reason: '平盤 histogram 顯示 0.00，不得著漲(紅)色',
+        );
+      }
     });
   });
 }

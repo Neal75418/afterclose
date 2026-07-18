@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/utils/number_formatter.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/models/stock_summary.dart';
 import 'package:afterclose/presentation/providers/comparison_provider.dart';
@@ -278,18 +279,25 @@ class ComparisonTable extends StatelessWidget {
       return ((latest / prev) - 1) * 100;
     }).toList();
 
+    // 與顯示文字同精度（1 位）捨入後再判方向，讓「0.0%」文字與中性配色一致
+    final displayPct = pctList
+        .map(
+          (pct) => pct == null ? null : AppNumberFormat.roundForDisplay(pct, 1),
+        )
+        .toList();
+
     return _MetricRow(
       label: 'comparison.metricPriceChange'.tr(),
-      values: pctList
+      values: displayPct
           .map(
             (pct) => pct != null
-                ? '${pct >= 0 ? "+" : ""}${pct.toStringAsFixed(1)}%'
+                ? AppNumberFormat.signedPercent(pct, decimals: 1)
                 : '-',
           )
           .toList(),
       numericValues: pctList,
       higherIsBetter: true,
-      valueColors: pctList
+      valueColors: displayPct
           .map(
             (pct) => pct != null && pct > 0
                 ? AppTheme.upColor

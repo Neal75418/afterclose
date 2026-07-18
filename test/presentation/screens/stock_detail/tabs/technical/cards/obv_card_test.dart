@@ -68,5 +68,16 @@ void main() {
 
       expect(find.text('OBV'), findsOneWidget);
     });
+
+    testWidgets('平盤 5 日變化（0）不帶 + 號', (tester) async {
+      widenViewport(tester);
+      // 第 5 根前的 OBV 與最新值相等 → obvChange == 0
+      await tester.pumpWidget(
+        buildTestApp(const OBVCard(obv: [100.0, 50.0, 60.0, 70.0, 80.0, 50.0])),
+      );
+
+      expect(find.text('+0 (5d)'), findsNothing, reason: '平盤 5 日變化不得帶 +');
+      expect(find.text('0 (5d)'), findsOneWidget);
+    });
   });
 }

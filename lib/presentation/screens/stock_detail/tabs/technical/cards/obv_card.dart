@@ -95,7 +95,7 @@ class OBVCard extends StatelessWidget {
                 ),
               ),
               Text(
-                '${obvChange >= 0 ? "+" : ""}${_formatOBV(obvChange)} (5d)',
+                '${obvChange > 0 ? "+" : ""}${_formatOBV(obvChange)} (5d)',
                 style: theme.textTheme.labelSmall?.copyWith(color: obvColor),
               ),
             ],
