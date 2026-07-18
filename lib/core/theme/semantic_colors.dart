@@ -125,10 +125,19 @@ abstract final class WarningColors {
   static const warning = Color(0xFFF59E0B);
 
   /// 注意。色相 45.9°
-  static const caution = Color(0xFFFBBF24);
+  static const caution = Color(0xFFFCD34D);
 
   /// 淺色主題的警示色（白底對比加強）
-  static const warningOnLight = Color(0xFFFEF08A);
+  static const warningOnLight = Color(0xFFB45309);
 
+  /// 守門測試掃描對象（色相禁區驗證用）。新增常數時必須加入此清單。
+  ///
+  /// 對比度驗證不共用此清單——三個常數的預定背景不同（[warningOnLight]
+  /// 是白底、其餘是深色背景），必須各自對其預定背景驗證，見 [darkOnly]。
   static const all = <Color>[warning, caution, warningOnLight];
+
+  /// 深色主題適用的警示色子集，對比度驗證對象為
+  /// [SemanticColors.darkBackground]。[warningOnLight] 是淺色主題專用色，
+  /// 驗證對象是白底，故不列入此清單。
+  static const darkOnly = <Color>[warning, caution];
 }

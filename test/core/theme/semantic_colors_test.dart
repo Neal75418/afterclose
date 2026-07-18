@@ -51,7 +51,7 @@ void main() {
     });
   });
 
-  group('第二層：對比度守門', () {
+  group('第二層：對比度守門 —— 深色主題', () {
     const darkBg = SemanticColors.darkBackground;
     const darkCard = SemanticColors.darkSurface;
 
@@ -83,10 +83,43 @@ void main() {
       }
     });
 
-    test('警示色對深色背景達 AA 4.5:1', () {
-      for (final c in WarningColors.all) {
+    test('警示色（深色主題）對深色背景達 AA 4.5:1', () {
+      // 用 darkOnly 而非 all——warningOnLight 是淺色主題專用色，
+      // 預定背景是白底，對深色背景驗證不適用，見下方淺色主題分組。
+      for (final c in WarningColors.darkOnly) {
         expect(ColorContrast.ratio(c, darkBg), greaterThanOrEqualTo(4.5));
       }
+    });
+  });
+
+  group('第二層：對比度守門 —— 淺色主題', () {
+    const lightBg = SemanticColors.lightBackground;
+
+    test('品牌色（淺色主題）對白底達 AA 4.5:1', () {
+      expect(
+        ColorContrast.ratio(QualityColors.brandOnLight, lightBg),
+        greaterThanOrEqualTo(4.5),
+      );
+    });
+
+    test('警示色（淺色主題）對白底達 AA 4.5:1', () {
+      expect(
+        ColorContrast.ratio(WarningColors.warningOnLight, lightBg),
+        greaterThanOrEqualTo(4.5),
+      );
+    });
+
+    test('下跌色（淺色主題）對白底達大字門檻 3.0:1', () {
+      // downOnLight 只套 WCAG 大字（Large Text）門檻 3.0:1，不套一般文字
+      // 門檻 4.5:1：股價數字一律為粗體 ≥15px，符合大字定義。這是既有的
+      // 台股綠色值，設計文件明訂不因對比度小數點差異而更動漲跌色——
+      // 同樣理由也適用於 PriceColors.up 對卡片底的 4.46:1（見
+      // docs/plans/2026-07-18-color-system-semantic-redesign-design.md）。
+      expect(
+        ColorContrast.ratio(PriceColors.downOnLight, lightBg),
+        greaterThanOrEqualTo(3.0),
+        reason: '股價數字為粗體大字，適用 WCAG 大字門檻 3.0:1，非一般文字 4.5:1',
+      );
     });
   });
 
