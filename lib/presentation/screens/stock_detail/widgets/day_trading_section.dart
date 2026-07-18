@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
+import 'package:afterclose/core/constants/chip_scoring_params.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/fundamentals/fundamentals_helpers.dart'
@@ -47,7 +48,11 @@ class DayTradingSection extends StatelessWidget {
     }
     avg5 = avg5 / recentCount;
 
-    final isHigh = latestRatio >= 35;
+    // 與籌碼評分共用門檻，避免「UI 標紅」與「實際扣分」兩套數字漂移。
+    // 2026-07-18 隨 [ChipScoringParams.dayTradingHighThresholdPct] 由 35 → 60
+    // （35% 是流動股池的中位數，標紅一半的股票等於沒標；60% 為 p98.4、
+    // 觸發率 1.64%，同 TWSE 注意股當沖標準）。
+    final isHigh = latestRatio >= ChipScoringParams.dayTradingHighThresholdPct;
 
     final chartData = sorted
         .map((e) => (e.dayTradingRatio ?? 0).toDouble())
