@@ -178,12 +178,6 @@ class S {
 
   static String priceValue(double price) =>
       'price.value'.tr(namedArgs: {'price': price.toStringAsFixed(2)});
-  static String priceChangePercent(double change) {
-    final sign = change > 0 ? '+' : '';
-    return 'price.changePercent'.tr(
-      namedArgs: {'sign': sign, 'change': change.toStringAsFixed(2)},
-    );
-  }
 
   // ==================================================
   // 推薦理由（訊號類型）
