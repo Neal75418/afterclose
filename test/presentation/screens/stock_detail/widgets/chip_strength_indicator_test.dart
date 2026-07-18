@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:afterclose/core/theme/semantic_colors.dart';
 import 'package:afterclose/domain/models/chip_strength.dart';
 import 'package:afterclose/presentation/screens/stock_detail/widgets/chip_strength_indicator.dart';
 
@@ -84,6 +85,54 @@ void main() {
       );
 
       expect(find.text('40'), findsOneWidget);
+    });
+  });
+
+  group('籌碼評等顏色（台股慣例：紅漲綠跌，與國際慣例相反）', () {
+    // 測試對象必須是 widget 實際渲染出的顏色，不是 PriceColors.chipRating
+    // 常數——後者在 Task 2 已實作，對它斷言的測試一寫出來就是綠的，
+    // 看不到失敗就不算 TDD。本 Task 的交付是 widget 改用新映射。
+    Future<Color?> renderedRatingColor(
+      WidgetTester tester,
+      ChipRating rating,
+    ) async {
+      widenViewport(tester);
+      await tester.pumpWidget(
+        buildTestApp(
+          ChipStrengthIndicator(
+            strength: ChipStrengthResult(
+              score: 50,
+              rating: rating,
+              attitude: InstitutionalAttitude.neutral,
+            ),
+          ),
+        ),
+      );
+      final icon = tester.widget<Icon>(
+        find.byIcon(Icons.battery_charging_full),
+      );
+      return icon.color;
+    }
+
+    testWidgets('籌碼強勢渲染為紅色（台股慣例：與上漲同色）', (tester) async {
+      expect(
+        await renderedRatingColor(tester, ChipRating.strong),
+        PriceColors.up,
+      );
+    });
+
+    testWidgets('籌碼弱勢渲染為綠色（台股慣例：與下跌同色）', (tester) async {
+      expect(
+        await renderedRatingColor(tester, ChipRating.weak),
+        PriceColors.down,
+      );
+    });
+
+    testWidgets('籌碼中性渲染為灰階，不佔用色相', (tester) async {
+      expect(
+        await renderedRatingColor(tester, ChipRating.neutral),
+        PriceColors.flat,
+      );
     });
   });
 }

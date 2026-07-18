@@ -2,7 +2,6 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/constants/score_tier.dart';
-import 'package:afterclose/core/theme/indicator_colors.dart';
 
 /// 分級徽章 + 小字數字（評分改進 #5）
 ///
@@ -95,10 +94,20 @@ class ScoreTierBadge extends StatelessWidget {
     );
   }
 
+  // ScoreTier 是綜合推薦分數分級（強/中/弱/觀察），與籌碼評等
+  // （ChipRating，見 PriceColors.chipRating）或漲跌方向無關——分數愈高
+  // 不代表個股當下漲勢愈強，而是「愈符合所選模式的篩選條件」，屬品質
+  // 判斷而非多空方向。原色值借用自舊指標色階常數（本次色彩語意重構
+  // 移除該常數），色彩本身尚未被納入語意分類系統，故僅原樣保留數值、
+  // 不套用 PriceColors。
+  static const _tierColorStrong = Color(0xFF4CAF50);
+  static const _tierColorMedium = Color(0xFF8BC34A);
+  static const _tierColorWeak = Color(0xFFFFC107);
+
   Color _tierColor(ThemeData theme, ScoreTier tier) => switch (tier) {
-    ScoreTier.strong => IndicatorColors.ratingStrong,
-    ScoreTier.medium => IndicatorColors.ratingBullish,
-    ScoreTier.weak => IndicatorColors.ratingNeutral,
+    ScoreTier.strong => _tierColorStrong,
+    ScoreTier.medium => _tierColorMedium,
+    ScoreTier.weak => _tierColorWeak,
     ScoreTier.observation => theme.colorScheme.onSurfaceVariant,
   };
 }

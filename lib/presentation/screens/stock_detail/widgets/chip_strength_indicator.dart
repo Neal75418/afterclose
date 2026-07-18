@@ -1,7 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import 'package:afterclose/core/theme/indicator_colors.dart';
+import 'package:afterclose/core/theme/semantic_colors.dart';
 import 'package:afterclose/domain/models/chip_strength.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 
@@ -116,23 +116,17 @@ class ChipStrengthIndicator extends StatelessWidget {
     );
   }
 
-  Color _ratingColor(ChipRating rating) {
-    return switch (rating) {
-      ChipRating.strong => IndicatorColors.ratingStrong,
-      ChipRating.bullish => IndicatorColors.ratingBullish,
-      ChipRating.neutral => IndicatorColors.ratingNeutral,
-      ChipRating.bearish => IndicatorColors.ratingBearish,
-      ChipRating.weak => IndicatorColors.ratingWeak,
-    };
-  }
+  Color _ratingColor(ChipRating rating) => PriceColors.chipRating(rating);
 
+  /// 法人態度色 —— 與 [_ratingColor] 同一多空語意軸（買超為多／紅，
+  /// 賣超為空／綠），故沿用相同的 [PriceColors] 對應，不另立一套色階。
   Color _attitudeColor(InstitutionalAttitude attitude, ThemeData theme) {
     return switch (attitude) {
-      InstitutionalAttitude.aggressiveBuy => IndicatorColors.ratingStrong,
-      InstitutionalAttitude.moderateBuy => IndicatorColors.ratingBullish,
+      InstitutionalAttitude.aggressiveBuy => PriceColors.up,
+      InstitutionalAttitude.moderateBuy => PriceColors.chipBullish,
       InstitutionalAttitude.neutral => theme.colorScheme.onSurfaceVariant,
-      InstitutionalAttitude.moderateSell => IndicatorColors.ratingBearish,
-      InstitutionalAttitude.aggressiveSell => IndicatorColors.ratingWeak,
+      InstitutionalAttitude.moderateSell => PriceColors.chipBearish,
+      InstitutionalAttitude.aggressiveSell => PriceColors.down,
     };
   }
 }

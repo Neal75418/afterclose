@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/core/theme/indicator_colors.dart';
 import 'package:afterclose/presentation/widgets/stock_card.dart';
 
 import '../../helpers/widget_test_helpers.dart';
@@ -338,13 +337,15 @@ void main() {
         return tester.widget<Text>(find.text(key)).style?.color;
       }
 
-      testWidgets('score >= 45 → 「強」徽章（ratingStrong 色）', (tester) async {
+      testWidgets('score >= 45 → 「強」徽章（ScoreTierBadge 強色）', (tester) async {
         await tester.pumpWidget(
           buildTestApp(const StockCard(symbol: '2330', score: 55.0)),
         );
         expect(
           tierLabelColor(tester, 'score.tier.strong'),
-          IndicatorColors.ratingStrong,
+          // ScoreTier 色階為 ScoreTierBadge 私有常數（與籌碼評等/漲跌
+          // 語意無關，見 score_tier_badge.dart 內註解），故以字面值比對。
+          const Color(0xFF4CAF50),
         );
         // 確切分數退為小字、中性色（不再暗示假精確度）
         expect(find.text('55'), findsOneWidget);
@@ -356,7 +357,7 @@ void main() {
         );
         expect(
           tierLabelColor(tester, 'score.tier.medium'),
-          IndicatorColors.ratingBullish,
+          const Color(0xFF8BC34A),
         );
       });
 
@@ -366,7 +367,7 @@ void main() {
         );
         expect(
           tierLabelColor(tester, 'score.tier.weak'),
-          IndicatorColors.ratingNeutral,
+          const Color(0xFFFFC107),
         );
       });
 

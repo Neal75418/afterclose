@@ -47,24 +47,9 @@ abstract final class IndicatorColors {
   /// 高波動（ATR）— Red
   static const volatilityHigh = Color(0xFFEF4444);
 
-  // ==================================================
-  // 籌碼評等色階
-  // ==================================================
-
-  /// 強：籌碼強勢 / 法人積極買入
-  static const ratingStrong = Color(0xFF4CAF50);
-
-  /// 偏多：籌碼偏多 / 法人適度買入
-  static const ratingBullish = Color(0xFF8BC34A);
-
-  /// 中性
-  static const ratingNeutral = Color(0xFFFFC107);
-
-  /// 偏空：籌碼偏空 / 法人適度賣出
-  static const ratingBearish = Color(0xFFFF9800);
-
-  /// 弱：籌碼弱勢 / 法人積極賣出
-  static const ratingWeak = Color(0xFFF44336);
+  // 籌碼評等色階已移至 PriceColors.chipRating()。
+  // 該色階屬方向性語意（籌碼強弱＝多空），與漲跌共用紅綠色彩語言，
+  // 故不放在本檔（本檔為圖表與指標的分類色）。
 
   // ==================================================
   // 指標選擇標籤
