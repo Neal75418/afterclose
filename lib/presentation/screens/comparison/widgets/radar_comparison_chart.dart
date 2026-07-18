@@ -24,7 +24,7 @@ class RadarComparisonChart extends StatelessWidget {
 
     if (state.symbols.length < 2) return const SizedBox.shrink();
 
-    final datasets = _buildDatasets();
+    final datasets = _buildDatasets(theme);
     if (datasets.isEmpty) return const SizedBox.shrink();
 
     return Semantics(
@@ -113,13 +113,14 @@ class RadarComparisonChart extends StatelessWidget {
     );
   }
 
-  List<RadarDataSet> _buildDatasets() {
+  List<RadarDataSet> _buildDatasets(ThemeData theme) {
     final datasets = <RadarDataSet>[];
+    // Card 在淺色主題是 #FFFFFF，色盤需依主題明暗解析。
+    final palette = DesignTokens.chartPaletteFor(theme);
 
     for (var i = 0; i < state.symbols.length; i++) {
       final symbol = state.symbols[i];
-      final color =
-          DesignTokens.chartPalette[i % DesignTokens.chartPalette.length];
+      final color = palette[i % palette.length];
 
       final values = _computeRadarValues(symbol);
 

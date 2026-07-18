@@ -28,11 +28,15 @@ const _kSignificantChangeThreshold = 1.0;
 /// 故取自 chartPalette 而非 CategoryColors.neutral，避免兩張卡片
 /// 視覺上完全無法區分。
 ///
-/// 非 const：對 const List 取索引在 Dart 不是編譯期常數運算式
-/// （`const chartPalette[0]` 會是 const_initialized_with_non_constant_value
-/// 編譯錯誤），故宣告為 final。
-final _kInsiderRatioColor = CategoryColors.chartPalette[0]; // 藍 500
-final _kPledgeRatioColor = CategoryColors.chartPalette[2]; // 紫 500
+/// 非頂層常數：chartPalette 依主題明暗解析，MetricCard 的圖示底色實際落在
+/// `theme.colorScheme.surfaceContainerLow`（淺色主題 `#F8F9FA`），只取
+/// 深色主題那組色盤在淺色主題下對比不足，故改為需要 [Brightness] 的函式，
+/// 由呼叫端（有 BuildContext 之處）傳入 `Theme.of(context).brightness`。
+Color _kInsiderRatioColor(Brightness brightness) =>
+    CategoryColors.chartPaletteFor(brightness)[0]; // 藍 500／600
+
+Color _kPledgeRatioColor(Brightness brightness) =>
+    CategoryColors.chartPaletteFor(brightness)[2]; // 紫 500／600
 
 /// 董監持股分頁 - 持股比例、質押比例、持股變化
 class InsiderTab extends ConsumerStatefulWidget {
@@ -178,6 +182,7 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
     final pledgeRatio = latest?.pledgeRatio ?? 0;
     final isHighPledge =
         pledgeRatio >= FundamentalParams.highPledgeRatioThreshold;
+    final brightness = Theme.of(context).brightness;
 
     return Row(
       children: [
@@ -188,7 +193,7 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
                 ? '${latest!.insiderRatio!.toStringAsFixed(1)}%'
                 : '-',
             icon: Icons.people_alt,
-            accentColor: _kInsiderRatioColor,
+            accentColor: _kInsiderRatioColor(brightness),
             subtitle: 'stockDetail.insiderRatioLabel'.tr(),
           ),
         ),
@@ -202,7 +207,7 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
             icon: Icons.account_balance,
             accentColor: isHighPledge
                 ? AppTheme.errorColor
-                : _kPledgeRatioColor,
+                : _kPledgeRatioColor(brightness),
             subtitle: 'stockDetail.pledgeRatioLabel'.tr(),
             isWarning: isHighPledge,
           ),

@@ -5,6 +5,7 @@ import 'package:afterclose/core/theme/color_contrast.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/theme/semantic_colors.dart';
 import 'package:afterclose/domain/models/chip_strength.dart';
+import 'package:flutter/material.dart' show ThemeData;
 import 'package:flutter_test/flutter_test.dart';
 
 /// 紅區：hue >= 345 或 <= 15。綠區：88 <= hue <= 175。
@@ -40,8 +41,11 @@ void main() {
       }
     });
 
-    test('CategoryColors.chartPalette 不得落在股價色相區', () {
-      for (final c in CategoryColors.chartPalette) {
+    test('CategoryColors.chartPalette 不得落在股價色相區（深色＋淺色主題）', () {
+      for (final c in [
+        ...CategoryColors.chartPaletteDark,
+        ...CategoryColors.chartPaletteLight,
+      ]) {
         expect(
           _inPriceHueZone(c),
           isFalse,
@@ -76,11 +80,11 @@ void main() {
     });
 
     test('圖表色盤每色對深色背景達圖形物件門檻 3:1', () {
-      for (final c in CategoryColors.chartPalette) {
+      for (final c in CategoryColors.chartPaletteDark) {
         expect(
           ColorContrast.ratio(c, darkBg),
           greaterThanOrEqualTo(3.0),
-          reason: 'chartPalette ${c.toARGB32().toRadixString(16)} 對比不足',
+          reason: 'chartPaletteDark ${c.toARGB32().toRadixString(16)} 對比不足',
         );
       }
     });
@@ -137,7 +141,34 @@ void main() {
   });
 
   group('第二層：對比度守門 —— 淺色主題', () {
-    const lightBg = SemanticColors.lightBackground;
+    const lightBg = SemanticColors.lightBackground; // #FFFFFF（Card／scaffold）
+    const lightSurface = SemanticColors.lightSurface; // #F8F9FA（surface）
+
+    test('圖表色盤每色對淺色主題兩種實際背景達圖形物件門檻 3:1', () {
+      // chartPaletteLight 的消費者落在兩種不同的淺色背景：
+      // IndustryAllocationCard 的備用色、insider_tab 的 MetricCard 圖示走
+      // surfaceContainerLow（#F8F9FA，即 lightSurface）；AllocationPieChart
+      // 無自身背景容器落在 scaffoldBackgroundColor，comparison_* 系列走
+      // Card，兩者皆為 #FFFFFF（lightBg）。過去只驗證過深色背景，這正是
+      // chartPalette 6 色中有 4 色對淺色背景低於 3.0:1 從未被攔下的原因，
+      // 兩種淺色背景都要驗證，不能只驗其中一種。
+      for (final c in CategoryColors.chartPaletteLight) {
+        expect(
+          ColorContrast.ratio(c, lightSurface),
+          greaterThanOrEqualTo(3.0),
+          reason:
+              'chartPaletteLight ${c.toARGB32().toRadixString(16)} '
+              '對 surface(#F8F9FA) 對比不足',
+        );
+        expect(
+          ColorContrast.ratio(c, lightBg),
+          greaterThanOrEqualTo(3.0),
+          reason:
+              'chartPaletteLight ${c.toARGB32().toRadixString(16)} '
+              '對 background(#FFFFFF) 對比不足',
+        );
+      }
+    });
 
     test('品牌色（淺色主題）對白底達 AA 4.5:1', () {
       expect(
@@ -227,11 +258,10 @@ void main() {
   });
 
   group('圖表色盤色族間距', () {
-    test('不同色族間距 >= 35 度、同色族對比比值 >= 1.5', () {
-      const bg = SemanticColors.darkBackground;
-      final palette = CategoryColors.chartPalette;
-
-      // 色相差 <= 15 度視為同族
+    // 色相差 <= 15 度視為同族（需明度比值 >= 1.5 區分），否則須間距 >= 35 度。
+    // 抽成共用函式讓深色／淺色兩組色盤套同一份判準，而非各自重寫一份、
+    // 兩邊標準悄悄分岔。
+    void checkFamilySpacing(List<Color> palette, Color bg) {
       for (var i = 0; i < palette.length; i++) {
         for (var j = i + 1; j < palette.length; j++) {
           final hi = ColorContrast.hue(palette[i]);
@@ -258,18 +288,50 @@ void main() {
           }
         }
       }
+    }
+
+    test('深色主題：不同色族間距 >= 35 度、同色族對比比值 >= 1.5', () {
+      checkFamilySpacing(
+        CategoryColors.chartPaletteDark,
+        SemanticColors.darkBackground,
+      );
+    });
+
+    test('淺色主題：不同色族間距 >= 35 度、同色族對比比值 >= 1.5', () {
+      // 深色主題只驗證過這條規則，淺色主題從未套用過——這正是
+      // chartPaletteLight 需要獨立設計、獨立驗證的原因之一。
+      checkFamilySpacing(
+        CategoryColors.chartPaletteLight,
+        SemanticColors.lightBackground,
+      );
     });
   });
 
   group('圖表色盤收斂（Task 8）', () {
-    test('DesignTokens.chartPalette 委派至 CategoryColors', () {
-      expect(DesignTokens.chartPalette, CategoryColors.chartPalette);
-    });
+    test(
+      'DesignTokens.chartPaletteFor 依主題委派至 CategoryColors.chartPaletteFor',
+      () {
+        // chartPalette 曾是 `static const` 直接指向深色那組色盤，改為依主題
+        // 解析的方法後，委派關係要兩個 Brightness 都驗證——只驗證其中一個
+        // 會漏掉「淺色主題忘記接上新色盤」這類回歸。
+        expect(
+          DesignTokens.chartPaletteFor(ThemeData(brightness: Brightness.dark)),
+          CategoryColors.chartPaletteFor(Brightness.dark),
+        );
+        expect(
+          DesignTokens.chartPaletteFor(ThemeData(brightness: Brightness.light)),
+          CategoryColors.chartPaletteFor(Brightness.light),
+        );
+      },
+    );
 
-    test('股價疊圖不得出現股價語意色', () {
+    test('股價疊圖不得出現股價語意色（兩主題）', () {
       // price_overlay_chart 以 chartPalette 繪製多檔股價線，
       // 若含綠色會被讀成「該檔在跌」。
-      for (final c in DesignTokens.chartPalette) {
+      for (final c in [
+        ...CategoryColors.chartPaletteDark,
+        ...CategoryColors.chartPaletteLight,
+      ]) {
         expect(_inPriceHueZone(c), isFalse);
       }
     });

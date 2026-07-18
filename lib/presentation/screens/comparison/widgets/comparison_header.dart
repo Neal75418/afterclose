@@ -26,6 +26,9 @@ class ComparisonHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Chip 底色落在此頁面 scaffold 背景上，淺色主題是 #FFFFFF，
+    // 色盤需依主題明暗解析。
+    final palette = DesignTokens.chartPaletteFor(Theme.of(context));
     return SizedBox(
       height: 48,
       child: ListView(
@@ -38,8 +41,7 @@ class ComparisonHeader extends StatelessWidget {
               child: _StockChip(
                 symbol: symbols[i],
                 name: stocksMap[symbols[i]]?.name ?? '',
-                color: DesignTokens
-                    .chartPalette[i % DesignTokens.chartPalette.length],
+                color: palette[i % palette.length],
                 onRemove: () => onRemove(symbols[i]),
               ),
             ),

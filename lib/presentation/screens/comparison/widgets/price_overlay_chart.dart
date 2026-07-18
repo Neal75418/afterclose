@@ -23,7 +23,7 @@ class PriceOverlayChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final lineData = _buildLineData();
+    final lineData = _buildLineData(theme);
 
     if (lineData.isEmpty) {
       return const SizedBox.shrink();
@@ -127,8 +127,10 @@ class PriceOverlayChart extends StatelessWidget {
     );
   }
 
-  List<LineChartBarData> _buildLineData() {
+  List<LineChartBarData> _buildLineData(ThemeData theme) {
     final lines = <LineChartBarData>[];
+    // Card 在淺色主題是 #FFFFFF，色盤需依主題明暗解析。
+    final palette = DesignTokens.chartPaletteFor(theme);
 
     for (var i = 0; i < symbols.length; i++) {
       final symbol = symbols[i];
@@ -155,8 +157,7 @@ class PriceOverlayChart extends StatelessWidget {
       lines.add(
         LineChartBarData(
           spots: spots,
-          color:
-              DesignTokens.chartPalette[i % DesignTokens.chartPalette.length],
+          color: palette[i % palette.length],
           barWidth: 2,
           isStrokeCapRound: true,
           dotData: const FlDotData(show: false),
@@ -182,6 +183,7 @@ class PriceOverlayChart extends StatelessWidget {
   }
 
   Widget _buildLegend(ThemeData theme) {
+    final palette = DesignTokens.chartPaletteFor(theme);
     return Wrap(
       spacing: 16,
       runSpacing: 4,
@@ -194,8 +196,7 @@ class PriceOverlayChart extends StatelessWidget {
                 width: 12,
                 height: 3,
                 decoration: BoxDecoration(
-                  color: DesignTokens
-                      .chartPalette[i % DesignTokens.chartPalette.length],
+                  color: palette[i % palette.length],
                   borderRadius: BorderRadius.circular(1.5),
                 ),
               ),

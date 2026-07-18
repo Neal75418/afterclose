@@ -212,11 +212,18 @@ abstract final class DesignTokens {
   // 圖表色盤
   // ==================================================
 
-  /// 通用圖表色盤 —— 委派至 [CategoryColors.chartPalette]。
+  /// 通用圖表色盤 —— 依主題明暗委派至 [CategoryColors.chartPaletteFor]。
   ///
   /// 原本 8 色含紅 `#F44336` 與綠 `#4CAF50`，在 `price_overlay_chart`
   /// 這類股價疊圖上會被誤讀為漲跌。收斂為 6 色且全數避開股價色相區。
-  static const chartPalette = CategoryColors.chartPalette;
+  ///
+  /// 曾一度是 `static const` 直接指向深色主題那組色盤，淺色主題完全沒有
+  /// 對應設計、6 色中有 4 色對淺色背景低於 3.0:1——因為淺色主題從未被
+  /// 涵蓋在任何守門測試裡。改為依 [ThemeData.brightness] 解析的方法，
+  /// 呼叫端一律要傳入實際渲染時的 [ThemeData]，不得快取成常數。
+  static List<Color> chartPaletteFor(ThemeData theme) {
+    return CategoryColors.chartPaletteFor(theme.brightness);
+  }
 
   /// 依 theme 模式取 success 語意色
   static Color successColor(ThemeData theme) {

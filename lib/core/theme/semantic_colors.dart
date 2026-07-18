@@ -114,13 +114,17 @@ abstract final class CategoryColors {
   /// 顏色屬冗餘的第三重編碼。統一為中性灰後同時消除四組色相過近問題。
   static const neutral = Color(0xFFA1A1AA);
 
-  /// 圖表序列色盤（3 色相 × 2 明度）。
+  /// 圖表序列色盤 —— 深色主題（3 色相 × 2 明度）。
   ///
   /// 排除紅綠禁區後可用色相僅剩 243°，無法容納 6 個互隔 60° 的色相。
   /// 改以 3 個充分分離的色相（25° / 217° / 258°）各取兩個明度階，
   /// 同族靠明度區分、異族靠色相區分。
   /// 序列超過 6 個時應改用直接標註，不得再增加顏色。
-  static const chartPalette = <Color>[
+  ///
+  /// 只對深色背景（[SemanticColors.darkBackground]）驗證過對比度——淺色
+  /// 主題請用 [chartPaletteLight]，不得直接沿用本清單（300 階淺色調對
+  /// 白底完全不合格，見 [chartPaletteLight] 的說明）。
+  static const chartPaletteDark = <Color>[
     Color(0xFF3B82F6), // 藍 500 — 217°
     Color(0xFFF97316), // 橘 500 — 25°
     Color(0xFF8B5CF6), // 紫 500 — 258°
@@ -128,6 +132,36 @@ abstract final class CategoryColors {
     Color(0xFFFDBA74), // 橘 300 — 31°
     Color(0xFFC4B5FD), // 紫 300 — 252°
   ];
+
+  /// 圖表序列色盤 —— 淺色主題（同一 3 色相 × 2 明度，換用較深明度階）。
+  ///
+  /// [chartPaletteDark] 的 300 階是為深色背景挑的淺色調，實測對淺色主題
+  /// 兩種實際背景（[SemanticColors.lightSurface] `#F8F9FA`、
+  /// [SemanticColors.lightBackground] `#FFFFFF`）6 色中有 4 色低於圖形物件
+  /// 門檻 3.0:1（僅藍 500、紫 500 過關）——300 階淺色調放到白底上必然不足，
+  /// 這正是淺色主題從未被任何守門測試涵蓋過的缺口。
+  ///
+  /// 改用同 3 色相各自的 600／800 階（比 [chartPaletteDark] 更深、更飽和），
+  /// 對兩種淺色背景實測皆 ≥3.4:1（`ColorContrast.ratio`精算，見
+  /// `semantic_colors_test.dart` 對應守門測試）。色相與 [chartPaletteDark]
+  /// 完全相同（僅明度不同），異族間距因此維持相同的 41°／127° 餘裕。
+  static const chartPaletteLight = <Color>[
+    Color(0xFF4685EA), // 藍 600 — 217°
+    Color(0xFFD76618), // 橘 600 — 25°
+    Color(0xFF966FEF), // 紫 600 — 258°
+    Color(0xFF175DD0), // 藍 800 — 217°
+    Color(0xFF9F4C12), // 橘 800 — 25°
+    Color(0xFF713CE9), // 紫 800 — 258°
+  ];
+
+  /// 依主題明暗解析出應使用的圖表色盤。
+  ///
+  /// 呼叫端一律應透過此方法取色，不得直接引用 [chartPaletteDark] 或
+  /// [chartPaletteLight]——直接引用等於重蹈本類別最初只驗證深色主題、
+  /// 淺色主題淪為測試死角的覆轍。
+  static List<Color> chartPaletteFor(Brightness brightness) {
+    return brightness == Brightness.dark ? chartPaletteDark : chartPaletteLight;
+  }
 }
 
 /// 「請注意」語意，與多空無關。

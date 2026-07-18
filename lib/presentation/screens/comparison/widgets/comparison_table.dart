@@ -96,6 +96,8 @@ class ComparisonTable extends StatelessWidget {
             higherIsBetter: row.higherIsBetter!,
           )
         : null;
+    // 優勝者高亮底色——Card 在淺色主題是 #FFFFFF，色盤需依主題明暗解析。
+    final palette = DesignTokens.chartPaletteFor(theme);
 
     return Padding(
       padding: const EdgeInsets.symmetric(
@@ -124,9 +126,7 @@ class ComparisonTable extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: i == winnerIndex
-                      ? DesignTokens
-                            .chartPalette[i % DesignTokens.chartPalette.length]
-                            .withValues(alpha: 0.1)
+                      ? palette[i % palette.length].withValues(alpha: 0.1)
                       : null,
                   borderRadius: BorderRadius.circular(DesignTokens.radiusSm),
                 ),
