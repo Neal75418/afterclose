@@ -21,8 +21,14 @@ class UpdateProgressBanner extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = context.isDark;
 
-    // 依據主題的漸層顏色（統一使用 AppTheme 常數）
-    const gradientColors = [AppTheme.primaryColor, AppTheme.brandDecorative];
+    // 漸層承載 18px 白色圖示：AppTheme.primaryColor 恆為 #A78BFA，白字／
+    // 白圖示在其上僅 2.72:1（圖形物件 3:1 不過）。改走主題 primary，淺色
+    // 解析為 #6D28D9（白對其 7.10:1），深色同值不變。
+    // 邊框與陰影同步改用同一來源，避免同一元件內兩種紫並存。
+    final gradientColors = [
+      theme.colorScheme.primary,
+      AppTheme.brandDecorative,
+    ];
 
     final backgroundColor = isDark
         ? theme.colorScheme.surfaceContainerLow
@@ -38,12 +44,12 @@ class UpdateProgressBanner extends StatelessWidget {
             color: backgroundColor,
             borderRadius: BorderRadius.circular(DesignTokens.radiusXl),
             border: Border.all(
-              color: AppTheme.primaryColor.withValues(alpha: 0.2),
+              color: theme.colorScheme.primary.withValues(alpha: 0.2),
               width: 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: AppTheme.primaryColor.withValues(
+                color: theme.colorScheme.primary.withValues(
                   alpha: isDark
                       ? DesignTokens.opacity15
                       : DesignTokens.opacity10,
@@ -66,7 +72,7 @@ class UpdateProgressBanner extends StatelessWidget {
                       width: 32,
                       height: 32,
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(colors: gradientColors),
+                        gradient: LinearGradient(colors: gradientColors),
                         borderRadius: BorderRadius.circular(
                           DesignTokens.radiusMd,
                         ),
@@ -149,7 +155,7 @@ class UpdateProgressBanner extends StatelessWidget {
                             child: Container(
                               height: 8,
                               decoration: BoxDecoration(
-                                gradient: const LinearGradient(
+                                gradient: LinearGradient(
                                   colors: gradientColors,
                                 ),
                                 borderRadius: BorderRadius.circular(

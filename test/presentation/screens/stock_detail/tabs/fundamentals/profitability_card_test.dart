@@ -63,7 +63,7 @@ void main() {
       );
 
       final t = tester.widget<Text>(find.text('0.0%'));
-      expect(t.style?.color, AppTheme.neutralColor);
+      expect(t.style?.color, AppTheme.getFlatColor(Brightness.light));
     });
 
     testWidgets('微負指標（-0.004）捨入歸零：中性色、無 -0.0%', (tester) async {
@@ -73,7 +73,7 @@ void main() {
 
       expect(find.text('-0.0%'), findsNothing);
       final t = tester.widget<Text>(find.text('0.0%'));
-      expect(t.style?.color, AppTheme.neutralColor);
+      expect(t.style?.color, AppTheme.getFlatColor(Brightness.light));
     });
   });
 }

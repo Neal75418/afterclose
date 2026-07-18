@@ -17,6 +17,7 @@ class EmptyState extends StatelessWidget {
     this.actionLabel,
     this.onAction,
     this.iconColor,
+    this.useFlatIconColor = false,
   });
 
   final IconData icon;
@@ -24,13 +25,23 @@ class EmptyState extends StatelessWidget {
   final String? subtitle;
   final String? actionLabel;
   final VoidCallback? onAction;
+
+  /// 明確指定的圖示色。留 `null` 時依 [useFlatIconColor] 解析。
   final Color? iconColor;
+
+  /// 以主題解析的平盤灰作為圖示色（與 [iconColor] 互斥）。
+  ///
+  /// 平盤灰是雙值設計（深色 `#A1A1A1`／淺色 `#717171`），`EmptyStates` 的
+  /// 靜態工廠沒有 `BuildContext` 無法自行解析，故以旗標下放到 build。
+  final bool useFlatIconColor;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = context.isDark;
-    final effectiveColor = iconColor ?? theme.colorScheme.primary;
+    final effectiveColor =
+        iconColor ??
+        (useFlatIconColor ? context.flatColor : theme.colorScheme.primary);
 
     return Semantics(
       label:
@@ -145,7 +156,6 @@ class EmptyStates {
       subtitle: S.emptyNoRecommendationsHint,
       actionLabel: onRefresh != null ? S.refresh : null,
       onAction: onRefresh,
-      iconColor: AppTheme.primaryColor,
     );
   }
 
@@ -157,7 +167,7 @@ class EmptyStates {
       subtitle: S.emptyNoFilterResultsHint,
       actionLabel: onClearFilter != null ? S.emptyClearFilter : null,
       onAction: onClearFilter,
-      iconColor: AppTheme.neutralColor,
+      useFlatIconColor: true,
     );
   }
 
@@ -202,7 +212,6 @@ class EmptyStates {
       subtitle: S.emptyNoNewsHint,
       actionLabel: onRefresh != null ? S.refresh : null,
       onAction: onRefresh,
-      iconColor: AppTheme.primaryColor,
     );
   }
 
@@ -265,6 +274,7 @@ class _EmptyStateWithMetaState extends State<_EmptyStateWithMeta> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = context.isDark;
+    final flatColor = context.flatColor;
     final hasDetails =
         widget.totalScanned != null ||
         widget.dataDate != null ||
@@ -283,26 +293,22 @@ class _EmptyStateWithMetaState extends State<_EmptyStateWithMeta> {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        AppTheme.neutralColor.withValues(
-                          alpha: isDark ? 0.15 : 0.1,
-                        ),
-                        AppTheme.neutralColor.withValues(
-                          alpha: isDark ? 0.05 : 0.03,
-                        ),
+                        flatColor.withValues(alpha: isDark ? 0.15 : 0.1),
+                        flatColor.withValues(alpha: isDark ? 0.05 : 0.03),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: AppTheme.neutralColor.withValues(alpha: 0.2),
+                      color: flatColor.withValues(alpha: 0.2),
                       width: 2,
                     ),
                   ),
                   child: Icon(
                     Icons.filter_alt_off_outlined,
                     size: 48,
-                    color: AppTheme.neutralColor.withValues(alpha: 0.7),
+                    color: flatColor.withValues(alpha: 0.7),
                   ),
                 )
                 .animate(

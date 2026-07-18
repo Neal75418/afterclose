@@ -179,11 +179,7 @@ class _Avg5dBadge extends StatelessWidget {
     // 依顯示精度（0 位）捨入後判方向：微幅變動（如 +0.4%）捨入為 0 時中性、
     // 不帶 +，避免顯示「0%」卻著漲色。
     final rounded = AppNumberFormat.roundForDisplay(changePercent, 0);
-    final color = rounded > 0
-        ? AppTheme.upColor
-        : rounded < 0
-        ? AppTheme.downColor
-        : AppTheme.neutralColor;
+    final color = AppTheme.getPriceColor(rounded, theme.brightness);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),

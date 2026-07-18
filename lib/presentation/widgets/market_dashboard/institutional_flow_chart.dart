@@ -135,11 +135,10 @@ class InstitutionalFlowChart extends StatelessWidget {
                     _formatAmount(data.totalNet),
                     style: theme.textTheme.bodySmall?.copyWith(
                       fontWeight: FontWeight.w800,
-                      color: data.totalNet > 0
-                          ? AppTheme.upColor
-                          : data.totalNet < 0
-                          ? AppTheme.downColor
-                          : AppTheme.neutralColor,
+                      color: AppTheme.getPriceColor(
+                        data.totalNet,
+                        theme.brightness,
+                      ),
                       fontFeatures: const [FontFeature.tabularFigures()],
                     ),
                   ),
@@ -185,11 +184,7 @@ class _FlowCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isPositive = item.value >= 0;
-    final valueColor = item.value > 0
-        ? AppTheme.upColor
-        : item.value < 0
-        ? AppTheme.downColor
-        : AppTheme.neutralColor;
+    final valueColor = AppTheme.getPriceColor(item.value, theme.brightness);
 
     // 比例條寬度（0.0 ~ 1.0）
     final ratio = maxAbs > 0 ? item.value.abs() / maxAbs : 0.0;

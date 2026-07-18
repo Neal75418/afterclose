@@ -327,7 +327,9 @@ class _StockCardState extends State<StockCard> {
   }
 
   Widget _buildTrendIndicator({bool compact = false}) {
-    final trendColor = widget.trendState.trendColor;
+    final trendColor = widget.trendState.trendColorFor(
+      Theme.of(context).brightness,
+    );
     final icon = widget.trendState.trendIconData;
     final iconSize = compact ? 18.0 : 24.0;
 

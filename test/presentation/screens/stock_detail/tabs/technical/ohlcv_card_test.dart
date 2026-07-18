@@ -130,7 +130,7 @@ void main() {
       expect(find.byIcon(Icons.trending_down), findsNothing);
       // 收盤價配色為中性
       final closeText = tester.widget<Text>(find.text('580.00'));
-      expect(closeText.style?.color, AppTheme.neutralColor);
+      expect(closeText.style?.color, AppTheme.getFlatColor(Brightness.light));
     });
 
     testWidgets('微負值（-0.004）捨入後歸零，中性色且無漲箭頭', (tester) async {
@@ -144,7 +144,7 @@ void main() {
       expect(find.byIcon(Icons.trending_up), findsNothing);
       expect(find.byIcon(Icons.trending_flat), findsOneWidget);
       final closeText = tester.widget<Text>(find.text('580.00'));
-      expect(closeText.style?.color, AppTheme.neutralColor);
+      expect(closeText.style?.color, AppTheme.getFlatColor(Brightness.light));
     });
   });
 }

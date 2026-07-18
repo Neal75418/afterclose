@@ -148,11 +148,7 @@ class _MarginItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = change > 0
-        ? AppTheme.upColor
-        : change < 0
-        ? AppTheme.downColor
-        : AppTheme.neutralColor;
+    final color = AppTheme.getPriceColor(change, theme.brightness);
     final icon = change > 0
         ? Icons.arrow_upward_rounded
         : change < 0

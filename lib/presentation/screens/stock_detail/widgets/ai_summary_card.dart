@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/core/constants/app_routes.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/theme/semantic_colors.dart';
 import 'package:afterclose/domain/models/stock_summary.dart';
 import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
 import 'package:afterclose/core/constants/animations.dart';
@@ -172,9 +173,9 @@ class _AiSummaryCardState extends ConsumerState<AiSummaryCard> {
     final sentimentColor = switch (summary.sentiment) {
       SummarySentiment.strongBullish => AppTheme.upColor,
       SummarySentiment.bullish => AppTheme.upColor,
-      SummarySentiment.neutral => AppTheme.neutralColor,
-      SummarySentiment.bearish => AppTheme.downColor,
-      SummarySentiment.strongBearish => AppTheme.downColor,
+      SummarySentiment.neutral => PriceColors.flatFor(theme.brightness),
+      SummarySentiment.bearish => PriceColors.downFor(theme.brightness),
+      SummarySentiment.strongBearish => PriceColors.downFor(theme.brightness),
     };
     final sentimentLabel = switch (summary.sentiment) {
       SummarySentiment.strongBullish => 'summary.sentimentStrongBullish'.tr(),
@@ -480,7 +481,7 @@ class _SignalStrengthBar extends StatelessWidget {
 
     // 計算訊號強度（0.0 ~ 1.0）
     final strength = _calculateStrength();
-    final strengthColor = _getStrengthColor(strength);
+    final strengthColor = _getStrengthColor(strength, theme.brightness);
 
     return Row(
       children: [
@@ -558,10 +559,10 @@ class _SignalStrengthBar extends StatelessWidget {
     return strength.clamp(0.0, 1.0);
   }
 
-  Color _getStrengthColor(double strength) {
+  Color _getStrengthColor(double strength, Brightness brightness) {
     if (strength >= 0.7) return AppTheme.upColor;
     if (strength >= 0.4) return AppTheme.warningColor;
-    return AppTheme.neutralColor;
+    return AppTheme.getFlatColor(brightness);
   }
 }
 

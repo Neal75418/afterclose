@@ -265,7 +265,7 @@ void main() {
       final pctText = tester.widget<Text>(find.text('0.00%'));
       expect(
         pctText.style?.color,
-        AppTheme.neutralColor,
+        AppTheme.getFlatColor(Brightness.light),
         reason: '平盤數字顯示中性色，箭頭/漸層須與之一致',
       );
     });
@@ -286,7 +286,7 @@ void main() {
       );
       expect(find.text('0.00%'), findsOneWidget);
       final pctText = tester.widget<Text>(find.text('0.00%'));
-      expect(pctText.style?.color, AppTheme.neutralColor);
+      expect(pctText.style?.color, AppTheme.getFlatColor(Brightness.light));
     });
   });
 }

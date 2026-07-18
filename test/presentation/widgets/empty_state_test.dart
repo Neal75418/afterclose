@@ -470,4 +470,69 @@ void main() {
       expect(find.byIcon(Icons.filter_alt_off_outlined), findsOneWidget);
     });
   });
+
+  group('圖示色主題盲守門（C5）', () {
+    // EmptyState 的 56px 圖示以 alpha 0.7 疊在自身 alpha 0.1 漸層底之上，
+    // 該底又疊在 scaffold（淺色 #FFFFFF）之上。iconColor 曾寫死
+    // AppTheme.primaryColor（#A78BFA）——實際畫出來的圖示合成色對頁面白底
+    // 只有 2.02:1，比改動前的 #2196F3（2.28:1）更差。改為不傳 iconColor、
+    // 由 build 落回 theme.colorScheme.primary 後，淺色解析為 #6D28D9，
+    // 合成後 4.10:1。
+    //
+    // 斷言對象是「Icon 實際拿到的 color」是否等於主題解析值，這條會在
+    // 有人把寫死的常數放回 iconColor 時變紅。
+    Future<Color> iconColorOf(
+      WidgetTester tester,
+      Widget widget,
+      IconData icon,
+      Brightness brightness,
+    ) async {
+      widenViewport(tester);
+      await tester.pumpWidget(buildTestApp(widget, brightness: brightness));
+      await tester.pump(const Duration(seconds: 1));
+      return tester.widget<Icon>(find.byIcon(icon)).color!;
+    }
+
+    for (final brightness in Brightness.values) {
+      testWidgets('品牌類空狀態圖示取自主題 primary（$brightness）', (tester) async {
+        final expected =
+            (brightness == Brightness.light
+                    ? AppTheme.lightTheme
+                    : AppTheme.darkTheme)
+                .colorScheme
+                .primary;
+
+        for (final w in [
+          EmptyStates.noRecommendations(),
+          EmptyStates.noNews(),
+        ]) {
+          final c = await iconColorOf(
+            tester,
+            w,
+            w is EmptyState ? w.icon : Icons.inbox_outlined,
+            brightness,
+          );
+          expect(
+            c.withValues(alpha: 1.0),
+            expected,
+            reason: '空狀態圖示不得寫死主題盲的 AppTheme.primaryColor',
+          );
+        }
+      });
+
+      testWidgets('中性類空狀態圖示取自依主題解析的平盤灰（$brightness）', (tester) async {
+        final c = await iconColorOf(
+          tester,
+          EmptyStates.noFilterResults(),
+          Icons.search_off_outlined,
+          brightness,
+        );
+        expect(
+          c.withValues(alpha: 1.0),
+          AppTheme.getFlatColor(brightness),
+          reason: '「無篩選結果」圖示應為依主題解析的平盤灰，非固定深色值',
+        );
+      });
+    }
+  });
 }

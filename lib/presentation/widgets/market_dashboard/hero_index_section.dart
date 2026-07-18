@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/constants/market_index_names.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/theme/semantic_colors.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
 import 'package:afterclose/domain/services/market_reading_service.dart';
 import 'package:afterclose/domain/services/technical_indicator_service.dart';
@@ -44,11 +45,9 @@ class HeroIndexSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = index.isUp
-        ? AppTheme.upColor
-        : index.change < 0
-        ? AppTheme.downColor
-        : AppTheme.neutralColor;
+    // index.isUp 是資料層旗標，與 change 的符號一致；統一走 getPriceColor
+    // 解析，淺色主題才拿得到較深的下跌綠／平盤灰。
+    final color = AppTheme.getPriceColor(index.change, theme.brightness);
     final sign = index.change > 0 ? '+' : '';
     final formatter = NumberFormat('#,##0.00');
 
@@ -206,9 +205,12 @@ class HeroIndexSection extends StatelessWidget {
     // 台股慣例：多頭 / 正乖離 = 紅、空頭 / 負乖離 = 綠、糾結 = 灰
     final (stageColor, stageKey) = switch (result.stage) {
       MarketStage.bullish => (AppTheme.upColor, 'bullish'),
-      MarketStage.bearish => (AppTheme.downColor, 'bearish'),
-      MarketStage.neutral => (AppTheme.neutralColor, 'neutral'),
-      MarketStage.insufficient => (AppTheme.neutralColor, 'insufficient'),
+      MarketStage.bearish => (PriceColors.downFor(theme.brightness), 'bearish'),
+      MarketStage.neutral => (PriceColors.flatFor(theme.brightness), 'neutral'),
+      MarketStage.insufficient => (
+        PriceColors.flatFor(theme.brightness),
+        'insufficient',
+      ),
     };
 
     // 位階乖離判讀（僅在極端乖離時補充一行，其餘為 null 不顯示）

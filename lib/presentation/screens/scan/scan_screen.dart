@@ -714,7 +714,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                   HapticFeedback.lightImpact();
                   context.push(AppRoutes.stockDetail(stock.symbol));
                 },
-                backgroundColor: AppTheme.primaryColor,
+                backgroundColor: Theme.of(context).colorScheme.primary,
                 foregroundColor: Colors.white,
                 icon: Icons.visibility_outlined,
                 label: 'scan.view'.tr(),

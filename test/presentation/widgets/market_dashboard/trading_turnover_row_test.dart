@@ -86,7 +86,7 @@ void main() {
       final badge = tester.widget<Text>(
         find.textContaining('marketOverview.avg5d'),
       );
-      expect(badge.style?.color, AppTheme.neutralColor);
+      expect(badge.style?.color, AppTheme.getFlatColor(Brightness.light));
     });
 
     // Regression — 2026-06 screenshot 顯示左卡片 5日均 badge 右側溢出 1.1px。

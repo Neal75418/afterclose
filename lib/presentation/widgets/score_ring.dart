@@ -52,7 +52,7 @@ class ScoreRing extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final scoreColor = AppTheme.getScoreColor(score);
+    final scoreColor = AppTheme.getScoreColor(score, theme.brightness);
     final progress = (score / maxScore).clamp(0.0, 1.0);
     final displayScore = score.toInt();
 

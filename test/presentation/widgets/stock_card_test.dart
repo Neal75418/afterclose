@@ -75,7 +75,7 @@ void main() {
       await tester.pump();
 
       final changeText = tester.widget<Text>(find.textContaining('0.00%'));
-      expect(changeText.style?.color, AppTheme.neutralColor);
+      expect(changeText.style?.color, AppTheme.getFlatColor(Brightness.light));
     });
 
     testWidgets('真實下跌仍著跌色（未過度中性化）', (tester) async {
@@ -90,7 +90,10 @@ void main() {
       await tester.pump();
 
       final changeText = tester.widget<Text>(find.textContaining('-3.00%'));
-      expect(changeText.style?.color, isNot(AppTheme.neutralColor));
+      expect(
+        changeText.style?.color,
+        isNot(AppTheme.getFlatColor(Brightness.light)),
+      );
     });
 
     testWidgets('極窄卡片下雙 score 徽章等比縮小不溢位', (tester) async {

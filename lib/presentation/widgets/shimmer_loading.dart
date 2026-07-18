@@ -3,6 +3,7 @@ import 'package:shimmer/shimmer.dart';
 
 import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/theme/semantic_colors.dart';
 
 // ==================================================
 // 微光效果尺寸常數
@@ -71,18 +72,24 @@ abstract final class ShimmerDimensions {
 
 /// 淺色與深色主題的微光效果顏色
 ///
-/// 深色主題使用 Midnight Slate 色調，
-/// 淺色主題使用 theme.colorScheme.surfaceContainerHighest 衍生色。
+/// 深色三色原為 Slate `#1E293B`／`#334155`／`#0F172A`——正是 Task 3 從
+/// `app_theme.dart` 換掉的舊 `_surfaceDark`／`_cardDarkSurface`／
+/// `_backgroundDark`。表面遷移至 Zinc 後這裡沒跟上，造成 15 個使用骨架的
+/// 畫面在深色主題下「載入時是 Slate 藍、載入完變 Zinc 灰」的色偏跳動。
+///
+/// 改為委派 [SemanticColors] 的對應階，是 Task 3 同一組替換的直譯。
+/// 微光掃過的可見度不受影響：base/highlight 兩色的對比比值由 Slate 的
+/// 1.4128 變為 Zinc 的 1.4262，差異小於 1%。
 abstract final class ShimmerColors {
   static Color baseColor(bool isDark) =>
-      isDark ? const Color(0xFF1E293B) : const Color(0xFFE0E0E0);
+      isDark ? SemanticColors.darkSurface : const Color(0xFFE0E0E0);
 
   static Color highlightColor(bool isDark) =>
-      isDark ? const Color(0xFF334155) : const Color(0xFFF5F5F5);
+      isDark ? SemanticColors.darkElevated : const Color(0xFFF5F5F5);
 
   /// 骨架容器填充顏色，在兩種模式下都能提供良好的對比度
   static Color skeletonColor(bool isDark) =>
-      isDark ? const Color(0xFF0F172A) : Colors.white;
+      isDark ? SemanticColors.darkBackground : Colors.white;
 }
 
 // ==================================================

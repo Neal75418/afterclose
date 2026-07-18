@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:afterclose/core/theme/semantic_colors.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/fundamentals/fundamentals_helpers.dart'
     show buildEmptyState;
@@ -50,6 +51,8 @@ class ShareholdingSection extends StatelessWidget {
         .map((e) => (e.foreignSharesRatio ?? 0).toDouble())
         .toList();
 
+    final trendColor = _trendColor(trendKey, theme.brightness);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -94,13 +97,13 @@ class ShareholdingSection extends StatelessWidget {
                   vertical: DesignTokens.spacing4,
                 ),
                 decoration: BoxDecoration(
-                  color: _trendColor(trendKey).withValues(alpha: 0.15),
+                  color: trendColor.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
                 ),
                 child: Text(
                   trendKey.tr(),
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: _trendColor(trendKey),
+                    color: trendColor,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -124,11 +127,20 @@ class ShareholdingSection extends StatelessWidget {
     );
   }
 
-  Color _trendColor(String key) {
+  /// 外資持股趨勢色。
+  ///
+  /// 外資持股增加＝籌碼偏多、減少＝偏空，與漲跌屬同一多空語意軸，
+  /// 故套台股慣例：增加＝紅、減少＝綠、持平＝灰。
+  ///
+  /// 此處原本寫死 `#4CAF50`（增加→綠）與 `#F44336`（減少→紅），方向與
+  /// 台股慣例完全相反，也與 insider_tab.dart 的內部人增持→紅互相矛盾
+  /// ——使用者在同一支股票切換分頁就會看到同一語意兩種顏色。
+  /// 與籌碼評等（`PriceColors.chipRating`）是同一個 bug class。
+  static Color _trendColor(String key, Brightness brightness) {
     return switch (key) {
-      'chip.trendIncreasing' => const Color(0xFF4CAF50),
-      'chip.trendDecreasing' => const Color(0xFFF44336),
-      _ => const Color(0xFF9E9E9E),
+      'chip.trendIncreasing' => PriceColors.up,
+      'chip.trendDecreasing' => PriceColors.downFor(brightness),
+      _ => PriceColors.flatFor(brightness),
     };
   }
 }

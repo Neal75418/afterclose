@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:afterclose/core/constants/api_endpoints.dart';
-import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
@@ -111,7 +110,7 @@ class _ApiTokenTileState extends ConsumerState<ApiTokenTile> {
                 child: Text(
                   'settings.apiRegister'.tr(),
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: AppTheme.primaryColor,
+                    color: theme.colorScheme.primary,
                     decoration: TextDecoration.underline,
                   ),
                 ),

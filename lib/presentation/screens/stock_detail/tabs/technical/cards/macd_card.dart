@@ -30,7 +30,7 @@ class MACDCard extends StatelessWidget {
     );
     // 與顯示文字同精度捨入後判方向：零軸穿越（histogram≈0）著中性色而非漲色
     final histColor = latestHist == null
-        ? AppTheme.neutralColor
+        ? AppTheme.getFlatColor(theme.brightness)
         : AppTheme.getPriceColor(
             AppNumberFormat.roundForDisplay(latestHist, 2),
             theme.brightness,

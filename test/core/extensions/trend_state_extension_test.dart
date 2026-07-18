@@ -70,30 +70,51 @@ void main() {
       });
     });
 
-    group('trendColor', () {
-      test('returns upColor for UP trend', () {
-        const trend = 'UP';
-        expect(trend.trendColor, equals(AppTheme.upColor));
-      });
+    group('trendColorFor', () {
+      // 斷言對象是「與 getPriceColor 解析出同一個色」而非各別常數：
+      // 常數等式（trendColor == AppTheme.upColor）兩邊指向同一份宣告，
+      // 改壞色值時一起變、恆為真，抓不到漂移。改對照 getPriceColor 後，
+      // 色值本身的合格性由 semantic_colors_test 的對比度守門負責，
+      // 這裡只負責「趨勢有沒有對應到正確的多空方向與正確的主題側」。
+      for (final brightness in Brightness.values) {
+        test('UP 對應上漲色（$brightness）', () {
+          const trend = 'UP';
+          expect(
+            trend.trendColorFor(brightness),
+            equals(AppTheme.getPriceColor(1, brightness)),
+          );
+        });
 
-      test('returns downColor for DOWN trend', () {
-        const trend = 'DOWN';
-        expect(trend.trendColor, equals(AppTheme.downColor));
-      });
+        test('DOWN 對應下跌色（$brightness）', () {
+          const trend = 'DOWN';
+          expect(
+            trend.trendColorFor(brightness),
+            equals(AppTheme.getPriceColor(-1, brightness)),
+          );
+        });
 
-      test('returns neutralColor for SIDEWAYS trend', () {
-        const trend = 'SIDEWAYS';
-        expect(trend.trendColor, equals(AppTheme.neutralColor));
-      });
+        for (final flat in <String?>['SIDEWAYS', null, 'RANGE']) {
+          test('${flat ?? 'null'} 對應平盤色（$brightness）', () {
+            expect(
+              flat.trendColorFor(brightness),
+              equals(AppTheme.getFlatColor(brightness)),
+            );
+          });
+        }
+      }
 
-      test('returns neutralColor for null', () {
-        const String? trend = null;
-        expect(trend.trendColor, equals(AppTheme.neutralColor));
-      });
-
-      test('returns neutralColor for RANGE trend', () {
-        const trend = 'RANGE';
-        expect(trend.trendColor, equals(AppTheme.neutralColor));
+      test('淺色主題的下跌與平盤不得沿用深色主題色值', () {
+        // trendColor 舊實作恆回傳深色色值，淺色主題下 #2ED573 對白底
+        // 1.93:1、#A1A1A1 2.58:1，兩個消費端（stock_card 趨勢圖示、
+        // stock_detail_header 趨勢 chip）都因此低於圖形物件門檻。
+        expect(
+          'DOWN'.trendColorFor(Brightness.light),
+          isNot('DOWN'.trendColorFor(Brightness.dark)),
+        );
+        expect(
+          'SIDEWAYS'.trendColorFor(Brightness.light),
+          isNot('SIDEWAYS'.trendColorFor(Brightness.dark)),
+        );
       });
     });
 

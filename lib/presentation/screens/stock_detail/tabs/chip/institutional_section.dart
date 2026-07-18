@@ -1,7 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import 'package:afterclose/core/theme/semantic_colors.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/screens/stock_detail/widgets/mini_trend_chart.dart';
 import 'package:afterclose/presentation/widgets/section_header.dart';
@@ -57,7 +56,6 @@ class InstitutionalSection extends StatelessWidget {
             'stockDetail.foreign'.tr(),
             foreignNet,
             Icons.language,
-            CategoryColors.neutral,
           ),
         ),
         const SizedBox(width: DesignTokens.spacing8),
@@ -67,7 +65,6 @@ class InstitutionalSection extends StatelessWidget {
             'stockDetail.investment'.tr(),
             trustNet,
             Icons.account_balance,
-            CategoryColors.neutral,
           ),
         ),
         const SizedBox(width: DesignTokens.spacing8),
@@ -77,7 +74,6 @@ class InstitutionalSection extends StatelessWidget {
             'stockDetail.dealer'.tr(),
             dealerNet,
             Icons.store,
-            CategoryColors.neutral,
           ),
         ),
       ],
@@ -133,21 +129,9 @@ class InstitutionalSection extends StatelessWidget {
                       ),
                     ),
                   ),
-                  buildColoredHeader(
-                    theme,
-                    'stockDetail.foreign'.tr(),
-                    CategoryColors.neutral,
-                  ),
-                  buildColoredHeader(
-                    theme,
-                    'stockDetail.investment'.tr(),
-                    CategoryColors.neutral,
-                  ),
-                  buildColoredHeader(
-                    theme,
-                    'stockDetail.dealer'.tr(),
-                    CategoryColors.neutral,
-                  ),
+                  buildColumnHeader(theme, 'stockDetail.foreign'.tr()),
+                  buildColumnHeader(theme, 'stockDetail.investment'.tr()),
+                  buildColumnHeader(theme, 'stockDetail.dealer'.tr()),
                 ],
               ),
             ),

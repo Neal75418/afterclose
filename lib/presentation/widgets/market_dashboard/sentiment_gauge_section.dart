@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/theme/semantic_colors.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/domain/services/market_sentiment_service.dart';
 
@@ -47,7 +48,7 @@ class _SentimentGaugeSectionState extends State<SentimentGaugeSection> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final sentiment = widget.sentiment;
-    final color = _levelColor(sentiment.level);
+    final color = _levelColor(sentiment.level, theme.brightness);
     final levelText = _levelText(sentiment.level);
 
     return Column(
@@ -142,11 +143,11 @@ class _SentimentGaugeSectionState extends State<SentimentGaugeSection> {
     );
   }
 
-  static Color _levelColor(SentimentLevel level) {
+  static Color _levelColor(SentimentLevel level, Brightness brightness) {
     return switch (level) {
       SentimentLevel.extremeFear => const Color(0xFF1B5E20),
-      SentimentLevel.fear => AppTheme.downColor,
-      SentimentLevel.neutral => AppTheme.neutralColor,
+      SentimentLevel.fear => PriceColors.downFor(brightness),
+      SentimentLevel.neutral => PriceColors.flatFor(brightness),
       SentimentLevel.greed => AppTheme.upColor,
       SentimentLevel.extremeGreed => const Color(0xFFB71C1C),
     };
@@ -351,7 +352,7 @@ class _SubScoresGrid extends StatelessWidget {
           runSpacing: DesignTokens.spacing6,
           children: items.map((ind) {
             final score = subScores[ind.$1]!;
-            final color = _scoreColor(score);
+            final color = _scoreColor(score, theme.brightness);
             return SizedBox(
               width: itemWidth,
               child: Row(
@@ -397,9 +398,9 @@ class _SubScoresGrid extends StatelessWidget {
     );
   }
 
-  static Color _scoreColor(double score) {
-    if (score < 30) return AppTheme.downColor;
+  static Color _scoreColor(double score, Brightness brightness) {
+    if (score < 30) return PriceColors.downFor(brightness);
     if (score > 70) return AppTheme.upColor;
-    return AppTheme.neutralColor;
+    return PriceColors.flatFor(brightness);
   }
 }

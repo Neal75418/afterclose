@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/constants/rule_enums.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/theme/semantic_colors.dart';
 
 /// 趨勢狀態擴展
 ///
@@ -13,7 +14,7 @@ import 'package:afterclose/core/theme/app_theme.dart';
 /// final trend = 'UP';
 /// print(trend.trendEmoji);       // 📈
 /// print(trend.trendIconData);    // Icons.trending_up_rounded
-/// print(trend.trendColor);       // AppTheme.upColor
+/// print(trend.trendColorFor(Brightness.dark)); // AppTheme.upColor
 /// print(trend.trendKey);         // 'up'
 /// ```
 extension TrendStateExtension on String? {
@@ -43,16 +44,20 @@ extension TrendStateExtension on String? {
     };
   }
 
-  /// 趨勢顏色
+  /// 趨勢顏色（依主題解析）
   ///
-  /// - UP: AppTheme.upColor (紅色)
-  /// - DOWN: AppTheme.downColor (綠色)
-  /// - 其他: AppTheme.neutralColor (灰色)
-  Color get trendColor {
+  /// - UP: 上漲紅
+  /// - DOWN: 下跌綠 —— 淺色主題自動改用較深的 `PriceColors.downOnLight`
+  /// - 其他: 平盤灰 —— 淺色主題自動改用較深的 `PriceColors.flatOnLight`
+  ///
+  /// 曾是不帶參數的 `trendColor` getter，恆回傳深色主題的色值：淺色主題下
+  /// 的下跌綢 `#2ED573` 對白底僅 1.93:1、平盤 `#A1A1A1` 僅 2.58:1，
+  /// 兩者皆低於圖形物件 3.0:1 門檻（此 getter 的兩個消費端都是圖示）。
+  Color trendColorFor(Brightness brightness) {
     return switch (this) {
       TrendState.upCode => AppTheme.upColor,
-      TrendState.downCode => AppTheme.downColor,
-      _ => AppTheme.neutralColor,
+      TrendState.downCode => PriceColors.downFor(brightness),
+      _ => PriceColors.flatFor(brightness),
     };
   }
 

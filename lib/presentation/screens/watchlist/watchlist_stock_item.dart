@@ -6,7 +6,6 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 
 import 'package:afterclose/core/constants/animations.dart';
-import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/providers/watchlist_provider.dart';
 import 'package:afterclose/presentation/widgets/stock_card.dart';
 
@@ -54,7 +53,7 @@ class WatchlistStockItem extends StatelessWidget {
                 HapticFeedback.lightImpact();
                 onView();
               },
-              backgroundColor: AppTheme.primaryColor,
+              backgroundColor: Theme.of(context).colorScheme.primary,
               foregroundColor: Colors.white,
               icon: Icons.visibility_outlined,
               label: 'watchlist.view'.tr(),

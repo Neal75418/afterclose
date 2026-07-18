@@ -66,7 +66,7 @@ class ATRCard extends StatelessWidget {
                       child: Text(
                         'stockDetail.atrLabel'.tr(),
                         style: theme.textTheme.labelSmall?.copyWith(
-                          color: IndicatorColors.atrLabel,
+                          color: IndicatorColors.atrLabelText(theme.brightness),
                           fontWeight: FontWeight.w500,
                         ),
                       ),

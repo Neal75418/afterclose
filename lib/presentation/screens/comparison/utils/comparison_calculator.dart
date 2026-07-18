@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/theme/semantic_colors.dart';
 import 'package:afterclose/core/utils/number_formatter.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/models/stock_summary.dart';
@@ -50,6 +51,7 @@ abstract final class ComparisonCalculator {
   static ({String display, double? numeric, Color? color}) calculatePriceReturn(
     List<DailyPriceEntry>? history,
     int tradingDays,
+    Brightness brightness,
   ) {
     if (history == null || history.isEmpty) {
       return (display: '-', numeric: null, color: null);
@@ -69,11 +71,9 @@ abstract final class ComparisonCalculator {
     // 與顯示文字同精度捨入後再判方向，避免平盤「+0.0%」或微負值著色矛盾
     final rounded = AppNumberFormat.roundForDisplay(pct, 1);
     final display = AppNumberFormat.signedPercent(pct, decimals: 1);
-    final color = rounded > 0
-        ? AppTheme.upColor
-        : rounded < 0
-        ? AppTheme.downColor
-        : null;
+    final color = rounded == 0
+        ? null
+        : AppTheme.getPriceColor(rounded, brightness);
 
     return (display: display, numeric: pct, color: color);
   }
@@ -88,6 +88,7 @@ abstract final class ComparisonCalculator {
   aggregateInstitutionalNet(
     List<DailyInstitutionalEntry>? entries,
     double Function(DailyInstitutionalEntry) getNet,
+    Brightness brightness,
   ) {
     if (entries == null || entries.isEmpty) {
       return (display: '-', numeric: null, color: null);
@@ -101,11 +102,9 @@ abstract final class ComparisonCalculator {
     final lots = (total / 1000).round();
     // 顯示以「張」為單位；配色須與捨入後張數一致（<500 股顯示 0 張即中性）
     final display = '${lots > 0 ? "+" : ""}$lots';
-    final color = lots > 0
-        ? AppTheme.upColor
-        : lots < 0
-        ? AppTheme.downColor
-        : null;
+    final color = lots == 0
+        ? null
+        : AppTheme.getPriceColor(lots.toDouble(), brightness);
 
     return (display: display, numeric: total, color: color);
   }
@@ -131,14 +130,17 @@ abstract final class ComparisonCalculator {
   /// 將 [SummarySentiment] 對應為其對應的 [Color]。
   ///
   /// 輸入為 `null` 時回傳 `null`。
-  static Color? sentimentToColor(SummarySentiment? sentiment) {
+  static Color? sentimentToColor(
+    SummarySentiment? sentiment,
+    Brightness brightness,
+  ) {
     if (sentiment == null) return null;
     return switch (sentiment) {
       SummarySentiment.strongBullish => AppTheme.upColor,
       SummarySentiment.bullish => AppTheme.upColor,
-      SummarySentiment.neutral => AppTheme.neutralColor,
-      SummarySentiment.bearish => AppTheme.downColor,
-      SummarySentiment.strongBearish => AppTheme.downColor,
+      SummarySentiment.neutral => PriceColors.flatFor(brightness),
+      SummarySentiment.bearish => PriceColors.downFor(brightness),
+      SummarySentiment.strongBearish => PriceColors.downFor(brightness),
     };
   }
 }

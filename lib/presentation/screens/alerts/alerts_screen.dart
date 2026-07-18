@@ -8,6 +8,7 @@ import 'package:afterclose/core/constants/animations.dart';
 import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/theme/semantic_colors.dart';
 import 'package:afterclose/core/utils/responsive_helper.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/widgets/pinned_thesis_section.dart';
@@ -150,7 +151,11 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: AppTheme.primaryColor,
+                          // 徽章承載白字：AppTheme.primaryColor 恆為
+                          // #A78BFA（為深色主題挑的 Violet 400），白字在其上
+                          // 僅 2.72:1；改走主題 primary，淺色解析為 #6D28D9
+                          // 達 7.10:1，深色維持同值、視覺零變化。
+                          color: theme.colorScheme.primary,
                           borderRadius: BorderRadius.circular(
                             DesignTokens.radiusXs,
                           ),
@@ -241,12 +246,12 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: _getAlertColor(alertType).withValues(alpha: 0.15),
+            color: _getAlertColor(alertType, theme).withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
           ),
           child: Icon(
             _getAlertIcon(alertType),
-            color: _getAlertColor(alertType),
+            color: _getAlertColor(alertType, theme),
             size: 20,
           ),
         ),
@@ -369,7 +374,12 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
     };
   }
 
-  Color _getAlertColor(AlertType type) {
+  Color _getAlertColor(AlertType type, ThemeData theme) {
+    // 三個分支的色值都需要依主題解析：primaryColor 恆為 #A78BFA（20px 圖示
+    // 對自身 15% 疊色底僅 2.38:1，圖形物件 3:1 不過），downColor 恆為
+    // #2ED573（對白底 1.93:1）。改走主題 primary 與 PriceColors.downFor。
+    final primaryColor = theme.colorScheme.primary;
+    final downColor = PriceColors.downFor(theme.brightness);
     return switch (type) {
       AlertType.above ||
       AlertType.breakResistance ||
@@ -380,12 +390,12 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
       AlertType.breakSupport ||
       AlertType.week52Low ||
       AlertType.kdDeathCross ||
-      AlertType.crossBelowMa => AppTheme.downColor,
+      AlertType.crossBelowMa => downColor,
       AlertType.changePct ||
       AlertType.volumeSpike ||
       AlertType.volumeAbove ||
       AlertType.rsiOverbought ||
-      AlertType.rsiOversold => AppTheme.primaryColor,
+      AlertType.rsiOversold => primaryColor,
       AlertType.revenueYoySurge ||
       AlertType.highDividendYield ||
       AlertType.peUndervalued ||
@@ -394,7 +404,7 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
       AlertType.tradingWarning ||
       AlertType.tradingDisposal ||
       AlertType.insiderSelling ||
-      AlertType.highPledgeRatio => AppTheme.downColor,
+      AlertType.highPledgeRatio => downColor,
     };
   }
 

@@ -68,7 +68,7 @@ class OBVCard extends StatelessWidget {
                       child: Text(
                         'stockDetail.obvLabel'.tr(),
                         style: theme.textTheme.labelSmall?.copyWith(
-                          color: IndicatorColors.obvLabel,
+                          color: IndicatorColors.obvLabelText(theme.brightness),
                           fontWeight: FontWeight.w500,
                         ),
                       ),

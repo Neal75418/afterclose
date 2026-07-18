@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/theme/semantic_colors.dart';
 import 'package:afterclose/core/theme/breakpoints.dart';
 import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/utils/logger.dart';
@@ -447,7 +448,9 @@ class _TransactionRow extends StatelessWidget {
 
     final color = isBuy
         ? AppTheme.upColor
-        : (isSell ? AppTheme.downColor : AppTheme.primaryColor);
+        : (isSell
+              ? PriceColors.downFor(theme.brightness)
+              : theme.colorScheme.primary);
 
     return Dismissible(
       key: ValueKey(tx.id),
@@ -497,7 +500,7 @@ class _TransactionRow extends StatelessWidget {
                 Text(
                   AppNumberFormat.signedCurrency(tx.quantity),
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: AppTheme.primaryColor,
+                    color: theme.colorScheme.primary,
                     fontWeight: FontWeight.w600,
                   ),
                 )

@@ -65,7 +65,7 @@ void main() {
       for (final t in zeros) {
         expect(
           t.style?.color,
-          AppTheme.neutralColor,
+          AppTheme.getFlatColor(Brightness.light),
           reason: '平盤 histogram 顯示 0.00，不得著漲(紅)色',
         );
       }

@@ -21,7 +21,7 @@ class ComparisonTable extends StatelessWidget {
 
     if (!state.hasEnoughToCompare) return const SizedBox.shrink();
 
-    final sections = _buildSections();
+    final sections = _buildSections(theme.brightness);
 
     // 計算各股票勝出區塊數（用於綜合判定）
     final winCounts = <String, int>{};
@@ -203,14 +203,14 @@ class ComparisonTable extends StatelessWidget {
   // 區段建構
   // ==================================================
 
-  List<_ComparisonSection> _buildSections() {
+  List<_ComparisonSection> _buildSections(Brightness brightness) {
     return [
       _buildScoreTrendSection(),
-      _buildPriceSection(),
+      _buildPriceSection(brightness),
       _buildValuationSection(),
       _buildRevenueSection(),
-      _buildInstitutionalSection(),
-      _buildAISection(),
+      _buildInstitutionalSection(brightness),
+      _buildAISection(brightness),
     ];
   }
 
@@ -247,7 +247,7 @@ class ComparisonTable extends StatelessWidget {
     );
   }
 
-  _ComparisonSection _buildPriceSection() {
+  _ComparisonSection _buildPriceSection(Brightness brightness) {
     return _ComparisonSection(
       title: 'comparison.sectionPrice'.tr(),
       icon: Icons.candlestick_chart,
@@ -259,14 +259,14 @@ class ComparisonTable extends StatelessWidget {
             return close != null ? close.toStringAsFixed(1) : '-';
           }).toList(),
         ),
-        _buildPriceChangeRow(),
-        _buildReturnRow('comparison.metricReturn1M'.tr(), 20),
-        _buildReturnRow('comparison.metricReturn3M'.tr(), 60),
+        _buildPriceChangeRow(brightness),
+        _buildReturnRow('comparison.metricReturn1M'.tr(), 20, brightness),
+        _buildReturnRow('comparison.metricReturn3M'.tr(), 60, brightness),
       ],
     );
   }
 
-  _MetricRow _buildPriceChangeRow() {
+  _MetricRow _buildPriceChangeRow(Brightness brightness) {
     // 每支股票只排序一次，避免 values/numericValues/valueColors 重複排序
     final pctList = state.symbols.map((s) {
       final latest = state.latestPricesMap[s]?.close;
@@ -299,22 +299,25 @@ class ComparisonTable extends StatelessWidget {
       higherIsBetter: true,
       valueColors: displayPct
           .map(
-            (pct) => pct != null && pct > 0
-                ? AppTheme.upColor
-                : pct != null && pct < 0
-                ? AppTheme.downColor
-                : null,
+            (pct) => pct == null || pct == 0
+                ? null
+                : AppTheme.getPriceColor(pct, brightness),
           )
           .toList(),
     );
   }
 
-  _MetricRow _buildReturnRow(String label, int tradingDays) {
+  _MetricRow _buildReturnRow(
+    String label,
+    int tradingDays,
+    Brightness brightness,
+  ) {
     final results = state.symbols
         .map(
           (s) => ComparisonCalculator.calculatePriceReturn(
             state.priceHistoriesMap[s],
             tradingDays,
+            brightness,
           ),
         )
         .toList();
@@ -418,7 +421,7 @@ class ComparisonTable extends StatelessWidget {
     );
   }
 
-  _ComparisonSection _buildInstitutionalSection() {
+  _ComparisonSection _buildInstitutionalSection(Brightness brightness) {
     return _ComparisonSection(
       title: 'comparison.sectionInstitutional'.tr(),
       icon: Icons.groups,
@@ -426,14 +429,17 @@ class ComparisonTable extends StatelessWidget {
         _buildInstitutionalRow(
           'comparison.metricForeign5D'.tr(),
           (entry) => entry.foreignNet ?? 0,
+          brightness,
         ),
         _buildInstitutionalRow(
           'comparison.metricTrust5D'.tr(),
           (entry) => entry.investmentTrustNet ?? 0,
+          brightness,
         ),
         _buildInstitutionalRow(
           'comparison.metricDealer5D'.tr(),
           (entry) => entry.dealerNet ?? 0,
+          brightness,
         ),
       ],
     );
@@ -442,12 +448,14 @@ class ComparisonTable extends StatelessWidget {
   _MetricRow _buildInstitutionalRow(
     String label,
     double Function(DailyInstitutionalEntry entry) getNet,
+    Brightness brightness,
   ) {
     final results = state.symbols
         .map(
           (s) => ComparisonCalculator.aggregateInstitutionalNet(
             state.institutionalMap[s],
             getNet,
+            brightness,
           ),
         )
         .toList();
@@ -461,7 +469,7 @@ class ComparisonTable extends StatelessWidget {
     );
   }
 
-  _ComparisonSection _buildAISection() {
+  _ComparisonSection _buildAISection(Brightness brightness) {
     return _ComparisonSection(
       title: 'comparison.sectionAI'.tr(),
       icon: Icons.auto_awesome,
@@ -493,6 +501,7 @@ class ComparisonTable extends StatelessWidget {
               .map(
                 (s) => ComparisonCalculator.sentimentToColor(
                   state.summariesMap[s]?.sentiment,
+                  brightness,
                 ),
               )
               .toList(),

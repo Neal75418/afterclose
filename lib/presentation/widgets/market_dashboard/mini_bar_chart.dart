@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/theme/semantic_colors.dart';
 
 /// 依數值取柱色——嚴格三分法（與 institutional_flow_chart 一致）
 ///
@@ -25,8 +26,8 @@ Color miniBarColor(
 /// 迷你柱狀圖（CustomPainter 實作，輕量無 fl_chart 依賴）
 ///
 /// 用於法人買賣超、成交額等 30 日趨勢顯示。
-/// 正值使用 [AppTheme.upColor]，負值使用 [AppTheme.downColor]，
-/// 平盤使用 [AppTheme.neutralColor]。
+/// 正值使用 [AppTheme.upColor]，負值與平盤依主題解析
+/// （`PriceColors.downFor` / `PriceColors.flatFor`）。
 /// 若所有值同號（如成交額皆為正），則使用 [positiveOnlyColor]。
 class MiniBarChart extends StatelessWidget {
   const MiniBarChart({
@@ -66,8 +67,8 @@ class MiniBarChart extends StatelessWidget {
             upColor: hasNegative
                 ? AppTheme.upColor
                 : (positiveOnlyColor ?? theme.colorScheme.primary),
-            downColor: AppTheme.downColor,
-            neutralColor: AppTheme.neutralColor,
+            downColor: PriceColors.downFor(theme.brightness),
+            neutralColor: PriceColors.flatFor(theme.brightness),
             hasNegative: hasNegative,
             barRadius: barRadius,
           ),

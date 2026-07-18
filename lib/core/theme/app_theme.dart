@@ -28,18 +28,27 @@ class AppTheme {
   /// 第三強調色 - Material Deep Orange
   static const tertiaryColor = Color(0xFFFF5722);
 
-  // 股價顏色（台灣慣例）
+  // ==================================================
+  // 股價顏色（台灣慣例）—— 全數委派 PriceColors
+  // ==================================================
+  //
+  // 這些常數曾與 PriceColors 各自宣告同一組色值，形成雙軌：守門測試斷言
+  // PriceColors（生產端 0 個消費者），畫面實際渲染 AppTheme（沒有任何測試
+  // 守住）。把 _downColorLight 改成 #CCFFCC（對白底 1.3:1，等同隱形）
+  // 或把 upColor 改成純綠 #00FF00，全套測試依然全綠。
+  //
+  // 改為委派後只剩一份真值；對比度守門一律打在 PriceColors.forChange
+  // （即 getPriceColor 的實作）這條實際渲染路徑上，見
+  // test/core/theme/semantic_colors_test.dart。
+
   /// 上漲 - 紅色
-  static const upColor = Color(0xFFFF4757);
+  static const upColor = PriceColors.up;
 
-  /// 下跌 - 鮮綠色（深色主題用）
-  static const downColor = Color(0xFF2ED573);
+  /// 下跌 - 鮮綠色（深色主題用）。淺色主題請走 [getPriceColor]。
+  static const downColor = PriceColors.down;
 
-  /// 下跌 - 深綠色（淺色主題用，提高白色背景上的對比度）
-  static const _downColorLight = Color(0xFF1B9E50);
-
-  /// 平盤 - 灰色
-  static const neutralColor = Color(0xFF747D8C);
+  /// 平盤 - 灰色（深色主題用）。淺色主題請走 [getPriceColor]／[getFlatColor]。
+  static const neutralColor = PriceColors.flat;
 
   // 漲跌標記符號（UI 統一使用）
   /// 上漲標記
@@ -431,23 +440,28 @@ class AppTheme {
 
   /// 根據漲跌幅取得對應顏色
   ///
-  /// [brightness] 必須傳入，淺色模式使用更深的綠色以提高對比度。
+  /// [brightness] 必須傳入，淺色模式使用更深的綠色與更深的平盤灰以提高對比度。
   /// 若有 BuildContext 可用，建議直接使用 `context.priceColor(change)` 擴充方法。
-  static Color getPriceColor(double? change, Brightness brightness) {
-    if (change == null) return neutralColor;
-    if (change > 0) return upColor;
-    if (change < 0) {
-      return brightness == Brightness.light ? _downColorLight : downColor;
-    }
-    return neutralColor;
-  }
+  static Color getPriceColor(double? change, Brightness brightness) =>
+      PriceColors.forChange(change, brightness);
+
+  /// 取得平盤色（依主題解析）
+  ///
+  /// 供「已知是平盤／無方向」但不經 [getPriceColor] 的呼叫端使用，
+  /// 例如趨勢橫盤圖示、法人淨額為 0 的數字。若有 BuildContext 可用，
+  /// 建議直接使用 `context.flatColor` 擴充方法。
+  static Color getFlatColor(Brightness brightness) =>
+      PriceColors.flatFor(brightness);
 
   /// 根據評分取得對應顏色
-  static Color getScoreColor(double score) {
+  ///
+  /// [brightness] 用於解析最低分級的平盤灰——淺色主題需要更深的灰，
+  /// 深色主題的 [neutralColor] 對白底僅 2.58:1。
+  static Color getScoreColor(double score, Brightness brightness) {
     if (score >= 50) return upColor;
     if (score >= 35) return warningColor;
     if (score >= 20) return cautionColor;
-    return neutralColor;
+    return getFlatColor(brightness);
   }
 
   /// 高分股票的頂級金屬漸層
@@ -507,6 +521,9 @@ extension ThemeExtension on BuildContext {
   /// 根據漲跌幅取得價格顏色（自動適配深淺色主題）
   Color priceColor(double? change) =>
       AppTheme.getPriceColor(change, Theme.of(this).brightness);
+
+  /// 平盤／無方向色（自動適配深淺色主題）
+  Color get flatColor => AppTheme.getFlatColor(Theme.of(this).brightness);
 
   /// 檢查目前是否為深色主題
   bool get isDark => Theme.of(this).brightness == Brightness.dark;

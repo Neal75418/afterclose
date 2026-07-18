@@ -47,7 +47,7 @@ void main() {
 
       expect(find.text('+0.0%'), findsNothing);
       final t = tester.widget<Text>(find.text('0.0%'));
-      expect(t.style?.color, AppTheme.neutralColor);
+      expect(t.style?.color, AppTheme.getFlatColor(Brightness.light));
     });
 
     testWidgets('微負值（-0.004）捨入後歸零：無 + 號、中性色', (tester) async {
@@ -59,7 +59,7 @@ void main() {
 
       expect(find.text('+0.0%'), findsNothing);
       final t = tester.widget<Text>(find.text('0.0%'));
-      expect(t.style?.color, AppTheme.neutralColor);
+      expect(t.style?.color, AppTheme.getFlatColor(Brightness.light));
     });
 
     testWidgets('significant positive growth (>=10%) has bold text', (

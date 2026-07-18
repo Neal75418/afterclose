@@ -442,7 +442,9 @@ class StockDetailHeader extends StatelessWidget {
         _InfoChip(
           label: 'trend.${trendState?.trendKey ?? 'sideways'}'.tr(),
           icon: trendState?.trendIconData ?? Icons.trending_flat,
-          color: trendState?.trendColor ?? AppTheme.neutralColor,
+          // 擴充定義在 String? 上，trendState 為 null 時即回傳平盤色，
+          // 不需要額外的 ?? 分支。
+          color: trendState.trendColorFor(theme.brightness),
         ),
         if (data.support case final supportLevel?)
           _LevelChip(

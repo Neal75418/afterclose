@@ -182,12 +182,7 @@ class _IndustryCard extends StatelessWidget {
       industry.avgChangePct,
       2,
     );
-    final isUp = displayedPct > 0;
-    final color = isUp
-        ? AppTheme.upColor
-        : displayedPct < 0
-        ? AppTheme.downColor
-        : AppTheme.neutralColor;
+    final color = AppTheme.getPriceColor(displayedPct, theme.brightness);
 
     return Card(
       elevation: 0,

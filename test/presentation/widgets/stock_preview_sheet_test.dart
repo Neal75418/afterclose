@@ -191,7 +191,7 @@ void main() {
 
       expect(find.text('+0.00%'), findsNothing);
       final pct = tester.widget<Text>(find.text('0.00%'));
-      expect(pct.style?.color, AppTheme.neutralColor);
+      expect(pct.style?.color, AppTheme.getFlatColor(Brightness.light));
       expect(find.byIcon(Icons.arrow_drop_up), findsNothing);
       expect(find.byIcon(Icons.trending_flat), findsOneWidget);
     });
@@ -204,7 +204,7 @@ void main() {
 
       expect(find.text('+0.00%'), findsNothing);
       final pct = tester.widget<Text>(find.text('0.00%'));
-      expect(pct.style?.color, AppTheme.neutralColor);
+      expect(pct.style?.color, AppTheme.getFlatColor(Brightness.light));
       expect(find.byIcon(Icons.arrow_drop_up), findsNothing);
       expect(find.byIcon(Icons.trending_flat), findsOneWidget);
     });

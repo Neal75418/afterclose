@@ -3,9 +3,11 @@ import 'dart:ui';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/color_contrast.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:afterclose/core/theme/indicator_colors.dart';
 import 'package:afterclose/core/theme/semantic_colors.dart';
 import 'package:afterclose/domain/models/chip_strength.dart';
-import 'package:flutter/material.dart' show ThemeData;
+import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
+import 'package:flutter/material.dart' show HSLColor, ThemeData;
 import 'package:flutter_test/flutter_test.dart';
 
 /// 紅區：hue >= 345 或 <= 15。綠區：88 <= hue <= 175。
@@ -257,6 +259,22 @@ void main() {
       );
     });
 
+    test('平盤色（淺色主題）對白底與 surface 皆達 AA 4.5:1', () {
+      // 平盤色不套大字門檻：它與下跌色不同，會出現在 12px w500 的法人淨額
+      // （chip_helpers.buildNetValue）與 10px w700 的市場儀表板徽章上，
+      // 屬 WCAG 一般文字。深色主題的 flat（#A1A1A1）對白底僅 2.58:1、對
+      // surface 僅 2.45:1，連圖形物件 3.0:1 都不到，故淺色主題必須用
+      // 獨立的 flatOnLight。
+      expect(
+        ColorContrast.ratio(PriceColors.flatOnLight, lightBg),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        ColorContrast.ratio(PriceColors.flatOnLight, lightSurface),
+        greaterThanOrEqualTo(4.5),
+      );
+    });
+
     test('下跌色（淺色主題）對白底達大字門檻 3.0:1', () {
       // downOnLight 只套 WCAG 大字（Large Text）門檻 3.0:1，不套一般文字
       // 門檻 4.5:1：股價數字一律為粗體 ≥15px，符合大字定義。這是既有的
@@ -268,6 +286,297 @@ void main() {
         greaterThanOrEqualTo(3.0),
         reason: '股價數字為粗體大字，適用 WCAG 大字門檻 3.0:1，非一般文字 4.5:1',
       );
+    });
+  });
+
+  group('生產渲染路徑守門 —— AppTheme.getPriceColor', () {
+    // 這一組是本檔唯一直接打在「畫面實際渲染的那條路徑」上的守門。
+    //
+    // 先前的設計是雙軌宣告：守門測試斷言 PriceColors.*（生產端 0 個消費
+    // 者），畫面實際渲染 AppTheme 自己的一組同值常數（沒有任何測試守住）。
+    // 把 AppTheme._downColorLight 改成 #CCFFCC（對白底 1.3:1，等同隱形）
+    // 或把 AppTheme.upColor 改成純綠 #00FF00，3,189 個測試依然全綠。
+    //
+    // 既有那些 `expect(trend.trendColor, AppTheme.upColor)` 形式的斷言是
+    // 同義反覆——兩邊指向同一個常數，改動常數時兩邊一起變，恆為真。
+    // 所以這裡一律斷言「解析結果對實際渲染背景的對比度」與「色相落在正確
+    // 的多空半邊」，兩者都是改壞色值就會紅的性質，不是恆真的等式。
+
+    /// 每個 (Brightness, 背景) 配對的實際渲染背景。
+    ///
+    /// 深色：Card／surface `#27272A`、scaffold `#18181B`
+    /// 淺色：Card／scaffold `#FFFFFF`、surface／surfaceContainer* `#F8F9FA`
+    const backgrounds = <Brightness, List<Color>>{
+      Brightness.dark: [
+        SemanticColors.darkSurface,
+        SemanticColors.darkBackground,
+      ],
+      Brightness.light: [
+        SemanticColors.lightBackground,
+        SemanticColors.lightSurface,
+      ],
+    };
+
+    String hex(Color c) =>
+        '#${c.toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}';
+
+    test('漲跌色對兩主題各自的兩種實際背景皆達大字門檻 3.0:1', () {
+      // 股價數字一律粗體 ≥15px，適用 WCAG 大字門檻 3.0:1（見下方「下跌色
+      // （淺色主題）」測試的說明）。上漲紅對淺色 surface 為 3.17:1、下跌綠
+      // 對淺色 surface 為 3.29:1，餘裕都不到 0.3——正是需要守門的地方。
+      for (final entry in backgrounds.entries) {
+        for (final bg in entry.value) {
+          for (final change in <double>[1.5, -1.5]) {
+            final c = AppTheme.getPriceColor(change, entry.key);
+            expect(
+              ColorContrast.ratio(c, bg),
+              greaterThanOrEqualTo(3.0),
+              reason:
+                  'getPriceColor($change, ${entry.key}) = ${hex(c)} '
+                  '對 ${hex(bg)} 對比不足',
+            );
+          }
+        }
+      }
+    });
+
+    test('平盤色對兩主題各自的兩種實際背景皆達 AA 4.5:1', () {
+      // 平盤色套一般文字門檻而非大字門檻：它會出現在 12px w500
+      // （chip_helpers.buildNetValue）與 10px w700（trading_turnover_row、
+      // hero_index_section 階段徽章）的文字上，不符大字定義。
+      for (final entry in backgrounds.entries) {
+        for (final bg in entry.value) {
+          for (final change in <double?>[null, 0]) {
+            final c = AppTheme.getPriceColor(change, entry.key);
+            expect(
+              ColorContrast.ratio(c, bg),
+              greaterThanOrEqualTo(4.5),
+              reason:
+                  'getPriceColor($change, ${entry.key}) = ${hex(c)} '
+                  '對 ${hex(bg)} 對比不足',
+            );
+          }
+        }
+      }
+    });
+
+    test('上漲解析為紅區色相、下跌解析為綠區色相（兩主題）', () {
+      // 只驗對比度攔不住「紅綠對調」——兩個色值互換後對比度完全不變。
+      // 故另驗色相半邊：上漲必須落在紅區（>=345 或 <=15）、下跌必須落在
+      // 綠區（88-175），與台股慣例一致。
+      for (final brightness in Brightness.values) {
+        final up = AppTheme.getPriceColor(1.5, brightness);
+        final down = AppTheme.getPriceColor(-1.5, brightness);
+        final upHue = ColorContrast.hue(up);
+        final downHue = ColorContrast.hue(down);
+        expect(
+          upHue >= 345 || upHue <= 15,
+          isTrue,
+          reason:
+              '$brightness 上漲色 ${hex(up)} 色相 '
+              '${upHue.toStringAsFixed(1)}° 不在紅區',
+        );
+        expect(
+          downHue >= 88 && downHue <= 175,
+          isTrue,
+          reason:
+              '$brightness 下跌色 ${hex(down)} 色相 '
+              '${downHue.toStringAsFixed(1)}° 不在綠區',
+        );
+      }
+    });
+
+    test('平盤解析為灰階，不佔用任何色相（兩主題）', () {
+      for (final brightness in Brightness.values) {
+        final flat = AppTheme.getPriceColor(0, brightness);
+        expect(
+          ColorContrast.hue(flat),
+          lessThan(0),
+          reason: '$brightness 平盤色 ${hex(flat)} 帶色相，會與方向性語意混淆',
+        );
+      }
+    });
+
+    test('淺色主題的下跌與平盤必須與深色主題取不同色值', () {
+      // 兩主題共用同一色值就代表某一側沒有為自己的背景校準過——這正是
+      // AppTheme.neutralColor 單值（Slate #747D8C）時兩個主題皆未達 AA
+      // 的成因。此測試把「雙值設計」本身變成規格。
+      expect(
+        AppTheme.getPriceColor(-1.5, Brightness.light),
+        isNot(AppTheme.getPriceColor(-1.5, Brightness.dark)),
+      );
+      expect(
+        AppTheme.getPriceColor(0, Brightness.light),
+        isNot(AppTheme.getPriceColor(0, Brightness.dark)),
+      );
+    });
+
+    test('AppTheme 價格色常數委派 PriceColors，不得雙處宣告', () {
+      // 委派關係本身是恆真等式，攔不住色值漂移（上面幾個測試才攔得住）；
+      // 這裡攔的是另一種回歸：有人把 AppTheme 的常數改回自己的字面值，
+      // 讓雙軌宣告復活。理由同「warning 色僅宣告一處」。
+      expect(AppTheme.upColor, PriceColors.up);
+      expect(AppTheme.downColor, PriceColors.down);
+      expect(AppTheme.neutralColor, PriceColors.flat);
+      expect(
+        AppTheme.getPriceColor(-1.5, Brightness.light),
+        PriceColors.downOnLight,
+      );
+      expect(
+        AppTheme.getPriceColor(0, Brightness.light),
+        PriceColors.flatOnLight,
+      );
+    });
+
+    test('getScoreColor 最低分級解析為依主題的平盤色，非固定深色值', () {
+      expect(
+        AppTheme.getScoreColor(10, Brightness.light),
+        PriceColors.flatOnLight,
+      );
+      expect(AppTheme.getScoreColor(10, Brightness.dark), PriceColors.flat);
+    });
+  });
+
+  group('指標標籤徽章：文字對自身疊色底（C4）', () {
+    // atr_card／obv_card 的標籤徽章底是標籤色以 10% alpha 疊加
+    // IndicatorCardContainer 的背景。該容器用
+    // surfaceContainerHighest.withValues(alpha: 0.7)，而 surfaceContainer*
+    // 四階全數塌回 surface，等於把 surface 疊在 surface 上——alpha 是
+    // no-op，合成後就是 surface 本身（淺色 #F8F9FA、深色 #27272A）。
+    //
+    // 標籤色自身對這個合成底只有 3.12-3.59:1，未達 11px 標籤的 AA 4.5:1；
+    // 設計文件另有明文「#8B5CF6 僅裝飾、不承載文字」。Task 4 已為品牌色
+    // 發明 brandOnDecorative 解同型問題，但沒 sweep 到這兩張卡片。
+    const cardBg = <Brightness, Color>{
+      Brightness.light: SemanticColors.lightSurface,
+      Brightness.dark: SemanticColors.darkSurface,
+    };
+
+    void expectLabelReadable(
+      String name,
+      Color tint,
+      Color Function(Brightness) textColor,
+    ) {
+      for (final entry in cardBg.entries) {
+        final composite = ColorContrast.compositeOver(
+          tint,
+          entry.value,
+          DesignTokens.opacity10,
+        );
+        expect(
+          ColorContrast.ratio(textColor(entry.key), composite),
+          greaterThanOrEqualTo(4.5),
+          reason:
+              '$name 標籤文字對 10% 疊色底（${entry.key}）對比不足；'
+              '徽章文字為 11px labelSmall，適用一般文字門檻',
+        );
+      }
+    }
+
+    test('ATR 標籤文字對自身 10% 疊色底達 AA 4.5:1（兩主題）', () {
+      expectLabelReadable(
+        'ATR',
+        IndicatorColors.atrLabel,
+        IndicatorColors.atrLabelText,
+      );
+    });
+
+    test('OBV 標籤文字對自身 10% 疊色底達 AA 4.5:1（兩主題）', () {
+      // obv_card 是 atr_card 的同型 sibling：同樣的徽章結構、同樣把標籤色
+      // 直接當文字色用（淺色 3.12:1、深色 3.59:1）。與 atr_card 一併修，
+      // 避免只點修被指名的那一個、留下同 bug class 的另一半。
+      expectLabelReadable(
+        'OBV',
+        IndicatorColors.obvLabel,
+        IndicatorColors.obvLabelText,
+      );
+    });
+
+    test('標籤裝飾底本身不得被當成文字色（兩主題皆須換色）', () {
+      // 若有人把 *LabelText 改回直接回傳裝飾底色，上面的對比度測試會紅；
+      // 這條額外把「必須是不同的顏色」寫成規格，讓退化意圖更早被攔下。
+      for (final brightness in Brightness.values) {
+        expect(
+          IndicatorColors.atrLabelText(brightness),
+          isNot(IndicatorColors.atrLabel),
+        );
+        expect(
+          IndicatorColors.obvLabelText(brightness),
+          isNot(IndicatorColors.obvLabel),
+        );
+      }
+    });
+
+    test('ATR 裝飾底委派 QualityColors.brandDecorative，不得雙處宣告', () {
+      expect(IndicatorColors.atrLabel, QualityColors.brandDecorative);
+    });
+  });
+
+  group('深色表面 Zinc 化殘留（C6）', () {
+    // Task 3 把深色表面由 Slate 換成 Zinc，但 shimmer 骨架與 K 線圖背景
+    // 沒跟上，仍是 Slate #1E293B / #334155 / #0F172A——正是 app_theme.dart
+    // 換掉的舊 _surfaceDark / _cardDarkSurface / _backgroundDark。
+    //
+    // 用「飽和度」而非「不等於某個字面值」斷言：後者只攔得住原字面值，
+    // 攔不住換成另一個同樣偏藍的色。Slate 三色飽和度 25.0-47.4%，
+    // Zinc 三色 3.7-5.9%，10% 門檻能乾淨分開兩族。
+    void expectZinc(String name, Color c) {
+      final s = HSLColor.fromColor(c).saturation;
+      expect(
+        s,
+        lessThan(0.10),
+        reason:
+            '$name = ${c.toARGB32().toRadixString(16)} 飽和度 '
+            '${(s * 100).toStringAsFixed(1)}%，仍是 Slate 色盤；'
+            '深色表面已於 Task 3 遷移至 Zinc',
+      );
+    }
+
+    test('shimmer 骨架三色為 Zinc 且取自 SemanticColors', () {
+      expectZinc('shimmer base', ShimmerColors.baseColor(true));
+      expectZinc('shimmer highlight', ShimmerColors.highlightColor(true));
+      expectZinc('shimmer skeleton', ShimmerColors.skeletonColor(true));
+
+      expect(ShimmerColors.baseColor(true), SemanticColors.darkSurface);
+      expect(ShimmerColors.highlightColor(true), SemanticColors.darkElevated);
+      expect(ShimmerColors.skeletonColor(true), SemanticColors.darkBackground);
+    });
+
+    test('shimmer 掃過的明暗對比維持可見（base/highlight 比值 >= 1.3）', () {
+      // 換色不得讓微光掃過變得看不出來。Slate 舊組合為 1.4128、
+      // Zinc 新組合 1.4262，差異 <1%。
+      expect(
+        ColorContrast.ratio(
+          ShimmerColors.baseColor(true),
+          ShimmerColors.highlightColor(true),
+        ),
+        greaterThanOrEqualTo(1.3),
+      );
+    });
+
+    test('K 線圖深色背景為 Zinc 且取自 SemanticColors', () {
+      expectZinc('chartDarkBackground', IndicatorColors.chartDarkBackground);
+      expect(
+        IndicatorColors.chartDarkBackground,
+        SemanticColors.darkBackground,
+      );
+    });
+
+    test('K 線圖前景色對新背景維持門檻（漲跌 3.0、指標線 3.0）', () {
+      const bg = IndicatorColors.chartDarkBackground;
+      for (final c in [
+        PriceColors.up,
+        PriceColors.down,
+        IndicatorColors.chartPrimary,
+        IndicatorColors.chartSecondary,
+        IndicatorColors.chartTertiary,
+      ]) {
+        expect(
+          ColorContrast.ratio(c, bg),
+          greaterThanOrEqualTo(3.0),
+          reason: '${c.toARGB32().toRadixString(16)} 對 K 線圖背景對比不足',
+        );
+      }
     });
   });
 

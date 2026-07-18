@@ -227,7 +227,11 @@ void main() {
     expect(find.textContaining('0.0%'), findsOneWidget);
     // 顏色也須用捨入後的值：顯示 0.0% 就該是中性色，不得帶漲跌方向色
     final text = tester.widget<Text>(find.textContaining('0.0%'));
-    expect(text.style?.color, AppTheme.neutralColor, reason: '顯示為零的動能不應著漲跌色');
+    expect(
+      text.style?.color,
+      AppTheme.getFlatColor(Brightness.light),
+      reason: '顯示為零的動能不應著漲跌色',
+    );
   });
 
   testWidgets('等權口徑：顯示等權 caption', (tester) async {

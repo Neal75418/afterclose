@@ -36,14 +36,55 @@ abstract final class PriceColors {
   /// 下跌（淺色主題專用，白底對比加強）
   static const downOnLight = Color(0xFF1B9E50);
 
-  /// 平盤。刻意使用灰階，不佔用任何色相。
+  /// 平盤（深色主題）。刻意使用灰階，不佔用任何色相。
+  ///
+  /// 對深色卡片（`SemanticColors.darkSurface` `#27272A`）5.76:1、對 scaffold
+  /// （`#18181B`）6.86:1，兩者皆達 AA——`AppTheme.neutralColor` 委派至此。
+  ///
+  /// 設計文件曾寫成 Zinc 400 `#A1A1AA`，但該值色相 240°、非灰階，會違反
+  /// 本類別「平盤不佔用色相」的約束（`semantic_colors_test.dart` 的籌碼評等
+  /// 色相守門要求平盤為灰階）。`#A1A1A1` 是同明度的純灰版本，對深色兩種
+  /// 背景的對比與 `#A1A1AA` 差距在 0.05 以內（5.76/6.86 對 5.81/6.91）。
   static const flat = Color(0xFFA1A1A1);
+
+  /// 平盤（淺色主題專用）。
+  ///
+  /// [flat] 是為深色背景挑的明亮灰，對白底僅 2.58:1、對 `#F8F9FA` 僅 2.45:1
+  /// ——連圖形物件 3.0:1 都不到。純灰階無法同時滿足深淺兩色主題的 AA
+  /// （對白底 4.5:1 需相對亮度 <= 0.1833、對 `#27272A` 4.5:1 需 >= 0.2672，
+  /// 兩區間不相交），故與 [down]／[downOnLight] 同樣採雙值設計。
+  ///
+  /// `#717171` 是 [flat] 的下一階純灰：對白底 4.88:1、對 `#F8F9FA` 4.63:1，
+  /// 皆達 AA。呼叫端一律透過 [flatFor] 取色，不得直接引用單側常數。
+  static const flatOnLight = Color(0xFF717171);
 
   /// 籌碼偏多（上漲紅的淺色階）
   static const chipBullish = Color(0xFFFF8A94);
 
   /// 籌碼偏空（下跌綠的淺色階）
   static const chipBearish = Color(0xFF7DD8A0);
+
+  /// 依主題明暗解析「下跌」色。
+  ///
+  /// 呼叫端一律應透過此方法（或 `AppTheme.getPriceColor`）取色，不得直接
+  /// 引用 [down]／[downOnLight]——直接引用等於把單一主題的色值寫死，正是
+  /// 淺色主題長期沒有守門的成因。
+  static Color downFor(Brightness brightness) =>
+      brightness == Brightness.light ? downOnLight : down;
+
+  /// 依主題明暗解析「平盤」色。理由同 [downFor]。
+  static Color flatFor(Brightness brightness) =>
+      brightness == Brightness.light ? flatOnLight : flat;
+
+  /// 依主題明暗解析漲跌平色。[change] 為 `null` 或 0 時視為平盤。
+  ///
+  /// 這是生產渲染的唯一入口——`AppTheme.getPriceColor` 委派至此，
+  /// `semantic_colors_test.dart` 也對此方法（而非各別常數）做對比度守門，
+  /// 確保「測試斷言的顏色」與「畫面渲染的顏色」是同一條路徑。
+  static Color forChange(double? change, Brightness brightness) {
+    if (change == null || change == 0) return flatFor(brightness);
+    return change > 0 ? up : downFor(brightness);
+  }
 
   /// 籌碼評等對應色。
   ///

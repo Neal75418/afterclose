@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/theme/semantic_colors.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/domain/services/market_reading_service.dart';
 import 'package:afterclose/presentation/providers/market_overview_provider.dart';
@@ -28,6 +29,11 @@ class AdvanceDeclineGauge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // 「上漲／持平／下跌」是固定語意分類（非由數值解出），故直接取對應的
+    // 方向色；平盤與下跌需依主題解析——深色主題的 #A1A1A1／#2ED573 對白底
+    // 僅 2.58:1／1.93:1，連圖形物件 3.0:1 門檻都不到。
+    final flatColor = PriceColors.flatFor(theme.brightness);
+    final declineColor = PriceColors.downFor(theme.brightness);
     final total = data.total;
     if (total == 0) return const SizedBox.shrink();
 
@@ -83,14 +89,12 @@ class AdvanceDeclineGauge extends StatelessWidget {
                 if (unchPct > 0)
                   Flexible(
                     flex: (unchPct * 1000).round(),
-                    child: Container(
-                      color: AppTheme.neutralColor.withValues(alpha: 0.3),
-                    ),
+                    child: Container(color: flatColor.withValues(alpha: 0.3)),
                   ),
                 if (declPct > 0)
                   Flexible(
                     flex: (declPct * 1000).round(),
-                    child: Container(color: AppTheme.downColor),
+                    child: Container(color: declineColor),
                   ),
               ],
             ),
@@ -109,7 +113,7 @@ class AdvanceDeclineGauge extends StatelessWidget {
             ),
             const Spacer(),
             _StatChip(
-              color: AppTheme.neutralColor,
+              color: flatColor,
               label: 'marketOverview.unchanged'.tr(),
               value: data.unchanged,
               percentage: unchPct * 100,
@@ -117,7 +121,7 @@ class AdvanceDeclineGauge extends StatelessWidget {
             ),
             const Spacer(),
             _StatChip(
-              color: AppTheme.downColor,
+              color: declineColor,
               label: 'marketOverview.decline'.tr(),
               value: data.decline,
               percentage: declPct * 100,
@@ -142,7 +146,7 @@ class AdvanceDeclineGauge extends StatelessWidget {
               _LimitBadge(
                 label: 'marketOverview.limitDown'.tr(),
                 count: limitUpDown!.limitDown,
-                color: AppTheme.downColor,
+                color: declineColor,
               ),
             ],
           ),

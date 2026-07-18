@@ -112,6 +112,7 @@ class StockPreviewSheet extends StatelessWidget {
     );
     final isNeutral = displayedChange == null || displayedChange == 0;
     final isPositive = (displayedChange ?? 0) > 0;
+    final trendColor = data.trendState.trendColorFor(theme.brightness);
 
     return Semantics(
       label: _buildSemanticLabel(),
@@ -150,10 +151,8 @@ class StockPreviewSheet extends StatelessWidget {
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
-                              data.trendState.trendColor.withValues(alpha: 0.2),
-                              data.trendState.trendColor.withValues(
-                                alpha: 0.05,
-                              ),
+                              trendColor.withValues(alpha: 0.2),
+                              trendColor.withValues(alpha: 0.05),
                             ],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
@@ -162,9 +161,7 @@ class StockPreviewSheet extends StatelessWidget {
                             DesignTokens.radiusXl,
                           ),
                           border: Border.all(
-                            color: data.trendState.trendColor.withValues(
-                              alpha: 0.3,
-                            ),
+                            color: trendColor.withValues(alpha: 0.3),
                             width: 1.5,
                           ),
                         ),
@@ -322,7 +319,11 @@ class StockPreviewSheet extends StatelessWidget {
                                 padding: const EdgeInsets.symmetric(
                                   vertical: DesignTokens.spacing14,
                                 ),
-                                backgroundColor: AppTheme.primaryColor,
+                                // FilledButton 前景為 onPrimary（淺色白）：
+                                // AppTheme.primaryColor 恆為 #A78BFA，白字
+                                // 僅 2.72:1；主題 primary 淺色 #6D28D9 達
+                                // 7.10:1，深色同值不變。
+                                backgroundColor: theme.colorScheme.primary,
                               ),
                             ),
                           ),
@@ -368,7 +369,7 @@ class StockPreviewSheet extends StatelessWidget {
   }
 
   Widget _buildScoreSection(ThemeData theme) {
-    final scoreColor = AppTheme.getScoreColor(data.score!);
+    final scoreColor = AppTheme.getScoreColor(data.score!, theme.brightness);
 
     return Row(
       children: [

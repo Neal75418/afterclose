@@ -45,7 +45,10 @@ class ThemedRefreshIndicator extends StatelessWidget {
       },
       displacement: displacement,
       edgeOffset: edgeOffset,
-      color: AppTheme.primaryColor,
+      // 旋轉弧線是圖形物件（3:1）：AppTheme.primaryColor 對淺色
+      // backgroundColor（surface #F8F9FA）僅 2.58:1，改走主題 primary
+      // 達 6.74:1；深色同值不變。
+      color: theme.colorScheme.primary,
       backgroundColor: isDark
           ? theme.colorScheme.surfaceContainerHigh
           : theme.colorScheme.surface,
