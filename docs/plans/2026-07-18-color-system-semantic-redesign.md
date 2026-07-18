@@ -1173,9 +1173,23 @@ git commit -m "refactor(theme): 圖表色盤收斂為 6 色並避開股價色相
 
 Run:
 ```bash
-grep -rnE '0xFF(03DAC6|4CAF50|27AE60|10B981|4ADE80|8BC34A|3498DB|9B59B6|E67E22|6C63FF|64748B|0F172A|1E293B|334155|475569)' lib --include="*.dart"
+grep -rnE '0xFF(03DAC6|4CAF50|27AE60|10B981|4ADE80|8BC34A|3498DB|9B59B6|E67E22|6C63FF|64748B|0F172A|1E293B|334155|475569|F44336|F43F5E|22C55E|14B8A6|84CC16|2196F3|FF9800|FFC107|00BCD4)' lib --include="*.dart"
 ```
 Expected: 無輸出。若有命中，逐項確認是否為遺漏遷移。
+
+原 pattern 漏列了 `F44336`（舊 `ratingWeak`）等色值，由 Task 8 實作者發現後補齊。
+
+- [ ] **Step 3b: 修復 `fundamentals_tab.dart` 的對比缺陷**
+
+Task 8 修復過程中發現的既有缺陷（非本次重構引入，但屬同一缺陷類別）：
+`lib/presentation/screens/stock_detail/tabs/fundamentals_tab.dart` 有兩個 `MetricCard` 呼叫點使用與色盤無關的字面值色，對比不足：
+
+| 指標 | 色值 | 純色背景 | 疊色後（`@0.1` 疊 `surfaceContainerLow`） |
+|:---|:---|---:|---:|
+| 本益比 | `#3498DB` | 2.9912 ❌ | 2.7080 ❌ |
+| 殖利率 | `AppTheme.dividendColor` `#A78BFA` | 2.5817 ❌ | 2.3730 ❌ |
+
+`MetricCard` 的圖示屬圖形物件，門檻 3.0:1。兩者改用 `CategoryColors.chartPaletteFor(theme.brightness)` 取色，與 `insider_tab.dart` 的既有做法一致。改完後以 `ColorContrast.compositeOver()` 驗算疊色後仍達 3.0:1。
 
 - [ ] **Step 4: 全套測試**
 
