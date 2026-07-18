@@ -79,12 +79,32 @@ void main() {
       );
     });
 
-    test('圖表色盤每色對深色背景達圖形物件門檻 3:1', () {
+    test('圖表色盤每色對深色主題兩種實際背景達圖形物件門檻 3:1', () {
+      // chartPaletteDark 的消費者落在兩種不同的深色背景：comparison_* 四個
+      // widget（包在 Card 內）與 insider_tab 的 MetricCard 圖示走 Card／
+      // surface（#27272A，即 darkCard）；price_overlay_chart 等無自身背景
+      // 容器者落在 scaffoldBackgroundColor（#18181B，即 darkBg）。darkCard
+      // 是較嚴苛的背景——同一顏色對 darkCard 的對比恆比對 darkBg 低（例：
+      // 紫 500 對 darkBg 4.18:1、對 darkCard 僅 3.52:1，是六色中對 darkCard
+      // 餘裕最小者，`ColorContrast` 精算）。過去只驗證過 scaffold 背景，
+      // 與淺色主題兩種背景皆驗證的作法不對稱——這正是紫 500 若調整為貼近
+      // darkBg 邊界的色值（例如 #7D4FE8，對 darkBg 仍有 3.51:1 合格）時，
+      // 對 darkCard 已跌破門檻（2.95:1）卻不會被舊測試攔下的原因，兩種
+      // 深色背景都要驗證，不能只驗其中一種。
       for (final c in CategoryColors.chartPaletteDark) {
         expect(
           ColorContrast.ratio(c, darkBg),
           greaterThanOrEqualTo(3.0),
-          reason: 'chartPaletteDark ${c.toARGB32().toRadixString(16)} 對比不足',
+          reason:
+              'chartPaletteDark ${c.toARGB32().toRadixString(16)} '
+              '對 background(#18181B) 對比不足',
+        );
+        expect(
+          ColorContrast.ratio(c, darkCard),
+          greaterThanOrEqualTo(3.0),
+          reason:
+              'chartPaletteDark ${c.toARGB32().toRadixString(16)} '
+              '對 card(#27272A) 對比不足',
         );
       }
     });
@@ -166,6 +186,36 @@ void main() {
           reason:
               'chartPaletteLight ${c.toARGB32().toRadixString(16)} '
               '對 background(#FFFFFF) 對比不足',
+        );
+      }
+    });
+
+    test('圖表色盤每色對「MetricCard 圖示 10% 疊色 surface」的合成背景達圖形物件門檻 3:1（淺色主題）', () {
+      // metric_card.dart 圖示的實際渲染背景不是純色 surfaceContainerLow
+      // ——圖示外圓是 accentColor 以 10%（DesignTokens.opacity10）alpha
+      // 疊加在 surfaceContainerLow（淺色主題 #F8F9FA，即 lightSurface）
+      // 之上的合成色，圖示本身（accentColor 純色）才是疊加在這個合成色
+      // 上方的前景。insider_tab.dart 的 insiderRatio／pledgeRatio 兩張
+      // MetricCard 正是分別取用 chartPaletteLight[0]／[2] 作為
+      // accentColor。上面「兩種實際背景」測試驗證的是 `ColorContrast
+      // .ratio(c, lightSurface)`（純色背景假設），對 600 階三色（索引
+      // 0/1/2）算出 3.42-3.43:1；但實際合成背景因疊入 10% 前景色而更
+      // 接近前景本身，真實對比收窄至 3.07-3.08:1（`ColorContrast
+      // .compositeOver` 精算，最窄為橘 600 `#D76618` 的 3.0653:1）——仍
+      // 達 3.0:1 門檻，但餘裕已不到 0.07，純色背景假設高估了實際餘裕，
+      // 需要獨立守門，不能只靠上面的純背景測試涵蓋。
+      for (final c in CategoryColors.chartPaletteLight) {
+        final composite = ColorContrast.compositeOver(
+          c,
+          lightSurface,
+          DesignTokens.opacity10,
+        );
+        expect(
+          ColorContrast.ratio(c, composite),
+          greaterThanOrEqualTo(3.0),
+          reason:
+              'chartPaletteLight ${c.toARGB32().toRadixString(16)} '
+              '疊色後對 MetricCard 合成背景對比不足',
         );
       }
     });
