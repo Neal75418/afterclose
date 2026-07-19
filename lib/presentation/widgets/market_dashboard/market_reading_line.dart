@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:afterclose/core/theme/semantic_colors.dart';
 import 'package:afterclose/domain/services/market_reading_service.dart';
 
 /// 判讀層（P2）共用顯示元件
@@ -42,16 +43,26 @@ class MarketReadingLine extends StatelessWidget {
       alpha: 0.7,
     );
 
-    // tone → 色彩：warning=amber、negative=下跌色，其餘 muted。
-    // prominent 時 positive/neutral 改用全對比 onSurface，避免醒目 strip
-    // 裡的文字仍是灰階、達不到「readable weight」。
+    // tone → 文字色：warning 走疊色專屬文字色（caution 黃對白底／自身 tint
+    // 合成底僅 1.3～1.4:1，只能當 tint 不能當文字）、negative=下跌色，
+    // 其餘 muted。prominent 時 positive/neutral 改用全對比 onSurface，
+    // 避免醒目 strip 裡的文字仍是灰階、達不到「readable weight」。
     final color = switch (reading.tone) {
-      InterpretationTone.warning => AppTheme.cautionColor,
+      InterpretationTone.warning => WarningColors.onTintFor(theme.brightness),
       InterpretationTone.negative => AppTheme.downColor,
       InterpretationTone.positive =>
         prominent ? theme.colorScheme.onSurface : mutedColor,
       InterpretationTone.neutral =>
         prominent ? theme.colorScheme.onSurface : mutedColor,
+    };
+
+    // 醒目 strip 的淡背景維持 tone 識別色（warning 仍是琥珀 tint），
+    // 不跟著文字色走——文字可讀性與底色識別是兩個獨立需求。
+    final tintColor = switch (reading.tone) {
+      InterpretationTone.warning => AppTheme.cautionColor,
+      InterpretationTone.negative => AppTheme.downColor,
+      InterpretationTone.positive => theme.colorScheme.onSurface,
+      InterpretationTone.neutral => theme.colorScheme.onSurface,
     };
 
     final text = reading.args == null
@@ -103,7 +114,7 @@ class MarketReadingLine extends StatelessWidget {
         vertical: DesignTokens.spacing6,
       ),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.10),
+        color: tintColor.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
       ),
       child: content,

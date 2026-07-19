@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:afterclose/core/constants/animations.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:afterclose/core/theme/semantic_colors.dart';
 
 /// 警示標記類型
 ///
@@ -27,8 +28,21 @@ enum WarningBadgeType {
   /// 圖示
   final IconData icon;
 
-  /// 主題色
+  /// 主題色——僅用於 tint 底、邊框、陰影等裝飾層。
+  ///
+  /// 文字與圖示不得直接用此色：徽章底是本色的 15%／25% tint，
+  /// 同色文字對合成背景僅 1.4～3.4:1（詳見 [onTintFor]）。
   final Color color;
+
+  /// 疊色底之上的文字／圖示色（依主題解析）。
+  ///
+  /// 對各自 tint 合成背景實測：disposal 4.9～5.4:1、attention 5.8～6.1:1、
+  /// highPledge 5.7～6.6:1（守門見 `semantic_colors_test.dart` 疊色情境）。
+  Color onTintFor(Brightness brightness) => switch (this) {
+    WarningBadgeType.disposal => ErrorColors.onTintFor(brightness),
+    WarningBadgeType.attention => ErrorColors.attentionOnTintFor(brightness),
+    WarningBadgeType.highPledge => WarningColors.onTintFor(brightness),
+  };
 }
 
 /// 警示標記 Widget
@@ -132,7 +146,7 @@ class _WarningBadgeState extends State<WarningBadge> {
             Icon(
               widget.type.icon,
               size: widget.compact ? 12 : 14,
-              color: widget.type.color,
+              color: widget.type.onTintFor(theme.brightness),
             ),
             SizedBox(width: widget.compact ? 3 : 4),
           ],
@@ -143,7 +157,7 @@ class _WarningBadgeState extends State<WarningBadge> {
                         ? theme.textTheme.labelSmall
                         : theme.textTheme.labelMedium)
                     ?.copyWith(
-                      color: widget.type.color,
+                      color: widget.type.onTintFor(theme.brightness),
                       fontWeight: FontWeight.w600,
                       letterSpacing: 0.3,
                     ),

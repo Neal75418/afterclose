@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:afterclose/core/constants/reason_type.dart';
-import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:afterclose/core/theme/semantic_colors.dart';
 import 'package:afterclose/presentation/widgets/risk_badge_cluster.dart';
 
 import '../../helpers/widget_test_helpers.dart';
@@ -44,7 +43,7 @@ void main() {
       expect(find.text('2'), findsOneWidget);
     });
 
-    testWidgets('含 severe → icon 用紅色 errorColor', (tester) async {
+    testWidgets('含 severe → icon 用 error 疊色專屬文字色', (tester) async {
       await tester.pumpWidget(
         buildTestApp(
           const RiskBadgeCluster(
@@ -56,13 +55,15 @@ void main() {
         ),
       );
 
+      // pill 底是 errorColor 的 15%/25% tint，圖示不得用同色（合成後僅
+      // 2.8~3.2:1），必須用疊色專屬文字色。
       final icon = tester.widget<Icon>(
         find.byIcon(Icons.warning_amber_rounded),
       );
-      expect(icon.color, AppTheme.errorColor);
+      expect(icon.color, ErrorColors.onTintLight);
     });
 
-    testWidgets('只有 moderate → icon 用 warning 琥珀色', (tester) async {
+    testWidgets('只有 moderate → icon 用 warning 疊色專屬文字色', (tester) async {
       await tester.pumpWidget(
         buildTestApp(
           const RiskBadgeCluster(warnings: [ReasonType.dayTradingHigh]),
@@ -72,7 +73,7 @@ void main() {
       final icon = tester.widget<Icon>(
         find.byIcon(Icons.warning_amber_rounded),
       );
-      expect(icon.color, DesignTokens.warningColor(AppTheme.lightTheme));
+      expect(icon.color, WarningColors.onTintLight);
     });
 
     testWidgets('tap → 開啟風險明細 bottomSheet', (tester) async {

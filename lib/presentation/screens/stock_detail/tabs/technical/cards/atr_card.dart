@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/indicator_colors.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:afterclose/core/theme/semantic_colors.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/cards/indicator_card_container.dart';
 
 class ATRCard extends StatelessWidget {
@@ -23,17 +24,25 @@ class ATRCard extends StatelessWidget {
 
     final atrPercent = (latestATR / price) * 100;
 
+    // volatilityColor 僅用於 tint 底；文字一律走 volatilityTextColor——
+    // caution/warning 黃在淺色主題對自身 tint 合成底僅 1.3～1.9:1。
     String volatilityLevel;
     Color volatilityColor;
+    Color volatilityTextColor;
+    double tintAlpha = 0.15;
     if (atrPercent < 2) {
       volatilityLevel = 'stockDetail.atrLow'.tr();
       volatilityColor = IndicatorColors.volatilityLow;
+      volatilityTextColor = theme.colorScheme.onSurfaceVariant;
+      tintAlpha = 0.10; // muted@0.15 會把淺色合成底壓到 OSV 文字僅 4.45:1
     } else if (atrPercent < 4) {
       volatilityLevel = 'stockDetail.atrMedium'.tr();
       volatilityColor = IndicatorColors.volatilityMedium;
+      volatilityTextColor = WarningColors.onTintFor(theme.brightness);
     } else {
       volatilityLevel = 'stockDetail.atrHigh'.tr();
       volatilityColor = IndicatorColors.volatilityHigh;
+      volatilityTextColor = WarningColors.onTintFor(theme.brightness);
     }
 
     return IndicatorCardContainer(
@@ -89,7 +98,7 @@ class ATRCard extends StatelessWidget {
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: volatilityColor.withValues(alpha: 0.15),
+                        color: volatilityColor.withValues(alpha: tintAlpha),
                         borderRadius: BorderRadius.circular(
                           DesignTokens.radiusXs,
                         ),
@@ -97,7 +106,7 @@ class ATRCard extends StatelessWidget {
                       child: Text(
                         volatilityLevel,
                         style: theme.textTheme.labelSmall?.copyWith(
-                          color: volatilityColor,
+                          color: volatilityTextColor,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -120,7 +129,7 @@ class ATRCard extends StatelessWidget {
               Text(
                 '${atrPercent.toStringAsFixed(2)}%',
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: volatilityColor,
+                  color: volatilityTextColor,
                 ),
               ),
             ],

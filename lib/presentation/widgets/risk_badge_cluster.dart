@@ -6,6 +6,7 @@ import 'package:afterclose/core/constants/risk_warnings.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/breakpoints.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:afterclose/core/theme/semantic_colors.dart';
 import 'package:afterclose/presentation/widgets/reason_tags.dart';
 
 /// 風險警示聚合徽章（option B）
@@ -28,11 +29,20 @@ class RiskBadgeCluster extends StatelessWidget {
   /// 該股的 warning-class 訊號（[RiskWarnings.all] 子集）。空 = 不顯示。
   final List<ReasonType> warnings;
 
-  /// 嚴重度 → 顏色（severe 紅、moderate 琥珀）
+  /// 嚴重度 → 顏色（severe 紅、moderate 琥珀）——僅用於 tint 底、邊框、色點。
   static Color _colorFor(RiskSeverity severity, ThemeData theme) {
     return switch (severity) {
       RiskSeverity.severe => AppTheme.errorColor,
       RiskSeverity.moderate => DesignTokens.warningColor(theme),
+    };
+  }
+
+  /// 疊色 pill 上的文字／圖示色。tint 是 [_colorFor] 的 15%／25% 透明版，
+  /// 同色前景對合成背景僅 1.8～4.2:1，必須用疊色專屬文字色（實測 4.9～6.3:1）。
+  static Color _onTintFor(RiskSeverity severity, ThemeData theme) {
+    return switch (severity) {
+      RiskSeverity.severe => ErrorColors.onTintFor(theme.brightness),
+      RiskSeverity.moderate => WarningColors.onTintFor(theme.brightness),
     };
   }
 
@@ -62,14 +72,18 @@ class RiskBadgeCluster extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.warning_amber_rounded, size: 12, color: color),
+          Icon(
+            Icons.warning_amber_rounded,
+            size: 12,
+            color: _onTintFor(severity, theme),
+          ),
           // N == 1 省數字（已有 icon + 顏色傳達），N ≥ 2 顯總數
           if (count >= 2) ...[
             const SizedBox(width: 2),
             Text(
               '$count',
               style: theme.textTheme.labelSmall?.copyWith(
-                color: color,
+                color: _onTintFor(severity, theme),
                 fontWeight: FontWeight.w700,
                 fontSize: DesignTokens.fontSizeXs,
                 height: 1,

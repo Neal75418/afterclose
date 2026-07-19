@@ -216,14 +216,62 @@ abstract final class WarningColors {
   /// 淺色主題的警示色（白底對比加強）
   static const warningOnLight = Color(0xFFB45309);
 
+  /// 警示家族疊色底（warning／caution／amber tint）之上的文字色——淺色主題。
+  ///
+  /// 疊色徽章的合成背景是極淺琥珀（如 warning@0.15 疊白卡＝`#FEF0DA`），
+  /// [warning]／[warningOnLight] 對其僅 1.8～4.4:1。amber-800 對本家族
+  /// α 0.08～0.25 的全部合成背景實測 5.8～6.7:1。色相 22.7°，禁區外。
+  static const onTintLight = Color(0xFF92400E);
+
+  /// 警示家族疊色底之上的文字色——深色主題。與 [caution] 同值：
+  /// 深色合成背景（如 warning@0.25 疊 `#27272A`＝`#5A4522`）上明亮的
+  /// caution 黃達 5.7～8.6:1；[warning] 自身在 α≥0.25 時僅 4.2:1。
+  static const onTintDark = caution;
+
+  /// 依主題解析警示家族疊色底上的文字色。呼叫端一律走此入口。
+  static Color onTintFor(Brightness brightness) =>
+      brightness == Brightness.light ? onTintLight : onTintDark;
+
   /// 守門測試掃描對象（色相禁區驗證用）。新增常數時必須加入此清單。
   ///
-  /// 對比度驗證不共用此清單——三個常數的預定背景不同（[warningOnLight]
+  /// 對比度驗證不共用此清單——各常數的預定背景不同（[warningOnLight]
   /// 是白底、其餘是深色背景），必須各自對其預定背景驗證，見 [darkOnly]。
-  static const all = <Color>[warning, caution, warningOnLight];
+  /// [onTintDark] 與 [caution] 同值，不重複列入。
+  static const all = <Color>[warning, caution, warningOnLight, onTintLight];
 
   /// 深色主題適用的警示色子集，對比度驗證對象為
   /// [SemanticColors.darkBackground]。[warningOnLight] 是淺色主題專用色，
   /// 驗證對象是白底，故不列入此清單。
   static const darkOnly = <Color>[warning, caution];
+}
+
+/// 錯誤／處置／注意（deep orange）語意——刻意紅相鄰的警報家族。
+///
+/// 這些色相落在股價紅區（>=345 或 <=15）內或其邊緣，是錯誤／處置語意的
+/// 既有慣例（`AppTheme.errorColor` `#E74C3C` 色相 5.6°、`tertiaryColor`
+/// `#FF5722` 色相 14.4°——兩者的色相歸類問題已列入 deferred，本類別不
+/// 解決也不擴大它，只為既有 tint 徽章提供可讀的文字色）。因語意本身
+/// 紅相鄰，本類別**不納入**色相禁區守門（納入必然失敗）；對比度守門見
+/// `semantic_colors_test.dart` 的疊色情境測試。
+abstract final class ErrorColors {
+  /// error 家族 tint（`#E74C3C`／`#E53935` @0.12～0.25）上的文字——淺色主題。
+  /// red-900，對本家族全部淺色合成背景實測 5.4～5.5:1。
+  static const onTintLight = Color(0xFFB71C1C);
+
+  /// 同上——深色主題。亮紅（red-A100 系），實測 4.9～5.5:1。
+  static const onTintDark = Color(0xFFFF8A80);
+
+  /// attention（deep orange tint）上的文字——淺色主題。orange-800，實測 6.1:1。
+  static const attentionOnTintLight = Color(0xFF9A3412);
+
+  /// 同上——深色主題。deepOrange-200，實測 5.8:1。
+  static const attentionOnTintDark = Color(0xFFFFAB91);
+
+  static Color onTintFor(Brightness brightness) =>
+      brightness == Brightness.light ? onTintLight : onTintDark;
+
+  static Color attentionOnTintFor(Brightness brightness) =>
+      brightness == Brightness.light
+      ? attentionOnTintLight
+      : attentionOnTintDark;
 }
