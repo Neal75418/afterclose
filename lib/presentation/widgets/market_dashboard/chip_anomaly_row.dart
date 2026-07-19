@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:afterclose/core/constants/rule_params_fundamental.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:afterclose/core/theme/semantic_colors.dart';
 import 'package:afterclose/domain/services/chip_anomaly_service.dart'
     show ChipAnomaly, ChipAnomalyType, ChipSeverity;
 import 'package:afterclose/presentation/providers/market_overview_provider.dart'
@@ -82,15 +83,18 @@ class ChipAnomalyRow extends StatelessWidget {
                     namedArgs: {'count': '${warnings.attention}'},
                   ),
                   color: Colors.orange,
+                  textColor: WarningColors.onTintFor(theme.brightness),
                 ),
               if (warnings.attention > 0 && warnings.disposal > 0)
                 const SizedBox(width: DesignTokens.spacing6),
               if (warnings.disposal > 0)
+                // 處置＝error 語意（同 WarningBadge.disposal），非股價紅
                 _WarningCountBadge(
                   label: 'marketOverview.disposalCount'.tr(
                     namedArgs: {'count': '${warnings.disposal}'},
                   ),
                   color: Colors.red,
+                  textColor: ErrorColors.onTintFor(theme.brightness),
                 ),
             ],
           ],
@@ -130,10 +134,19 @@ class ChipAnomalyRow extends StatelessWidget {
 /// 樣式沿用原「注意/處置」獨立摘要列的徽章（2026-07-17 該列已併入本標題列後移除），
 /// 僅搬移位置到本區塊標題列右側，視覺不變。
 class _WarningCountBadge extends StatelessWidget {
-  const _WarningCountBadge({required this.label, required this.color});
+  const _WarningCountBadge({
+    required this.label,
+    required this.color,
+    required this.textColor,
+  });
 
   final String label;
+
+  /// tint 底色（identity 色，僅裝飾）。
   final Color color;
+
+  /// 疊色底上的文字色——不得與 [color] 同色（合成後僅 ~2:1）。
+  final Color textColor;
 
   @override
   Widget build(BuildContext context) {
@@ -150,7 +163,7 @@ class _WarningCountBadge extends StatelessWidget {
       child: Text(
         label,
         style: theme.textTheme.labelSmall?.copyWith(
-          color: color,
+          color: textColor,
           fontWeight: FontWeight.w600,
           fontSize: DesignTokens.fontSizeXs,
         ),
@@ -173,6 +186,9 @@ class _SummaryBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final color = hasHigh ? AppTheme.errorColor : AppTheme.warningColor;
+    final onTint = hasHigh
+        ? ErrorColors.onTintFor(theme.brightness)
+        : WarningColors.onTintFor(theme.brightness);
     final label = 'marketOverview.chipAnomaly.summary'.tr(
       namedArgs: {'count': count.toString()},
     );
@@ -194,14 +210,14 @@ class _SummaryBanner extends StatelessWidget {
             Icon(
               Icons.warning_amber_rounded,
               size: DesignTokens.iconSizeSm,
-              color: color,
+              color: onTint,
             ),
             const SizedBox(width: DesignTokens.spacing6),
             Expanded(
               child: Text(
                 label,
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: color,
+                  color: onTint,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -255,6 +271,11 @@ class _AnomalyTypeSectionState extends State<_AnomalyTypeSection> {
     // 突然變紅，破壞「header color = section severity」的承諾。
     final isHigh = widget.items.any((a) => a.severity == ChipSeverity.high);
     final accentColor = isHigh ? AppTheme.errorColor : AppTheme.warningColor;
+    // tint 底（@0.1/@0.12）上的圖示與數字不得用 accentColor 本色——
+    // 合成後淺色主題僅 ~2:1。
+    final accentOnTint = isHigh
+        ? ErrorColors.onTintFor(theme.brightness)
+        : WarningColors.onTintFor(theme.brightness);
     final hiddenCount = totalCount - visibleItems.length;
     final canExpand = totalCount > _kAnomalyCollapsedCount;
 
@@ -283,7 +304,7 @@ class _AnomalyTypeSectionState extends State<_AnomalyTypeSection> {
                   child: Icon(
                     meta.icon,
                     size: DesignTokens.iconSizeSm,
-                    color: accentColor,
+                    color: accentOnTint,
                   ),
                 ),
                 const SizedBox(width: DesignTokens.spacing8),
@@ -308,7 +329,7 @@ class _AnomalyTypeSectionState extends State<_AnomalyTypeSection> {
                   child: Text(
                     '$totalCount',
                     style: theme.textTheme.labelSmall?.copyWith(
-                      color: accentColor,
+                      color: accentOnTint,
                       fontWeight: FontWeight.w700,
                       fontSize: DesignTokens.fontSizeXs,
                     ),

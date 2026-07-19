@@ -20,6 +20,7 @@ import 'package:afterclose/presentation/widgets/market_dashboard/market_reading_
 import 'package:afterclose/presentation/widgets/market_dashboard/trading_turnover_row.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/sentiment_gauge_section.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:afterclose/core/theme/semantic_colors.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/taiwan_calendar.dart';
 import 'package:afterclose/domain/services/market_reading_service.dart';
@@ -882,6 +883,9 @@ class _StaleBreadthBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final warning = DesignTokens.warningColor(theme);
+    // tint 用 warning 識別色；文字/圖示走疊色專屬色（同色前景對
+    // @0.118 合成底不足 4.5:1）
+    final onTint = WarningColors.onTintFor(theme.brightness);
     final text = 'marketOverview.staleBreadth'.tr(
       namedArgs: {
         'dataDate': '${dataDate.month}/${dataDate.day}',
@@ -900,14 +904,14 @@ class _StaleBreadthBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.history, size: 12, color: warning),
+          Icon(Icons.history, size: 12, color: onTint),
           const SizedBox(width: DesignTokens.spacing4),
           Flexible(
             child: Text(
               text,
               style: theme.textTheme.labelSmall?.copyWith(
                 fontSize: DesignTokens.fontSizeXs,
-                color: warning,
+                color: onTint,
                 fontWeight: FontWeight.w600,
               ),
             ),

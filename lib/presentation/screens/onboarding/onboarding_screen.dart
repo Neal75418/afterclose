@@ -6,6 +6,7 @@ import 'package:afterclose/app/router.dart' show completeOnboarding;
 import 'package:afterclose/core/constants/animations.dart';
 import 'package:afterclose/core/constants/app_routes.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:afterclose/core/theme/semantic_colors.dart';
 
 /// 首次使用引導頁面
 ///
@@ -70,7 +71,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ),
                   _OnboardingPage(
                     icon: Icons.analytics_outlined,
-                    iconColor: Colors.orange,
+                    // 橘色圓 tint 保留識別，icon 走疊色文字色（淺色主題
+                    // Colors.orange 對自身 tint 合成底僅 2.0:1）
+                    iconColor: WarningColors.onTintFor(theme.brightness),
+                    tintColor: Colors.orange,
                     title: 'onboarding.step2Title'.tr(),
                     description: 'onboarding.step2Desc'.tr(),
                   ),
@@ -151,12 +155,16 @@ class _OnboardingPage extends StatelessWidget {
     required this.iconColor,
     required this.title,
     required this.description,
+    this.tintColor,
   });
 
   final IconData icon;
   final Color iconColor;
   final String title;
   final String description;
+
+  /// 背景圓 tint 色；未指定時沿用 [iconColor]。
+  final Color? tintColor;
 
   @override
   Widget build(BuildContext context) {
@@ -171,7 +179,7 @@ class _OnboardingPage extends StatelessWidget {
             width: 100,
             height: 100,
             decoration: BoxDecoration(
-              color: iconColor.withValues(alpha: 0.1),
+              color: (tintColor ?? iconColor).withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, size: 48, color: iconColor),
