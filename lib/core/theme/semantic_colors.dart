@@ -134,6 +134,14 @@ abstract final class QualityColors {
   /// 低強度／停用／低波動
   static const muted = Color(0xFF71717A);
 
+  /// 淺色主題中，**多層品牌 tint** 疊加後的文字色（Violet 900）。
+  ///
+  /// 更新進度橫幅是雙層疊色：banner 底＝primary@0.3 疊 scaffold、步驟
+  /// chip 再疊 primary@0.2——合成後為飽和淺紫（`#BFA0EF`），連
+  /// [brandOnLight] 對其都僅 3.2:1。Violet 900 對兩個漸層停點實測
+  /// 5.0／5.4:1。單層 tint 請用 [brandOnLight]（淺）／[brandOnDecorative]（深）。
+  static const brandOnDeepTintLight = Color(0xFF4C1D95);
+
   /// 守門測試掃描對象。新增常數時必須加入此清單。
   static const all = <Color>[
     brand,
@@ -142,6 +150,7 @@ abstract final class QualityColors {
     brandOnLight,
     brandDecorative,
     brandOnDecorative,
+    brandOnDeepTintLight,
     muted,
   ];
 }

@@ -216,6 +216,7 @@ class _AiSummaryCardState extends ConsumerState<AiSummaryCard> {
                 _Badge(
                   label: _confidenceLabel(summary.confidence),
                   color: _confidenceColor(summary.confidence, theme),
+                  textColor: _confidenceTextColor(summary.confidence, theme),
                 ),
                 const Spacer(),
                 ExcludeSemantics(
@@ -404,10 +405,25 @@ class _AiSummaryCardState extends ConsumerState<AiSummaryCard> {
     };
   }
 
+  /// 信心徽章的 tint 底色。low 用 outline 而非 onSurfaceVariant——
+  /// OSV 當 tint 時，OSV 文字對合成底在深色主題僅 4.47:1。
   Color _confidenceColor(AnalysisConfidence confidence, ThemeData theme) {
     return switch (confidence) {
       AnalysisConfidence.high => AppTheme.successColor,
       AnalysisConfidence.medium => AppTheme.warningColor,
+      AnalysisConfidence.low => theme.colorScheme.outline,
+    };
+  }
+
+  /// 信心徽章的文字色——疊色底上不得與 tint 同色（合成後 1.9~4.3:1）。
+  Color _confidenceTextColor(AnalysisConfidence confidence, ThemeData theme) {
+    final brightness = theme.brightness;
+    return switch (confidence) {
+      AnalysisConfidence.high =>
+        brightness == Brightness.light
+            ? QualityColors.brandOnLight
+            : QualityColors.brandOnDecorative,
+      AnalysisConfidence.medium => WarningColors.onTintFor(brightness),
       AnalysisConfidence.low => theme.colorScheme.onSurfaceVariant,
     };
   }
@@ -415,10 +431,13 @@ class _AiSummaryCardState extends ConsumerState<AiSummaryCard> {
 
 /// 統一的 badge 樣式（填滿背景）
 class _Badge extends StatelessWidget {
-  const _Badge({required this.label, required this.color});
+  const _Badge({required this.label, required this.color, this.textColor});
 
   final String label;
   final Color color;
+
+  /// 疊色底上的文字色；未指定時沿用 [color]（僅限已驗證合格的呼叫端）。
+  final Color? textColor;
 
   @override
   Widget build(BuildContext context) {
@@ -435,7 +454,7 @@ class _Badge extends StatelessWidget {
       child: Text(
         label,
         style: theme.textTheme.labelSmall?.copyWith(
-          color: color,
+          color: textColor ?? color,
           fontWeight: FontWeight.w600,
         ),
       ),

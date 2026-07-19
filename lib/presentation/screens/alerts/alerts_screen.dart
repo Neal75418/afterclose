@@ -285,22 +285,20 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
                     vertical: 2,
                   ),
                   decoration: BoxDecoration(
+                    // inactive tint 用 outline 而非 onSurfaceVariant——OSV
+                    // 當 tint 時 OSV 文字對合成底在深色主題僅 4.47:1
                     color: wasTriggered
                         ? AppTheme.warningColor.withValues(alpha: 0.2)
                         : isActive
                         ? AppTheme.successColor.withValues(alpha: 0.2)
-                        : theme.colorScheme.onSurfaceVariant.withValues(
-                            alpha: 0.15,
-                          ),
+                        : theme.colorScheme.outline.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(DesignTokens.radiusXs),
                     border: Border.all(
                       color: wasTriggered
                           ? AppTheme.warningColor.withValues(alpha: 0.5)
                           : isActive
                           ? AppTheme.successColor.withValues(alpha: 0.5)
-                          : theme.colorScheme.onSurfaceVariant.withValues(
-                              alpha: 0.3,
-                            ),
+                          : theme.colorScheme.outline.withValues(alpha: 0.3),
                       width: 1,
                     ),
                   ),
@@ -310,11 +308,14 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
                         : isActive
                         ? 'alert.active'.tr()
                         : 'alert.inactive'.tr(),
+                    // 疊色底上的文字不得與 tint 同色（合成後 1.8~4.3:1）
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: wasTriggered
-                          ? AppTheme.warningColor
+                          ? WarningColors.onTintFor(theme.brightness)
                           : isActive
-                          ? AppTheme.successColor
+                          ? (theme.brightness == Brightness.light
+                                ? QualityColors.brandOnLight
+                                : QualityColors.brandOnDecorative)
                           : theme.colorScheme.onSurfaceVariant,
                     ),
                   ),

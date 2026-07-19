@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/core/constants/app_routes.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:afterclose/core/theme/semantic_colors.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/providers/pinned_thesis_provider.dart';
 
@@ -199,6 +200,11 @@ class _ThesisCard extends ConsumerWidget {
     final statusColor = isActive
         ? DesignTokens.successColor(theme)
         : theme.colorScheme.error;
+    // 失效狀態的文字不得用 colorScheme.error 本色——error@0.12 tint 合成後
+    // 淺色主題僅 3.57:1；active 分支維持原色（守門測試已釘 4.50:1）。
+    final statusTextColor = isActive
+        ? statusColor
+        : ErrorColors.onTintFor(theme.brightness);
 
     final diffPct = (currentClose != null && thesis.referencePrice > 0)
         ? (currentClose! / thesis.referencePrice - 1) * 100
@@ -246,7 +252,7 @@ class _ThesisCard extends ConsumerWidget {
                           ? 'thesis.statusActive'.tr()
                           : '${'thesis.statusInvalidated'.tr()}·${'thesis.reasonTimeStop'.tr()}',
                       style: theme.textTheme.labelSmall?.copyWith(
-                        color: statusColor,
+                        color: statusTextColor,
                         fontWeight: FontWeight.w600,
                       ),
                     ),

@@ -5,6 +5,7 @@ import 'package:afterclose/core/constants/animations.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/providers/today_provider.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:afterclose/core/theme/semantic_colors.dart';
 
 /// 增強版更新進度橫幅，具備：
 /// - 步驟指示器（例如「3/10」）
@@ -119,8 +120,12 @@ class UpdateProgressBanner extends StatelessWidget {
                       ),
                       child: Text(
                         '${progress.currentStep}/${progress.totalSteps}',
+                        // 雙層 tint（banner 底 + chip 漸層）合成後，primary
+                        // 本色僅 3.2~3.9:1；改走深疊色專屬文字色
                         style: theme.textTheme.labelMedium?.copyWith(
-                          color: gradientColors[0],
+                          color: isDark
+                              ? QualityColors.brandOnDecorative
+                              : QualityColors.brandOnDeepTintLight,
                           fontWeight: FontWeight.bold,
                           fontFeatures: const [FontFeature.tabularFigures()],
                         ),
