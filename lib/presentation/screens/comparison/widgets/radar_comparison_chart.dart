@@ -79,9 +79,7 @@ class RadarComparisonChart extends StatelessWidget {
                     ),
                     tickCount: 4,
                     ticksTextStyle: TextStyle(
-                      color: theme.colorScheme.onSurfaceVariant.withValues(
-                        alpha: 0.5,
-                      ),
+                      color: theme.colorScheme.onSurfaceVariant,
                       fontSize: 8,
                     ),
                     titlePositionPercentageOffset: 0.2,

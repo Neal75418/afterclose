@@ -23,6 +23,9 @@ class DragHandle extends StatelessWidget {
         width: 40,
         height: 4,
         decoration: BoxDecoration(
+          // WCAG 1.4.11 裝飾豁免：拖曳把手是慣例位置的冗餘 affordance
+          //（sheet 可由手勢下滑／scrim 點擊關閉），不傳達相鄰內容沒有的
+          // 資訊，刻意維持低對比（實測 1.75~2.10:1）以不搶內容視覺
           color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
           borderRadius: BorderRadius.circular(2),
         ),

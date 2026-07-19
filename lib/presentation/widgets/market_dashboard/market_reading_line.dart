@@ -39,9 +39,7 @@ class MarketReadingLine extends StatelessWidget {
     if (reading == null) return const SizedBox.shrink();
 
     final theme = Theme.of(context);
-    final mutedColor = theme.colorScheme.onSurfaceVariant.withValues(
-      alpha: 0.7,
-    );
+    final mutedColor = theme.colorScheme.onSurfaceVariant;
 
     // tone → 文字色：warning 走疊色專屬文字色（caution 黃對白底／自身 tint
     // 合成底僅 1.3～1.4:1，只能當 tint 不能當文字）、negative=下跌色，

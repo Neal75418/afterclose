@@ -83,7 +83,7 @@ class ScoreTierBadge extends StatelessWidget {
         Text(
           label,
           style: theme.textTheme.labelSmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+            color: theme.colorScheme.onSurfaceVariant,
             fontSize: 8,
             height: 1,
           ),

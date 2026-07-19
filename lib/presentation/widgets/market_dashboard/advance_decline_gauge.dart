@@ -64,9 +64,7 @@ class AdvanceDeclineGauge extends StatelessWidget {
             Text(
               'marketOverview.totalStocks'.tr(namedArgs: {'count': '$total'}),
               style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant.withValues(
-                  alpha: 0.6,
-                ),
+                color: theme.colorScheme.onSurfaceVariant,
                 fontSize: DesignTokens.fontSizeXs,
               ),
             ),
@@ -287,7 +285,7 @@ class _StatChip extends StatelessWidget {
         Text(
           '${percentage.toStringAsFixed(0)}%',
           style: theme.textTheme.labelSmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+            color: theme.colorScheme.onSurfaceVariant,
             fontSize: DesignTokens.fontSizeXs,
             fontFeatures: const [FontFeature.tabularFigures()],
           ),

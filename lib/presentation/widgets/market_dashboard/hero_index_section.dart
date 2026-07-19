@@ -184,9 +184,7 @@ class HeroIndexSection extends StatelessWidget {
       stageHistory,
     );
 
-    final mutedColor = theme.colorScheme.onSurfaceVariant.withValues(
-      alpha: 0.6,
-    );
+    final mutedColor = theme.colorScheme.onSurfaceVariant;
 
     // 資料不足：顯示 muted 提示（一行）
     if (result.stage == MarketStage.insufficient) {
@@ -315,13 +313,13 @@ class _TotalReturnBadge extends StatelessWidget {
         Icon(
           Icons.info_outline,
           size: 12,
-          color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+          color: theme.colorScheme.onSurfaceVariant,
         ),
         const SizedBox(width: DesignTokens.spacing4),
         Text(
           'marketOverview.totalReturnIndex'.tr(),
           style: theme.textTheme.labelSmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+            color: theme.colorScheme.onSurfaceVariant,
             fontSize: DesignTokens.fontSizeXs,
           ),
         ),

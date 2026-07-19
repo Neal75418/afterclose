@@ -200,9 +200,7 @@ class _MarginItem extends StatelessWidget {
                   Text(
                     '${'marketOverview.balance'.tr()} ${_formatBalance(balance)}',
                     style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant.withValues(
-                        alpha: 0.7,
-                      ),
+                      color: theme.colorScheme.onSurfaceVariant,
                       fontSize: DesignTokens.fontSizeXs,
                       fontFeatures: const [FontFeature.tabularFigures()],
                     ),

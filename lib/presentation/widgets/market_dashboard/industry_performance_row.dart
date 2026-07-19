@@ -42,7 +42,7 @@ class IndustryPerformanceRow extends StatelessWidget {
     final qualified = _qualifiedIndustries();
     final isTruncated = isDesktop && qualified.length > _desktopMaxItems;
     final hintStyle = theme.textTheme.labelSmall?.copyWith(
-      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+      color: theme.colorScheme.onSurfaceVariant,
       fontSize: DesignTokens.fontSizeXs,
     );
     final changePct = indexChangePercent;
@@ -255,8 +255,7 @@ class _IndustryCard extends StatelessWidget {
                               Text(
                                 '${industry.advance}',
                                 style: theme.textTheme.labelSmall?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant
-                                      .withValues(alpha: 0.7),
+                                  color: theme.colorScheme.onSurfaceVariant,
                                   fontSize: DesignTokens.fontSizeXs,
                                   fontFeatures: const [
                                     FontFeature.tabularFigures(),
@@ -275,8 +274,7 @@ class _IndustryCard extends StatelessWidget {
                               Text(
                                 '${industry.decline}',
                                 style: theme.textTheme.labelSmall?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant
-                                      .withValues(alpha: 0.7),
+                                  color: theme.colorScheme.onSurfaceVariant,
                                   fontSize: DesignTokens.fontSizeXs,
                                   fontFeatures: const [
                                     FontFeature.tabularFigures(),
@@ -288,8 +286,7 @@ class _IndustryCard extends StatelessWidget {
                               Text(
                                 ' · ${'marketOverview.industryStockCount'.tr(namedArgs: {'count': '${industry.stockCount}'})}',
                                 style: theme.textTheme.labelSmall?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant
-                                      .withValues(alpha: 0.5),
+                                  color: theme.colorScheme.onSurfaceVariant,
                                   fontSize: DesignTokens.fontSizeXs,
                                   fontFeatures: const [
                                     FontFeature.tabularFigures(),

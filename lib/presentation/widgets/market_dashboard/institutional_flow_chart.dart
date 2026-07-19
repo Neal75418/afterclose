@@ -238,8 +238,7 @@ class _FlowCard extends StatelessWidget {
                                 child: Icon(
                                   Icons.info_outline,
                                   size: DesignTokens.fontSizeXs,
-                                  color: theme.colorScheme.onSurfaceVariant
-                                      .withValues(alpha: 0.5),
+                                  color: theme.colorScheme.onSurfaceVariant,
                                 ),
                               ),
                             ],

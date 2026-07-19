@@ -220,23 +220,25 @@ class _PortfolioTabState extends ConsumerState<PortfolioTab> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          // outline 在淺色主題是 #E0E0E8——當前景色時對白底僅 1.1~1.4:1
+          // （原 icon @0.5 更僅 1.14），全部改用 onSurfaceVariant
           Icon(
             Icons.account_balance_wallet_outlined,
             size: 64,
-            color: theme.colorScheme.outline.withValues(alpha: 0.5),
+            color: theme.colorScheme.onSurfaceVariant,
           ),
           const SizedBox(height: 16),
           Text(
             'portfolio.noPositions'.tr(),
             style: theme.textTheme.titleMedium?.copyWith(
-              color: theme.colorScheme.outline,
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             'portfolio.noPositionsHint'.tr(),
             style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.outline,
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 24),

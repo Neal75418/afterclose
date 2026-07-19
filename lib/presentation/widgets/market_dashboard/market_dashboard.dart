@@ -181,9 +181,9 @@ class _MarketDashboardState extends State<MarketDashboard> {
               Text(
                 '≈ ${DateFormat('MM/dd').format(dataDate)}${isLatest ? '' : ' ${'marketOverview.notToday'.tr()}'}',
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: isLatest
-                      ? theme.colorScheme.onSurfaceVariant
-                      : theme.colorScheme.onSurfaceVariant.withAlpha(178),
+                  // 舊值 withAlpha(178)≈0.7 對卡片僅 2.97~3.60:1，
+                  // 「非今日」的區隔已由文案表達，不再犧牲可讀性
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
           ],
@@ -722,7 +722,7 @@ class _MarketDashboardState extends State<MarketDashboard> {
             '${sectionDate.month}/${sectionDate.day}',
             style: theme.textTheme.labelSmall?.copyWith(
               fontSize: 10,
-              color: theme.colorScheme.onSurfaceVariant.withAlpha(153),
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
         ),

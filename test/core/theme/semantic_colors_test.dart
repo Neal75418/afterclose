@@ -18,6 +18,8 @@ bool _inPriceHueZone(Color c) {
 }
 
 void main() {
+  _phase1TintGuards();
+
   group('第一層：色相禁區守門', () {
     test('QualityColors 不得落在股價色相區', () {
       for (final c in QualityColors.all) {
@@ -715,6 +717,423 @@ void main() {
         ...CategoryColors.chartPaletteLight,
       ]) {
         expect(_inPriceHueZone(c), isFalse);
+      }
+    });
+  });
+}
+
+/// Phase 1 疊色修復（2026-07-19）的守門：每一列＝一個生產情境，
+/// α 與 tint 色**必須**與 widget 內的實際值同步——widget 改 α 或 tint
+/// 而不改這裡，等同解除該情境的防護。
+///
+/// 背景鍵：card=白卡/#27272A、surface=#F8F9FA/#27272A、scaffold=#FFF/#18181B。
+class _TintScenario {
+  const _TintScenario(
+    this.name,
+    this.fgLight,
+    this.fgDark,
+    this.tintLight,
+    this.tintDark,
+    this.alphaLight,
+    this.alphaDark,
+    this.bgLight,
+    this.bgDark, {
+    this.threshold = 4.5,
+  });
+
+  final String name;
+  final Color fgLight;
+  final Color fgDark;
+  final Color tintLight;
+  final Color tintDark;
+  final double alphaLight;
+  final double alphaDark;
+  final Color bgLight;
+  final Color bgDark;
+  final double threshold;
+}
+
+void _phase1TintGuards() {
+  const white = Color(0xFFFFFFFF);
+  const lightSurface = SemanticColors.lightSurface;
+  const darkCard = SemanticColors.darkSurface;
+  const darkScaffold = SemanticColors.darkBackground;
+  final warnOnTintL = WarningColors.onTintLight;
+  final warnOnTintD = WarningColors.onTintDark;
+  const osvL = Color(0xFF666680);
+  const osvD = SemanticColors.darkTextSecondary;
+  const outlineL = Color(0xFFE0E0E8);
+  const outlineD = SemanticColors.darkOutline;
+
+  final scenarios = <_TintScenario>[
+    // warning_badge.dart（α: 淺 0.15／深 0.25）
+    _TintScenario(
+      'WarningBadge.highPledge',
+      warnOnTintL,
+      warnOnTintD,
+      const Color(0xFFFFC107),
+      const Color(0xFFFFC107),
+      0.15,
+      0.25,
+      white,
+      darkCard,
+    ),
+    _TintScenario(
+      'WarningBadge.attention',
+      ErrorColors.attentionOnTintLight,
+      ErrorColors.attentionOnTintDark,
+      AppTheme.tertiaryColor,
+      AppTheme.tertiaryColor,
+      0.15,
+      0.25,
+      white,
+      darkCard,
+    ),
+    _TintScenario(
+      'WarningBadge.disposal',
+      ErrorColors.onTintLight,
+      ErrorColors.onTintDark,
+      AppTheme.errorColor,
+      AppTheme.errorColor,
+      0.15,
+      0.25,
+      white,
+      darkCard,
+    ),
+    // risk_badge_cluster.dart（moderate tint 依主題解析）
+    _TintScenario(
+      'RiskBadge.moderate',
+      warnOnTintL,
+      warnOnTintD,
+      DesignTokens.warningLight,
+      DesignTokens.warningDark,
+      0.15,
+      0.25,
+      white,
+      darkCard,
+    ),
+    _TintScenario(
+      'RiskBadge.severe',
+      ErrorColors.onTintLight,
+      ErrorColors.onTintDark,
+      AppTheme.errorColor,
+      AppTheme.errorColor,
+      0.15,
+      0.25,
+      white,
+      darkCard,
+    ),
+    // atr_card.dart 波動徽章（indcard≈surface）
+    _TintScenario(
+      'ATR.medium',
+      warnOnTintL,
+      warnOnTintD,
+      WarningColors.caution,
+      WarningColors.caution,
+      0.15,
+      0.15,
+      lightSurface,
+      darkCard,
+    ),
+    _TintScenario(
+      'ATR.high',
+      warnOnTintL,
+      warnOnTintD,
+      WarningColors.warning,
+      WarningColors.warning,
+      0.15,
+      0.15,
+      lightSurface,
+      darkCard,
+    ),
+    _TintScenario(
+      'ATR.low',
+      osvL,
+      osvD,
+      QualityColors.muted,
+      QualityColors.muted,
+      0.10,
+      0.10,
+      lightSurface,
+      darkCard,
+    ),
+    // alerts_screen.dart 狀態 pill
+    _TintScenario(
+      'Alerts.triggered',
+      warnOnTintL,
+      warnOnTintD,
+      WarningColors.warning,
+      WarningColors.warning,
+      0.2,
+      0.2,
+      white,
+      darkCard,
+    ),
+    _TintScenario(
+      'Alerts.active',
+      QualityColors.brandOnLight,
+      QualityColors.brandOnDecorative,
+      QualityColors.brand,
+      QualityColors.brand,
+      0.2,
+      0.2,
+      white,
+      darkCard,
+    ),
+    _TintScenario(
+      'Alerts.inactive',
+      osvL,
+      osvD,
+      outlineL,
+      outlineD,
+      0.15,
+      0.15,
+      white,
+      darkCard,
+    ),
+    // ai_summary_card.dart 信心徽章
+    _TintScenario(
+      'AiConfidence.high',
+      QualityColors.brandOnLight,
+      QualityColors.brandOnDecorative,
+      QualityColors.brand,
+      QualityColors.brand,
+      0.15,
+      0.15,
+      white,
+      darkCard,
+    ),
+    _TintScenario(
+      'AiConfidence.medium',
+      warnOnTintL,
+      warnOnTintD,
+      WarningColors.warning,
+      WarningColors.warning,
+      0.15,
+      0.15,
+      white,
+      darkCard,
+    ),
+    _TintScenario(
+      'AiConfidence.low',
+      osvL,
+      osvD,
+      outlineL,
+      outlineD,
+      0.15,
+      0.15,
+      white,
+      darkCard,
+    ),
+    // pinned_thesis_section.dart 失效狀態（error scheme 依主題）
+    _TintScenario(
+      'PinnedThesis.invalidated',
+      ErrorColors.onTintLight,
+      ErrorColors.onTintDark,
+      const Color(0xFFE53935),
+      const Color(0xFFFF6B6B),
+      0.12,
+      0.12,
+      white,
+      darkCard,
+    ),
+    // chip_anomaly_row.dart
+    _TintScenario(
+      'Anomaly.banner',
+      warnOnTintL,
+      warnOnTintD,
+      WarningColors.warning,
+      WarningColors.warning,
+      0.08,
+      0.08,
+      white,
+      darkCard,
+    ),
+    _TintScenario(
+      'Anomaly.count',
+      warnOnTintL,
+      warnOnTintD,
+      WarningColors.warning,
+      WarningColors.warning,
+      0.10,
+      0.10,
+      white,
+      darkCard,
+    ),
+    _TintScenario(
+      'Anomaly.iconBox',
+      warnOnTintL,
+      warnOnTintD,
+      WarningColors.warning,
+      WarningColors.warning,
+      0.12,
+      0.12,
+      white,
+      darkCard,
+      threshold: 3.0,
+    ),
+    _TintScenario(
+      'Anomaly.orangeBadge',
+      warnOnTintL,
+      warnOnTintD,
+      const Color(0xFFFF9800),
+      const Color(0xFFFF9800),
+      0.10,
+      0.10,
+      white,
+      darkCard,
+    ),
+    _TintScenario(
+      'Anomaly.redBadge',
+      ErrorColors.onTintLight,
+      ErrorColors.onTintDark,
+      const Color(0xFFF44336),
+      const Color(0xFFF44336),
+      0.10,
+      0.10,
+      white,
+      darkCard,
+    ),
+    // market_dashboard.dart 過期廣度徽章（withAlpha(30)=30/255）
+    _TintScenario(
+      'StaleBreadth',
+      warnOnTintL,
+      warnOnTintD,
+      DesignTokens.warningLight,
+      DesignTokens.warningDark,
+      30 / 255,
+      30 / 255,
+      white,
+      darkCard,
+    ),
+    // market_reading_line.dart 醒目 strip（tint=caution@0.10）
+    _TintScenario(
+      'ReadingLine.warningStrip',
+      warnOnTintL,
+      warnOnTintD,
+      WarningColors.caution,
+      WarningColors.caution,
+      0.10,
+      0.10,
+      white,
+      darkCard,
+    ),
+    // onboarding step2 圖示（48px 大圖示 → 3.0）
+    _TintScenario(
+      'Onboarding.step2Icon',
+      warnOnTintL,
+      warnOnTintD,
+      const Color(0xFFFF9800),
+      const Color(0xFFFF9800),
+      0.10,
+      0.10,
+      white,
+      darkScaffold,
+      threshold: 3.0,
+    ),
+  ];
+
+  group('Phase1 疊色徽章守門（前景對合成底）', () {
+    for (final s in scenarios) {
+      test(s.name, () {
+        final compL = ColorContrast.compositeOver(
+          s.tintLight,
+          s.bgLight,
+          s.alphaLight,
+        );
+        final compD = ColorContrast.compositeOver(
+          s.tintDark,
+          s.bgDark,
+          s.alphaDark,
+        );
+        expect(
+          ColorContrast.ratio(s.fgLight, compL),
+          greaterThanOrEqualTo(s.threshold),
+          reason: '${s.name} 淺色：前景對合成底不足 ${s.threshold}',
+        );
+        expect(
+          ColorContrast.ratio(s.fgDark, compD),
+          greaterThanOrEqualTo(s.threshold),
+          reason: '${s.name} 深色：前景對合成底不足 ${s.threshold}',
+        );
+      });
+    }
+
+    test('UpdateBanner 步驟指示器（雙層品牌 tint）', () {
+      // 淺色：primaryContainer@0.3 疊 scaffold，再疊 chip 漸層 @0.2（取最深的左停點）
+      final bannerL = ColorContrast.compositeOver(
+        QualityColors.brandOnLight,
+        const Color(0xFFFFFFFF),
+        0.3,
+      );
+      final stopL = ColorContrast.compositeOver(
+        QualityColors.brandOnLight,
+        bannerL,
+        0.2,
+      );
+      expect(
+        ColorContrast.ratio(QualityColors.brandOnDeepTintLight, stopL),
+        greaterThanOrEqualTo(4.5),
+      );
+      // 深色：banner 底=surfaceContainerLow(=#27272A)，chip 疊 brand@0.2
+      final stopD = ColorContrast.compositeOver(
+        QualityColors.brand,
+        SemanticColors.darkSurface,
+        0.2,
+      );
+      expect(
+        ColorContrast.ratio(QualityColors.brandOnDecorative, stopD),
+        greaterThanOrEqualTo(4.5),
+      );
+    });
+
+    test('指標選擇器五色選中態文字（@0.15 疊 surface）', () {
+      const selectors = [
+        IndicatorColors.selectorBlue,
+        IndicatorColors.selectorPurple,
+        IndicatorColors.selectorOrange,
+        IndicatorColors.selectorTeal,
+        IndicatorColors.selectorRed,
+      ];
+      for (final base in selectors) {
+        final compL = ColorContrast.compositeOver(
+          base,
+          SemanticColors.lightSurface,
+          0.15,
+        );
+        final compD = ColorContrast.compositeOver(
+          base,
+          SemanticColors.darkSurface,
+          0.15,
+        );
+        expect(
+          ColorContrast.ratio(
+            IndicatorColors.selectorOnTint(base, Brightness.light),
+            compL,
+          ),
+          greaterThanOrEqualTo(4.5),
+          reason: 'selector ${base.toARGB32().toRadixString(16)} 淺色不足',
+        );
+        expect(
+          ColorContrast.ratio(
+            IndicatorColors.selectorOnTint(base, Brightness.dark),
+            compD,
+          ),
+          greaterThanOrEqualTo(4.5),
+          reason: 'selector ${base.toARGB32().toRadixString(16)} 深色不足',
+        );
+      }
+    });
+
+    test('半透明前景文字已全數改實色（OSV 對四種平面背景）', () {
+      // Family C sweep 的守門：實色 onSurfaceVariant 對 card/surface 皆達 AA
+      for (final (fg, bg) in [
+        (osvL, const Color(0xFFFFFFFF)),
+        (osvL, SemanticColors.lightSurface),
+        (osvD, SemanticColors.darkSurface),
+        (osvD, SemanticColors.darkBackground),
+      ]) {
+        expect(ColorContrast.ratio(fg, bg), greaterThanOrEqualTo(4.5));
       }
     });
   });

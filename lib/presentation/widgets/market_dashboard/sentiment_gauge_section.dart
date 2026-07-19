@@ -181,9 +181,7 @@ class _SubScoresToggle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final mutedColor = theme.colorScheme.onSurfaceVariant.withValues(
-      alpha: 0.7,
-    );
+    final mutedColor = theme.colorScheme.onSurfaceVariant;
 
     return InkWell(
       onTap: onTap,
@@ -274,18 +272,14 @@ class _GradientBar extends StatelessWidget {
             Text(
               'marketOverview.sentiment.fearLabel'.tr(),
               style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant.withValues(
-                  alpha: 0.5,
-                ),
+                color: theme.colorScheme.onSurfaceVariant,
                 fontSize: DesignTokens.fontSizeXs,
               ),
             ),
             Text(
               'marketOverview.sentiment.greedLabel'.tr(),
               style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant.withValues(
-                  alpha: 0.5,
-                ),
+                color: theme.colorScheme.onSurfaceVariant,
                 fontSize: DesignTokens.fontSizeXs,
               ),
             ),
@@ -371,9 +365,7 @@ class _SubScoresGrid extends StatelessWidget {
                     child: Text(
                       ind.$2.tr(),
                       style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant.withValues(
-                          alpha: 0.7,
-                        ),
+                        color: theme.colorScheme.onSurfaceVariant,
                         fontSize: DesignTokens.fontSizeXs,
                       ),
                       overflow: TextOverflow.ellipsis,

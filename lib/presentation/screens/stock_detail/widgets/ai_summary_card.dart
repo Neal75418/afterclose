@@ -317,7 +317,7 @@ class _AiSummaryCardState extends ConsumerState<AiSummaryCard> {
           Text(
             'summary.disclaimer'.tr(),
             style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
         ],
@@ -507,13 +507,13 @@ class _SignalStrengthBar extends StatelessWidget {
         Icon(
           Icons.signal_cellular_alt,
           size: 14,
-          color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+          color: theme.colorScheme.onSurfaceVariant,
         ),
         const SizedBox(width: DesignTokens.spacing6),
         Text(
           'summary.signalStrength'.tr(),
           style: theme.textTheme.labelSmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+            color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
         const SizedBox(width: DesignTokens.spacing8),
@@ -609,17 +609,13 @@ class _RuleAccuracySection extends ConsumerWidget {
               Icon(
                 Icons.analytics_outlined,
                 size: 14,
-                color: theme.colorScheme.onSurfaceVariant.withValues(
-                  alpha: 0.7,
-                ),
+                color: theme.colorScheme.onSurfaceVariant,
               ),
               const SizedBox(width: DesignTokens.spacing6),
               Text(
                 'summary.ruleAccuracy'.tr(),
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant.withValues(
-                    alpha: 0.7,
-                  ),
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
               const SizedBox(width: DesignTokens.spacing8),
