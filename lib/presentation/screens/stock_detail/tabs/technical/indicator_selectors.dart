@@ -213,7 +213,11 @@ class _IndicatorChip extends StatelessWidget {
               style: TextStyle(
                 fontSize: DesignTokens.fontSizeSm,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                color: isSelected ? color : theme.colorScheme.onSurface,
+                // 選中態底是 color@0.15 tint，本色文字合成後 2.0~4.2:1，
+                // 改走各 selector 的疊色專屬文字色
+                color: isSelected
+                    ? IndicatorColors.selectorOnTint(color, theme.brightness)
+                    : theme.colorScheme.onSurface,
               ),
             ),
           ],

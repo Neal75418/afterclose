@@ -106,12 +106,16 @@ class _EventDetailSheetState extends ConsumerState<EventDetailSheet> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(type.icon, size: 16, color: color),
+                    Icon(
+                      type.icon,
+                      size: 16,
+                      color: type.onTintFor(theme.brightness),
+                    ),
                     const SizedBox(width: DesignTokens.spacing4),
                     Text(
                       type.i18nKey.tr(),
                       style: theme.textTheme.labelMedium?.copyWith(
-                        color: color,
+                        color: type.onTintFor(theme.brightness),
                         fontWeight: FontWeight.w600,
                       ),
                     ),

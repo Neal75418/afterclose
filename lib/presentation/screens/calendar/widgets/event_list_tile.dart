@@ -63,7 +63,11 @@ class EventListTile extends StatelessWidget {
                     color: color.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
                   ),
-                  child: Icon(type.icon, size: 20, color: color),
+                  child: Icon(
+                    type.icon,
+                    size: 20,
+                    color: type.onTintFor(theme.brightness),
+                  ),
                 ),
                 const SizedBox(width: 12),
                 // 內容
@@ -87,7 +91,7 @@ class EventListTile extends StatelessWidget {
                             child: Text(
                               type.i18nKey.tr(),
                               style: theme.textTheme.labelSmall?.copyWith(
-                                color: color,
+                                color: type.onTintFor(theme.brightness),
                                 fontWeight: FontWeight.w600,
                               ),
                             ),

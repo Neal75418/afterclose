@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 import 'package:afterclose/core/constants/data_freshness.dart';
+import 'package:afterclose/core/theme/semantic_colors.dart';
 import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/error_display.dart';
@@ -49,6 +50,10 @@ enum EventType {
     }
   }
 
+  /// 類型識別色——僅用於 tint 底、左邊框等裝飾層。
+  ///
+  /// 文字與圖示請走 [onTintFor]：同色前景疊在自身 15% tint 上，
+  /// 合成後多數類型僅 1.8～3.9:1。
   Color get color {
     switch (this) {
       case EventType.exDividend:
@@ -61,6 +66,28 @@ enum EventType {
         return Colors.purple;
       case EventType.custom:
         return Colors.blue;
+    }
+  }
+
+  /// 自身 tint（@0.15）之上的文字／圖示色，依主題解析。
+  ///
+  /// 各組合實測 4.7～8.7:1（守門見 `semantic_colors_test.dart`）。
+  /// 除息（紅）／財報（綠）屬紅綠家族，色值調整延後至紅綠專案，
+  /// 目前沿用識別色本色（維持既有視覺，缺陷已記錄於 Phase 2 清單）。
+  Color onTintFor(Brightness brightness) {
+    final isLight = brightness == Brightness.light;
+    switch (this) {
+      case EventType.exDividend:
+        return Colors.red; // Phase 2（紅綠家族）待處理
+      case EventType.exRights:
+        return WarningColors.onTintFor(brightness);
+      case EventType.earnings:
+        return Colors.green; // Phase 2（紅綠家族)待處理
+      case EventType.shareholderMeeting:
+        // 淺色 Colors.purple 本色即合格（4.72:1），深色需亮紫
+        return isLight ? Colors.purple : const Color(0xFFCE93D8);
+      case EventType.custom:
+        return isLight ? const Color(0xFF1565C0) : const Color(0xFF90CAF9);
     }
   }
 
