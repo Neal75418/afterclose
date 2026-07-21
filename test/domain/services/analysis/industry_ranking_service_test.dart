@@ -48,44 +48,47 @@ void main() {
       final rankings = service.rank(
         priceHistories: {
           'A1': historyWithRet20('A1', 10),
-          'A2': historyWithRet20('A2', 20),
-          'A3': historyWithRet20('A3', 30),
-          'B1': historyWithRet20('B1', 1),
-          'B2': historyWithRet20('B2', 2),
-          'B3': historyWithRet20('B3', 3),
+          'A2': historyWithRet20('A2', 15),
+          'A3': historyWithRet20('A3', 20),
+          'A4': historyWithRet20('A4', 25),
+          'A5': historyWithRet20('A5', 30),
+          'B1': historyWithRet20('B1', 1.0),
+          'B2': historyWithRet20('B2', 1.5),
+          'B3': historyWithRet20('B3', 2.0),
+          'B4': historyWithRet20('B4', 2.5),
+          'B5': historyWithRet20('B5', 3.0),
         },
         industries: {
           'A1': '半導體業',
           'A2': '半導體業',
           'A3': '半導體業',
+          'A4': '半導體業',
+          'A5': '半導體業',
           'B1': '紡織業',
           'B2': '紡織業',
           'B3': '紡織業',
+          'B4': '紡織業',
+          'B5': '紡織業',
         },
-        names: {
-          'A1': '甲一',
-          'A2': '甲二',
-          'A3': '甲三',
-          'B1': '乙一',
-          'B2': '乙二',
-          'B3': '乙三',
-        },
+        names: {'A5': '甲五'},
         institutionalHistories: const {},
       );
 
       expect(rankings, hasLength(2));
       expect(rankings[0].industry, '半導體業');
       expect(rankings[0].momentumPct, closeTo(20.0, 1e-6)); // 中位數
-      expect(rankings[0].memberCount, 3);
+      expect(rankings[0].memberCount, 5);
       expect(rankings[1].industry, '紡織業');
       expect(rankings[1].momentumPct, closeTo(2.0, 1e-6));
       // topMembers 依 20D 報酬 DESC
       expect(rankings[0].topMembers.map((m) => m.symbol).toList(), [
+        'A5',
+        'A4',
         'A3',
         'A2',
         'A1',
       ]);
-      expect(rankings[0].topMembers.first.name, '甲三');
+      expect(rankings[0].topMembers.first.name, '甲五');
       expect(rankings[0].topMembers.first.ret20Pct, closeTo(30.0, 1e-6));
     });
 
@@ -112,37 +115,48 @@ void main() {
       expect(rankings, isEmpty);
     });
 
-    test('成員不足 rankingMinMembers 的產業不進排行', () {
+    test('成員不足 rankingMinMembers 的產業不進排行（實例：農業科技業 4 檔小樣本）', () {
+      // 比門檻少 1 檔——2026-07-22 實機看到 4 檔小樣本（兩漲兩跌拼出的
+      // 中位數無代表性）後，門檻從 3 調到 5
+      final memberCount = SectorParams.rankingMinMembers - 1;
       final rankings = service.rank(
         priceHistories: {
-          'A1': historyWithRet20('A1', 10),
-          'A2': historyWithRet20('A2', 20),
+          for (var m = 0; m < memberCount; m++)
+            'A$m': historyWithRet20('A$m', 10.0 * m),
         },
-        industries: {'A1': '半導體業', 'A2': '半導體業'},
+        industries: {for (var m = 0; m < memberCount; m++) 'A$m': '農業科技業'},
         names: const {},
         institutionalHistories: const {},
       );
 
-      expect(SectorParams.rankingMinMembers, greaterThan(2));
       expect(rankings, isEmpty);
     });
 
     test('歷史不足 21 筆的成員不計入動能與成員數', () {
-      final short = historyWithRet20('A3', 99).sublist(0, 10);
+      final short = historyWithRet20('A6', 99).sublist(0, 10);
       final rankings = service.rank(
         priceHistories: {
           'A1': historyWithRet20('A1', 10),
-          'A2': historyWithRet20('A2', 20),
-          'A3': short,
-          'A4': historyWithRet20('A4', 30),
+          'A2': historyWithRet20('A2', 15),
+          'A3': historyWithRet20('A3', 20),
+          'A4': historyWithRet20('A4', 25),
+          'A5': historyWithRet20('A5', 30),
+          'A6': short,
         },
-        industries: {'A1': '半導體業', 'A2': '半導體業', 'A3': '半導體業', 'A4': '半導體業'},
+        industries: {
+          'A1': '半導體業',
+          'A2': '半導體業',
+          'A3': '半導體業',
+          'A4': '半導體業',
+          'A5': '半導體業',
+          'A6': '半導體業',
+        },
         names: const {},
         institutionalHistories: const {},
       );
 
       expect(rankings, hasLength(1));
-      expect(rankings[0].memberCount, 3);
+      expect(rankings[0].memberCount, 5);
       expect(rankings[0].momentumPct, closeTo(20.0, 1e-6));
     });
 
@@ -151,10 +165,18 @@ void main() {
       final rankings = service.rank(
         priceHistories: {
           'A1': historyWithRet20('A1', 10),
-          'A2': historyWithRet20('A2', 20),
-          'A3': historyWithRet20('A3', 30),
+          'A2': historyWithRet20('A2', 15),
+          'A3': historyWithRet20('A3', 20),
+          'A4': historyWithRet20('A4', 25),
+          'A5': historyWithRet20('A5', 30),
         },
-        industries: {'A1': '半導體業', 'A2': '半導體業', 'A3': '半導體業'},
+        industries: {
+          'A1': '半導體業',
+          'A2': '半導體業',
+          'A3': '半導體業',
+          'A4': '半導體業',
+          'A5': '半導體業',
+        },
         names: const {},
         institutionalHistories: {
           'A1': [

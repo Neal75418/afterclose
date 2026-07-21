@@ -37,8 +37,10 @@ abstract final class SectorParams {
   /// 排行顯示的產業數上限
   static const int rankingTopN = 8;
 
-  /// 產業成員（有 20D 報酬資料）少於此數不進排行——樣本太小、中位數無意義
-  static const int rankingMinMembers = 3;
+  /// 產業成員（有 20D 報酬資料）少於此數不進排行——樣本太小、中位數無
+  /// 代表性。實例：農業科技業 4 檔（+7.3/+6.3/-1.5/-5.0%）兩漲兩跌拼出
+  /// +2.4% 中位數、法人卻是賣超，2026-07-22 使用者實機看到後定 5。
+  static const int rankingMinMembers = 5;
 
   /// 每個產業展開顯示的領漲成員數上限
   static const int rankingTopMembersCount = 5;
