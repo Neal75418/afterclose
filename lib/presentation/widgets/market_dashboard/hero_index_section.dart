@@ -97,7 +97,10 @@ class HeroIndexSection extends StatelessWidget {
                     child: Text(
                       '$sign${index.changePercent.toStringAsFixed(2)}%',
                       style: theme.textTheme.labelSmall?.copyWith(
-                        color: color,
+                        color: PriceColors.onTintOf(
+                          color,
+                          Theme.of(context).brightness,
+                        ),
                         fontWeight: FontWeight.w700,
                         fontFeatures: const [FontFeature.tabularFigures()],
                       ),
@@ -236,7 +239,10 @@ class HeroIndexSection extends StatelessWidget {
             child: Text(
               'marketOverview.stage.$stageKey'.tr(),
               style: theme.textTheme.labelSmall?.copyWith(
-                color: stageColor,
+                color: PriceColors.onTintOf(
+                  stageColor,
+                  Theme.of(context).brightness,
+                ),
                 fontWeight: FontWeight.w700,
                 fontSize: DesignTokens.fontSizeXs,
               ),

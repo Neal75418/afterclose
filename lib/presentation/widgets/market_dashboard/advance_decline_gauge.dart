@@ -203,7 +203,7 @@ class _LimitBadge extends StatelessWidget {
           Text(
             label,
             style: theme.textTheme.labelSmall?.copyWith(
-              color: color,
+              color: PriceColors.onTintOf(color, Theme.of(context).brightness),
               fontWeight: FontWeight.w600,
               fontSize: DesignTokens.fontSizeXs,
             ),
@@ -212,7 +212,7 @@ class _LimitBadge extends StatelessWidget {
           Text(
             '$count',
             style: theme.textTheme.labelSmall?.copyWith(
-              color: color,
+              color: PriceColors.onTintOf(color, Theme.of(context).brightness),
               fontWeight: FontWeight.w800,
               fontFeatures: const [FontFeature.tabularFigures()],
             ),

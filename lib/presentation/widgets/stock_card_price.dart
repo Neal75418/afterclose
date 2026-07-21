@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:afterclose/core/theme/semantic_colors.dart';
+
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/utils/number_formatter.dart';
 import 'package:afterclose/core/utils/price_limit.dart';
@@ -93,7 +95,10 @@ class StockCardPriceSection extends StatelessWidget {
                       isLimitUp
                           ? Icons.arrow_upward_rounded
                           : Icons.arrow_downward_rounded,
-                      color: priceColor,
+                      color: PriceColors.onTintOf(
+                        priceColor,
+                        Theme.of(context).brightness,
+                      ),
                       size: compact ? 12 : 14,
                     ),
                   )
@@ -102,7 +107,10 @@ class StockCardPriceSection extends StatelessWidget {
                   ExcludeSemantics(
                     child: Icon(
                       isPositive ? Icons.arrow_drop_up : Icons.arrow_drop_down,
-                      color: priceColor,
+                      color: PriceColors.onTintOf(
+                        priceColor,
+                        Theme.of(context).brightness,
+                      ),
                       size: compact ? 14 : 18,
                     ),
                   ),
@@ -111,7 +119,10 @@ class StockCardPriceSection extends StatelessWidget {
                       ? _formatCompactChangeText()
                       : _formatChangeText(absChange),
                   style: theme.textTheme.labelMedium?.copyWith(
-                    color: priceColor,
+                    color: PriceColors.onTintOf(
+                      priceColor,
+                      Theme.of(context).brightness,
+                    ),
                     fontWeight: FontWeight.bold,
                     fontSize: compact ? DesignTokens.fontSizeXs : null,
                   ),

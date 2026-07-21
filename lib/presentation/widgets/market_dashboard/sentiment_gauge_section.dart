@@ -104,7 +104,7 @@ class _SentimentGaugeSectionState extends State<SentimentGaugeSection> {
                     child: Text(
                       levelText,
                       style: theme.textTheme.labelSmall?.copyWith(
-                        color: color,
+                        color: _levelOnTint(sentiment.level, theme.brightness),
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -150,6 +150,20 @@ class _SentimentGaugeSectionState extends State<SentimentGaugeSection> {
       SentimentLevel.neutral => PriceColors.flatFor(brightness),
       SentimentLevel.greed => AppTheme.upColor,
       SentimentLevel.extremeGreed => const Color(0xFFB71C1C),
+    };
+  }
+
+  /// 徽章文字色——tint（[_levelColor] @0.12）上不得用本色：深色主題
+  /// greed 3.91、extremeGreed 僅 2.17:1。淺色維持本色（deferred，
+  /// 見 PriceColors.upOnTintFor 說明）。
+  static Color _levelOnTint(SentimentLevel level, Brightness brightness) {
+    if (brightness != Brightness.dark) return _levelColor(level, brightness);
+    return switch (level) {
+      SentimentLevel.extremeFear => PriceColors.chipBearish,
+      SentimentLevel.fear => PriceColors.down,
+      SentimentLevel.neutral => PriceColors.flatOnTintDark,
+      SentimentLevel.greed => PriceColors.chipBullish,
+      SentimentLevel.extremeGreed => PriceColors.chipBullish,
     };
   }
 

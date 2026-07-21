@@ -211,7 +211,14 @@ class _AiSummaryCardState extends ConsumerState<AiSummaryCard> {
                   ),
                 ),
                 const SizedBox(width: DesignTokens.spacing8),
-                _Badge(label: sentimentLabel, color: sentimentColor),
+                _Badge(
+                  label: sentimentLabel,
+                  color: sentimentColor,
+                  textColor: PriceColors.onTintOf(
+                    sentimentColor,
+                    theme.brightness,
+                  ),
+                ),
                 const SizedBox(width: DesignTokens.spacing6),
                 _Badge(
                   label: _confidenceLabel(summary.confidence),

@@ -1,6 +1,8 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
+import 'package:afterclose/core/theme/semantic_colors.dart';
+
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/utils/number_formatter.dart';
@@ -190,7 +192,7 @@ class _Avg5dBadge extends StatelessWidget {
       child: Text(
         '${'marketOverview.avg5d'.tr()} ${AppNumberFormat.signedFixed(changePercent, decimals: 0)}%',
         style: theme.textTheme.labelSmall?.copyWith(
-          color: color,
+          color: PriceColors.onTintOf(color, Theme.of(context).brightness),
           fontWeight: FontWeight.w600,
           fontSize: DesignTokens.fontSizeXs,
           fontFeatures: const [FontFeature.tabularFigures()],

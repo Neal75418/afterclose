@@ -1,6 +1,8 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
+import 'package:afterclose/core/theme/semantic_colors.dart';
+
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/domain/services/market_reading_service.dart';
@@ -153,7 +155,7 @@ class _CountChip extends StatelessWidget {
           Text(
             label,
             style: theme.textTheme.labelSmall?.copyWith(
-              color: color,
+              color: PriceColors.onTintOf(color, Theme.of(context).brightness),
               fontWeight: FontWeight.w600,
               fontSize: DesignTokens.fontSizeXs,
             ),
@@ -162,7 +164,7 @@ class _CountChip extends StatelessWidget {
           Text(
             '$count',
             style: theme.textTheme.labelSmall?.copyWith(
-              color: color,
+              color: PriceColors.onTintOf(color, Theme.of(context).brightness),
               fontWeight: FontWeight.w800,
               fontFeatures: const [FontFeature.tabularFigures()],
             ),

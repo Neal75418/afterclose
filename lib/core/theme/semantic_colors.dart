@@ -64,6 +64,61 @@ abstract final class PriceColors {
   /// 籌碼偏空（下跌綠的淺色階）
   static const chipBearish = Color(0xFF7DD8A0);
 
+  /// 平盤 tint 徽章上的文字色（深色主題）。純灰階（hue −1）。
+  ///
+  /// [flat] 本色對自身 @0.15 tint 合成底僅 4.44:1，此值實測 5.49:1。
+  static const flatOnTintDark = Color(0xFFB3B3B3);
+
+  /// 「上漲紅」tint 徽章上的文字色，依主題解析。
+  ///
+  /// 深色主題 [up] 本色對自身 tint 合成底僅 3.76~4.47:1，改用 [chipBullish]
+  /// 淺紅（同色相 354.9°，α 0.1~0.15 各背景實測 5.57~6.62:1）。
+  /// **淺色主題暫維持 [up] 本色**——使用者僅使用深色主題，淺色 35 組
+  /// 疊色缺陷列入 deferred（詳 `.superpowers/sdd/phase1-worklist.md`
+  /// PHASE2 節）；日後啟用淺色主題前需一併處理（候選 red-900 `#B71C1C`／
+  /// green-800 `#166534` 已精算通過）。
+  static Color upOnTintFor(Brightness brightness) =>
+      brightness == Brightness.dark ? chipBullish : up;
+
+  /// 「已知 price 家族色」的 tint 徽章文字對應（值→onTint），供以
+  /// `Color` 參數傳遞色彩的徽章 widget 做最小改動接線。
+  ///
+  /// 深色主題：[up]→[chipBullish]、[flat]→[flatOnTintDark]，其餘
+  /// （[down] 等已達標者、未知色）原樣回傳。淺色主題一律原樣（deferred）。
+  static Color onTintOf(Color base, Brightness brightness) {
+    if (brightness != Brightness.dark) return base;
+    if (base == up) return chipBullish;
+    if (base == flat) return flatOnTintDark;
+    return base;
+  }
+
+  /// 漲跌平 tint 徽章上的文字／圖示色（tint＝[forChange] 本色 @0.1~0.15）。
+  ///
+  /// 深色主題：漲→[chipBullish]、跌→[down]（本色已達標）、平→
+  /// [flatOnTintDark]。淺色主題暫回傳 [forChange] 本色（deferred，
+  /// 理由同 [upOnTintFor]）。
+  static Color forChangeOnTint(double? change, Brightness brightness) {
+    if (brightness != Brightness.dark) return forChange(change, brightness);
+    if (change == null || change == 0) return flatOnTintDark;
+    return change > 0 ? chipBullish : down;
+  }
+
+  /// 籌碼評等徽章文字色（徽章 tint＝[chipRating] 本色 @0.15）。
+  ///
+  /// 深色主題下 strong（up 紅）3.76:1、neutral（灰）4.44:1 不足，分別
+  /// 改 [chipBullish]／[flatOnTintDark]；bearish/weak 本色已達標。
+  /// 淺色主題暫維持 [chipRating] 本色（deferred，理由同 [upOnTintFor]）。
+  static Color chipRatingOnTint(ChipRating rating, Brightness brightness) {
+    if (brightness != Brightness.dark) return chipRating(rating);
+    return switch (rating) {
+      ChipRating.strong => chipBullish,
+      ChipRating.bullish => chipBullish,
+      ChipRating.neutral => flatOnTintDark,
+      ChipRating.bearish => chipBearish,
+      ChipRating.weak => down,
+    };
+  }
+
   /// 依主題明暗解析「下跌」色。
   ///
   /// 呼叫端一律應透過此方法（或 `AppTheme.getPriceColor`）取色，不得直接

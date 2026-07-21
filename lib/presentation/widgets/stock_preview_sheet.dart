@@ -1,5 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+
+import 'package:afterclose/core/theme/semantic_colors.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
@@ -237,7 +239,10 @@ class StockPreviewSheet extends StatelessWidget {
                                           : (isPositive
                                                 ? Icons.arrow_drop_up
                                                 : Icons.arrow_drop_down),
-                                      color: priceColor,
+                                      color: PriceColors.onTintOf(
+                                        priceColor,
+                                        Theme.of(context).brightness,
+                                      ),
                                       size: 20,
                                     ),
                                   ),
@@ -247,7 +252,10 @@ class StockPreviewSheet extends StatelessWidget {
                                       decimals: 2,
                                     ),
                                     style: theme.textTheme.titleSmall?.copyWith(
-                                      color: priceColor,
+                                      color: PriceColors.onTintOf(
+                                        priceColor,
+                                        Theme.of(context).brightness,
+                                      ),
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),

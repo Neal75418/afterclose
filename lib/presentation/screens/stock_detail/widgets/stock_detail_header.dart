@@ -2,6 +2,8 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 
+import 'package:afterclose/core/theme/semantic_colors.dart';
+
 import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:afterclose/core/constants/stock_patterns.dart';
 import 'package:afterclose/core/extensions/trend_state_extension.dart';
@@ -518,12 +520,16 @@ class _InfoChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: color),
+          Icon(
+            icon,
+            size: 16,
+            color: PriceColors.onTintOf(color, Theme.of(context).brightness),
+          ),
           const SizedBox(width: DesignTokens.spacing6),
           Text(
             label,
             style: theme.textTheme.labelMedium?.copyWith(
-              color: color,
+              color: PriceColors.onTintOf(color, Theme.of(context).brightness),
               fontWeight: FontWeight.w600,
             ),
           ),

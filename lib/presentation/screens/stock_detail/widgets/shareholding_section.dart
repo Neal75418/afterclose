@@ -103,7 +103,10 @@ class ShareholdingSection extends StatelessWidget {
                 child: Text(
                   trendKey.tr(),
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: trendColor,
+                    color: PriceColors.onTintOf(
+                      trendColor,
+                      Theme.of(context).brightness,
+                    ),
                     fontWeight: FontWeight.w600,
                   ),
                 ),

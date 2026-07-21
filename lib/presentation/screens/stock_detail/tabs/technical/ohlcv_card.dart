@@ -1,6 +1,8 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
+import 'package:afterclose/core/theme/semantic_colors.dart';
+
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/utils/number_formatter.dart';
 import 'package:afterclose/data/database/app_database.dart';
@@ -158,14 +160,24 @@ class OhlcvCard extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(arrow, size: 14, color: priceColor),
+                Icon(
+                  arrow,
+                  size: 14,
+                  color: PriceColors.onTintOf(
+                    priceColor,
+                    Theme.of(context).brightness,
+                  ),
+                ),
                 const SizedBox(width: DesignTokens.spacing4),
                 Text(
                   _formatChangeBadge(),
                   style: TextStyle(
                     fontSize: DesignTokens.fontSizeSm,
                     fontWeight: FontWeight.bold,
-                    color: priceColor,
+                    color: PriceColors.onTintOf(
+                      priceColor,
+                      Theme.of(context).brightness,
+                    ),
                   ),
                 ),
               ],

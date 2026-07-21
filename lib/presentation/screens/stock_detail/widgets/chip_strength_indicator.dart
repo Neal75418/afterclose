@@ -50,8 +50,12 @@ class ChipStrengthIndicator extends StatelessWidget {
                 ),
                 child: Text(
                   strength.rating.i18nKey.tr(),
+                  // tint 上的文字走深色專屬解析（strong 紅本色僅 3.76:1）
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: color,
+                    color: PriceColors.chipRatingOnTint(
+                      strength.rating,
+                      theme.brightness,
+                    ),
                     fontWeight: FontWeight.bold,
                   ),
                 ),

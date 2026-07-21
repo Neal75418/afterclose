@@ -78,11 +78,14 @@ enum EventType {
     final isLight = brightness == Brightness.light;
     switch (this) {
       case EventType.exDividend:
-        return Colors.red; // Phase 2（紅綠家族）待處理
+        // 深色：紅家族淺紅（同 PriceColors.chipBullish 值，5.67:1）；
+        // 淺色維持本色（deferred，使用者僅用深色主題）
+        return isLight ? Colors.red : const Color(0xFFFF8A94);
       case EventType.exRights:
         return WarningColors.onTintFor(brightness);
       case EventType.earnings:
-        return Colors.green; // Phase 2（紅綠家族)待處理
+        // 深色：綠家族淺綠（同 PriceColors.chipBearish 值，6.86:1）；淺色同上
+        return isLight ? Colors.green : const Color(0xFF7DD8A0);
       case EventType.shareholderMeeting:
         // 淺色 Colors.purple 本色即合格（4.72:1），深色需亮紫
         return isLight ? Colors.purple : const Color(0xFFCE93D8);

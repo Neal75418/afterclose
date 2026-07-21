@@ -489,7 +489,10 @@ class _TransactionRow extends StatelessWidget {
                 child: Text(
                   txType.i18nKey.tr(),
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: color,
+                    color: PriceColors.onTintOf(
+                      color,
+                      Theme.of(context).brightness,
+                    ),
                     fontWeight: FontWeight.w600,
                   ),
                 ),

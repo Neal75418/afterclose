@@ -20,6 +20,7 @@ bool _inPriceHueZone(Color c) {
 
 void main() {
   _phase1TintGuards();
+  phase2DarkTintGuards();
 
   group('第一層：色相禁區守門', () {
     test('QualityColors 不得落在股價色相區', () {
@@ -1171,6 +1172,76 @@ void _phase1TintGuards() {
         (osvD, SemanticColors.darkBackground),
       ]) {
         expect(ColorContrast.ratio(fg, bg), greaterThanOrEqualTo(4.5));
+      }
+    });
+  });
+}
+
+/// Phase 2 深色紅綠 tint 守門（2026-07-19）。淺色主題 35 組 deferred——
+/// 使用者僅使用深色主題；日後啟用淺色前見 PriceColors.upOnTintFor 說明。
+void phase2DarkTintGuards() {
+  group('Phase2 深色紅綠 tint 守門（淺色 deferred）', () {
+    const d = Brightness.dark;
+
+    test('上漲紅 tint 徽章文字：生產 α×背景全組合達 4.5', () {
+      final fg = PriceColors.upOnTintFor(d);
+      for (final (a, bg) in <(double, Color)>[
+        (0.10, SemanticColors.darkSurface),
+        (0.12, SemanticColors.darkSurface),
+        (0.15, SemanticColors.darkSurface),
+        (0.15, SemanticColors.darkBackground),
+      ]) {
+        final comp = ColorContrast.compositeOver(PriceColors.up, bg, a);
+        expect(
+          ColorContrast.ratio(fg, comp),
+          greaterThanOrEqualTo(4.5),
+          reason: 'up@$a 疊 ${bg.toARGB32().toRadixString(16)}',
+        );
+      }
+    });
+
+    test('籌碼評等五級 on-tint（tint=本色@0.15）達 4.5', () {
+      for (final r in ChipRating.values) {
+        final comp = ColorContrast.compositeOver(
+          PriceColors.chipRating(r),
+          SemanticColors.darkSurface,
+          0.15,
+        );
+        expect(
+          ColorContrast.ratio(PriceColors.chipRatingOnTint(r, d), comp),
+          greaterThanOrEqualTo(4.5),
+          reason: '$r',
+        );
+      }
+    });
+
+    test('forChangeOnTint 三態（@0.15 疊卡片）達 4.5', () {
+      for (final change in <double?>[1.5, -1.5, 0, null]) {
+        final comp = ColorContrast.compositeOver(
+          PriceColors.forChange(change, d),
+          SemanticColors.darkSurface,
+          0.15,
+        );
+        expect(
+          ColorContrast.ratio(PriceColors.forChangeOnTint(change, d), comp),
+          greaterThanOrEqualTo(4.5),
+          reason: 'change=$change',
+        );
+      }
+    });
+
+    test('行事曆 除息/財報 深色 on-tint 達 4.5', () {
+      for (final t in [EventType.exDividend, EventType.earnings]) {
+        final comp = ColorContrast.compositeOver(
+          t.color,
+          SemanticColors.darkSurface,
+          0.15,
+        );
+        expect(
+          ColorContrast.ratio(t.onTintFor(d), comp),
+          greaterThanOrEqualTo(4.5),
+          reason: '$t',
+        );
       }
     });
   });
