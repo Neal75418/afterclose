@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/theme/semantic_colors.dart';
 import 'package:afterclose/core/utils/number_formatter.dart';
 import 'package:afterclose/core/utils/taiwan_date_formatter.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
@@ -58,23 +59,29 @@ class DividendTable extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
+                    // tint 底上的前景不得用 dividendColor 本色——淺色主題
+                    // 對自身 @0.1 合成底僅 2.2:1，改依主題解析
+                    Icon(
                       Icons.payments,
                       size: 16,
-                      color: AppTheme.dividendColor,
+                      color: theme.brightness == Brightness.light
+                          ? QualityColors.brandOnLight
+                          : AppTheme.dividendColor,
                     ),
                     const SizedBox(width: DesignTokens.spacing8),
                     Text(
                       S.dividendYearAverage(displayData.length),
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.outline,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                     Text(
                       AppNumberFormat.currency(avgCash, decimals: 2),
                       style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.dividendColor,
+                        color: theme.brightness == Brightness.light
+                            ? QualityColors.brandOnLight
+                            : AppTheme.dividendColor,
                       ),
                     ),
                   ],

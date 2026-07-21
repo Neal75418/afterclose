@@ -58,15 +58,16 @@ abstract final class IndicatorColors {
   /// OBV 指標標籤的裝飾底色（藍，分類語意）。純裝飾，不承載文字。
   static const obvLabel = Color(0xFF3B82F6);
 
-  /// ATR 指標標籤的裝飾底色（Violet 500）。
+  /// ATR 指標標籤的裝飾底色。
   ///
-  /// 委派 [QualityColors.brandDecorative]——兩者本就同值 `#8B5CF6`，
-  /// 各自宣告會形成與 `AppTheme` 價格色同型的雙處宣告漂移風險。
+  /// 委派 [QualityColors.brandDecorative]（品牌換藍後為 Blue 500，與
+  /// [obvLabel] 同值）——各自宣告會形成與 `AppTheme` 價格色同型的
+  /// 雙處宣告漂移風險。
   static const atrLabel = QualityColors.brandDecorative;
 
   /// ATR 標籤在 [atrLabel] 10% 疊色底上的文字色（依主題解析）。
   ///
-  /// 淺色 `#6D28D9` 對合成底 5.98:1、深色 `#C4B5FD` 7.26:1。
+  /// 淺色 `#1D4ED8` 對合成底 5.69:1、深色 `#93C5FD` 7.34:1。
   static Color atrLabelText(Brightness brightness) =>
       brightness == Brightness.light
       ? QualityColors.brandOnLight
@@ -137,7 +138,9 @@ abstract final class IndicatorColors {
       selectorTeal => isLight ? const Color(0xFF155E75) : selectorTeal,
       selectorRed =>
         isLight ? const Color(0xFFB71C1C) : const Color(0xFFFF8A80),
-      _ => base,
+      // 防禦分支：未知色回傳中性高對比色而非 base 本色——回傳 base 等於
+      // 同色疊同色（不可讀）的靜默劣化
+      _ => isLight ? const Color(0xFF3F3F46) : const Color(0xFFD4D4D8),
     };
   }
 }

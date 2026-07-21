@@ -6,6 +6,7 @@ import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/theme/indicator_colors.dart';
 import 'package:afterclose/core/theme/semantic_colors.dart';
 import 'package:afterclose/domain/models/chip_strength.dart';
+import 'package:afterclose/presentation/providers/event_calendar_provider.dart';
 import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
 import 'package:flutter/material.dart' show HSLColor, ThemeData;
 import 'package:flutter_test/flutter_test.dart';
@@ -148,9 +149,9 @@ void main() {
       // reason_tags.dart 深色主題底色不是平面卡片背景——是 brandDecorative
       // 以 DesignTokens.opacity25（實際生產 alpha）疊加卡片背景（darkCard，
       // 即 SemanticColors.darkSurface）後的合成色。上面幾個測試只驗證品牌
-      // 文字對「平面」背景（darkBg／darkCard）的對比度，brand（#A78BFA）
-      // 對此合成色僅 4.1:1，兩者是不同的顏色配對，不能互相替代——這正是
-      // 上一輪疊色情境退步完全沒被攔下的原因。
+      // 文字對「平面」背景（darkBg／darkCard）的對比度，brand 本色對此
+      // 合成色不足（Violet 時代 4.1:1），兩者是不同的顏色配對，不能互相
+      // 替代——這正是上一輪疊色情境退步完全沒被攔下的原因。
       final composite = ColorContrast.compositeOver(
         QualityColors.brandDecorative,
         darkCard,
@@ -169,12 +170,12 @@ void main() {
       // alpha（pinned_thesis_section.dart 未走 DesignTokens.opacityNN 命名、
       // 直接寫字面值 0.12）疊加卡片背景（darkCard）後的合成色。
       //
-      // successDark 由舊值 #4ADE80（emerald，對此疊色情境曾達 6.62:1）
-      // 遷移為 brand（#A78BFA）後，對比度收窄至 4.5038237667945165:1
-      // （`ColorContrast` 精算，非四捨五入）——餘裕僅約 0.0038（不到
-      // 0.1%）。任何未來的 Card 底色調整、alpha 微調或品牌色相微調都可能
-      // 讓它悄悄跌破 4.5:1，需要獨立守門，不能只靠上面「平面背景」或
-      // ReasonTags 疊色情境的品牌色測試涵蓋——那些驗證的是不同的顏色配對。
+      // 這個情境在品牌色為 Violet 400 時曾收窄到 4.5038:1（餘裕不足
+      // 0.1%），是全案已知餘裕最薄的疊色配對；2026-07-19 品牌改 Blue 400
+      // 後放寬至 4.79:1，但仍需獨立守門——任何未來的 Card 底色調整、
+      // alpha 微調或品牌色相微調都可能讓它悄悄跌破 4.5:1，不能只靠
+      // 「平面背景」或 ReasonTags 疊色情境的品牌色測試涵蓋，
+      // 那些驗證的是不同的顏色配對。
       final composite = ColorContrast.compositeOver(
         DesignTokens.successDark,
         darkCard,
@@ -1030,6 +1031,42 @@ void _phase1TintGuards() {
       white,
       darkScaffold,
       threshold: 3.0,
+    ),
+    // 行事曆事件徽章（event_list_tile/event_detail_sheet，@0.15 疊 surface）
+    // ——審查發現這一家族原本漏在守門外，且 custom/meeting 是全表邊際最薄
+    // 的組合（4.67/4.72）。除息紅/財報綠屬 Phase 2 不在此列。
+    _TintScenario(
+      'Event.exRights',
+      EventType.exRights.onTintFor(Brightness.light),
+      EventType.exRights.onTintFor(Brightness.dark),
+      EventType.exRights.color,
+      EventType.exRights.color,
+      0.15,
+      0.15,
+      lightSurface,
+      darkCard,
+    ),
+    _TintScenario(
+      'Event.shareholderMeeting',
+      EventType.shareholderMeeting.onTintFor(Brightness.light),
+      EventType.shareholderMeeting.onTintFor(Brightness.dark),
+      EventType.shareholderMeeting.color,
+      EventType.shareholderMeeting.color,
+      0.15,
+      0.15,
+      lightSurface,
+      darkCard,
+    ),
+    _TintScenario(
+      'Event.custom',
+      EventType.custom.onTintFor(Brightness.light),
+      EventType.custom.onTintFor(Brightness.dark),
+      EventType.custom.color,
+      EventType.custom.color,
+      0.15,
+      0.15,
+      lightSurface,
+      darkCard,
     ),
   ];
 

@@ -101,46 +101,51 @@ abstract final class PriceColors {
 
 /// 非方向性的好壞語意。
 abstract final class QualityColors {
-  /// 品牌主色（填色用）。Violet 400。
+  /// 品牌主色（填色用）。Blue 400。
   ///
-  /// 深色主題採 Material 3 色調邏輯：primary 用淺色調、onPrimary 用深色。
-  /// Violet 500 (#8B5CF6) 對深色背景僅 4.18:1，白字在其上僅 4.23:1，
-  /// 兩者皆不符 AA，故不作為文字或填色使用。
-  static const brand = Color(0xFFA78BFA);
+  /// 2026-07-19 由 Violet 400（#A78BFA）改為藍——紫色經使用者實機驗收
+  /// 否決；當初否決藍色的理由（與外資藍 205° 過近）已隨法人分類色移除
+  /// 而消失。深色主題採 Material 3 色調邏輯：primary 用淺色調、onPrimary
+  /// 用深色。Blue 500（#3B82F6）白字在其上僅 3.68:1 不符文字 AA，
+  /// 故不作為填色使用。對深背景 6.97:1、對深卡片 5.86:1。
+  static const brand = Color(0xFF60A5FA);
 
-  /// 品牌填色上的文字色
+  /// 品牌填色上的文字色（深字對 [brand] 6.97:1）
   static const onBrand = Color(0xFF18181B);
 
   /// 深色底上的品牌文字與圖示色（與 [brand] 同值，語意不同故分開命名）
-  static const brandOnDark = Color(0xFFA78BFA);
+  static const brandOnDark = Color(0xFF60A5FA);
 
-  /// 淺色主題的品牌色（白底對比加強）
-  static const brandOnLight = Color(0xFF6D28D9);
+  /// 淺色主題的品牌色（Blue 700，白底 6.70:1、surface 6.36:1、白字在其上 6.70:1）
+  static const brandOnLight = Color(0xFF1D4ED8);
 
-  /// 純裝飾用品牌色 —— 邊框、低透明度底色、focus ring。
+  /// 純裝飾用品牌色（Blue 500）—— 邊框、低透明度底色、focus ring。
   /// 不承載文字，故不適用 WCAG 文字門檻。
-  static const brandDecorative = Color(0xFF8B5CF6);
+  ///
+  /// 與 [CategoryColors.chartPaletteDark] 的藍 500、`IndicatorColors.obvLabel`
+  /// 同值——刻意共用：三者皆為「藍色裝飾/序列」角色，分開宣告不同值反而
+  /// 製造雙處漂移風險。
+  static const brandDecorative = Color(0xFF3B82F6);
 
-  /// 深色主題中，疊加在 [brandDecorative] 裝飾底之上的文字色。
+  /// 深色主題中，疊加在 [brandDecorative] 裝飾底之上的文字色（Blue 300）。
   ///
   /// [brandDecorative] 以 25% alpha 疊加卡片背景（[SemanticColors.darkSurface]）
-  /// 後的合成色為 `#40345D`，[brand]（`#A78BFA`）對該合成色僅 4.1:1，不合格
-  /// ——[brand] 只對平面背景（scaffold／card）校準過對比度，疊色後的合成背景
-  /// 是完全不同的顏色配對。改用 Violet 300 對同一合成色達 6.1:1。
+  /// 後的合成色為 `#2C3E5D`，[brand] 只對平面背景校準過，疊色後是完全
+  /// 不同的顏色配對。Blue 300 對該合成色 5.96:1。
   ///
   /// 不得用於平面背景之上的品牌文字——平面背景請用 [brand]／[brandOnDark]。
-  static const brandOnDecorative = Color(0xFFC4B5FD);
+  static const brandOnDecorative = Color(0xFF93C5FD);
 
   /// 低強度／停用／低波動
   static const muted = Color(0xFF71717A);
 
-  /// 淺色主題中，**多層品牌 tint** 疊加後的文字色（Violet 900）。
+  /// 淺色主題中，**多層品牌 tint** 疊加後的文字色（Blue 900）。
   ///
   /// 更新進度橫幅是雙層疊色：banner 底＝primary@0.3 疊 scaffold、步驟
-  /// chip 再疊 primary@0.2——合成後為飽和淺紫（`#BFA0EF`），連
-  /// [brandOnLight] 對其都僅 3.2:1。Violet 900 對兩個漸層停點實測
-  /// 5.0／5.4:1。單層 tint 請用 [brandOnLight]（淺）／[brandOnDecorative]（深）。
-  static const brandOnDeepTintLight = Color(0xFF4C1D95);
+  /// chip 再疊 primary@0.2——合成後為飽和淺藍（`#9BB1EE`），連
+  /// [brandOnLight] 對其都不足。Blue 900 對最深的漸層停點實測 4.89:1。
+  /// 單層 tint 請用 [brandOnLight]（淺）／[brandOnDecorative]（深）。
+  static const brandOnDeepTintLight = Color(0xFF1E3A8A);
 
   /// 守門測試掃描對象。新增常數時必須加入此清單。
   static const all = <Color>[

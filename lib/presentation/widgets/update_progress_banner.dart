@@ -22,14 +22,17 @@ class UpdateProgressBanner extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = context.isDark;
 
-    // 漸層承載 18px 白色圖示：AppTheme.primaryColor 恆為 #A78BFA，白字／
-    // 白圖示在其上僅 2.72:1（圖形物件 3:1 不過）。改走主題 primary，淺色
-    // 解析為 #6D28D9（白對其 7.10:1），深色同值不變。
-    // 邊框與陰影同步改用同一來源，避免同一元件內兩種紫並存。
+    // 漸層 icon 盒的前景依主題分流：淺色 primary 是深藍（#1D4ED8）白圖示
+    // 6.70/3.68:1 合格；深色 primary 是淺藍（#60A5FA）白圖示僅 2.54:1，
+    // 改用 onBrand 深字（6.97/4.82:1）——與「加入自選」等品牌填色按鈕的
+    // M3 深字邏輯一致。
     final gradientColors = [
       theme.colorScheme.primary,
       AppTheme.brandDecorative,
     ];
+    final iconOnGradient = context.isDark
+        ? QualityColors.onBrand
+        : Colors.white;
 
     final backgroundColor = isDark
         ? theme.colorScheme.surfaceContainerLow
@@ -78,11 +81,7 @@ class UpdateProgressBanner extends StatelessWidget {
                           DesignTokens.radiusMd,
                         ),
                       ),
-                      child: const Icon(
-                        Icons.sync,
-                        color: Colors.white,
-                        size: 18,
-                      ),
+                      child: Icon(Icons.sync, color: iconOnGradient, size: 18),
                     ),
                     const SizedBox(width: 12),
                     // 訊息

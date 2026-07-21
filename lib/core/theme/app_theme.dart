@@ -16,10 +16,10 @@ class AppTheme {
   // 色彩調色盤（Material Design 標準）
   // ==================================================
 
-  /// 主品牌色（Violet 400）。深色主題採 M3 色調邏輯：淺色 primary + 深色 onPrimary。
+  /// 主品牌色（Blue 400）。深色主題採 M3 色調邏輯：淺色 primary + 深色 onPrimary。
   static const primaryColor = QualityColors.brand;
 
-  /// 品牌裝飾色（Violet 500）—— 僅用於邊框、低透明度底色，不承載文字。
+  /// 品牌裝飾色（Blue 500）—— 僅用於邊框、低透明度底色，不承載文字。
   static const brandDecorative = QualityColors.brandDecorative;
 
   /// 深色主題中，疊加在 [brandDecorative] 裝飾底之上的文字色（Violet 300）。
