@@ -120,6 +120,17 @@ abstract final class ModeFilters {
   /// **CALIBRATION_PENDING**：缺 forward backtest，上線後看 fire 範圍再調。
   static const double modeAMaxBiasMa20Pct = 15.0;
 
+  /// Mode A 會動底線：60D 報酬 ≤ 此值（%）者不得入起漲候選。
+  ///
+  /// **2026-07-21 回測依據**（calibration.db 2017-05~2026-07、A 價格包絡
+  /// 代理宇宙、次日開盤進場、cross-sectional demean）：60D≤0 桶 20D 前瞻
+  /// 超額 −0.39% vs >0 桶 +0.43%（差 −0.81pp、|t|≈54），三分期符號全
+  /// 穩定且近段最強（−1.26pp）。實例：2026-07-21 大漲日 A 榜前 30 有
+  /// 20 檔 60D 為負（最深 −20%），台積電（60D+16%）反被擠到第 28 名。
+  /// 「起漲」語意要求已證明的動能；長期弱勢的低基期反彈不屬於此 tab。
+  /// null（history < 61）permissive 不擋，同其他 price gate 原則。
+  static const double modeAMinRet60Pct = 0.0;
+
   /// Mode A 剔除「**當日**漲幅 > 8%」（無豁免）
   ///
   /// 跟 [modeAMaxBiasMa20Pct] 互補：乖離 gate 擋「累積已延伸」、今日 filter

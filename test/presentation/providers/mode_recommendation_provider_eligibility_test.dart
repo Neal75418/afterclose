@@ -705,6 +705,79 @@ void main() {
       );
     });
   });
+
+  group('isEligibleForMode — Mode A — 會動底線（ret60 gate）', () {
+    // 回測依據（2017-05~2026-07 calibration.db，A 價格包絡代理宇宙、
+    // 次日開盤進場、cross-sectional demean）：60D<=0 桶 20D 前瞻超額
+    // -0.39% vs >0 桶 +0.43%，差 -0.81pp、三分期符號全穩定且近段最強
+    // （-1.26pp）。「起漲」候選需具備已證明的動能，長期弱勢反彈交給
+    // 反轉類訊號與其他 tab。
+    test('ineligible when 60D return <= 0（長期弱勢股反彈不入起漲）', () {
+      expect(
+        isEligibleForMode(
+          mode: ScoringMode.momentumEntry,
+          score: _score(short: 30),
+          todayPct: 3.0,
+          biasMa20: 5.0,
+          ret60Pct: -10.0,
+        ),
+        isFalse,
+      );
+    });
+
+    test('eligible when 60D return > 0', () {
+      expect(
+        isEligibleForMode(
+          mode: ScoringMode.momentumEntry,
+          score: _score(short: 30),
+          todayPct: 3.0,
+          biasMa20: 5.0,
+          ret60Pct: 8.0,
+        ),
+        isTrue,
+      );
+    });
+
+    test('ret60 null（history < 61）permissive 不擋，同其他 price gate 原則', () {
+      expect(
+        isEligibleForMode(
+          mode: ScoringMode.momentumEntry,
+          score: _score(short: 30),
+          todayPct: 3.0,
+          biasMa20: 5.0,
+          ret60Pct: null,
+        ),
+        isTrue,
+      );
+    });
+
+    test('ret60 gate 僅適用 Mode A：Mode B 不受影響', () {
+      expect(
+        isEligibleForMode(
+          mode: ScoringMode.strengthObserve,
+          score: _score(short: 30),
+          todayPct: 2.0,
+          ret60Pct: -10.0,
+        ),
+        isTrue,
+      );
+    });
+  });
+
+  group('isEtfIndustry — ETF 宇宙過濾（含上櫃ETF 補漏）', () {
+    test("industry 'ETF' 與 '上櫃ETF' 皆判定為 ETF", () {
+      // 2026-07-21 補漏：stock_master 兩種標記並存（ETF 158 檔＋上櫃ETF
+      // 14 檔），舊 == 'ETF' 精確比對漏掉後者。
+      expect(isEtfIndustry('ETF'), isTrue);
+      expect(isEtfIndustry('上櫃ETF'), isTrue);
+    });
+
+    test('一般產業與 null 不受影響', () {
+      expect(isEtfIndustry('半導體業'), isFalse);
+      expect(isEtfIndustry('紡織業'), isFalse);
+      expect(isEtfIndustry(null), isFalse);
+    });
+  });
 }
 
 /// 建立 ModeStockScore 的 helper（test 內最常用 short 分數）

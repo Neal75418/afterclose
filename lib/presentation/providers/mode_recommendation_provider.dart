@@ -220,15 +220,27 @@ bool isSignalTier(Map<ScoringMode, ModeStockScore> modeScores) =>
 /// `todayPct` / `biasMa20` 為 null 代表 price data 缺失（新 IPO / sparse history /
 /// data race）：採「不知道就不擋」semantics、避免靜默 drop。
 @visibleForTesting
+/// ETF／ETN 宇宙過濾判定——`stock_master.industry` 有 `ETF` 與 `上櫃ETF`
+/// 兩種標記並存（158＋14 檔），用 contains 一次涵蓋。
+@visibleForTesting
+bool isEtfIndustry(String? industry) => industry?.contains('ETF') ?? false;
+
 bool isEligibleForMode({
   required ScoringMode mode,
   required ModeStockScore score,
   required double? todayPct,
   double? biasMa20,
+  double? ret60Pct,
   Set<String> triggeredReasonCodes = const {},
 }) {
   switch (mode) {
     case ScoringMode.momentumEntry:
+      // **2026-07-21 會動底線**：60D 報酬 ≤ 0 的長期弱勢股，其反彈不屬
+      // 「起漲」語意（回測證據見 ModeFilters.modeAMinRet60Pct doc）。
+      // null permissive 不擋。
+      if (ret60Pct != null && ret60Pct <= ModeFilters.modeAMinRet60Pct) {
+        return false;
+      }
       // 當日 > +8% 一律踢出（追高、自動導去 Mode B 強勢觀察）
       if (todayPct != null && todayPct > ModeFilters.modeAExcludeTodayPct) {
         return false;
@@ -402,8 +414,13 @@ final _modeAssignmentsProvider =
 
         // **2026-06-20 ETF 過濾**：台股掃描 app、rule 全為個股行為設計。ETF（尤其
         // 美股指數）走勢平滑、「淺回檔 + 量縮」幾乎天天成立 → 灌進 Mode C 純雜訊。
-        // user 決定 3 個 tab 全濾。stock_master.industry == 'ETF' 是乾淨標記。
-        if (data.stocks[symbol]?.industry == 'ETF') {
+        // user 決定 3 個 tab 全濾。
+        //
+        // **2026-07-21 補漏**：原本 `== 'ETF'` 精確比對會漏掉 industry 為
+        // `上櫃ETF` 的 14 檔（stock_master 實測兩種標記並存：ETF 158 檔＋
+        // 上櫃ETF 14 檔），改 contains 涵蓋兩者。台股產業分類無任何個股
+        // 產業名含「ETF」字樣，不會誤傷。
+        if (isEtfIndustry(data.stocks[symbol]?.industry)) {
           droppedEtf++;
           continue;
         }
@@ -433,6 +450,7 @@ final _modeAssignmentsProvider =
 
         final todayPct = priceChanges[symbol];
         final biasMa20 = computeBiasMa20ForHistory(data.priceHistories[symbol]);
+        final ret60Pct = computeRet60dForHistory(data.priceHistories[symbol]);
 
         // 取得該股 daily_reason 內所有 triggered reason codes（給 Mode C gate 用）
         final triggeredCodes = <String>{
@@ -449,6 +467,7 @@ final _modeAssignmentsProvider =
             score: mEntry.value,
             todayPct: todayPct,
             biasMa20: biasMa20,
+            ret60Pct: ret60Pct,
             triggeredReasonCodes: triggeredCodes,
           )) {
             continue;
