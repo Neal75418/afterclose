@@ -37,7 +37,7 @@ abstract final class SectorParams {
   /// 排行顯示的產業數上限
   static const int rankingTopN = 8;
 
-  /// 產業成員（有 20D 報酬資料）少於此數不進排行——樣本太小、中位數無
+  /// 產業成員（有選定視窗報酬資料）少於此數不進排行——樣本太小、中位數無
   /// 代表性。實例：農業科技業 4 檔（+7.3/+6.3/-1.5/-5.0%）兩漲兩跌拼出
   /// +2.4% 中位數、法人卻是賣超，2026-07-22 使用者實機看到後定 5。
   static const int rankingMinMembers = 5;
@@ -49,8 +49,9 @@ abstract final class SectorParams {
   /// 法則 L2「外資或投信近 3 日連買」的觀察窗。
   static const int rankingInstitutionalDays = 3;
 
-  /// 族群排行載入價格歷史的回看日曆天數：20D 報酬需 21 個交易日 ≈ 31 日曆
-  /// 天，+ 連假 margin（CNY 假期叢集可達 9 天）取 45。
+  /// 族群排行載入價格歷史的回看日曆天數：最長視窗（20日）報酬需 21 個
+  /// 交易日 ≈ 31 日曆天，+ 連假 margin（CNY 假期叢集可達 9 天）取 45；
+  /// 5日視窗共用同一份載入。
   static const int rankingHistoryCalendarDays = 45;
 
   /// 法人方向載入的回看日曆天數：3 個交易日 + 連假 margin。10 天在 CNY

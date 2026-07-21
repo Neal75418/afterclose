@@ -71,7 +71,9 @@
     "industryRanking": "Sector Ranking",
     "industryMemberCount": "{} stocks",
     "industryInstitutional": "Inst. 3D",
-    "industryTopMembers": "{} Top Movers (20D)"
+    "industryTopMembers": "{} Top Movers ({})",
+    "industryWindow20d": "20D",
+    "industryWindow5d": "5D"
   },
   "news": {
     "title": "Market News",

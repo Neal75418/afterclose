@@ -15,14 +15,29 @@ import 'package:afterclose/presentation/widgets/section_header.dart';
 
 /// 今日頁族群排行 section（使用者選股法則 L1：族群決定 80%）
 ///
-/// 橫向卡片列出動能前段產業：20D 動能中位數、外資+投信近 3 日方向、
-/// 成員數。點卡片開 bottom sheet 看領漲成員、可再點進個股詳情。
-class IndustryRankingSection extends ConsumerWidget {
+/// 橫向卡片列出動能前段產業：選定視窗（20日輪動／5日轉折）動能中位數、
+/// 外資+投信近 3 日方向、成員數。點卡片開 bottom sheet 看領漲成員、
+/// 可再點進個股詳情。
+class IndustryRankingSection extends ConsumerStatefulWidget {
   const IndustryRankingSection({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final asyncRankings = ref.watch(industryRankingProvider);
+  ConsumerState<IndustryRankingSection> createState() =>
+      _IndustryRankingSectionState();
+}
+
+class _IndustryRankingSectionState
+    extends ConsumerState<IndustryRankingSection> {
+  RankingWindow _window = RankingWindow.d20;
+
+  String _windowLabel(RankingWindow w) => switch (w) {
+    RankingWindow.d20 => 'today.industryWindow20d'.tr(),
+    RankingWindow.d5 => 'today.industryWindow5d'.tr(),
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final asyncRankings = ref.watch(industryRankingProvider(_window));
     return asyncRankings.when(
       // 輔助發現層：loading / error / 空資料（fresh DB、歷史回補中）都整段
       // 收起，不佔版面、不擋今日頁主線（推薦清單）。資料層錯誤已由上方
@@ -37,6 +52,24 @@ class IndustryRankingSection extends ConsumerWidget {
             SectionHeader(
               title: 'today.industryRanking'.tr(),
               icon: Icons.workspaces_outline,
+              // 20日＝輪動主視角、5日＝轉折視角（20日弱但正在翻強的族群
+              // 只有 5日排序才進得了前八——2026-07-22 實機回饋）
+              trailing: SegmentedButton<RankingWindow>(
+                style: const ButtonStyle(
+                  visualDensity: VisualDensity.compact,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                showSelectedIcon: false,
+                segments: [
+                  for (final w in RankingWindow.values)
+                    ButtonSegment(value: w, label: Text(_windowLabel(w))),
+                ],
+                selected: {_window},
+                onSelectionChanged: (set) {
+                  HapticFeedback.selectionClick();
+                  setState(() => _window = set.first);
+                },
+              ),
             ),
             SizedBox(
               height: 108,
@@ -48,8 +81,11 @@ class IndustryRankingSection extends ConsumerWidget {
                 itemCount: rankings.length,
                 separatorBuilder: (_, _) =>
                     const SizedBox(width: DesignTokens.spacing8),
-                itemBuilder: (context, index) =>
-                    _IndustryCard(ranking: rankings[index], rank: index + 1),
+                itemBuilder: (context, index) => _IndustryCard(
+                  ranking: rankings[index],
+                  rank: index + 1,
+                  windowLabel: _windowLabel(_window),
+                ),
               ),
             ),
             const SizedBox(height: DesignTokens.spacing8),
@@ -61,10 +97,15 @@ class IndustryRankingSection extends ConsumerWidget {
 }
 
 class _IndustryCard extends StatelessWidget {
-  const _IndustryCard({required this.ranking, required this.rank});
+  const _IndustryCard({
+    required this.ranking,
+    required this.rank,
+    required this.windowLabel,
+  });
 
   final IndustryRanking ranking;
   final int rank;
+  final String windowLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -167,7 +208,9 @@ class _IndustryCard extends StatelessWidget {
                   horizontal: DesignTokens.spacing16,
                 ),
                 child: Text(
-                  'today.industryTopMembers'.tr(args: [ranking.industry]),
+                  'today.industryTopMembers'.tr(
+                    args: [ranking.industry, windowLabel],
+                  ),
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -180,13 +223,10 @@ class _IndustryCard extends StatelessWidget {
                   title: Text(m.name.isEmpty ? m.symbol : m.name),
                   subtitle: Text(m.symbol),
                   trailing: Text(
-                    AppNumberFormat.signedPercent(m.ret20Pct, decimals: 1),
+                    AppNumberFormat.signedPercent(m.retPct, decimals: 1),
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: AppTheme.getPriceColor(
-                        m.ret20Pct,
-                        theme.brightness,
-                      ),
+                      color: AppTheme.getPriceColor(m.retPct, theme.brightness),
                     ),
                   ),
                   onTap: () {

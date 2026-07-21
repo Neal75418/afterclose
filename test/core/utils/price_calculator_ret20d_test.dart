@@ -38,4 +38,29 @@ void main() {
       expect(PriceCalculator.ret20d(zeroStart), isNull);
     });
   });
+
+  group('PriceCalculator.ret5d', () {
+    test('6 筆 → (尾-首)/首', () {
+      final history = List.generate(
+        6,
+        (i) => createTestPrice(
+          date: DateTime(2026, 6, 1).add(Duration(days: i)),
+          close: i == 5 ? 105.0 : 100.0,
+        ),
+      );
+      expect(PriceCalculator.ret5d(history), closeTo(5.0, 1e-9));
+    });
+
+    test('不足 6 筆 / null → null', () {
+      final short = List.generate(
+        5,
+        (i) => createTestPrice(
+          date: DateTime(2026, 6, 1).add(Duration(days: i)),
+          close: 100.0,
+        ),
+      );
+      expect(PriceCalculator.ret5d(short), isNull);
+      expect(PriceCalculator.ret5d(null), isNull);
+    });
+  });
 }

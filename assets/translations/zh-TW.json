@@ -71,7 +71,9 @@
     "industryRanking": "族群排行",
     "industryMemberCount": "{} 檔",
     "industryInstitutional": "法人3日",
-    "industryTopMembers": "{} 領漲成員（20日）"
+    "industryTopMembers": "{} 領漲成員（{}）",
+    "industryWindow20d": "20日",
+    "industryWindow5d": "5日"
   },
   "news": {
     "title": "市場新聞",

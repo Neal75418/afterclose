@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/domain/models/industry_ranking.dart';
 import 'package:afterclose/domain/services/analysis/industry_ranking_service.dart';
 
 import '../../../helpers/price_data_generators.dart';
@@ -89,7 +90,7 @@ void main() {
         'A1',
       ]);
       expect(rankings[0].topMembers.first.name, '甲五');
-      expect(rankings[0].topMembers.first.ret20Pct, closeTo(30.0, 1e-6));
+      expect(rankings[0].topMembers.first.retPct, closeTo(30.0, 1e-6));
     });
 
     test('ETF 產業（含「ETF」字樣）與無產業股票不進排行', () {
@@ -253,6 +254,81 @@ void main() {
         ),
         isEmpty,
       );
+    });
+
+    test('window=d5 → 用 5 日報酬排序（轉折族群視角）', () {
+      // 半導體：20日跌但近5日翻強；紡織：20日漲但近5日走平
+      // 收盤序列（21 筆）：半導體 前 16 筆 100→尾 5 筆拉到 108（20日 +8%、
+      // 5日 +8%）...直接構造兩組序列驗證兩種 window 排序互換。
+      List<DailyPriceEntry> seq(String symbol, List<double> closes) {
+        final start = DateTime(2026, 6, 1);
+        return [
+          for (var i = 0; i < closes.length; i++)
+            createTestPrice(
+              symbol: symbol,
+              date: start.add(Duration(days: i)),
+              close: closes[i],
+            ),
+        ];
+      }
+
+      // 電子型：起點 120 一路跌到 100、最後 5 根反彈到 110
+      // → 20日 = (110-120)/120 = -8.3%、5日 = (110-100)/100 = +10%
+      final bounce = [
+        120.0,
+        ...List.filled(14, 105.0),
+        100.0,
+        102.0,
+        104.0,
+        106.0,
+        108.0,
+        110.0,
+      ];
+      // 防守型：起點 100 緩漲到 105、近 5 日持平
+      // → 20日 = +5%、5日 = 0%
+      final steady = [
+        100.0,
+        ...List.filled(14, 103.0),
+        105.0,
+        105.0,
+        105.0,
+        105.0,
+        105.0,
+        105.0,
+      ];
+
+      final priceHistories = {
+        for (var m = 0; m < 5; m++) 'E$m': seq('E$m', bounce),
+        for (var m = 0; m < 5; m++) 'F$m': seq('F$m', steady),
+      };
+      final industries = {
+        for (var m = 0; m < 5; m++) 'E$m': '半導體業',
+        for (var m = 0; m < 5; m++) 'F$m': '金融保險業',
+      };
+
+      final by20 = service.rank(
+        priceHistories: priceHistories,
+        industries: industries,
+        names: const {},
+        institutionalHistories: const {},
+      );
+      final by5 = service.rank(
+        priceHistories: priceHistories,
+        industries: industries,
+        names: const {},
+        institutionalHistories: const {},
+        window: RankingWindow.d5,
+      );
+
+      // 20日視角：金融在前（半導體仍為負）
+      expect(by20.first.industry, '金融保險業');
+      expect(by20.last.industry, '半導體業');
+      expect(by20.last.momentumPct, lessThan(0));
+      // 5日視角：半導體反彈居首
+      expect(by5.first.industry, '半導體業');
+      expect(by5.first.momentumPct, closeTo(10.0, 1e-6));
+      expect(by5.first.topMembers.first.retPct, closeTo(10.0, 1e-6));
+      expect(by5.last.momentumPct, closeTo(0.0, 1e-6));
     });
   });
 }

@@ -57,6 +57,14 @@ class PriceCalculator {
     return sum / n > 0;
   }
 
+  static double? ret5d(List<DailyPriceEntry>? history) {
+    if (history == null || history.length < 6) return null;
+    final latest = history.last.close;
+    final old = history[history.length - 6].close;
+    if (latest == null || old == null || old == 0) return null;
+    return (latest - old) / old * 100;
+  }
+
   static double? ret20d(List<DailyPriceEntry>? history) {
     if (history == null || history.length < 21) return null;
     final latest = history.last.close;
