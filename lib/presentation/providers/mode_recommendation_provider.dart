@@ -123,13 +123,8 @@ double? computeRet60dForHistory(List<DailyPriceEntry>? history) =>
 /// 20D 報酬（%），供「產業領導」聚合各產業動能。回 null 當 history < 21 筆 /
 /// 端點 close null / 起點 0。
 @visibleForTesting
-double? computeRet20dForHistory(List<DailyPriceEntry>? history) {
-  if (history == null || history.length < 21) return null;
-  final latest = history.last.close;
-  final old = history[history.length - 21].close;
-  if (latest == null || old == null || old == 0) return null;
-  return (latest - old) / old * 100;
-}
+double? computeRet20dForHistory(List<DailyPriceEntry>? history) =>
+    PriceCalculator.ret20d(history);
 
 /// 由個股 20D 報酬聚合各產業動能（成員股**中位數**），供 [SectorStrengthService]
 /// 排名。中位數抗離群；歷史不足 / 無產業的股票略過。

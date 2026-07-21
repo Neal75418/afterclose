@@ -79,6 +79,38 @@ mixin InstitutionalDaoMixin on $AppDatabase {
     return grouped;
   }
 
+  /// 全市場法人資料範圍查詢（無 symbol 過濾），依 symbol 分組
+  ///
+  /// 族群排行需要全市場（~2,500 檔）近幾個交易日的法人淨買賣。
+  /// [getInstitutionalHistoryBatch] 走 `symbol IN (...)`，SQLite 變數上限
+  /// 撐不住全市場清單 → 提供無過濾版本（與 PriceDao.getAllPricesInRange
+  /// 同款設計）。
+  Future<Map<String, List<DailyInstitutionalEntry>>>
+  getAllInstitutionalInRange({
+    required DateTime startDate,
+    DateTime? endDate,
+  }) async {
+    final query = select(dailyInstitutional)
+      ..where((t) => t.date.isBiggerOrEqualValue(startDate));
+
+    if (endDate != null) {
+      query.where((t) => t.date.isSmallerOrEqualValue(endDate));
+    }
+
+    query.orderBy([
+      (t) => OrderingTerm.asc(t.symbol),
+      (t) => OrderingTerm.asc(t.date),
+    ]);
+
+    final results = await query.get();
+
+    final grouped = <String, List<DailyInstitutionalEntry>>{};
+    for (final entry in results) {
+      grouped.putIfAbsent(entry.symbol, () => []).add(entry);
+    }
+    return grouped;
+  }
+
   /// 取得指定日期的法人資料筆數
   Future<int> getInstitutionalCountForDate(DateTime date) async {
     final countExpr = dailyInstitutional.symbol.count();

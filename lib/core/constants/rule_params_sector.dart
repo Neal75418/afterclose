@@ -26,4 +26,33 @@ abstract final class SectorParams {
 
   /// 「強產業」evidence chip 門檻：產業強弱百分位 ≥ 此值（前 20% 族群）視為強產業。
   static const double strongSectorChipThreshold = 0.8;
+
+  // ==================================================
+  // 族群排行（今日頁顯示層，不進評分）
+  //
+  // 使用者選股法則 L1「族群決定 80%」的自動化：輪動前段＋法人方向。
+  // tiltWeight dormant 是「評分因子無全期 edge」的結論，不影響資訊呈現。
+  // ==================================================
+
+  /// 排行顯示的產業數上限
+  static const int rankingTopN = 8;
+
+  /// 產業成員（有 20D 報酬資料）少於此數不進排行——樣本太小、中位數無意義
+  static const int rankingMinMembers = 3;
+
+  /// 每個產業展開顯示的領漲成員數上限
+  static const int rankingTopMembersCount = 5;
+
+  /// 法人方向的合計視窗（交易日）：外資+投信近 N 日淨買賣。對齊使用者
+  /// 法則 L2「外資或投信近 3 日連買」的觀察窗。
+  static const int rankingInstitutionalDays = 3;
+
+  /// 族群排行載入價格歷史的回看日曆天數：20D 報酬需 21 個交易日 ≈ 31 日曆
+  /// 天，+ 連假 margin（CNY 假期叢集可達 9 天）取 45。
+  static const int rankingHistoryCalendarDays = 45;
+
+  /// 法人方向載入的回看日曆天數：3 個交易日 + 連假 margin。10 天在 CNY
+  /// 連假（9 日曆天）收假首日只涵蓋 1 個交易日——「法人3日」靜默變 1 日
+  /// （審查發現），取 20 覆蓋最壞情境（守門測試用 2026 CNY 實際行事曆驗）。
+  static const int rankingInstitutionalCalendarDays = 20;
 }

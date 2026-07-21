@@ -67,7 +67,11 @@
     "priceAlert": "Price Alerts",
     "dataDate": "Data: {date}",
     "dataToday": "Today",
-    "dataYesterday": "Yesterday"
+    "dataYesterday": "Yesterday",
+    "industryRanking": "Sector Ranking",
+    "industryMemberCount": "{} stocks",
+    "industryInstitutional": "Inst. 3D",
+    "industryTopMembers": "{} Top Movers (20D)"
   },
   "news": {
     "title": "Market News",

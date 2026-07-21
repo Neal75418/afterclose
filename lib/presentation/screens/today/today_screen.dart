@@ -25,6 +25,7 @@ import 'package:afterclose/presentation/providers/watchlist_provider.dart';
 import 'package:afterclose/presentation/widgets/api_rate_limit_dialog.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
 import 'package:afterclose/presentation/widgets/frosted_bar.dart';
+import 'package:afterclose/presentation/widgets/industry_ranking_section.dart';
 import 'package:afterclose/presentation/widgets/update_history_sheet.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/market_dashboard.dart';
 import 'package:afterclose/presentation/widgets/section_header.dart';
@@ -531,6 +532,10 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
             },
           ),
         ),
+
+        // 族群排行（L1：族群決定 80%）— 大盤 context 之後、個股推薦之前。
+        // 空資料 / 載入中自動收起，不佔版面。
+        const SliverToBoxAdapter(child: IndustryRankingSection()),
 
         // 部分錯誤橫幅（有推薦資料但重新整理失敗時顯示）
         Consumer(
