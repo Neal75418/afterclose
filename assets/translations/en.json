@@ -438,6 +438,7 @@
     "revenueAmount": "Revenue",
     "revenueMoM": "MoM",
     "revenueYoY": "YoY",
+    "revenueYoY3mAvg": "3-Mo Avg YoY",
     "epsHistory": "EPS History",
     "epsComingSoon": "No EPS data",
     "quarter": "Quarter",

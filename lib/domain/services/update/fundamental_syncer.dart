@@ -6,6 +6,7 @@ import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/safe_execution.dart';
 import 'package:afterclose/core/utils/taiwan_calendar.dart';
+import 'package:afterclose/data/models/finmind/revenue.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/repositories/fundamental_repository.dart';
 import 'package:afterclose/data/repositories/market_data_repository.dart';
@@ -194,6 +195,106 @@ class FundamentalSyncer {
       revenueCount: revenueCount,
       errors: errors,
     );
+  }
+
+  /// 回補自選股的月營收歷史（「近 3 月均年增」所需）
+  ///
+  /// 全市場批次同步只涵蓋最新一個月，歷史月份僅在使用者開過詳情頁的股票
+  /// 才有——多數自選股算不出「近 3 月均年增」。本方法對缺近 3 個應公布月
+  /// 完整 YoY 的自選股，走 FinMind 逐檔回補 ~16 個月（涵蓋近 3 月的前一年
+  /// 同月，讓 [FinMindRevenue.calculateGrowthRates] 算得出 YoY）。
+  ///
+  /// 冪等：近 3 個應公布月（[TaiwanCalendar.expectedLatestRevenueMonth]）
+  /// 皆有非空 YoY 即跳過。ETF 無營收，過濾。單檔 generic 失敗記 warning
+  /// 續跑；RateLimitException rethrow 交由 coordinator 中止。
+  Future<int> syncWatchlistRevenueHistory() async {
+    final watchlist = await _db.getWatchlist();
+    final symbols = watchlist
+        .map((w) => w.symbol)
+        .where((s) => !StockPatterns.isEtfCode(s))
+        .toList();
+    if (symbols.isEmpty) return 0;
+
+    final needySymbols = await _filterNeedingRevenueHistory(symbols);
+    if (needySymbols.isEmpty) {
+      AppLogger.debug(
+        'FundamentalSyncer',
+        '營收歷史: ${symbols.length} 檔近3月皆完整，無需回補',
+      );
+      return 0;
+    }
+
+    final now = _clock.now();
+    // 近 3 月最舊為 expected-2；其前一年同月再留 1 個月緩衝 → 回推 16 個月
+    final start = DateTime(now.year, now.month - 16, 1);
+    var count = 0;
+
+    const chunkSize = ApiConfig.syncerBatchSize;
+    for (var i = 0; i < needySymbols.length; i += chunkSize) {
+      final chunk = needySymbols.skip(i).take(chunkSize).toList();
+      final results = await Future.wait(
+        chunk.map((s) async {
+          try {
+            return await _fundamentalRepo.syncMonthlyRevenue(
+              symbol: s,
+              startDate: start,
+              endDate: now,
+            );
+          } on RateLimitException {
+            rethrow;
+          } on NetworkException {
+            rethrow;
+          } catch (e) {
+            AppLogger.warning('FundamentalSyncer', '$s: 營收歷史回補失敗', e);
+            return 0;
+          }
+        }),
+      );
+      count += results.fold(0, (sum, n) => sum + n);
+
+      if (i + chunkSize < needySymbols.length) {
+        await Future.delayed(
+          const Duration(milliseconds: ApiConfig.syncerBatchDelayMs),
+        );
+      }
+    }
+
+    if (count > 0) {
+      AppLogger.info(
+        'FundamentalSyncer',
+        '營收歷史回補: $count 筆 (${needySymbols.length} 檔)',
+      );
+    }
+    return count;
+  }
+
+  /// 冪等預篩：回傳「近 3 個應公布月」缺月或缺 YoY 的 symbols
+  ///
+  /// 一次批次查詢（與財報預篩同款設計）。查詢失敗 fail-open 回全清單。
+  Future<List<String>> _filterNeedingRevenueHistory(
+    List<String> symbols,
+  ) async {
+    try {
+      final recent = await _db.getRecentMonthlyRevenueBatch(symbols, months: 3);
+      final latest = TaiwanCalendar.expectedLatestRevenueMonth(_clock.now());
+      // DateTime 建構子會自動正規化跨年（month 0 → 前一年 12 月）
+      final expectedKeys = <int>{};
+      for (var back = 0; back < 3; back++) {
+        final m = DateTime(latest.year, latest.month - back, 1);
+        expectedKeys.add(m.year * 100 + m.month);
+      }
+      return symbols.where((s) {
+        final rows = recent[s] ?? const [];
+        final completeKeys = {
+          for (final r in rows)
+            if (r.yoyGrowth != null) r.revenueYear * 100 + r.revenueMonth,
+        };
+        return !completeKeys.containsAll(expectedKeys);
+      }).toList();
+    } catch (e) {
+      AppLogger.warning('FundamentalSyncer', '營收歷史預篩失敗，退回全清單', e);
+      return symbols;
+    }
   }
 
   /// 同步指定股票清單的損益表資料（含 EPS）

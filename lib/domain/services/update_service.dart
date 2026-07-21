@@ -647,6 +647,20 @@ class UpdateService {
         }
       }
 
+      // 自選股營收歷史回補（「近 3 月均年增」所需；冪等，穩態零 API 呼叫）
+      if (!ctx.rateLimitedAbort) {
+        try {
+          await fundamentalSyncer.syncWatchlistRevenueHistory();
+        } on RateLimitException catch (e) {
+          ctx.rateLimitedAbort = true;
+          AppLogger.warning('UpdateService', '自選營收歷史回補失敗 (rate limit)', e);
+          ctx.result.recordError('自選營收歷史回補失敗 (rate limit): $e', e);
+        } catch (e) {
+          AppLogger.warning('UpdateService', '自選營收歷史回補失敗', e);
+          ctx.result.recordError('自選營收歷史回補失敗: $e', e);
+        }
+      }
+
       final revenueLabel = fundResult.revenueCached
           ? '已快取'
           : '${fundResult.revenueCount}';

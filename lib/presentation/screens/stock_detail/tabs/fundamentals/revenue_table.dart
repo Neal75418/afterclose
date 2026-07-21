@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/utils/taiwan_date_formatter.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
+import 'package:afterclose/domain/services/revenue_stats.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/fundamentals/fundamentals_helpers.dart';
 
 /// 顯示近 12 個月營收資料表，附月增率與年增率成長標章。
@@ -30,11 +31,34 @@ class RevenueTable extends StatelessWidget {
       });
     final displayData = sortedData.take(12).toList();
 
+    // 使用者選股法則 L2 門檻：「年增 > 30%，取近 3 月均值防單月雜訊」。
+    // 不足三月或缺值時為 null（不顯示，不硬湊）。
+    final avg3m = yoy3mAvg([
+      for (final r in revenues)
+        (year: r.revenueYear, month: r.revenueMonth, yoy: r.yoyGrowth),
+    ]);
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(DesignTokens.spacing12),
         child: Column(
           children: [
+            if (avg3m != null) ...[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'stockDetail.revenueYoY3mAvg'.tr(),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  // 沿用表格同款 growth badge（round-then-sign／平盤中性色）
+                  buildGrowthBadge(context, avg3m),
+                ],
+              ),
+              const SizedBox(height: DesignTokens.spacing8),
+            ],
             buildTableHeader(context, [
               buildHeaderCell(
                 context,

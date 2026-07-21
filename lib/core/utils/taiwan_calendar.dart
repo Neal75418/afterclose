@@ -251,4 +251,15 @@ class TaiwanCalendar {
     // 會被判「缺最新季」，1-3 月每輪更新都重抓（繼承 bug，review 修正）。
     return DateTime(now.year - 1, 7, 1);
   }
+
+  /// 此刻應已公布的最新一個「月營收」月份（回傳該月 1 日）
+  ///
+  /// 台股月營收於次月 10 日前公布。10 日當天視為未截止（保守：避免當天
+  /// 早上尚未公布就誤判「缺最新月」而重抓），故 10 日含以前只能期待上上月。
+  /// 與 [expectedLatestReportQuarter] 同理由：新鮮度檢查必須行事曆感知，
+  /// 不能用「距今 N 天」啟發式。
+  static DateTime expectedLatestRevenueMonth(DateTime now) {
+    final monthsBack = now.day > 10 ? 1 : 2;
+    return DateTime(now.year, now.month - monthsBack, 1);
+  }
 }

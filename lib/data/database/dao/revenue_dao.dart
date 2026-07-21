@@ -134,12 +134,27 @@ mixin RevenueDaoMixin on $AppDatabase {
   }
 
   /// 批次新增月營收資料
+  /// growth 欄位 coalesce(新值, 舊值)：per-symbol 回補抓固定窗口時，窗口
+  /// 舊端月份在批次內沒有前一年基期 → 成長率算出 null；整列 REPLACE 會把
+  /// 先前寬窗口算好的非空 YoY/MoM 靜默降級成 null（表格已顯示的年增率變
+  /// 回「-」）。營收本身一律取新值（官方數字，重抓即修正）。
   Future<void> insertMonthlyRevenue(
     List<MonthlyRevenueCompanion> entries,
   ) async {
     await batch((b) {
       for (final entry in entries) {
-        b.insert(monthlyRevenue, entry, mode: InsertMode.insertOrReplace);
+        b.insert(
+          monthlyRevenue,
+          entry,
+          onConflict:
+              DoUpdate<$MonthlyRevenueTable, MonthlyRevenueEntry>.withExcluded(
+                (old, excluded) => MonthlyRevenueCompanion.custom(
+                  revenue: excluded.revenue,
+                  momGrowth: coalesce([excluded.momGrowth, old.momGrowth]),
+                  yoyGrowth: coalesce([excluded.yoyGrowth, old.yoyGrowth]),
+                ),
+              ),
+        );
       }
     });
   }
