@@ -8,7 +8,8 @@ import 'package:afterclose/core/utils/number_formatter.dart';
 
 /// 建立成長率標章，以顏色區分漲跌。
 ///
-/// 正成長使用 [AppTheme.upColor]，負成長使用 [AppTheme.downColor]。
+/// 依 [AppTheme.getPriceColor] round-then-sign 解析漲跌平（淺色主題自動
+/// 取較深的下跌綠與平盤灰）。
 /// 絕對值 >= 10% 時加上底色與粗體。
 Widget buildGrowthBadge(BuildContext context, double? growth) {
   final theme = Theme.of(context);

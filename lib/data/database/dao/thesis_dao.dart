@@ -3,7 +3,7 @@ import 'package:drift/drift.dart';
 import 'package:afterclose/data/database/app_database.drift.dart';
 import 'package:afterclose/data/database/tables/user_tables.drift.dart';
 
-/// 釘選論點 DAO（出場層 Phase 2）
+/// 釘選論點 DAO（出場層）
 ///
 /// 狀態語意見 `PinnedThesis` 表註解與 spec §4：
 /// 一 symbol 一 ACTIVE、INVALIDATED 凍結、取消＝物理刪除。

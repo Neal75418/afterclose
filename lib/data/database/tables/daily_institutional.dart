@@ -18,13 +18,13 @@ class DailyInstitutional extends Table {
   /// 交易日期
   DateTimeColumn get date => dateTime()();
 
-  /// 外資買賣超（張）
+  /// 外資買賣超（股——TWSE/TPEx API 回傳股數直接儲存）
   RealColumn get foreignNet => real().nullable()();
 
-  /// 投信買賣超（張）
+  /// 投信買賣超（股）
   RealColumn get investmentTrustNet => real().nullable()();
 
-  /// 自營商買賣超（張）— 自行買賣 + 避險合計（對外口徑，媒體/TWSE 報的就是此值）
+  /// 自營商買賣超（股）— 自行買賣 + 避險合計（對外口徑，媒體/TWSE 報的就是此值）
   RealColumn get dealerNet => real().nullable()();
 
   /// 自營商「自行買賣」買賣超（張，不含避險）

@@ -59,7 +59,7 @@ class StockCard extends StatefulWidget {
   final double? latestClose;
   final double? priceChange;
 
-  /// 單一 score（fallback）— 當 [dualScore] 為 null 時使用 ScoreRing
+  /// 單一 score（fallback）— 當 [dualScore] 為 null 時顯示單一 ScoreTierBadge
   final double? score;
 
   /// 釘選狀態（出場層 Phase 2）。null = 不顯示釘選鈕（掃描頁等不提供
@@ -71,9 +71,9 @@ class StockCard extends StatefulWidget {
 
   /// 雙 horizon score (5D, 60D) — 給 Today screen Mode tab 用
   ///
-  /// 不為 null 時，卡片右上角改顯示雙小 ring 並排（5D / 60D），不用大
-  /// ScoreRing。其他 caller（watchlist / scan / stock detail）不傳此參
-  /// 數就維持原本的單 ScoreRing 行為。
+  /// 不為 null 時，header 內顯示 tier 徽章＋5D/60D 雙數字
+  /// （ScoreTierBadge.dual）。其他 caller（watchlist / scan）不傳此參數
+  /// 就維持單一 ScoreTierBadge 行為。
   final (double, double)? dualScore;
   final List<String> reasons;
   final String? trendState;

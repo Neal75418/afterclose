@@ -39,8 +39,8 @@ class FinMindFinancialStatement {
       );
 
   final String stockId;
-  final String date; // YYYY-QQ format (e.g., "2024-Q1")
-  final String type; // 項目名稱 (e.g., "Revenue", "NetIncome")
+  final String date; // YYYY-MM-DD 季度截止日（如 "2024-03-31"）
+  final String type; // 項目名稱 (e.g., "Revenue", "IncomeAfterTaxes")
   final double value; // 金額
   final String origin; // 中文項目名稱
 }

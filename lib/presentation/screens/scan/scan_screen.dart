@@ -211,9 +211,9 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     // FilterChip 選中時的底色是 chipTheme.selectedColor，不是 M3 預設的實心
     // secondaryContainer——深色主題沒覆寫它，落回實心 secondaryContainer，
     // onSecondaryContainer 正確（6.51:1）；淺色主題覆寫成
-    // primaryColor@15% 疊白的淡紫色（見 app_theme.dart chipTheme），
+    // primaryColor@15% 疊白的淡藍色（見 app_theme.dart chipTheme），
     // onSecondaryContainer 對這個合成色只有 1.14:1（幾乎看不見），故淺色
-    // 主題改用 onSurface（chipTheme.labelStyle 預設色，對淡紫合成色
+    // 主題改用 onSurface（chipTheme.labelStyle 預設色，對淡藍合成色
     // 14.98:1）。
     final selectedLabelColor = context.isDark
         ? theme.colorScheme.onSecondaryContainer
@@ -704,7 +704,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
       card = RepaintBoundary(
         child: Slidable(
           key: ValueKey(stock.symbol),
-          // 向左滑動 → 檢視詳情
+          // 向右滑動（startActionPane）→ 檢視詳情
           startActionPane: ActionPane(
             motion: const BehindMotion(),
             extentRatio: 0.25,
@@ -725,7 +725,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
               ),
             ],
           ),
-          // 向右滑動 → 切換自選
+          // 向左滑動（endActionPane）→ 切換自選
           endActionPane: ActionPane(
             motion: const BehindMotion(),
             extentRatio: 0.25,

@@ -93,7 +93,6 @@ class S {
       'news.daysAgo'.tr(namedArgs: {'days': days.toString()});
 
   // ==================================================
-  // ==================================================
   // 自選股頁面
   // ==================================================
   static String get watchlistTitle => 'watchlist.title'.tr();

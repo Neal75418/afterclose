@@ -86,7 +86,7 @@ class AppSettings extends Table {
 /// 股價提醒 Table
 ///
 /// 提醒類型：完整值域見 `AlertParams` 的 type 常數（價格/漲跌幅之外
-/// 尚有營收、內部人、法人等共 23 種）
+/// 尚有營收、內部人等共 23 種）
 @DataClassName('PriceAlertEntry')
 class PriceAlert extends Table {
   /// 自動遞增 ID

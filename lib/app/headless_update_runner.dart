@@ -73,7 +73,7 @@ Future<UpdateResult> runHeadlessUpdate({
     );
 
     // 初始化 API 客戶端（hoist 到 try 外讓 finally 可見）。
-    // M3: process-local ApiBudgetTracker，跨 isolate 不共享是有意設計。
+    // process-local ApiBudgetTracker，跨 isolate 不共享是有意設計。
     final budgetTracker = ApiBudgetTracker();
     final finMindClient = FinMindClient(budgetTracker: budgetTracker);
     final twseClient = TwseClient();
@@ -90,7 +90,7 @@ Future<UpdateResult> runHeadlessUpdate({
         AppLogger.info(_tag, 'FinMind token 未注入，需 token 的 syncer 將 skip');
       }
 
-      // M9 fix：透過 UpdateServiceFactory 統一裝配，與 foreground
+      // 透過 UpdateServiceFactory 統一裝配，與 foreground
       // `updateServiceProvider` 共享同一條 wiring 路徑避免漂移。
       final updateService = UpdateServiceFactory.build(
         database: database,

@@ -138,7 +138,7 @@ class RuleAccuracy extends Table {
   /// 規則 ID（如 reversal_w2s）
   TextColumn get ruleId => text()();
 
-  /// 統計週期：DAILY、WEEKLY、MONTHLY
+  /// 統計週期：「N 天 + D」持有天數字串（如 5D、20D、60D）
   TextColumn get period => text()();
 
   /// 觸發次數

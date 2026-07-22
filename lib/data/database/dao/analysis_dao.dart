@@ -96,14 +96,14 @@ mixin AnalysisDaoMixin on $AppDatabase {
 
   /// Mode-based 股票分數加總（每檔股票該 mode 內所有 rule 的 score 加總）
   ///
-  /// 用於 Today screen 的 3-tab Mode UI — 起漲 / 強勢 / 弱勢 各自獨立排序。
+  /// 用於 Today screen 的 3-tab Mode UI — 起漲 / 強勢 / 回檔 各自獨立排序。
   ///
   /// [reasonTypeCodes] 該 mode 內 ReasonType code 列表（UPPER_SNAKE_CASE）
   /// [date] 查詢日期
   ///
-  /// 回傳每檔股票的 short / long score 加總（filter 在 mode 內的 rule），
-  /// 含 reasonCount 用於 UI debug / tiebreak。caller 自己決定排序（通常按
-  /// score abs DESC，因為 Mode C 是負分）。
+  /// 回傳每檔股票的 short / long score 加總（filter 在 mode 內的 rule）。
+  /// caller 自己決定排序（現行：A/C 按 score DESC、B 按 60D 報酬 DESC，
+  /// tiebreak symbol ASC——Mode C v2 起為正分機會 tab）。
   Future<List<ModeStockScore>> getModeStockScores(
     DateTime date,
     List<String> reasonTypeCodes,

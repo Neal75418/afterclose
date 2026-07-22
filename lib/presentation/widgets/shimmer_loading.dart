@@ -72,12 +72,12 @@ abstract final class ShimmerDimensions {
 
 /// 淺色與深色主題的微光效果顏色
 ///
-/// 深色三色原為 Slate `#1E293B`／`#334155`／`#0F172A`——正是 Task 3 從
+/// 深色三色原為 Slate `#1E293B`／`#334155`／`#0F172A`——正是表面色 Slate→Zinc 遷移時從
 /// `app_theme.dart` 換掉的舊 `_surfaceDark`／`_cardDarkSurface`／
 /// `_backgroundDark`。表面遷移至 Zinc 後這裡沒跟上，造成 15 個使用骨架的
 /// 畫面在深色主題下「載入時是 Slate 藍、載入完變 Zinc 灰」的色偏跳動。
 ///
-/// 改為委派 [SemanticColors] 的對應階，是 Task 3 同一組替換的直譯。
+/// 改為委派 [SemanticColors] 的對應階，與該次遷移同一組替換的直譯。
 /// 微光掃過的可見度不受影響：base/highlight 兩色的對比比值由 Slate 的
 /// 1.4128 變為 Zinc 的 1.4262，差異小於 1%。
 abstract final class ShimmerColors {

@@ -312,7 +312,7 @@ class _AiSummaryCardState extends ConsumerState<AiSummaryCard> {
             ),
           ],
 
-          // 規則準確度（Sprint 10）
+          // 規則準確度
           _RuleAccuracySection(symbol: widget.symbol),
 
           // 快捷操作按鈕
@@ -553,7 +553,8 @@ class _SignalStrengthBar extends StatelessWidget {
   /// - 信心度（high=40%, medium=25%, low=10%）
   /// - 匯流數量（每個 +10%，最多 30%）
   /// - 衝突（-20%）
-  /// - 有訊號（+10%）
+  /// - 有訊號或風險（+10%）
+  /// - 有輔助數據（+10%）
   double _calculateStrength() {
     var strength = 0.0;
 
@@ -592,7 +593,7 @@ class _SignalStrengthBar extends StatelessWidget {
   }
 }
 
-/// 規則準確度區塊（Sprint 10）
+/// 規則準確度區塊
 ///
 /// 顯示主要觸發規則的歷史命中率和平均報酬率。
 class _RuleAccuracySection extends ConsumerWidget {

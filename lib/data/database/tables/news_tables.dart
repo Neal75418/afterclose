@@ -22,7 +22,7 @@ class NewsItem extends Table {
   /// 新聞連結
   TextColumn get url => text()();
 
-  /// 分類：EARNINGS、POLICY、INDUSTRY、COMPANY_EVENT、OTHER
+  /// 分類：目前一律 'OTHER'（RSS 來源未實作分類器）
   TextColumn get category => text()();
 
   /// 發布時間

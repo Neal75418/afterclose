@@ -28,8 +28,8 @@ import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 /// ## 空 context
 ///
 /// 使用 [CalibratedScoreContext.empty] 產生空 context，所有查詢都會回 null，
-/// 等效於「全部走 hardcoded fallback」。Pre-launch 時 placeholder JSON 是
-/// 空的，這是預期的常態行為。
+/// 等效於「全部走 hardcoded fallback」——僅剩 registry 未載入或測試情境
+/// （production JSON 自 2026-07-13 起已有校準值）。
 @immutable
 class CalibratedScoreContext {
   const CalibratedScoreContext({

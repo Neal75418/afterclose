@@ -85,7 +85,7 @@ class FinancialData extends Table {
   /// 報表類型：INCOME、BALANCE、CASHFLOW
   TextColumn get statementType => text()();
 
-  /// 資料項目（如 Revenue、NetIncome、TotalAssets）
+  /// 資料項目（如 Revenue、IncomeAfterTaxes、TotalAssets——⚠️ NetIncome 是 0 筆的幻影 key，見 financial_data_dao）
   TextColumn get dataType => text()();
 
   /// 數值（千元）

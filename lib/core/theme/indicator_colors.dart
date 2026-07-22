@@ -125,7 +125,7 @@ abstract final class IndicatorColors {
   /// 五色全部或半數主題不合格（2.0～4.2:1）。各對應色維持同色相家族
   /// （teal 淺色例外：teal-700 色相 175.3° 貼綠區邊界 0.3°，改用
   /// cyan-800 `#155E75`／194°，同時把對比從 4.58 拉到 6.08）。
-  /// 全部組合實測 4.7～7.0:1。未知色（防禦分支）回傳原色。
+  /// 全部組合實測 4.7～7.0:1。未知色（防禦分支）回傳中性高對比色。
   static Color selectorOnTint(Color base, Brightness brightness) {
     final isLight = brightness == Brightness.light;
     return switch (base) {

@@ -38,7 +38,7 @@ class TechnicalTab extends ConsumerStatefulWidget {
 }
 
 class _TechnicalTabState extends ConsumerState<TechnicalTab> {
-  // 主圖指標（疊加於 K 線圖）：MA、BOLL
+  // 主圖指標（疊加於 K 線圖）：MA、BOLL、SAR
   final Set<MainState> _mainIndicators = {MainState.MA};
   // 副圖指標（子圖表）：MACD、KDJ、RSI、WR、CCI
   final Set<SecondaryState> _secondaryIndicators = {};
@@ -181,7 +181,7 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
           ),
           const SizedBox(height: DesignTokens.spacing16),
 
-          // 副圖指標選擇（RSI、KD、MACD）
+          // 副圖指標選擇（MACD、KDJ、RSI、WR、CCI）
           SectionHeader(
             title: 'stockDetail.secondaryIndicators'.tr(),
             icon: Icons.show_chart,

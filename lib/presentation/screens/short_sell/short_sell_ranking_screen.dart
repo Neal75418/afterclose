@@ -199,10 +199,10 @@ class _ShortSellRankingScreenState
     final change = item.balanceChange;
     final changeColor = change > 0
         ? AppTheme
-              .downColor // 融券增加 = 看空 = 紅色
+              .downColor // 融券增加 = 看空 = 綠色（downColor）
         : change < 0
         ? AppTheme
-              .upColor // 融券減少 = 回補 = 綠色
+              .upColor // 融券減少 = 回補 = 紅色（upColor）
         : theme.colorScheme.onSurface;
 
     return InkWell(

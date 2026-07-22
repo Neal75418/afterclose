@@ -28,8 +28,9 @@ import 'package:afterclose/domain/services/market_sentiment_service.dart';
 
 /// 大盤總覽 Dashboard
 ///
-/// 組合 5 個子 widget，取代舊的 MarketOverviewCard。
-/// 顯示 Hero 指數、子指數、漲跌家數、法人動向、融資融券。
+/// 組合多個 section 子 widget（Hero 指數、情緒、漲跌家數、量能、
+/// 法人動向、融資融券、籌碼異常、產業表現、綜合判讀等），取代舊的
+/// MarketOverviewCard。
 /// 支援上市/上櫃市場切換，手機使用 Tab，平板/桌面並排顯示。
 class MarketDashboard extends StatefulWidget {
   const MarketDashboard({super.key, required this.state});
@@ -507,7 +508,7 @@ class _MarketDashboardState extends State<MarketDashboard> {
       children: [
         for (int i = 0; i < sections.length; i++) ...[
           if (i < 2)
-            // Hero + 子指數之間用較小間距，不加分隔線
+            // Hero 與其後第一個 section 之間用較小間距，不加分隔線
             const SizedBox(height: DesignTokens.spacing10)
           else ...[
             const SizedBox(height: DesignTokens.spacing14),

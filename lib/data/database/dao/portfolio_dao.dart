@@ -6,7 +6,7 @@ import 'package:afterclose/data/database/tables/portfolio_tables.drift.dart';
 /// 投資組合相關資料存取：持倉與交易紀錄
 mixin PortfolioDaoMixin on $AppDatabase {
   // ==================================================
-  // 投資組合操作（Phase 4.4）
+  // 投資組合操作
   // ==================================================
 
   /// 取得所有有持倉的 position

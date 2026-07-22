@@ -35,7 +35,7 @@ class _ExtractedPrices {
 }
 
 /// 根據選擇的副指標與主指標，顯示詳細的技術指標卡片
-/// （RSI、KDJ、MACD、Bollinger）。
+/// （選擇型：RSI/KDJ/MACD/Bollinger；恆顯型：OBV/ATR）。
 class IndicatorCardsSection extends StatefulWidget {
   const IndicatorCardsSection({
     super.key,

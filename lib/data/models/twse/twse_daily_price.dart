@@ -26,7 +26,7 @@ class TwseDailyPrice {
 
   /// 將 TWSE 民國日期（例如 "1150119"）轉換為 DateTime
   ///
-  /// 回傳 UTC 午夜時間以確保跨時區一致性
+  /// 回傳本地午夜時間（委派 TwParseUtils.parseCompactRocDate）
   static DateTime parseRocDate(String rocDate) {
     // 委派 canonical parser（含月日越界驗證——舊實作對 2/30 這類日期會被
     // DateTime 靜默正規化成 3/2，是髒資料入口）；解析失敗維持 throw 語意。

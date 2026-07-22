@@ -11,8 +11,8 @@ import 'package:afterclose/presentation/widgets/stock_card.dart';
 
 /// 自選股列表項目（含左右滑動操作）
 ///
-/// - 左滑：查看詳情
-/// - 右滑：從自選移除
+/// - 右滑：查看詳情
+/// - 左滑：從自選移除
 /// - 前 10 筆項目附帶交錯入場動畫
 class WatchlistStockItem extends StatelessWidget {
   const WatchlistStockItem({
@@ -43,7 +43,7 @@ class WatchlistStockItem extends StatelessWidget {
     final card = RepaintBoundary(
       child: Slidable(
         key: ValueKey(item.symbol),
-        // 向左滑動 → 查看詳情
+        // 向右滑動（startActionPane）→ 查看詳情
         startActionPane: ActionPane(
           motion: const BehindMotion(),
           extentRatio: 0.25,
@@ -64,7 +64,7 @@ class WatchlistStockItem extends StatelessWidget {
             ),
           ],
         ),
-        // 向右滑動 → 從自選股移除
+        // 向左滑動（endActionPane）→ 從自選股移除
         endActionPane: ActionPane(
           motion: const BehindMotion(),
           extentRatio: 0.25,

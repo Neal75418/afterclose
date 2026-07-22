@@ -8,7 +8,7 @@ import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// 根據殖利率取得對應顏色
 ///
-/// - >= 5%: 綠色（高殖利率）
+/// - >= 5%: 紅色（高殖利率——台股偏多色）
 /// - >= 3%: 橘色（中殖利率）
 /// - < 3%: 灰色（低殖利率）
 Color _getYieldColor(double yield_) {

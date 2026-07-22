@@ -6,7 +6,7 @@ import 'package:afterclose/data/database/tables/event_tables.drift.dart';
 /// 事件行事曆相關資料存取
 mixin EventDaoMixin on $AppDatabase {
   // ==================================================
-  // 事件行事曆操作（Phase 4.3）
+  // 事件行事曆操作
   // ==================================================
 
   /// 取得日期範圍內的事件

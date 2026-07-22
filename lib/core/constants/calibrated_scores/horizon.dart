@@ -5,8 +5,9 @@
 /// - [long] 長線（60 個交易日），適合季度趨勢
 ///
 /// 每個 horizon 對應一個 calibrated rule scores JSON asset，
-/// 由 `tool/recalibrate.dart` 在歷史資料足夠時產生。Pre-launch
-/// 期間 JSON 為空，所有查詢會 fallback 至 `RuleScores` hardcoded 值。
+/// 由 `tool/recalibrate.dart` 產生（2026-07-13 起 production JSON 已有
+/// 校準值；多數 rule 被 cut 為 0 → lookup 視為 null → fallback 至
+/// `RuleScores` hardcoded 值）。
 ///
 /// **設計原則**：固定 2 個 value，不保留 `default` 或 `unknown`。
 /// Dual-horizon scoring 的語意就是每檔股票必須同時計算兩個 horizon
