@@ -22,10 +22,11 @@
 //   - 只看「有訊號」的股票日(= app 的 pick 母體)，不含完全無訊號的日子
 //   - 固定持有 5D/60D、無停損；存活者偏誤(FinMind 無下市股) → 偏樂觀
 //   - 流動樣本(top volume)；過去多空的證據，非未來保證
-//   - 用 reason.score 基礎分 = app 當前實際行為(校準層目前全 fallback)
+//   - 用 reason.score 基礎分近似 app 行為(僅 3 條 rule 有 calibrated override)
 
 import 'dart:io';
 
+import 'package:afterclose/core/constants/exit_params.dart';
 import 'package:afterclose/data/database/app_database.dart';
 
 import 'replay_calibrator.dart';
@@ -441,19 +442,19 @@ Future<int> runScoreValidateCli(List<String> args) async {
       'Mode A 起漲',
       '下跌 trend<0',
       abs.where((s) => s.trend < 0).toList(),
-      (s) => s.modeMom >= 15,
+      (s) => s.modeMom >= ExitParams.modeSignalScoreThreshold,
     );
     modeCheck(
       'Mode B 強勢',
       '多頭 trend>0',
       abs.where((s) => s.trend > 0).toList(),
-      (s) => s.modeStr >= 15,
+      (s) => s.modeStr >= ExitParams.modeSignalScoreThreshold,
     );
     modeCheck(
       'Mode C 回檔',
       '多頭 trend>0',
       abs.where((s) => s.trend > 0).toList(),
-      (s) => s.modePul >= 12,
+      (s) => s.modePul >= ExitParams.modeSignalScoreThreshold,
     );
     return 0;
   } finally {

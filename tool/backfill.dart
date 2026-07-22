@@ -27,10 +27,11 @@
 //   # 只補當沖歷史（既有 DB 已有價格時；不需 FinMind token）
 //   dart run tool/backfill.dart --only-day-trading --years 9
 //
-// ## Backfill 資料源（6 個）
+// ## Backfill 資料源（6 個，per-day batch 架構）
 //
-//   1. daily_price           via PriceRepository.syncStockPrices
-//   2. daily_institutional   via InstitutionalRepository.syncInstitutionalData
+//   1. daily_price           via backfillTwsePricesByDate / backfillTpexPricesByDate
+//                            （MI_INDEX / afterTrading 歷史端點，逐交易日整市場）
+//   2. daily_institutional   via backfillInstitutionalByDate（T86/TPEx 批次）
 //   3. day_trading           via TradingRepository.syncAllDayTradingFromTwse
 //   4. monthly_revenue       via FundamentalRepository.syncMonthlyRevenue
 //   5. financial_data (EPS)  via FundamentalRepository.syncFinancialStatements
@@ -41,15 +42,15 @@
 //
 // ## Rate limit
 //
-// 每條 syncX() 內部的 client 已經有 300ms delay（TWSE）+ FinMind 內建
-// retry。此 script 不額外加 delay，直接循序呼叫。FinMind 600/hr
-// (with token) 是主要瓶頸。總預估時間約 6–9 小時。
+// 價格/法人走 per-day batch（每市場每日 1 call），批間有
+// interDayDelayMs（預設 5000ms）顯式 delay。FinMind 600/hr (with token)
+// 只剩營收/財報/估值 phase 會碰到。
 //
 // ## Resumability
 //
-// 所有 sync methods 都 idempotent — 已存在於 DB 的月份會被跳過（見
-// `PriceRepository.syncStockPrices` 的 existing-months check）。script
-// 中途被 kill 可以直接重跑。
+// 所有 phase 都 idempotent — 價格/法人走 per-day「已達目標列數即跳過」
+// 檢查（resume guard），營收/財報走 existing-data 檢查。script 中途被
+// kill 可以直接重跑續傳。
 //
 // ## 錯誤處理
 //
@@ -271,7 +272,7 @@ class Backfiller {
 
   /// 執行完整的 backfill pipeline
   ///
-  /// 五個 phase 順序執行。遇到 rate limit / network exception 時立即
+  /// 各 phase 順序執行（prices/institutional/day_trading/revenue/financial/valuation）。遇到 rate limit / network exception 時立即
   /// 向上拋出 — 呼叫端負責決定要 retry 或 abort。
   Future<BackfillResult> run() async {
     final overallStart = DateTime.now();
@@ -1205,22 +1206,23 @@ class Backfiller {
       '  Phases: prices:twse, prices:tpex (per-day batch), '
       'institutional (per-day batch), revenue, financial, valuation',
     );
+    // per-day batch 口徑（2026-07-23 稽核修復：原估算沿用已退役的
+    // per-symbol 架構，會嚴重高估 quota/耗時）
+    final tradingDays = (config.years * 250).round();
     _log('  Estimated API calls:');
     _log(
-      '    - Prices:        ${symbols.length} × ${config.years * 12} months '
-      '= ${symbols.length * config.years * 12}',
+      '    - Prices:        ~$tradingDays 交易日 × 2 市場 (per-day batch) '
+      '= ~${tradingDays * 2}',
     );
-    _log(
-      '    - Institutional: ${symbols.length} × 1 (FinMind range) '
-      '= ${symbols.length}',
-    );
-    _log('    - Revenue:       ${symbols.length}');
-    _log('    - Financial:     ${symbols.length}');
-    _log('    - Valuation:     ${symbols.length}');
-    final totalFinMind = symbols.length * 4;
+    _log('    - Institutional: ~$tradingDays 交易日 × 2 市場 (per-day batch)');
+    _log('    - DayTrading:    ~$tradingDays 交易日 × 2 市場 (per-day batch)');
+    _log('    - Revenue:       ${symbols.length} (FinMind per-symbol)');
+    _log('    - Financial:     ${symbols.length} (FinMind per-symbol)');
+    _log('    - Valuation:     ${symbols.length} (FinMind per-symbol)');
+    final totalFinMind = symbols.length * 3;
     final eta = Duration(seconds: (totalFinMind * 3600 / 600).round());
     _log(
-      '  FinMind calls total: $totalFinMind (~${_formatDuration(eta)} at '
+      '  FinMind calls total: ~$totalFinMind (~${_formatDuration(eta)} at '
       '600/hr limit)',
     );
   }
@@ -1259,10 +1261,10 @@ class Backfiller {
 /// Dart CLI main — 只是 [runBackfillCli] 的 thin wrapper，負責把 int
 /// exit code 送回 shell。
 ///
-/// 可以透過兩種方式執行：
-/// - `dart run tool/backfill.dart ...` — 純 Dart runtime，會因
-///   `drift_flutter` import `dart:ui` 而 compile 失敗
-/// - `flutter test test/tool/run_backfill.dart` — 推薦；見 scripts/calibrate.sh
+/// 可以透過兩種方式執行（C 方案 refactor 後 drift_flutter 已拆離，
+/// 兩者皆可；2026-07-23 實測 `dart run` 正常編譯執行）：
+/// - `dart run tool/backfill.dart ...`
+/// - `flutter test test/tool/run_backfill.dart` — 見 scripts/calibrate.sh
 Future<void> main(List<String> args) async {
   final code = await runBackfillCli(args);
   exit(code);
@@ -1603,6 +1605,14 @@ void _printUsage(IOSink sink) {
   );
   sink.writeln(
     '  --symbols <csv>       Whitelist symbols, e.g. "2330,2317,2454"',
+  );
+  sink.writeln(
+    '  --skip-fundamentals   Skip revenue/financial/valuation phases',
+  );
+  sink.writeln('  --only-day-trading    Run only the day_trading phase');
+  sink.writeln(
+    '  --day-trading-max-days <N>  Cap day_trading backfill days per run '
+    '(0 = no cap)',
   );
   sink.writeln('  --dry-run             Print plan without fetching');
   sink.writeln('  --help, -h            Show this help');

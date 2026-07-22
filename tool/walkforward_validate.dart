@@ -29,7 +29,7 @@
 //    逐股 pick-level 回測（combination of rules per stock）列為後續 refinement。
 //    詳見 docs/plans/2026-06-22-rule-score-recalibration-design.md §5。
 //
-// ## 使用方式（透過 flutter test wrapper，因 drift→dart:ui）
+// ## 使用方式（flutter test wrapper；dart run 亦可——drift_flutter 已拆離）
 //   見 scripts；env: CALIBRATION_DB, WF_FOLD_YEARS（CSV，預設 2022,2023,2024,2025,2026）
 
 import 'dart:convert';

@@ -143,8 +143,10 @@ class CalibratedRule {
 /// linear_map_v1 校準器
 ///
 /// 流程：
-/// 1. Compute z-stat 透過 proportion z-test: `(hit_rate - 0.5) / sqrt(p(1-p)/n)`
-/// 2. Cut 過濾：`samples < 30` / `|z_stat| < 1.5` / `hit_rate < 0.55`
+/// 1. Compute z-stat 透過 baseline-aware proportion z-test:
+///    `(p - p_baseline) / sqrt(p_baseline(1-p_baseline)/n)`（baseline 依
+///    period 查 [CalibrationThresholds.successProbabilityBaselines]）
+/// 2. Cut 過濾：`samples < 30` / `z_stat < 1.5`（有號）/ `hit_rate < 0.55`
 ///    （門檻來源：[CalibrationThresholds]，與 RuleAccuracyService /
 ///    replay_calibrator 共用同一份常數）
 /// 3. 倖存者的 raw weight = `hit_rate × avg_return × sqrt(n)`
@@ -503,8 +505,6 @@ final _thresholdLong =
     CalibrationThresholds.successThresholds[60] ??
     CalibrationThresholds.defaultSuccessThreshold;
 
-const _windowDays = 504; // 2 trading years
-const _trainRatio = 0.7;
 const _formulaVersion = 'linear_map_v1';
 
 Future<void> main(List<String> args) async {
@@ -697,8 +697,9 @@ HorizonOutput? _processHorizon(
     'generated_at': DateTime.now().toUtc().toIso8601String(),
     'horizon': horizon == _horizonShort ? '5d' : '60d',
     'backtest': {
-      'window_days': _windowDays,
-      'train_ratio': _trainRatio,
+      // window_days/train_ratio 已移除（2026-07-23 稽核：宣稱 2 年窗/0.7
+      // split 與實際 pipeline 脫節——replay 吃全庫 ~9 年、split 在獨立的
+      // walkforward_validate）
       // 誠實 metadata：超額模式記實際超額門檻（0.0），不再誤標絕對 8.0。
       'success_threshold_pct': usedClustered
           ? runMeta!.excessThreshold
