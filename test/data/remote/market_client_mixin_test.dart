@@ -94,26 +94,41 @@ void main() {
         );
       });
 
-      test(
-        'throws NetworkException for connection timeout (non-retryable path)',
-        () async {
-          // connectionTimeout is retryable per _isRetryable, but after exhausting retries
-          // Actually looking at the code: connectionTimeout IS retryable,
-          // but it enters the retry loop. After max retries it throws.
-          // For a non-retryable type like badCertificate, it throws immediately.
-          await expectLater(
-            () => MarketClientMixin.executeRequest(
-              'TEST',
-              'test',
-              () async => throw DioException(
-                type: DioExceptionType.cancel,
-                requestOptions: RequestOptions(path: '/test'),
-              ),
+      test('throws NetworkException for cancel (non-retryable path)', () async {
+        // cancel 屬不可重試型別 → 立即包成 NetworkException 拋出
+        await expectLater(
+          () => MarketClientMixin.executeRequest(
+            'TEST',
+            'test',
+            () async => throw DioException(
+              type: DioExceptionType.cancel,
+              requestOptions: RequestOptions(path: '/test'),
             ),
-            throwsA(isA<NetworkException>()),
-          );
-        },
-      );
+          ),
+          throwsA(isA<NetworkException>()),
+        );
+      });
+
+      test('receiveTimeout 不重試、拋 receive timeout 訊息（2026-07-23 稽核：'
+          '原 connectionTimeout 分支不可達已移除）', () async {
+        await expectLater(
+          () => MarketClientMixin.executeRequest(
+            'TEST',
+            'test',
+            () async => throw DioException(
+              type: DioExceptionType.receiveTimeout,
+              requestOptions: RequestOptions(path: '/test'),
+            ),
+          ),
+          throwsA(
+            isA<NetworkException>().having(
+              (e) => e.message,
+              'message',
+              contains('receive timeout'),
+            ),
+          ),
+        );
+      });
 
       test('rethrows AppException without wrapping', () async {
         await expectLater(

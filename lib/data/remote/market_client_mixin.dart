@@ -106,10 +106,11 @@ abstract final class MarketClientMixin {
 
         // 不可重試的錯誤：立即拋出
         if (!_isRetryable(e)) {
-          if (e.type == DioExceptionType.connectionTimeout ||
-              e.type == DioExceptionType.receiveTimeout) {
-            AppLogger.warning(tag, '$operation: 連線逾時', e, stack);
-            throw NetworkException('$tag connection timeout', e);
+          // connectionTimeout 恆可重試（_isRetryable）不會進到這裡；
+          // 此分支只有 receiveTimeout 會命中
+          if (e.type == DioExceptionType.receiveTimeout) {
+            AppLogger.warning(tag, '$operation: 接收逾時', e, stack);
+            throw NetworkException('$tag receive timeout', e);
           }
           AppLogger.warning(
             tag,

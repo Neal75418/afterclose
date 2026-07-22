@@ -97,16 +97,17 @@ class SettingsRepository implements ISettingsRepository {
     } catch (e) {
       AppLogger.warning(
         'SettingsRepo',
-        'SecureStorage 無法使用，改用 SharedPreferences',
+        'SecureStorage 無法使用，token 降級為記憶體暫存（不落地、重啟遺失）',
         e,
       );
-      // Sentry breadcrumb：FinMind token 降級存 SharedPreferences（明文）的
-      // security degradation 在 release build 看不到 warning log，必須有
-      // breadcrumb 才能在 backend 上看見此 user 的 token 沒被加密保護。
+      // Sentry breadcrumb：release build 看不到 warning log，必須有
+      // breadcrumb 才能在 backend 看見此 user 的 SecureStorage 失效。
+      // 降級路徑是 env var → 記憶體暫存（bfd6e53 起不再寫
+      // SharedPreferences），無明文落地——訊息如實描述，避免誤報
+      // 不存在的 security degradation。
       Sentry.addBreadcrumb(
         Breadcrumb(
-          message:
-              'SecureStorage unavailable, falling back to SharedPreferences',
+          message: 'SecureStorage unavailable, token kept in-memory only',
           category: 'storage',
           level: SentryLevel.warning,
           data: {'error': e.toString()},

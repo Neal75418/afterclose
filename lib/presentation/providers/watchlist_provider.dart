@@ -786,11 +786,17 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
 
     // 提取近期價格用於 sparkline
     final recentPrices = PriceCalculator.extractSparklinePrices(priceHistory);
-    final warningType = _determineWarningType(
-      symbol: symbol,
-      warningsMap: warningsMap,
-      highPledgeMap: highPledgeMap,
-    );
+    // 與批次 loadData 同一 gate：關閉「顯示警示徽章」時不得計算
+    // （2026-07-23 稽核修復——原本無條件計算，addStock/restore 的項目
+    // 會無視設定顯示徽章直到下次全量 reload）
+    final showBadges = ref.read(settingsProvider).showWarningBadges;
+    final warningType = showBadges
+        ? _determineWarningType(
+            symbol: symbol,
+            warningsMap: warningsMap,
+            highPledgeMap: highPledgeMap,
+          )
+        : null;
 
     return WatchlistItemData(
       symbol: symbol,

@@ -30,7 +30,10 @@ void main() {
   });
 
   group('InsiderRepository', () {
-    group('hasConsecutiveSellingStreak', () {
+    // 2026-07-23 稽核：原 per-symbol 三方法是 batch 私有實作的死複本，
+    // 測試改打 production 實際使用的 calculateInsiderStatusBatch /
+    // getWatchlistHighPledgeStocks（行為斷言完整保留）
+    group('calculateInsiderStatusBatch — 連續減持', () {
       test('returns true when >= 3 consecutive months of decrease', () async {
         // 模擬連續 3 個月減持：30% -> 28% -> 26% -> 24%
         final history = [
@@ -57,16 +60,15 @@ void main() {
         ];
 
         when(
-          () => mockDb.getRecentInsiderHoldings(
+          () => mockDb.getRecentInsiderHoldingsBatch([
             'TEST',
-            months: any(named: 'months'),
-          ),
-        ).thenAnswer((_) async => history);
+          ], months: any(named: 'months')),
+        ).thenAnswer((_) async => {'TEST': history});
 
-        final result = await repository.hasConsecutiveSellingStreak(
+        final status = await repository.calculateInsiderStatusBatch([
           'TEST',
-          months: 3,
-        );
+        ], months: 3);
+        final result = status['TEST']!.hasSellingStreak;
 
         expect(result, isTrue);
       });
@@ -92,16 +94,15 @@ void main() {
         ];
 
         when(
-          () => mockDb.getRecentInsiderHoldings(
+          () => mockDb.getRecentInsiderHoldingsBatch([
             'TEST',
-            months: any(named: 'months'),
-          ),
-        ).thenAnswer((_) async => history);
+          ], months: any(named: 'months')),
+        ).thenAnswer((_) async => {'TEST': history});
 
-        final result = await repository.hasConsecutiveSellingStreak(
+        final status = await repository.calculateInsiderStatusBatch([
           'TEST',
-          months: 3,
-        );
+        ], months: 3);
+        final result = status['TEST']!.hasSellingStreak;
 
         expect(result, isFalse);
       });
@@ -132,16 +133,15 @@ void main() {
         ];
 
         when(
-          () => mockDb.getRecentInsiderHoldings(
+          () => mockDb.getRecentInsiderHoldingsBatch([
             'TEST',
-            months: any(named: 'months'),
-          ),
-        ).thenAnswer((_) async => history);
+          ], months: any(named: 'months')),
+        ).thenAnswer((_) async => {'TEST': history});
 
-        final result = await repository.hasConsecutiveSellingStreak(
+        final status = await repository.calculateInsiderStatusBatch([
           'TEST',
-          months: 3,
-        );
+        ], months: 3);
+        final result = status['TEST']!.hasSellingStreak;
 
         expect(result, isFalse);
       });
@@ -177,16 +177,15 @@ void main() {
         ];
 
         when(
-          () => mockDb.getRecentInsiderHoldings(
+          () => mockDb.getRecentInsiderHoldingsBatch([
             'TEST',
-            months: any(named: 'months'),
-          ),
-        ).thenAnswer((_) async => history);
+          ], months: any(named: 'months')),
+        ).thenAnswer((_) async => {'TEST': history});
 
-        final result = await repository.hasConsecutiveSellingStreak(
+        final status = await repository.calculateInsiderStatusBatch([
           'TEST',
-          months: 3,
-        );
+        ], months: 3);
+        final result = status['TEST']!.hasSellingStreak;
 
         expect(result, isTrue);
       });
@@ -202,16 +201,15 @@ void main() {
         ];
 
         when(
-          () => mockDb.getRecentInsiderHoldings(
+          () => mockDb.getRecentInsiderHoldingsBatch([
             'TEST',
-            months: any(named: 'months'),
-          ),
-        ).thenAnswer((_) async => history);
+          ], months: any(named: 'months')),
+        ).thenAnswer((_) async => {'TEST': history});
 
-        final result = await repository.hasConsecutiveSellingStreak(
+        final status = await repository.calculateInsiderStatusBatch([
           'TEST',
-          months: 3,
-        );
+        ], months: 3);
+        final result = status['TEST']!.hasSellingStreak;
 
         expect(result, isFalse);
       });
@@ -246,16 +244,15 @@ void main() {
         ];
 
         when(
-          () => mockDb.getRecentInsiderHoldings(
+          () => mockDb.getRecentInsiderHoldingsBatch([
             'TEST',
-            months: any(named: 'months'),
-          ),
-        ).thenAnswer((_) async => history);
+          ], months: any(named: 'months')),
+        ).thenAnswer((_) async => {'TEST': history});
 
-        final result = await repository.hasConsecutiveSellingStreak(
+        final status = await repository.calculateInsiderStatusBatch([
           'TEST',
-          months: 3,
-        );
+        ], months: 3);
+        final result = status['TEST']!.hasSellingStreak;
 
         expect(result, isFalse);
       });
@@ -286,32 +283,30 @@ void main() {
         ];
 
         when(
-          () => mockDb.getRecentInsiderHoldings(
+          () => mockDb.getRecentInsiderHoldingsBatch([
             'TEST',
-            months: any(named: 'months'),
-          ),
-        ).thenAnswer((_) async => history);
+          ], months: any(named: 'months')),
+        ).thenAnswer((_) async => {'TEST': history});
 
-        final result = await repository.hasConsecutiveSellingStreak(
+        final status = await repository.calculateInsiderStatusBatch([
           'TEST',
-          months: 3,
-        );
+        ], months: 3);
+        final result = status['TEST']!.hasSellingStreak;
 
         expect(result, isFalse);
       });
 
       test('returns false when history is empty', () async {
         when(
-          () => mockDb.getRecentInsiderHoldings(
+          () => mockDb.getRecentInsiderHoldingsBatch([
             'TEST',
-            months: any(named: 'months'),
-          ),
-        ).thenAnswer((_) async => []);
+          ], months: any(named: 'months')),
+        ).thenAnswer((_) async => {'TEST': <InsiderHoldingEntry>[]});
 
-        final result = await repository.hasConsecutiveSellingStreak(
+        final status = await repository.calculateInsiderStatusBatch([
           'TEST',
-          months: 3,
-        );
+        ], months: 3);
+        final result = status['TEST']!.hasSellingStreak;
 
         expect(result, isFalse);
       });
@@ -347,22 +342,21 @@ void main() {
         ];
 
         when(
-          () => mockDb.getRecentInsiderHoldings(
+          () => mockDb.getRecentInsiderHoldingsBatch([
             'TEST',
-            months: any(named: 'months'),
-          ),
-        ).thenAnswer((_) async => history);
+          ], months: any(named: 'months')),
+        ).thenAnswer((_) async => {'TEST': history});
 
-        final result = await repository.hasConsecutiveSellingStreak(
+        final status = await repository.calculateInsiderStatusBatch([
           'TEST',
-          months: 3,
-        );
+        ], months: 3);
+        final result = status['TEST']!.hasSellingStreak;
 
         expect(result, isTrue);
       });
     });
 
-    group('hasSignificantBuying', () {
+    group('calculateInsiderStatusBatch — 顯著增持', () {
       test('returns true when buying change >= threshold', () async {
         // 增持超過 5%：20% -> 26%
         final history = [
@@ -379,13 +373,15 @@ void main() {
         ];
 
         when(
-          () => mockDb.getRecentInsiderHoldings('TEST', months: 2),
-        ).thenAnswer((_) async => history);
+          () => mockDb.getRecentInsiderHoldingsBatch([
+            'TEST',
+          ], months: any(named: 'months')),
+        ).thenAnswer((_) async => {'TEST': history});
 
-        final result = await repository.hasSignificantBuying(
+        final status = await repository.calculateInsiderStatusBatch([
           'TEST',
-          threshold: 5.0,
-        );
+        ], buyingThreshold: 5.0);
+        final result = status['TEST']!.hasSignificantBuying;
 
         expect(result, isTrue);
       });
@@ -406,13 +402,15 @@ void main() {
         ];
 
         when(
-          () => mockDb.getRecentInsiderHoldings('TEST', months: 2),
-        ).thenAnswer((_) async => history);
+          () => mockDb.getRecentInsiderHoldingsBatch([
+            'TEST',
+          ], months: any(named: 'months')),
+        ).thenAnswer((_) async => {'TEST': history});
 
-        final result = await repository.hasSignificantBuying(
+        final status = await repository.calculateInsiderStatusBatch([
           'TEST',
-          threshold: 5.0,
-        );
+        ], buyingThreshold: 5.0);
+        final result = status['TEST']!.hasSignificantBuying;
 
         expect(result, isFalse);
       });
@@ -433,13 +431,15 @@ void main() {
         ];
 
         when(
-          () => mockDb.getRecentInsiderHoldings('TEST', months: 2),
-        ).thenAnswer((_) async => history);
+          () => mockDb.getRecentInsiderHoldingsBatch([
+            'TEST',
+          ], months: any(named: 'months')),
+        ).thenAnswer((_) async => {'TEST': history});
 
-        final result = await repository.hasSignificantBuying(
+        final status = await repository.calculateInsiderStatusBatch([
           'TEST',
-          threshold: 5.0,
-        );
+        ], buyingThreshold: 5.0);
+        final result = status['TEST']!.hasSignificantBuying;
 
         expect(result, isFalse);
       });
@@ -455,13 +455,15 @@ void main() {
         ];
 
         when(
-          () => mockDb.getRecentInsiderHoldings('TEST', months: 2),
-        ).thenAnswer((_) async => history);
+          () => mockDb.getRecentInsiderHoldingsBatch([
+            'TEST',
+          ], months: any(named: 'months')),
+        ).thenAnswer((_) async => {'TEST': history});
 
-        final result = await repository.hasSignificantBuying(
+        final status = await repository.calculateInsiderStatusBatch([
           'TEST',
-          threshold: 5.0,
-        );
+        ], buyingThreshold: 5.0);
+        final result = status['TEST']!.hasSignificantBuying;
 
         expect(result, isFalse);
       });
@@ -482,13 +484,15 @@ void main() {
         ];
 
         when(
-          () => mockDb.getRecentInsiderHoldings('TEST', months: 2),
-        ).thenAnswer((_) async => history);
+          () => mockDb.getRecentInsiderHoldingsBatch([
+            'TEST',
+          ], months: any(named: 'months')),
+        ).thenAnswer((_) async => {'TEST': history});
 
-        final result = await repository.hasSignificantBuying(
+        final status = await repository.calculateInsiderStatusBatch([
           'TEST',
-          threshold: 5.0,
-        );
+        ], buyingThreshold: 5.0);
+        final result = status['TEST']!.hasSignificantBuying;
 
         expect(result, isFalse);
       });
@@ -513,13 +517,15 @@ void main() {
         ];
 
         when(
-          () => mockDb.getRecentInsiderHoldings('TEST', months: 2),
-        ).thenAnswer((_) async => history);
+          () => mockDb.getRecentInsiderHoldingsBatch([
+            'TEST',
+          ], months: any(named: 'months')),
+        ).thenAnswer((_) async => {'TEST': history});
 
-        final result = await repository.hasSignificantBuying(
+        final status = await repository.calculateInsiderStatusBatch([
           'TEST',
-          threshold: 5.0,
-        );
+        ], buyingThreshold: 5.0);
+        final result = status['TEST']!.hasSignificantBuying;
 
         expect(result, isTrue);
       });
@@ -539,13 +545,15 @@ void main() {
         ];
 
         when(
-          () => mockDb.getRecentInsiderHoldings('TEST', months: 2),
-        ).thenAnswer((_) async => history);
+          () => mockDb.getRecentInsiderHoldingsBatch([
+            'TEST',
+          ], months: any(named: 'months')),
+        ).thenAnswer((_) async => {'TEST': history});
 
-        final result = await repository.hasSignificantBuying(
+        final status = await repository.calculateInsiderStatusBatch([
           'TEST',
-          threshold: 5.0,
-        );
+        ], buyingThreshold: 5.0);
+        final result = status['TEST']!.hasSignificantBuying;
 
         expect(result, isFalse);
       });
@@ -565,13 +573,15 @@ void main() {
         ];
 
         when(
-          () => mockDb.getRecentInsiderHoldings('TEST', months: 2),
-        ).thenAnswer((_) async => history);
+          () => mockDb.getRecentInsiderHoldingsBatch([
+            'TEST',
+          ], months: any(named: 'months')),
+        ).thenAnswer((_) async => {'TEST': history});
 
-        final result = await repository.hasSignificantBuying(
+        final status = await repository.calculateInsiderStatusBatch([
           'TEST',
-          threshold: 5.0,
-        );
+        ], buyingThreshold: 5.0);
+        final result = status['TEST']!.hasSignificantBuying;
 
         expect(result, isFalse);
       });
@@ -592,19 +602,21 @@ void main() {
         ];
 
         when(
-          () => mockDb.getRecentInsiderHoldings('TEST', months: 2),
-        ).thenAnswer((_) async => history);
+          () => mockDb.getRecentInsiderHoldingsBatch([
+            'TEST',
+          ], months: any(named: 'months')),
+        ).thenAnswer((_) async => {'TEST': history});
 
-        final result = await repository.hasSignificantBuying(
+        final status = await repository.calculateInsiderStatusBatch([
           'TEST',
-          threshold: 5.0,
-        );
+        ], buyingThreshold: 5.0);
+        final result = status['TEST']!.hasSignificantBuying;
 
         expect(result, isFalse);
       });
     });
 
-    group('isHighPledgeRisk', () {
+    group('getWatchlistHighPledgeStocks — 單檔高質押判定', () {
       test('returns true when pledge ratio >= threshold', () async {
         final holding = _createInsiderHolding(
           symbol: 'TEST',
@@ -613,13 +625,13 @@ void main() {
         );
 
         when(
-          () => mockDb.getLatestInsiderHolding('TEST'),
-        ).thenAnswer((_) async => holding);
+          () => mockDb.getLatestInsiderHoldingsBatch(['TEST']),
+        ).thenAnswer((_) async => {'TEST': holding});
 
-        final result = await repository.isHighPledgeRisk(
+        final risky = await repository.getWatchlistHighPledgeStocks([
           'TEST',
-          threshold: FundamentalParams.highPledgeRatioThreshold,
-        );
+        ], threshold: FundamentalParams.highPledgeRatioThreshold);
+        final result = risky.containsKey('TEST');
 
         expect(result, isTrue);
       });
@@ -632,26 +644,26 @@ void main() {
         );
 
         when(
-          () => mockDb.getLatestInsiderHolding('TEST'),
-        ).thenAnswer((_) async => holding);
+          () => mockDb.getLatestInsiderHoldingsBatch(['TEST']),
+        ).thenAnswer((_) async => {'TEST': holding});
 
-        final result = await repository.isHighPledgeRisk(
+        final risky = await repository.getWatchlistHighPledgeStocks([
           'TEST',
-          threshold: FundamentalParams.highPledgeRatioThreshold,
-        );
+        ], threshold: FundamentalParams.highPledgeRatioThreshold);
+        final result = risky.containsKey('TEST');
 
         expect(result, isFalse);
       });
 
       test('returns false when no data', () async {
         when(
-          () => mockDb.getLatestInsiderHolding('TEST'),
-        ).thenAnswer((_) async => null);
+          () => mockDb.getLatestInsiderHoldingsBatch(['TEST']),
+        ).thenAnswer((_) async => {});
 
-        final result = await repository.isHighPledgeRisk(
+        final risky = await repository.getWatchlistHighPledgeStocks([
           'TEST',
-          threshold: FundamentalParams.highPledgeRatioThreshold,
-        );
+        ], threshold: FundamentalParams.highPledgeRatioThreshold);
+        final result = risky.containsKey('TEST');
 
         expect(result, isFalse);
       });
@@ -664,13 +676,13 @@ void main() {
         );
 
         when(
-          () => mockDb.getLatestInsiderHolding('TEST'),
-        ).thenAnswer((_) async => holding);
+          () => mockDb.getLatestInsiderHoldingsBatch(['TEST']),
+        ).thenAnswer((_) async => {'TEST': holding});
 
-        final result = await repository.isHighPledgeRisk(
+        final risky = await repository.getWatchlistHighPledgeStocks([
           'TEST',
-          threshold: FundamentalParams.highPledgeRatioThreshold,
-        );
+        ], threshold: FundamentalParams.highPledgeRatioThreshold);
+        final result = risky.containsKey('TEST');
 
         expect(result, isFalse);
       });
@@ -688,13 +700,13 @@ void main() {
         );
 
         when(
-          () => mockDb.getLatestInsiderHolding('TEST'),
-        ).thenAnswer((_) async => holding);
+          () => mockDb.getLatestInsiderHoldingsBatch(['TEST']),
+        ).thenAnswer((_) async => {'TEST': holding});
 
-        final result = await repository.isHighPledgeRisk(
+        final risky = await repository.getWatchlistHighPledgeStocks([
           'TEST',
-          threshold: FundamentalParams.highPledgeRatioThreshold,
-        );
+        ], threshold: FundamentalParams.highPledgeRatioThreshold);
+        final result = risky.containsKey('TEST');
 
         expect(result, isTrue);
       });
@@ -707,13 +719,13 @@ void main() {
         );
 
         when(
-          () => mockDb.getLatestInsiderHolding('TEST'),
-        ).thenAnswer((_) async => holding);
+          () => mockDb.getLatestInsiderHoldingsBatch(['TEST']),
+        ).thenAnswer((_) async => {'TEST': holding});
 
-        final result = await repository.isHighPledgeRisk(
+        final risky = await repository.getWatchlistHighPledgeStocks([
           'TEST',
-          threshold: FundamentalParams.highPledgeRatioThreshold,
-        );
+        ], threshold: FundamentalParams.highPledgeRatioThreshold);
+        final result = risky.containsKey('TEST');
 
         expect(result, isFalse);
       });
