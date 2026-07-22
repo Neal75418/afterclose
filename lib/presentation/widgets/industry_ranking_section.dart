@@ -10,6 +10,7 @@ import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/utils/number_formatter.dart';
 import 'package:afterclose/domain/models/industry_ranking.dart';
 import 'package:afterclose/presentation/providers/industry_ranking_provider.dart';
+import 'package:afterclose/presentation/providers/stock_browsing_context_provider.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/chip/chip_helpers.dart';
 import 'package:afterclose/presentation/widgets/section_header.dart';
 
@@ -96,7 +97,7 @@ class _IndustryRankingSectionState
   }
 }
 
-class _IndustryCard extends StatelessWidget {
+class _IndustryCard extends ConsumerWidget {
   const _IndustryCard({
     required this.ranking,
     required this.rank,
@@ -108,7 +109,7 @@ class _IndustryCard extends StatelessWidget {
   final String windowLabel;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final momentumColor = AppTheme.getPriceColor(
       ranking.momentumPct,
@@ -125,7 +126,7 @@ class _IndustryCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
         onTap: () {
           HapticFeedback.selectionClick();
-          _showMembersSheet(context);
+          _showMembersSheet(context, ref);
         },
         child: Padding(
           padding: const EdgeInsets.all(DesignTokens.spacing12),
@@ -192,7 +193,7 @@ class _IndustryCard extends StatelessWidget {
     );
   }
 
-  void _showMembersSheet(BuildContext context) {
+  void _showMembersSheet(BuildContext context, WidgetRef ref) {
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -231,6 +232,9 @@ class _IndustryCard extends StatelessWidget {
                   ),
                   onTap: () {
                     Navigator.of(sheetContext).pop();
+                    ref.read(stockBrowsingContextProvider.notifier).set([
+                      for (final t in ranking.topMembers) t.symbol,
+                    ]);
                     context.push(AppRoutes.stockDetail(m.symbol));
                   },
                 ),

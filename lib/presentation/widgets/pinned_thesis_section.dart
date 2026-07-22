@@ -8,6 +8,7 @@ import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/theme/semantic_colors.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/providers/pinned_thesis_provider.dart';
+import 'package:afterclose/presentation/providers/stock_browsing_context_provider.dart';
 
 /// 釘選論點追蹤區（出場層 Phase 2，今日頁頂部 / 警示頁共用）
 ///
@@ -217,7 +218,16 @@ class _ThesisCard extends ConsumerWidget {
       ),
       // 卡片 tap → 個股詳情：失效通知的第一反應是「看圖確認」，不能是死巷
       child: InkWell(
-        onTap: () => context.push(AppRoutes.stockDetail(thesis.symbol)),
+        onTap: () {
+          // 與 section 顯示順序一致（active 在前、invalidated 在後）
+          final all = ref.read(pinnedThesisProvider).value;
+          ref.read(stockBrowsingContextProvider.notifier).set([
+            if (all != null) ...{
+              for (final t in [...all.active, ...all.invalidated]) t.symbol,
+            },
+          ]);
+          context.push(AppRoutes.stockDetail(thesis.symbol));
+        },
         borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
         child: Padding(
           padding: const EdgeInsets.all(DesignTokens.spacing12),

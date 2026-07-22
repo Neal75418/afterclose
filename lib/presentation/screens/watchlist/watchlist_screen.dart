@@ -14,6 +14,7 @@ import 'package:afterclose/core/constants/ui_constants.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/utils/responsive_helper.dart';
 import 'package:afterclose/presentation/providers/settings_provider.dart';
+import 'package:afterclose/presentation/providers/stock_browsing_context_provider.dart';
 import 'package:afterclose/presentation/providers/watchlist_provider.dart';
 import 'package:afterclose/presentation/screens/watchlist/add_stock_dialog.dart';
 import 'package:afterclose/presentation/screens/watchlist/watchlist_group_header.dart';
@@ -107,6 +108,32 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
     }
   }
 
+  /// 設定瀏覽脈絡（＝畫面實際顯示順序）後開詳情頁——詳情頁底部
+  /// 導航列據此提供上一檔/下一檔巡檢。
+  ///
+  /// 分組檢視（狀態/趨勢/自訂）按「enum 宣告序逐桶攤平」，與
+  /// [_buildGroupedList] 的渲染順序一致（審查發現：直接用
+  /// filteredItems 會讓分組模式下的鄰居對不上畫面）。
+  void _openStockDetail(String symbol) {
+    final state = ref.read(watchlistProvider);
+    final ordered = switch (state.group) {
+      WatchlistGroup.none => state.filteredItems,
+      WatchlistGroup.status => [
+        for (final g in WatchlistStatus.values) ...?state.groupedByStatus[g],
+      ],
+      WatchlistGroup.trend => [
+        for (final g in WatchlistTrend.values) ...?state.groupedByTrend[g],
+      ],
+      WatchlistGroup.category => [
+        for (final bucket in state.groupedByCategory.values) ...bucket,
+      ],
+    };
+    ref.read(stockBrowsingContextProvider.notifier).set([
+      for (final i in ordered) i.symbol,
+    ]);
+    context.push(AppRoutes.stockDetail(symbol));
+  }
+
   void _showStockPreview(WatchlistItemData item) {
     showStockPreviewSheet(
       context: context,
@@ -120,7 +147,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
         reasons: item.reasons,
         isInWatchlist: true,
       ),
-      onViewDetails: () => context.push(AppRoutes.stockDetail(item.symbol)),
+      onViewDetails: () => _openStockDetail(item.symbol),
       onToggleWatchlist: () => _removeFromWatchlist(item.symbol),
       onMoveToGroup: () => showMoveToGroupSheet(
         context: context,
@@ -481,7 +508,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
             item: item,
             index: index,
             showLimitMarkers: showLimitMarkers,
-            onView: () => context.push(AppRoutes.stockDetail(item.symbol)),
+            onView: () => _openStockDetail(item.symbol),
             onRemove: () => _removeFromWatchlist(item.symbol),
             onLongPress: () => _showStockPreview(item),
           ),
@@ -520,7 +547,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
             item: item,
             index: index,
             showLimitMarkers: showLimitMarkers,
-            onView: () => context.push(AppRoutes.stockDetail(item.symbol)),
+            onView: () => _openStockDetail(item.symbol),
             onRemove: () => _removeFromWatchlist(item.symbol),
             onLongPress: () => _showStockPreview(item),
           ),
@@ -571,8 +598,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
                   item: item,
                   index: i,
                   showLimitMarkers: showLimitMarkers,
-                  onView: () =>
-                      context.push(AppRoutes.stockDetail(item.symbol)),
+                  onView: () => _openStockDetail(item.symbol),
                   onRemove: () => _removeFromWatchlist(item.symbol),
                   onLongPress: () => _showStockPreview(item),
                 );
@@ -611,8 +637,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
                   item: item,
                   index: i,
                   showLimitMarkers: showLimitMarkers,
-                  onView: () =>
-                      context.push(AppRoutes.stockDetail(item.symbol)),
+                  onView: () => _openStockDetail(item.symbol),
                   onRemove: () => _removeFromWatchlist(item.symbol),
                   onLongPress: () => _showStockPreview(item),
                 );

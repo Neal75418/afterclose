@@ -16,6 +16,7 @@ import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/utils/responsive_helper.dart';
 import 'package:afterclose/presentation/providers/pinned_thesis_provider.dart';
 import 'package:afterclose/presentation/providers/scan_provider.dart';
+import 'package:afterclose/presentation/providers/stock_browsing_context_provider.dart';
 import 'package:afterclose/presentation/providers/settings_provider.dart';
 import 'package:afterclose/presentation/screens/scan/widgets/industry_filter_chip.dart';
 import 'package:afterclose/presentation/screens/scan/widgets/scan_filter_bottom_sheet.dart';
@@ -648,7 +649,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
           ),
         ),
         onPinToggle: () => _togglePin(stock.symbol),
-        onTap: () => context.push(AppRoutes.stockDetail(stock.symbol)),
+        onTap: () => _openStockDetail(stock.symbol),
         onLongPress: isGrid
             ? () => _showStockContextMenu(context, stock)
             : () {
@@ -664,8 +665,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                     reasons: stock.reasonTypes,
                     isInWatchlist: stock.isInWatchlist,
                   ),
-                  onViewDetails: () =>
-                      context.push(AppRoutes.stockDetail(stock.symbol)),
+                  onViewDetails: () => _openStockDetail(stock.symbol),
                   onToggleWatchlist: () {
                     ref
                         .read(scanProvider.notifier)
@@ -712,7 +712,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
               SlidableAction(
                 onPressed: (_) {
                   HapticFeedback.lightImpact();
-                  context.push(AppRoutes.stockDetail(stock.symbol));
+                  _openStockDetail(stock.symbol);
                 },
                 backgroundColor: Theme.of(context).colorScheme.primary,
                 foregroundColor: Colors.white,
@@ -826,6 +826,18 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     context.push(AppRoutes.stockDetail(symbol));
   }
 
+  /// 設定瀏覽脈絡後開詳情頁——觀察區在畫面「最上面」、訊號區在後
+  /// （與 _buildStockListView/_buildStockGrid 的渲染順序一致；審查發現
+  /// 反過來會讓觀察區股票的鄰居對不上畫面）
+  void _openStockDetail(String symbol) {
+    final state = ref.read(scanProvider);
+    ref.read(stockBrowsingContextProvider.notifier).set([
+      for (final s in state.observations) s.symbol,
+      for (final s in state.stocks) s.symbol,
+    ]);
+    context.push(AppRoutes.stockDetail(symbol));
+  }
+
   /// 顯示股票操作選單（用於 Grid 佈局）
   void _showStockContextMenu(BuildContext context, ScanStockItem stock) {
     showStockPreviewSheet(
@@ -840,7 +852,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
         reasons: stock.reasonTypes,
         isInWatchlist: stock.isInWatchlist,
       ),
-      onViewDetails: () => context.push(AppRoutes.stockDetail(stock.symbol)),
+      onViewDetails: () => _openStockDetail(stock.symbol),
       onToggleWatchlist: () {
         ref.read(scanProvider.notifier).toggleWatchlist(stock.symbol);
       },

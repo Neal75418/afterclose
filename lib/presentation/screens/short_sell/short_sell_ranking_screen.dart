@@ -13,6 +13,7 @@ import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/utils/number_formatter.dart';
 import 'package:afterclose/data/models/tpex/tpex_short_sell_ranking.dart';
 import 'package:afterclose/presentation/providers/short_sell_ranking_provider.dart';
+import 'package:afterclose/presentation/providers/stock_browsing_context_provider.dart';
 
 /// 融券賣出排行畫面
 class ShortSellRankingScreen extends ConsumerStatefulWidget {
@@ -205,7 +206,12 @@ class _ShortSellRankingScreenState
         : theme.colorScheme.onSurface;
 
     return InkWell(
-      onTap: () => context.push(AppRoutes.stockDetail(item.symbol)),
+      onTap: () {
+        ref.read(stockBrowsingContextProvider.notifier).set([
+          for (final r in ref.read(shortSellRankingProvider).rankings) r.symbol,
+        ]);
+        context.push(AppRoutes.stockDetail(item.symbol));
+      },
       borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),

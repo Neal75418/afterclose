@@ -8,7 +8,9 @@ import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/presentation/providers/pinned_thesis_provider.dart';
+import 'package:afterclose/presentation/providers/stock_browsing_context_provider.dart';
 import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
+import 'package:afterclose/presentation/widgets/stock_nav_bar.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/alerts_tab.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/chip_tab.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/fundamentals_tab.dart';
@@ -84,6 +86,26 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
     );
 
     return Scaffold(
+      // 巡檢導航列：從清單（自選/今日/掃描…）進入時提供上一檔/下一檔，
+      // pushReplacement 換股 → 返回鍵仍回到來源清單。搜尋/深連結進入
+      // （不在瀏覽脈絡中）時 neighbors 為 null、整列不顯示。
+      bottomNavigationBar: Consumer(
+        builder: (context, ref, _) {
+          final neighbors = browsingNeighbors(
+            ref.watch(stockBrowsingContextProvider),
+            widget.symbol,
+          );
+          if (neighbors == null) return const SizedBox.shrink();
+          return StockNavBar(
+            prev: neighbors.prev,
+            next: neighbors.next,
+            position: neighbors.position,
+            total: neighbors.total,
+            onNavigate: (target) =>
+                context.pushReplacement(AppRoutes.stockDetail(target)),
+          );
+        },
+      ),
       body: Container(
         decoration: BoxDecoration(gradient: bgGradient),
         child: isLoading

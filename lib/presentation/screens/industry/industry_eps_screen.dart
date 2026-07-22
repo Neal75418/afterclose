@@ -12,6 +12,7 @@ import 'package:afterclose/presentation/widgets/empty_state.dart';
 import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
 import 'package:afterclose/data/models/tpex/tpex_industry_eps.dart';
 import 'package:afterclose/presentation/providers/industry_eps_provider.dart';
+import 'package:afterclose/presentation/providers/stock_browsing_context_provider.dart';
 
 /// 產業別 EPS 排名畫面
 class IndustryEpsScreen extends ConsumerStatefulWidget {
@@ -143,7 +144,7 @@ class _IndustryEpsScreenState extends ConsumerState<IndustryEpsScreen> {
             padding: const EdgeInsets.only(bottom: DesignTokens.spacing32),
             itemCount: filteredData.length,
             itemBuilder: (context, index) {
-              return _buildEpsItem(theme, filteredData[index], index);
+              return _buildEpsItem(theme, filteredData, index);
             },
           ),
         ),
@@ -239,7 +240,12 @@ class _IndustryEpsScreenState extends ConsumerState<IndustryEpsScreen> {
     );
   }
 
-  Widget _buildEpsItem(ThemeData theme, TpexIndustryEps item, int index) {
+  Widget _buildEpsItem(
+    ThemeData theme,
+    List<TpexIndustryEps> filteredData,
+    int index,
+  ) {
+    final item = filteredData[index];
     // 台股慣例：紅 = 獲利 / 上漲，綠 = 虧損 / 下跌
     final epsColor = item.eps > 0
         ? AppTheme.upColor
@@ -248,7 +254,12 @@ class _IndustryEpsScreenState extends ConsumerState<IndustryEpsScreen> {
         : theme.colorScheme.onSurface;
 
     return InkWell(
-      onTap: () => context.push(AppRoutes.stockDetail(item.symbol)),
+      onTap: () {
+        ref.read(stockBrowsingContextProvider.notifier).set([
+          for (final e in filteredData) e.symbol,
+        ]);
+        context.push(AppRoutes.stockDetail(item.symbol));
+      },
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: DesignTokens.spacing16),
         padding: const EdgeInsets.symmetric(

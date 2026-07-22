@@ -19,6 +19,7 @@ import 'package:afterclose/presentation/providers/market_overview_provider.dart'
 import 'package:afterclose/presentation/providers/mode_recommendation_provider.dart';
 import 'package:afterclose/presentation/providers/selected_mode_provider.dart';
 import 'package:afterclose/presentation/providers/settings_provider.dart';
+import 'package:afterclose/presentation/providers/stock_browsing_context_provider.dart';
 import 'package:afterclose/presentation/providers/today_provider.dart';
 import 'package:afterclose/presentation/providers/update_history_provider.dart';
 import 'package:afterclose/presentation/providers/watchlist_provider.dart';
@@ -187,7 +188,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
           onPinToggle: () => _togglePin(rec.symbol),
           onTap: () {
             HapticFeedback.lightImpact();
-            context.push(AppRoutes.stockDetail(rec.symbol));
+            _openStockDetail(recommendations, rec.symbol);
           },
           onLongPress: () {
             showStockPreviewSheet(
@@ -203,7 +204,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                 isInWatchlist: isInWatchlist,
               ),
               onViewDetails: () =>
-                  context.push(AppRoutes.stockDetail(rec.symbol)),
+                  _openStockDetail(recommendations, rec.symbol),
               onToggleWatchlist: () =>
                   _toggleWatchlist(rec.symbol, isInWatchlist),
             );
@@ -692,6 +693,14 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
         const SliverToBoxAdapter(child: SizedBox(height: 80)),
       ],
     );
+  }
+
+  /// 設定瀏覽脈絡（當前 mode tab 的推薦順序）後開詳情頁
+  void _openStockDetail(List<ModeRecommendation> recs, String symbol) {
+    ref.read(stockBrowsingContextProvider.notifier).set([
+      for (final r in recs) r.symbol,
+    ]);
+    context.push(AppRoutes.stockDetail(symbol));
   }
 
   /// 釘選/取消釘選論點（出場層 Phase 2）。mode 用當前 tab。
