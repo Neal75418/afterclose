@@ -139,14 +139,9 @@ final router = GoRouter(
     GoRoute(
       path: AppRoutes.stockDetailTemplate,
       name: 'stockDetail',
-      pageBuilder: (context, state) {
+      builder: (context, state) {
         final symbol = state.pathParameters['symbol'] ?? '';
-        final child = StockDetailScreen(symbol: symbol);
-        // 巡檢換股（導航列 pushReplacement）套無轉場：連續換股不播
-        // 整頁滑入動畫；一般從清單點進維持預設轉場
-        return AppRoutes.isStockDetailSwap(state.extra)
-            ? NoTransitionPage(key: state.pageKey, child: child)
-            : MaterialPage(key: state.pageKey, child: child);
+        return StockDetailScreen(symbol: symbol);
       },
     ),
 

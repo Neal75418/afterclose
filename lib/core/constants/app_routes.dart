@@ -19,14 +19,6 @@ abstract final class AppRoutes {
 
   // 參數化路由
   static String stockDetail(String symbol) => '/stock/$symbol';
-
-  /// 詳情頁「上/下一檔」換股時傳入 route extra 的標記：套無轉場動畫
-  /// （巡檢連續換股不該每次播整頁滑入；正常從清單點進維持預設轉場）。
-  /// 判定集中在 [isStockDetailSwap]。
-  static const stockDetailSwapExtra = 'stockDetailSwap';
-
-  /// route extra 是否為換股標記（詳情頁 pageBuilder 與導航列共用的契約）
-  static bool isStockDetailSwap(Object? extra) => extra == stockDetailSwapExtra;
   static String positionDetail(String symbol) => '/portfolio/$symbol';
 
   // GoRouter path 模板（僅用於 router.dart 路由定義）

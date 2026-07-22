@@ -35,10 +35,22 @@ class StockDetailScreen extends ConsumerStatefulWidget {
 class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final _scrollController = ScrollController();
+
+  /// 顯示中的 symbol。巡檢換股走 [_swapTo] **原地換**（不重建 route）：
+  /// 外框（AppBar/分頁列/導航列）不 remount，只有內容區換資料——避免
+  /// pushReplacement 整頁重建的閃屏。選中分頁跨換股保留（巡檢時停在
+  /// 籌碼頁連續翻閱）。
+  late String _symbol;
+
+  /// 換股載入中的目標（顯示細進度條；載完才切換 [_symbol]，冷載入
+  /// 期間保留舊內容不閃 shimmer）
+  String? _pendingSymbol;
 
   @override
   void initState() {
     super.initState();
+    _symbol = widget.symbol;
     _tabController = TabController(length: 5, vsync: this);
     Future.microtask(() {
       final notifier = ref.read(stockDetailProvider(widget.symbol).notifier);
@@ -48,15 +60,46 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
   }
 
   @override
+  void didUpdateWidget(covariant StockDetailScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // route 換了 symbol 但重用同一個 State 的少見情況（深連結等），防禦處理
+    if (oldWidget.symbol != widget.symbol) {
+      _symbol = widget.symbol;
+      _pendingSymbol = null;
+      Future.microtask(() {
+        final notifier = ref.read(stockDetailProvider(widget.symbol).notifier);
+        notifier.loadData();
+        notifier.loadFundamentals();
+      });
+    }
+  }
+
+  /// 巡檢換股：先載新股資料（舊內容保留在畫面上），載完一次性切換。
+  /// 連點時最後的目標勝出（guard 比對 [_pendingSymbol]）。
+  Future<void> _swapTo(String target) async {
+    if (target == _symbol || target == _pendingSymbol) return;
+    setState(() => _pendingSymbol = target);
+    final notifier = ref.read(stockDetailProvider(target).notifier);
+    await Future.wait([notifier.loadData(), notifier.loadFundamentals()]);
+    if (!mounted || _pendingSymbol != target) return;
+    setState(() {
+      _symbol = target;
+      _pendingSymbol = null;
+    });
+    if (_scrollController.hasClients) _scrollController.jumpTo(0);
+  }
+
+  @override
   void dispose() {
     _tabController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     // 只 watch scaffold 需要的欄位，避免 loading flag 變動觸發全頁 rebuild
-    final provider = stockDetailProvider(widget.symbol);
+    final provider = stockDetailProvider(_symbol);
     final isLoading = ref.watch(provider.select((s) => s.loading.isLoading));
     final error = ref.watch(provider.select((s) => s.error));
     final stockName = ref.watch(provider.select((s) => s.stockName));
@@ -87,24 +130,29 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
 
     return Scaffold(
       // 巡檢導航列：從清單（自選/今日/掃描…）進入時提供上一檔/下一檔，
-      // pushReplacement 換股 → 返回鍵仍回到來源清單。搜尋/深連結進入
-      // （不在瀏覽脈絡中）時 neighbors 為 null、整列不顯示。
+      // _swapTo 原地換股（route 不動 → 返回鍵仍回到來源清單）。搜尋/
+      // 深連結進入（不在瀏覽脈絡中）時 neighbors 為 null、整列不顯示。
       bottomNavigationBar: Consumer(
         builder: (context, ref, _) {
           final neighbors = browsingNeighbors(
             ref.watch(stockBrowsingContextProvider),
-            widget.symbol,
+            _symbol,
           );
           if (neighbors == null) return const SizedBox.shrink();
-          return StockNavBar(
-            prev: neighbors.prev,
-            next: neighbors.next,
-            position: neighbors.position,
-            total: neighbors.total,
-            onNavigate: (target) => context.pushReplacement(
-              AppRoutes.stockDetail(target),
-              extra: AppRoutes.stockDetailSwapExtra,
-            ),
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 換股載入中：細進度條（舊內容保留、不閃 shimmer）
+              if (_pendingSymbol != null)
+                const LinearProgressIndicator(minHeight: 2),
+              StockNavBar(
+                prev: neighbors.prev,
+                next: neighbors.next,
+                position: neighbors.position,
+                total: neighbors.total,
+                onNavigate: _swapTo,
+              ),
+            ],
           );
         },
       ),
@@ -117,17 +165,18 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
                 child: ErrorDisplay.isNetworkError(error)
                     ? EmptyStates.networkError(
                         onRetry: () => ref
-                            .read(stockDetailProvider(widget.symbol).notifier)
+                            .read(stockDetailProvider(_symbol).notifier)
                             .loadData(),
                       )
                     : EmptyStates.error(
                         message: error,
                         onRetry: () => ref
-                            .read(stockDetailProvider(widget.symbol).notifier)
+                            .read(stockDetailProvider(_symbol).notifier)
                             .loadData(),
                       ),
               )
             : NestedScrollView(
+                controller: _scrollController,
                 headerSliverBuilder: (context, innerBoxScrolled) => [
                   // App Bar（毛玻璃：blur 下方內容，半透質感又不會疊影穿透）
                   SliverAppBar(
@@ -141,7 +190,7 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          widget.symbol,
+                          _symbol,
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -162,7 +211,7 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
                         builder: (context, ref, _) {
                           final pinned = ref.watch(
                             pinnedThesisProvider.select(
-                              (s) => s.value?.isPinned(widget.symbol) ?? false,
+                              (s) => s.value?.isPinned(_symbol) ?? false,
                             ),
                           );
                           return IconButton(
@@ -178,13 +227,13 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
                                   .read(pinnedThesisProvider)
                                   .value
                                   ?.active
-                                  .where((t) => t.symbol == widget.symbol)
+                                  .where((t) => t.symbol == _symbol)
                                   .toList();
                               try {
                                 if (active != null && active.isNotEmpty) {
                                   await notifier.cancel(active.first.id);
                                 } else {
-                                  await notifier.pin(widget.symbol);
+                                  await notifier.pin(_symbol);
                                 }
                               } on StateError catch (e) {
                                 if (!context.mounted) return;
@@ -199,10 +248,7 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
                       IconButton(
                         icon: const Icon(Icons.compare_arrows),
                         onPressed: () {
-                          context.push(
-                            AppRoutes.compare,
-                            extra: [widget.symbol],
-                          );
+                          context.push(AppRoutes.compare, extra: [_symbol]);
                         },
                         tooltip: 'comparison.compare'.tr(),
                       ),
@@ -215,9 +261,7 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
                           final messenger = ScaffoldMessenger.of(context);
                           try {
                             await ref
-                                .read(
-                                  stockDetailProvider(widget.symbol).notifier,
-                                )
+                                .read(stockDetailProvider(_symbol).notifier)
                                 .toggleWatchlist();
                           } catch (e) {
                             if (!mounted) return;
@@ -247,16 +291,14 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
                         );
                         return StockDetailHeader(
                           data: headerData,
-                          symbol: widget.symbol,
+                          symbol: _symbol,
                         );
                       },
                     ),
                   ),
 
                   // AI 智慧分析摘要
-                  SliverToBoxAdapter(
-                    child: AiSummaryCard(symbol: widget.symbol),
-                  ),
+                  SliverToBoxAdapter(child: AiSummaryCard(symbol: _symbol)),
 
                   // Tab Bar（毛玻璃，與 App Bar 一致）
                   SliverPersistentHeader(
@@ -270,11 +312,25 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
                 body: TabBarView(
                   controller: _tabController,
                   children: [
-                    TechnicalTab(symbol: widget.symbol),
-                    ChipTab(symbol: widget.symbol),
-                    InsiderTab(symbol: widget.symbol),
-                    FundamentalsTab(symbol: widget.symbol),
-                    AlertsTab(symbol: widget.symbol),
+                    // key 綁 symbol：Chip/Insider/Fundamentals 是 initState
+                    // 載入型，原地換股需 remount 才會載新股資料
+                    TechnicalTab(
+                      key: ValueKey('tech-$_symbol'),
+                      symbol: _symbol,
+                    ),
+                    ChipTab(key: ValueKey('chip-$_symbol'), symbol: _symbol),
+                    InsiderTab(
+                      key: ValueKey('insider-$_symbol'),
+                      symbol: _symbol,
+                    ),
+                    FundamentalsTab(
+                      key: ValueKey('fund-$_symbol'),
+                      symbol: _symbol,
+                    ),
+                    AlertsTab(
+                      key: ValueKey('alerts-$_symbol'),
+                      symbol: _symbol,
+                    ),
                   ],
                 ),
               ),
