@@ -22,7 +22,7 @@ class AppTheme {
   /// 品牌裝飾色（Blue 500）—— 僅用於邊框、低透明度底色，不承載文字。
   static const brandDecorative = QualityColors.brandDecorative;
 
-  /// 深色主題中，疊加在 [brandDecorative] 裝飾底之上的文字色（Violet 300）。
+  /// 深色主題中，疊加在 [brandDecorative] 裝飾底之上的文字色（Blue 300）。
   static const brandOnDecorative = QualityColors.brandOnDecorative;
 
   /// 第三強調色 - Material Deep Orange
@@ -61,7 +61,7 @@ class AppTheme {
   static const errorColor = Color(0xFFE74C3C);
 
   // 語意色
-  /// 正面/成功 —— 非方向性語意，使用品牌紫
+  /// 正面/成功 —— 非方向性語意，使用品牌藍
   static const successColor = QualityColors.brand;
 
   /// 警示 —— 委派 WarningColors，避免雙處宣告漂移
@@ -70,7 +70,7 @@ class AppTheme {
   /// 注意
   static const cautionColor = WarningColors.caution;
 
-  /// 股利正面指標 —— 非方向性語意，使用品牌紫
+  /// 股利正面指標 —— 非方向性語意，使用品牌藍
   static const dividendColor = QualityColors.brand;
 
   /// 中性灰 —— 用於非漲跌的平穩狀態
@@ -277,7 +277,7 @@ class AppTheme {
         onPrimary: const Color(0xFFFFFFFF),
         secondary: QualityColors.brandOnLight,
         // ColorScheme.light() 的 onSecondary 未指定會落回 Material 預設
-        // Colors.black，對 brandOnLight（#6D28D9）僅 2.96:1——且不只
+        // Colors.black，對 brandOnLight（#1D4ED8）不足——且不只
         // onSecondary 本身，onSecondaryContainer（衍生自 onSecondary，見
         // Flutter SDK：onSecondaryContainer ??= onSecondary）在
         // stock_card 市場標籤、watchlist 數量徽章等 10 處實際文字上也會

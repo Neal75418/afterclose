@@ -203,6 +203,11 @@ bool isSignalTier(Map<ScoringMode, ModeStockScore> modeScores) =>
           s.modeScoreLong >= RuleParams.minScoreThreshold,
     );
 
+/// ETF／ETN 宇宙過濾判定——`stock_master.industry` 有 `ETF` 與 `上櫃ETF`
+/// 兩種標記並存（158＋14 檔），用 contains 一次涵蓋。
+@visibleForTesting
+bool isEtfIndustry(String? industry) => industry?.contains('ETF') ?? false;
+
 /// 判斷某檔股票是否「夠資格」指派到 [mode]。
 ///
 /// **2026-06-19 audit Action 5b — eligibility-first 指派**
@@ -215,11 +220,6 @@ bool isSignalTier(Map<ScoringMode, ModeStockScore> modeScores) =>
 /// `todayPct` / `biasMa20` 為 null 代表 price data 缺失（新 IPO / sparse history /
 /// data race）：採「不知道就不擋」semantics、避免靜默 drop。
 @visibleForTesting
-/// ETF／ETN 宇宙過濾判定——`stock_master.industry` 有 `ETF` 與 `上櫃ETF`
-/// 兩種標記並存（158＋14 檔），用 contains 一次涵蓋。
-@visibleForTesting
-bool isEtfIndustry(String? industry) => industry?.contains('ETF') ?? false;
-
 bool isEligibleForMode({
   required ScoringMode mode,
   required ModeStockScore score,
@@ -665,8 +665,8 @@ final _modeAssignmentsProvider =
 
 /// 該 mode 的 Top N 推薦（real-time aggregate from daily_reason）
 ///
-/// 跟 [todayProvider] 的 horizon-based 推薦清單共存、互不影響。
-/// 用 FutureProvider.family 當薄 slice：實際運算在 [_modeAssignmentsProvider]
+/// （舊 todayProvider 推薦系統已於 2026-06-21 退役，本 provider 是唯一
+/// 推薦來源。）用 FutureProvider.family 當薄 slice：實際運算在 [_modeAssignmentsProvider]
 /// 內、跨 mode 共用一次 DB query + assignment + filter。
 ///
 /// **Auto-reload**：透過內部 provider watch [dataUpdateEpochProvider]、每次

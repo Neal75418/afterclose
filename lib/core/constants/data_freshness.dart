@@ -60,7 +60,9 @@ abstract final class DataFreshness {
   // 當沖比例顯示門檻
   // ==================================================
 
-  /// 高當沖股判定門檻（%）
+  /// 高當沖比例「診斷日誌」門檻（%）——僅供 extended_market_rules 的
+  /// debug log 閘門用；真正的規則判定門檻是
+  /// `InstitutionalParams.dayTradingHighThreshold`（50），別混用。
   static const double dayTradingHighRatio = 30.0;
 
   /// 高當沖比例顯示門檻（%）— 用於日誌統計

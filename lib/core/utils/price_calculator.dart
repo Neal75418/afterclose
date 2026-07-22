@@ -8,23 +8,6 @@ import 'package:afterclose/data/database/app_database.dart';
 class PriceCalculator {
   PriceCalculator._();
 
-  /// 根據價格歷史計算漲跌幅百分比
-  ///
-  /// 優先使用 API 提供的漲跌價差（[DailyPriceEntry.priceChange]），
-  /// 確保即使歷史資料有缺口（例如跳過某日更新），漲跌幅仍正確。
-  ///
-  /// 回退邏輯：若 priceChange 為 null（如 FinMind 歷史資料），
-  /// 則根據 history 中的前一日收盤價計算。
-  ///
-  /// 以下情況回傳 null：
-  /// - latestPrice 為 null 或收盤價為 null
-  /// - 無法計算前一日收盤價（歷史資料不足且無 priceChange）
-  /// - 前一日收盤價為零或負數
-  /// 60 trading days 報酬（%）— 相對強度（RS）proxy。
-  ///
-  /// 60D 報酬與「全市場 60D percentile rank」同序（單調函數），
-  /// Mode B 排序與掃描頁 rs60Desc 排序共用此鍵。
-  /// 回 null 當 history < 61 筆 / 端點 close null / 起點 0。
   /// 市場是否處於上升 regime：載入 universe 的 [lookbackDays]D 平均報酬 > 0。
   ///
   /// 產業領導 tilt 用。有效股不足視為資料不足 → 保守回 false（不套 tilt）。
@@ -57,6 +40,8 @@ class PriceCalculator {
     return sum / n > 0;
   }
 
+  /// 5 trading days 報酬（%）。回 null 當 history < 6 筆 / 端點 close null /
+  /// 起點 0。
   static double? ret5d(List<DailyPriceEntry>? history) {
     if (history == null || history.length < 6) return null;
     final latest = history.last.close;
@@ -65,6 +50,8 @@ class PriceCalculator {
     return (latest - old) / old * 100;
   }
 
+  /// 20 trading days 報酬（%）— 族群排行／產業動能聚合鍵。
+  /// 回 null 當 history < 21 筆 / 端點 close null / 起點 0。
   static double? ret20d(List<DailyPriceEntry>? history) {
     if (history == null || history.length < 21) return null;
     final latest = history.last.close;
@@ -73,6 +60,11 @@ class PriceCalculator {
     return (latest - old) / old * 100;
   }
 
+  /// 60 trading days 報酬（%）— 相對強度（RS）proxy。
+  ///
+  /// 60D 報酬與「全市場 60D percentile rank」同序（單調函數），
+  /// Mode B 排序與掃描頁 rs60Desc 排序共用此鍵。
+  /// 回 null 當 history < 61 筆 / 端點 close null / 起點 0。
   static double? ret60d(List<DailyPriceEntry>? history) {
     if (history == null || history.length < 61) return null;
     final latest = history.last.close;
@@ -81,6 +73,18 @@ class PriceCalculator {
     return (latest - old) / old * 100;
   }
 
+  /// 根據價格歷史計算漲跌幅百分比
+  ///
+  /// 優先使用 API 提供的漲跌價差（[DailyPriceEntry.priceChange]），
+  /// 確保即使歷史資料有缺口（例如跳過某日更新），漲跌幅仍正確。
+  ///
+  /// 回退邏輯：若 priceChange 為 null（如 FinMind 歷史資料），
+  /// 則根據 history 中的前一日收盤價計算。
+  ///
+  /// 以下情況回傳 null：
+  /// - latestPrice 為 null 或收盤價為 null
+  /// - 無法計算前一日收盤價（歷史資料不足且無 priceChange）
+  /// - 前一日收盤價為零或負數
   static double? calculatePriceChange(
     List<DailyPriceEntry> history,
     DailyPriceEntry? latestPrice,

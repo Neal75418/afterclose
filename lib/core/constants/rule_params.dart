@@ -193,7 +193,7 @@ abstract final class RuleParams {
   /// daily_reason，導致 user 看到 top 20 只剩 2-3 檔。
   ///
   /// 新值 12 = 任 1 條真實 signal rule（PBR_UNDERVALUED 12 / PE_UNDERVALUED 15
-  /// / EPS_TURNAROUND 15 / DAY_TRADING_HIGH 12 / 反轉類更高）通過。
+  /// / EPS_TURNAROUND 15 / 反轉類更高）通過。
   /// 12 是當前 hardcoded scores 中「最弱但仍 actionable」的單條訊號值。
   /// 只命中 noise rule（CONCENTRATION_HIGH / REVENUE_NEW_HIGH 等 0 分項）
   /// 的股票仍被正確過濾掉。

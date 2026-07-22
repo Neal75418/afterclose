@@ -85,7 +85,8 @@ class MarketIndexSyncer {
 
   /// 同步當日大盤指數至 DB
   ///
-  /// 僅同步 Dashboard 需要的 4 個重點指數，回傳寫入筆數。
+  /// 僅同步 Dashboard 需要的重點指數（MarketIndexNames.dashboardIndices，
+  /// 現為 8 個），回傳寫入筆數。
   /// 同步後若 DB 資料不足 [_backfillThreshold] 筆，自動觸發歷史回補。
   Future<int> sync() async {
     var synced = 0;

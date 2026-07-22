@@ -29,8 +29,9 @@ typedef CalibrationAssetLoader = Future<String> Function(String assetPath);
 /// 那邊記憶體與主 isolate 完全隔離，此 singleton 在 scoring isolate 內
 /// 是未初始化狀態（透過 [CalibratedScoreContext] snapshot DTO 傳遞）。
 ///
-/// 主 isolate 消費者為 UI / debug / rule accuracy 頁面，透過
-/// `ReasonType.scoreFor(Horizon)` extension 間接讀取。
+/// production 評分實際走 [CalibratedScoreContext] snapshot 路徑；
+/// `ReasonType.scoreFor(Horizon)` extension 目前僅測試使用（潛在
+/// fallback，2026-07-23 稽核確認 production 零呼叫）。
 ///
 /// ## 生命週期
 ///

@@ -86,7 +86,7 @@ enum ReasonType {
   roeDeclining('ROE_DECLINING'),
 
   // 第 9 階段：強股回檔進場（Mode C v2 - 回檔觀察）
-  // 2026-06-19 workflow wf_6676643c-0e9 設計、3 條 buy-signal rule 識別「**之前強、
+  // 2026-06-19 workflow wf_6676643c-0e9 設計、4 條 buy-signal rule（2026-06-20 追加 MA10）識別「**之前強、
   // 現在剛開始拉回**」的進場時機。score 正分（跟 Mode A/B 一致）— 打破舊「Mode C 全
   // 負分」invariant，因為新 Mode C 是「觀察機會 tab」而非「警示 tab」。
   pullbackToMa20('PULLBACK_TO_MA20'),
@@ -196,7 +196,7 @@ extension ReasonTypeScoringMode on ReasonType {
   /// - neutral: 觸發頻繁但無 alpha 的 noise filter rule、value rule 跟 momentum
   ///   無關 — 仍寫進 daily_reason 顯示 evidence chip，但不影響任何 mode 排名
   ScoringMode get scoringMode => switch (this) {
-    // ============ Mode A: 起漲候選（17 條 — 含 patternHammer 2026-06-20 回歸）============
+    // ============ Mode A: 起漲候選（15 條 — 含 patternHammer 2026-06-20 回歸）============
     // 反轉 / 突破 / 底部 / 逆勢買進訊號 — user mental model「找還沒漲、即將起漲」。
     ReasonType.reversalW2S => ScoringMode.momentumEntry,
     ReasonType.techBreakout => ScoringMode.momentumEntry,
@@ -248,8 +248,9 @@ extension ReasonTypeScoringMode on ReasonType {
     // **2026-06-19 v2 audit 重定義**：user 真實意圖是「**強股剛開始回檔、找進場時機**」。
     // identifier `weaknessObserve` 保留避免 DB migration、tab name i18n 改「回檔觀察」。
     //
-    // 組成：**只有 3 條正分主訊號**（gate 必過、from pullback_rules.dart）：
-    //     pullbackToMa20 (+15) / hammerAtSupport (+18) / kdHighPullback (+12)
+    // 組成：**只有 4 條正分主訊號**（gate 必過、from pullback_rules.dart）：
+    //     pullbackToMa20 (+15) / pullbackToMa10 (+12) / hammerAtSupport (+18) /
+    //     kdHighPullback (+12)
     //
     // **2026-06-20 早期體檢修正 A（warning 壓分 bug）**：原本還掛 7 條負分 warning
     // (吊人線 -12 等) 當 context chip，但它們污染 Mode C score 加總 — 例 2637 fire
@@ -264,7 +265,7 @@ extension ReasonTypeScoringMode on ReasonType {
       ScoringMode.weaknessObserve, // 主 +12 淺回檔（2026-06-20 B2 加）
     ReasonType.hammerAtSupport => ScoringMode.weaknessObserve, // 主 +18
     ReasonType.kdHighPullback => ScoringMode.weaknessObserve, // 主 +12
-    // ============ Neutral（35 條 — v2.1 再 +7 warning）============
+    // ============ Neutral（37 條 — v2.1 再 +7 warning）============
     // **2026-06-20 修正 A 移入 7 條**（原 Mode C warning context、會壓分 bug）：
     ReasonType.patternHangingMan => ScoringMode.neutral, // 高檔吊人線
     ReasonType.patternDojiBearish => ScoringMode.neutral, // 高檔十字

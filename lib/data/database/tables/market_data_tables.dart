@@ -34,8 +34,7 @@ class Shareholding extends Table {
 /// 當沖資料 Table
 ///
 /// **資料來源說明：**
-/// - FinMind API：提供實際股數
-/// - TWSE TWTB4U API：買賣欄位提供金額（元）
+/// - TWSE TWTB4U API（唯一 writer）：買賣欄位為金額（元）
 ///
 /// [dayTradingRatio] 為交易訊號使用的主要指標，
 /// 由每日價量資料另行計算。
@@ -50,14 +49,10 @@ class DayTrading extends Table {
   /// 交易日期
   DateTimeColumn get date => dateTime()();
 
-  /// 當沖買進量/金額
-  ///
-  /// 註：TWSE API 提供金額（元），FinMind 提供股數
+  /// 當沖買進金額（元，TWSE TWTB4U）
   RealColumn get buyVolume => real().nullable()();
 
-  /// 當沖賣出量/金額
-  ///
-  /// 註：TWSE API 提供金額（元），FinMind 提供股數
+  /// 當沖賣出金額（元，TWSE TWTB4U）
   RealColumn get sellVolume => real().nullable()();
 
   /// 當沖比例（%）

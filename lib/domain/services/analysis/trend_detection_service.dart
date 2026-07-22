@@ -139,7 +139,7 @@ class TrendDetectionService {
   /// 檢查是否形成更高的低點（反轉訊號）
   ///
   /// 條件：
-  /// 1. 近期低點高於前期低點 5%
+  /// 1. 近期低點高於前期低點 7%（higherLowBuffer=1.07，2026 收緊）
   /// 2. 收盤站上 MA20
   /// 3. 近期成交量高於前期平均（量能確認）
   bool _hasHigherLow(List<DailyPriceEntry> prices, {double? ma20}) {

@@ -15,7 +15,6 @@ enum ApiVendor { finMind, twse, tpex, tdcc }
 /// circuit-breaker），且 `update_service` 平行跑 4 組 syncer 共用同一個
 /// FinMind token — 2026-06 實測案例：HistoricalPriceSyncer 預算 300、
 /// 實際各 syncer 加總打了 1125 calls，撞 hourly cap 整套 abort。
-/// Architecture review M3。
 ///
 /// ## 設計選項（user 拍板）
 ///

@@ -35,7 +35,7 @@ List<String> quickFilterPrices<T>(
     final prevClose = close - change;
     if (prevClose <= 0) continue;
 
-    // 過濾：跳過極低成交量股票（< 50 張）
+    // 過濾：跳過極低成交量股票（門檻見 minQuickFilterVolumeShares doc，100 張）
     if ((volume ?? 0) < RuleParams.minQuickFilterVolumeShares) continue;
 
     // 全市場策略：納入所有活躍股票，不論漲跌幅

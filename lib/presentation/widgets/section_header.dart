@@ -52,9 +52,9 @@ class SectionHeader extends StatelessWidget {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 // 純裝飾（4x20 色條、不承載文字），本身無對比度門檻；但
-                // AppTheme.primaryColor 恆為 #A78BFA，而 8 行下方的標題圖示
-                // 用的是 theme.colorScheme.primary——淺色主題會解析成
-                // #6D28D9，同一個 header 內兩塊紫明顯不同色。統一取用主題色。
+                // AppTheme.primaryColor 恆為深色版品牌亮色，而標題圖示用的
+                // 是 theme.colorScheme.primary——淺色主題解析成 brandOnLight
+                // 深藍，同一個 header 內兩塊藍會明顯不同色。統一取用主題色。
                 colors: isDark
                     ? [AppTheme.brandDecorative, theme.colorScheme.primary]
                     : [theme.colorScheme.primary, AppTheme.brandDecorative],

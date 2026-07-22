@@ -556,7 +556,8 @@ class MarketDataSyncResult {
   /// 融資融券同步筆數。null 表示已快取（跳過同步）。
   final int? marginCount;
 
-  /// 回補成功的缺漏交易日天數（當沖或融資任一有寫入即計 1 天）
+  /// 回補成功的缺漏交易日天數（當沖或融資任一**跨過缺漏偵測門檻**才計
+  /// 1 天——與收斂設計第 2 條一致，非「有寫入列」即計）
   final int backfilledDays;
 
   int get total => dayTradingCount + (marginCount ?? 0);

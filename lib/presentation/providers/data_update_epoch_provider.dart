@@ -35,8 +35,8 @@ class DataUpdateEpoch extends Notifier<int> {
 
   /// 通知所有 listener「資料已寫入新一輪」。
   ///
-  /// 呼叫端：`TodayNotifier.runUpdate` 與 `BackgroundUpdateService` 完成
-  /// 後分別呼叫一次。
+  /// 呼叫端：`TodayNotifier.runUpdate` 完成後呼叫一次。（Workmanager 背景
+  /// isolate 更新不經 provider 樹、不會 bump——見 today_provider 的說明。）
   void bump() {
     state = state + 1;
   }

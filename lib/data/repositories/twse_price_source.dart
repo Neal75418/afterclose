@@ -100,8 +100,8 @@ class TwsePriceSource {
 
   /// 取得全市場上市股票價格
   ///
-  /// [date] 為 null 抓「最新交易日」（TWSE 預設行為）；指定日期則抓該日歷史
-  /// 資料（用於 backfill）。Backward-compat：既有呼叫端不傳 date 行為不變。
+  /// [date] 參數自 2026-06 起被 STOCK_DAY_ALL 端點忽略（永遠回最新日）
+  /// ——歷史回補一律走 [fetchAllDailyPricesHistorical]（MI_INDEX）。
   Future<List<TwseDailyPrice>> fetchAllDailyPrices({DateTime? date}) {
     return _client.getAllDailyPrices(date: date);
   }

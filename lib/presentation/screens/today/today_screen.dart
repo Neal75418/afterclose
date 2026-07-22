@@ -162,7 +162,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     final card = RepaintBoundary(
       key: ValueKey('${rec.symbol}_$isInWatchlist'),
       // Consumer 隔離 pinned 狀態：釘選 toggle 只重建這張卡，
-      // 不 mark 整個 TodayScreen dirty（今日頁既有慣例，:258 同模式）
+      // 不 mark 整個 TodayScreen dirty（同檔 AppBar/橫幅等 Consumer 同慣例）
       child: Consumer(
         builder: (context, cardRef, _) => StockCard(
           symbol: rec.symbol,

@@ -135,7 +135,7 @@ class DayTradingExtremeRule extends StockRule {
     final ratio = marketData.dayTradingRatio;
     if (ratio == null) return null;
 
-    // 過濾條件：成交量 >= 萬張（10,000,000 股）
+    // 過濾條件：成交量 >= 3 萬張（minDayTradingExtremeVolumeShares，30,000,000 股）
     final lastPrice = data.prices.isNotEmpty ? data.prices.last : null;
     if (lastPrice == null ||
         lastPrice.volume == null ||

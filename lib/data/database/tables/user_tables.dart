@@ -85,10 +85,8 @@ class AppSettings extends Table {
 
 /// 股價提醒 Table
 ///
-/// 提醒類型：
-/// - ABOVE：價格高於目標價
-/// - BELOW：價格低於目標價
-/// - CHANGE_PCT：當日漲跌幅超過百分比
+/// 提醒類型：完整值域見 `AlertParams` 的 type 常數（價格/漲跌幅之外
+/// 尚有營收、內部人、法人等共 23 種）
 @DataClassName('PriceAlertEntry')
 class PriceAlert extends Table {
   /// 自動遞增 ID
@@ -98,7 +96,7 @@ class PriceAlert extends Table {
   TextColumn get symbol =>
       text().references(StockMaster, #symbol, onDelete: KeyAction.cascade)();
 
-  /// 提醒類型：ABOVE、BELOW、CHANGE_PCT
+  /// 提醒類型（值域見 AlertParams）
   TextColumn get alertType => text()();
 
   /// 目標值（價格或百分比）

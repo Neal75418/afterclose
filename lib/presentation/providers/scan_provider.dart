@@ -235,8 +235,8 @@ class ScanNotifier extends Notifier<ScanState> {
 
     try {
       // 智慧回退：找到最近有資料的日期（統一由 Repository 處理日期正規化）
-      // scan 預設依 short horizon 排序；UI 切 horizon 時也走同一 reload
-      // path（dataUpdateEpoch listener 或 horizon listener 都會重新呼這條）。
+      // scan 固定用長線 horizon（_horizon doc）；dataUpdateEpoch listener
+      // 會重新呼這條。
       final result = await _analysisRepo.findLatestAnalyses(horizon: _horizon);
       if (!_active) return;
       final targetDate = result.targetDate;

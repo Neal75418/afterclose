@@ -46,8 +46,8 @@ abstract class IPriceRepository {
   /// 用於 backfill：相較於 [syncStockPrices] 對每檔股票分別呼叫 TWSE 月度
   /// API（per-symbol × per-month，2 年 backfill 數萬次 calls 會觸發 TWSE
   /// IP-based rate limit "Redirect loop detected"），本方法走 TWSE
-  /// `STOCK_DAY_ALL` 的 daily batch endpoint，**一次 call 回該日全部上市
-  /// 股票**。完整 2 年 backfill 從約 1400×24 ≈ 33,000 次降到約 500 次，
+  /// MI_INDEX 歷史端點（STOCK_DAY_ALL 自 2026-06 起忽略 date 參數），
+  /// **一次 call 回該日全部上市股票**。完整 2 年 backfill 從約 1400×24 ≈ 33,000 次降到約 500 次，
   /// 且 TWSE 該 endpoint 也免費沒額度。
   ///
   /// 與 [backfillTpexPricesByDate] 採完全對稱 pattern。
@@ -65,7 +65,8 @@ abstract class IPriceRepository {
   ///
   /// 用於 backfill：相較於 `syncStockPrices(symbol)` 對每檔股票分別呼叫
   /// FinMind（per-symbol，2 年 backfill 數千 calls 必然吃光免費額度），
-  /// 本方法走 TPEx OpenAPI 的 `getAllDailyPrices(date:)`，**一次 call 回該日
+  /// 本方法走 TPEx afterTrading 歷史端點（`getAllDailyPricesHistorical`；
+  /// 舊 daily_close_quotes 同樣忽略歷史 date），**一次 call 回該日
   /// 全部上櫃股票**。完整 2 年 backfill 從約 8000×24 ≈ 19 萬次降到約 500 次，
   /// 且 TPEx OpenAPI 完全免費沒額度限制。
   ///

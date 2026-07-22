@@ -16,8 +16,12 @@ abstract final class StockPatterns {
 
   /// 上櫃股票代碼模式
   ///
-  /// 上櫃市場僅有 4 位數字的股票，不包含 00xxx ETF。
-  /// 00xxx ETF 皆在上市市場（TWSE）交易。
+  /// 上櫃市場僅有 4 位數字的股票，不包含 00xxx ETF 代碼。
+  ///
+  /// ⚠️ 事實更正（2026-07-23 稽核）：00xxxx ETF **並非**全在上市——上櫃
+  /// 另有「上櫃ETF」（stock_master 實測 14 檔，如 006201 元大富櫃50）。
+  /// 本 regex 的取捨：每日價格 parser 用它過濾會**丟棄上櫃 ETF**（歷史
+  /// 回補 parser 不套、行為不一致），是否統一待決策。
   static final _tpexCode = RegExp(r'^\d{4}$');
 
   /// 檢查是否為有效股票代碼

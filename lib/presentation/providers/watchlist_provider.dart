@@ -750,7 +750,8 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
         ? DateContext.normalize(latestDataDate)
         : DateContext.now().today;
 
-    // 用 analysisDate 對齊 loadData 的歷史視窗計算（line 250 同 pattern）—
+    // 用 analysisDate 對齊 loadData 的歷史視窗計算（與 loadData 內
+    // DateContext.forDate 同 pattern）—
     // 避免增量加股的 sparkline 用 wall-clock 範圍，跟清單其他項日期偏差。
     final historyCtx = DateContext.forDate(analysisDate);
 

@@ -193,7 +193,7 @@ abstract final class DesignTokens {
   /// Success 語意色（淺色主題）
   ///
   /// 「成功／高信心」屬非方向性語意，不使用綠色 —— 綠色在本 app
-  /// 代表下跌。改用品牌紫，與股價語意徹底分離。
+  /// 代表下跌。改用品牌藍，與股價語意徹底分離。
   static const Color successLight = QualityColors.brandOnLight;
 
   /// Success 語意色（深色主題）

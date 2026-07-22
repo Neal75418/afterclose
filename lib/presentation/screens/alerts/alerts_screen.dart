@@ -151,10 +151,10 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          // 徽章承載白字：AppTheme.primaryColor 恆為
-                          // #A78BFA（為深色主題挑的 Violet 400），白字在其上
-                          // 僅 2.72:1；改走主題 primary，淺色解析為 #6D28D9
-                          // 達 7.10:1，深色維持同值、視覺零變化。
+                          // 徽章承載白字：AppTheme.primaryColor 恆為深色
+                          // 主題的品牌亮色（現為 Blue 400 #60A5FA），白字
+                          // 對比不足；改走主題 primary——淺色解析為
+                          // brandOnLight 深藍、白字達標，深色維持同值。
                           color: theme.colorScheme.primary,
                           borderRadius: BorderRadius.circular(
                             DesignTokens.radiusXs,
@@ -376,9 +376,9 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
   }
 
   Color _getAlertColor(AlertType type, ThemeData theme) {
-    // 三個分支的色值都需要依主題解析：primaryColor 恆為 #A78BFA（20px 圖示
-    // 對自身 15% 疊色底僅 2.38:1，圖形物件 3:1 不過），downColor 恆為
-    // #2ED573（對白底 1.93:1）。改走主題 primary 與 PriceColors.downFor。
+    // 三個分支的色值都需要依主題解析：AppTheme.primaryColor 恆為深色版
+    // 品牌亮色（淺色底不過圖形 3:1 門檻），downColor 恆為 #2ED573（對白底
+    // 1.93:1）。改走主題 primary 與 PriceColors.downFor。
     final primaryColor = theme.colorScheme.primary;
     final downColor = PriceColors.downFor(theme.brightness);
     return switch (type) {

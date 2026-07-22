@@ -210,7 +210,8 @@ class FinMindClient {
       throw NetworkException('Connection timeout after $attempt attempts', e);
     }
     if (e.response?.statusCode == 429) {
-      // 以較長退避時間重試流量限制錯誤（有限次數重試）
+      // 429 → 拋 RateLimitException（⚠️ _delay 的 isRateLimit 長退避目前
+      // 未接線——2026-07-23 稽核確認從未傳 true，是否啟用待決策）
       AppLogger.warning('FinMind', '$label: 429 流量限制，等待重試');
       _budgetTracker?.markRateLimited(ApiVendor.finMind);
       throw const RateLimitException();
@@ -234,7 +235,7 @@ class FinMindClient {
     final cached = _checkCache(params, label);
     if (cached != null) return cached;
 
-    // M3：每次 request 前查跨 syncer 共享的預算 + cooldown；超預算/cooldown
+    // 每次 request 前查跨 syncer 共享的預算 + cooldown；超預算/cooldown
     // 直接拋 RateLimitException、不發出網路請求。
     _budgetTracker?.checkBudget(ApiVendor.finMind);
 
@@ -337,7 +338,8 @@ class FinMindClient {
 
   /// 計算指數退避延遲（含抖動）
   ///
-  /// 當 [isRateLimit] 為 true 時，使用 4 倍基礎延遲
+  /// [isRateLimit] 為 true 時用 4 倍基礎延遲——⚠️ 目前無呼叫端傳 true
+  /// （429 直接拋例外不重試），此分支實質未啟用，待決策啟用或移除
   Future<void> _delay(int attempt, {bool isRateLimit = false}) async {
     // 流量限制錯誤使用 4 倍基礎延遲（給 API 更多重置時間）
     final baseMs = isRateLimit

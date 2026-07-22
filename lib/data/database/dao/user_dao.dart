@@ -568,7 +568,7 @@ mixin UserDaoMixin on $AppDatabase {
               ..orderBy([(t) => OrderingTerm.desc(t.date)]))
             .get();
 
-    // 按 symbol 分組，取最新兩筆算差異
+    // 按 symbol 分組，取最新一筆的既存 sharesChange
     final grouped = <String, List<InsiderHoldingEntry>>{};
     for (final h in holdings) {
       (grouped[h.symbol] ??= []).add(h);

@@ -41,8 +41,9 @@ class TwseClient {
   ///
   /// 端點: /rwd/zh/afterTrading/STOCK_DAY_ALL
   ///
-  /// [date] 為 null 抓「最新交易日」（TWSE 預設行為）；指定日期則加上
-  /// `date=YYYYMMDD` 參數抓該日歷史資料。Cache key 依 date 區分避免互相覆蓋。
+  /// ⚠️ `date=YYYYMMDD` 參數自 2026-06 CSV 化後被端點忽略（永遠回最新
+  /// 日）——歷史回補走 [getAllDailyPricesHistorical]（MI_INDEX）。Cache key
+  /// 仍依 date 區分避免互相覆蓋。
   Future<List<TwseDailyPrice>> getAllDailyPrices({DateTime? date}) {
     return MarketClientMixin.executeRequest(_tag, '全市場價格', () async {
       final cacheKey = date != null

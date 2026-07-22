@@ -87,7 +87,8 @@ class RevenueYoYDeclineRule extends StockRule {
 
 /// 規則：營收月增持續
 ///
-/// 當月營收月增為正且股價站上 MA20 時觸發
+/// 當月營收月增 ≥10%（revenueMomGrowthThreshold）且通過技術動能過濾
+/// （站上 MA20＋近日漲幅確認）時觸發
 class RevenueMomGrowthRule extends StockRule with FundamentalTechnicalFilter {
   const RevenueMomGrowthRule();
 
@@ -232,7 +233,7 @@ class HighDividendYieldRule extends StockRule {
       );
     }
 
-    // 過濾無效或過低殖利率（< 5%）
+    // 過濾無效或過低殖利率（< 5.5%，highDividendYieldThreshold）
     if (dividendYield < FundamentalParams.highDividendYieldThreshold) {
       return null;
     }
@@ -307,7 +308,7 @@ class PEOvervaluedRule extends StockRule {
     final pe = valuation.per ?? 0;
 
     if (pe >= FundamentalParams.peOvervaluedThreshold) {
-      // 過濾條件：須處於過熱狀態（RSI > 70）
+      // 過濾條件：須處於過熱狀態（RSI > 75，scanRsiOverboughtThreshold）
       // 優先使用 context.indicators.rsi（含 Wilder smoothing），
       // 若 indicators 為 null（價格資料 < 60 天）則 fallback 到直接計算
       final rsi =

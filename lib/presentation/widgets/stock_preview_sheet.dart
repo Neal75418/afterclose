@@ -328,9 +328,9 @@ class StockPreviewSheet extends StatelessWidget {
                                   vertical: DesignTokens.spacing14,
                                 ),
                                 // FilledButton 前景為 onPrimary（淺色白）：
-                                // AppTheme.primaryColor 恆為 #A78BFA，白字
-                                // 僅 2.72:1；主題 primary 淺色 #6D28D9 達
-                                // 7.10:1，深色同值不變。
+                                // AppTheme.primaryColor 恆為深色版品牌亮色，
+                                // 白字對比不足；主題 primary 淺色解析為
+                                // brandOnLight 深藍達標，深色同值不變。
                                 backgroundColor: theme.colorScheme.primary,
                               ),
                             ),

@@ -28,7 +28,7 @@ BrowsingNeighbors? browsingNeighbors(List<String> symbols, String current) {
 ///
 /// 清單頁（自選/今日/掃描/族群成員…共 13 個入口）在 push 詳情前呼叫
 /// [StockBrowsingContext.set]；詳情頁底部導航列據此提供上一檔/下一檔
-/// （`pushReplacement` 換股，返回鍵仍回到來源清單）。
+/// （`_swapTo` 原地換股、route 不動，返回鍵仍回到來源清單）。
 ///
 /// 不需顯式 clear：脈絡只在「目前 symbol ∈ 清單」時生效
 /// （[browsingNeighbors] 回 null 即隱藏），過期脈絡無害。

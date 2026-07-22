@@ -387,7 +387,8 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
 /// 股票詳情 Provider family
 /// 使用 autoDispose + keepAlive 組合：
 /// - autoDispose: 無訂閱者時觸發清理
-/// - keepAlive: 保留 5 分鐘快取，改善列表↔詳情切換體驗
+/// - keepAlive: 保留 ApiConfig.keepAliveMin（3 分鐘）快取，改善列表↔詳情
+///   切換體驗
 final stockDetailProvider = NotifierProvider.autoDispose
     .family<StockDetailNotifier, StockDetailState, String>(
       StockDetailNotifier.new,

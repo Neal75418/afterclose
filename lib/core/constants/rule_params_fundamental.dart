@@ -40,7 +40,7 @@ abstract final class FundamentalParams {
 
   /// 本益比高估門檻
   ///
-  /// 提高至 100 以聚焦泡沫區域。
+  /// 60 以聚焦泡沫區域。
   static const double peOvervaluedThreshold = 60.0;
 
   /// 股價淨值比低估門檻

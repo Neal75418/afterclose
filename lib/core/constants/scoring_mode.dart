@@ -3,7 +3,7 @@
 /// **動機**：使用者用 AfterClose 不是只找「會漲的股票」，是 3 種觀察心智：
 /// - Mode A：起漲候選 — 找還沒漲但有起漲訊號的股票（進場前的研究）
 /// - Mode B：強勢觀察 — 已大漲的股票，等回檔時機進場
-/// - Mode C：弱勢觀察 — 已下跌的股票，確認是否真的轉空（避開或反向）
+/// - Mode C：回檔觀察 — 之前強、剛開始拉回的股票，找回檔進場時機（v2 重定義）
 ///
 /// 跟 [Horizon] 是**正交**的兩個維度：mode 是用戶的觀察類型、horizon 是
 /// 評估的時間軸。同一檔股票可同時出現在多個 mode、每個 mode 內各有 5D
@@ -167,7 +167,7 @@ abstract final class ModeFilters {
 
   /// Mode C eligibility 必過 gate：至少 1 條主訊號 rule fire
   ///
-  /// 3 條主訊號 rule 提供「回檔進場時機」確認、舊負分 warning rule 單獨 fire 不
+  /// 4 條主訊號 rule 提供「回檔進場時機」確認、舊負分 warning rule 單獨 fire 不
   /// 足以入 Mode C（避免「純警示無進場點」雜訊）。
   ///
   /// 這 3 條 rule 識別子用字串避免循環 import（ReasonType import scoring_mode、

@@ -300,7 +300,7 @@ class AppDatabase extends $AppDatabase
   ///
   /// [_userInputTableNames] 內列出的表在 reset 時被跳過，避免使用者**手動
   /// 輸入**的資料（自選股、價格警示、自訂篩選、portfolio、自訂事件、app 偏好）
-  /// 被洗掉。這是 M1 修正範圍。
+  /// 被洗掉。
   ///
   /// ## ⚠️ Whitelist 的已知限制
   ///

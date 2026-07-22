@@ -235,7 +235,7 @@ class MarketSentimentService {
 
   /// Z-score 轉 0-100 分數
   ///
-  /// 使用 CDF 近似，均值→50，+2σ→~98，-2σ→~2
+  /// 線性映射近似，均值→50，+2σ→90，-2σ→10（定義域 ±2.5σ）
   static double _zScoreToScore(List<double> values) {
     if (values.isEmpty) return 50;
 
@@ -248,7 +248,7 @@ class MarketSentimentService {
     if (std == 0) return values.last > 0 ? 75 : (values.last < 0 ? 25 : 50);
 
     final z = (values.last - mean) / std;
-    // 簡化 CDF: z ∈ [-3, 3] → [0, 100]
+    // 線性映射: z ∈ [-2.5, 2.5] → [0, 100]
     return _linearMap(z, -2.5, 2.5);
   }
 

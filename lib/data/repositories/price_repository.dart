@@ -197,12 +197,13 @@ class PriceRepository implements IPriceRepository {
     }
   }
 
-  /// 用 TWSE STOCK_DAY_ALL batch endpoint 回補單一交易日**所有**上市股票價格
+  /// 用 TWSE MI_INDEX 歷史端點回補單一交易日**所有**上市股票價格
   ///
   /// 詳細語意見 [IPriceRepository.backfillTwsePricesByDate]。
   ///
-  /// 實作走 [TwsePriceSource.fetchAllDailyPrices]（TWSE STOCK_DAY_ALL，
-  /// 支援歷史 date 參數），接著 [TwsePriceSource.processDailyPrices] 轉成
+  /// 實作走 [TwsePriceSource.fetchAllDailyPricesHistorical]（MI_INDEX；
+  /// STOCK_DAY_ALL 自 2026-06 起忽略 date 參數、無法回補歷史），接著
+  /// [TwsePriceSource.processDailyPrices] 轉成
   /// DB Companion 並依 [targetSymbols] 過濾，最後一次 batch insert。
   /// Pattern 與 [backfillTpexPricesByDate] 對稱。
   @override
@@ -245,11 +246,12 @@ class PriceRepository implements IPriceRepository {
     }
   }
 
-  /// 用 TPEx OpenAPI batch endpoint 回補單一交易日**所有**上櫃股票價格
+  /// 用 TPEx afterTrading 歷史端點回補單一交易日**所有**上櫃股票價格
   ///
   /// 詳細語意見 [IPriceRepository.backfillTpexPricesByDate]。
   ///
-  /// 實作走 [TpexPriceSource.fetchAllDailyPrices]（TPEx 官方 OpenAPI），
+  /// 實作走 TPEx `getAllDailyPricesHistorical`（afterTrading/otc；舊
+  /// daily_close_quotes 端點同樣自 2026-06 起忽略歷史 date），
   /// 接著 [TpexPriceSource.processDailyPrices] 轉成 DB Companion 並依
   /// [targetSymbols] 過濾，最後一次 batch insert。
   @override

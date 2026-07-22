@@ -22,7 +22,7 @@ export 'package:afterclose/data/models/tpex/models.dart';
 /// 無需認證。
 ///
 /// API 來源:
-/// - 每日股價: https://www.tpex.org.tw/web/stock/aftertrading/otc_quotes_no1430/stk_wn1430_result.php
+/// - 每日股價: https://www.tpex.org.tw/web/stock/aftertrading/daily_close_quotes/stk_quote_result.php
 /// - 法人買賣: https://www.tpex.org.tw/web/stock/3insti/daily_trade/3itrade_hedge_result.php
 class TpexClient {
   TpexClient({Dio? dio})
@@ -41,11 +41,6 @@ class TpexClient {
     ttl: const Duration(minutes: CacheConfig.marketClientCacheTtlMin),
   );
 
-  /// 取得最新交易日所有上櫃股票價格
-  ///
-  /// 回傳所有上櫃股票的 OHLCV 資料。
-  ///
-  /// 端點: /web/stock/aftertrading/otc_quotes_no1430/stk_wn1430_result.php
   /// 新版 afterTrading/otc（歷史回補替代端點）→ [TpexDailyPrice] 列表。
   ///
   /// 舊 daily_close_quotes 端點自 2026-06 起忽略歷史 date（永遠回最新日，
@@ -128,6 +123,11 @@ class TpexClient {
     });
   }
 
+  /// 取得最新交易日所有上櫃股票價格（OHLCV）
+  ///
+  /// 端點: [ApiEndpoints.tpexDailyPricesAll]（daily_close_quotes）。
+  /// ⚠️ date 參數自 2026-06 起被端點忽略（永遠回最新日）——歷史回補
+  /// 走 [getAllDailyPricesHistorical]。
   Future<List<TpexDailyPrice>> getAllDailyPrices({DateTime? date}) {
     return MarketClientMixin.executeRequest(_tag, '全市場價格', () async {
       final cacheKey = date != null

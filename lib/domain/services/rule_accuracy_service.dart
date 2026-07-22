@@ -51,8 +51,9 @@ class RuleAccuracyService {
 
   /// 判定 `returnRate`（%）是否達到 `period` 的命中門檻
   ///
-  /// 使用 `>=`（含）而非 `>`（嚴格）— 邊界 case（例如 5D returnRate 剛好 3.0%）
-  /// 算命中，對應「門檻就是及格線」的直覺。
+  /// 使用 `>=`（含）而非 `>`（嚴格）— 邊界 case（returnRate 剛好等於
+  /// CalibrationThresholds.successThresholds 的門檻值）算命中，對應
+  /// 「門檻就是及格線」的直覺。
   static bool _isSuccessFor(double returnRate, int period) {
     final threshold =
         CalibrationThresholds.successThresholds[period] ??
@@ -360,8 +361,8 @@ class RuleAccuracyService {
     //
     // 寫入仍走 `insertOnConflictUpdate` loop（如原本 Stage 2 寫法）— drift 的
     // `_db.batch` 嵌進 `_db.transaction` 後行為不對等（Batch 自己會嘗試開
-    // transaction），會吞掉新行；改用 loop await 維持原語意。資料量小（< 100
-    // rows = ~60 rules × ≤ 6 periods），lock 時間在毫秒級。
+    // transaction），會吞掉新行；改用 loop await 維持原語意。資料量小
+    // （~64 rules × ≤6 periods ≈ 數百 rows），lock 時間在毫秒級。
     await _db.transaction(() async {
       await _db.delete(_db.ruleAccuracy).go();
       for (final ruleEntry in ruleStats.entries) {
@@ -385,7 +386,7 @@ class RuleAccuracyService {
     });
 
     // 'ALL' period 已於 2026-04 移除：跨 holdingPeriods 合併會把 1D（門檻
-    // 0%）與 60D（門檻 12%）的 success_count 加總後除以總 trigger_count，
+    // 0%）與 60D（門檻 8%）的 success_count 加總後除以總 trigger_count，
     // 得到一個沒有可解釋意義的 hit_rate（被低門檻樣本拉高）。dual-horizon
     // UI 已 ship，使用者直接查 5D / 60D 兩個 horizon 的命中率即可。
     AppLogger.info(
