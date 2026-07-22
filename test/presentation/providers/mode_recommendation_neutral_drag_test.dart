@@ -114,16 +114,10 @@ void main() {
             symbol: 'LEAK01',
             modeScoreShort: 30,
             modeScoreLong: 30,
-            reasonCount: 1,
           ),
           // WEAK01 = 真的弱：無 neutral 污染，mode 分數本身就只有 7（<12）。
           // 修復後仍應排除 —— 驗證修復沒有「乾脆整個 gate 拿掉」。
-          ModeStockScore(
-            symbol: 'WEAK01',
-            modeScoreShort: 7,
-            modeScoreLong: 7,
-            reasonCount: 1,
-          ),
+          ModeStockScore(symbol: 'WEAK01', modeScoreShort: 7, modeScoreLong: 7),
           // INFLATE01 = 反向 case：mode 分數本身只有 10（<12，不該成立訊號），
           // 但 neutral 正分（HIGH_DIVIDEND_YIELD +18，「利多但與 momentum
           // 無關」— 見 reason_type.dart 對 highDividendYield 的分類註解）把
@@ -133,7 +127,6 @@ void main() {
             symbol: 'INFLATE01',
             modeScoreShort: 10,
             modeScoreLong: 10,
-            reasonCount: 1,
           ),
         ];
       }

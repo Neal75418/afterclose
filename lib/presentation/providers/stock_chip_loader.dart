@@ -38,31 +38,6 @@ class StockChipLoader {
   final InsiderRepository _insiderRepo;
   final AppClock _clock;
 
-  /// 從 FinMind API 載入融資融券資料
-  ///
-  /// 若 API 返回 402 錯誤，靜默跳過（API 不可用）。
-  Future<List<FinMindMarginData>> loadMarginFromApi(String symbol) async {
-    try {
-      final today = _clock.now();
-      final startDate = today.subtract(
-        const Duration(days: DataFreshness.chipDataLookbackDays),
-      );
-
-      return await _finMind.getMarginData(
-        stockId: symbol,
-        startDate: DateContext.formatYmd(startDate),
-        endDate: DateContext.formatYmd(today),
-      );
-    } catch (e) {
-      if (e.toString().contains('402')) {
-        AppLogger.info('StockChipLoader', '融資融券 API 不可用 (402)，跳過');
-      } else {
-        AppLogger.warning('StockChipLoader', '$symbol: 載入融資融券資料失敗', e);
-      }
-      return [];
-    }
-  }
-
   /// 從 DB 載入董監持股歷史資料
   Future<List<InsiderHoldingEntry>> loadInsiderFromDb(
     String symbol, {

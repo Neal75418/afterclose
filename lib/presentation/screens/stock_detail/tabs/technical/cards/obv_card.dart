@@ -21,9 +21,8 @@ class OBVCard extends StatelessWidget {
     }
 
     final latestOBV = nonNullObv.last;
-    final previousOBV = nonNullObv.length >= 5
-        ? nonNullObv[nonNullObv.length - 5]
-        : nonNullObv.first;
+    // guard 已保證 length >= 5
+    final previousOBV = nonNullObv[nonNullObv.length - 5];
     final obvChange = latestOBV - previousOBV;
     final obvTrend = obvChange > 0
         ? 'stockDetail.obvRising'.tr()

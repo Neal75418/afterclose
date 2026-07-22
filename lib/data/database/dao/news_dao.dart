@@ -34,7 +34,10 @@ mixin NewsDaoMixin on $AppDatabase {
   // 每日提及數快照（新聞熱度發現層）
   // ==================================================
 
-  /// 快照 upsert（(date,kind,itemKey) 覆蓋——供每日回補冪等重寫）
+  /// 快照 upsert（(date,kind,itemKey) 覆蓋）
+  ///
+  /// ⚠️ production 每日回補實際走 replaceMentionCountsInWindow；本方法
+  /// 僅測試 seeding 使用（2026-07-23 稽核確認 lib 零呼叫）
   Future<void> upsertMentionCounts(List<NewsMentionDailyCompanion> rows) async {
     if (rows.isEmpty) return;
     await batch((b) {

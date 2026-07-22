@@ -127,29 +127,6 @@ DailyInstitutionalEntry createInstitutional({
   );
 }
 
-FinMindMarginData createMarginData({
-  String stockId = _testSymbol,
-  String date = '2026-02-13',
-}) {
-  return FinMindMarginData(
-    stockId: stockId,
-    date: date,
-    marginBuy: 100,
-    marginSell: 50,
-    marginCashRepay: 10,
-    marginBalance: 1000,
-    marginLimit: 5000,
-    marginUseRate: 20.0,
-    shortBuy: 30,
-    shortSell: 20,
-    shortCashRepay: 5,
-    shortBalance: 200,
-    shortLimit: 1000,
-    offsetMarginShort: 0,
-    note: '',
-  );
-}
-
 // ==========================================
 // Tests
 // ==========================================

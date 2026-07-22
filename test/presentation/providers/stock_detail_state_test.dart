@@ -69,7 +69,6 @@ void main() {
     test('default values', () {
       const state = ChipAnalysisState();
       expect(state.institutionalHistory, isEmpty);
-      expect(state.marginHistory, isEmpty);
       expect(state.marginTradingHistory, isEmpty);
       expect(state.dayTradingHistory, isEmpty);
       expect(state.shareholdingHistory, isEmpty);
@@ -87,7 +86,6 @@ void main() {
     test('default values — all false', () {
       const state = LoadingState();
       expect(state.isLoading, isFalse);
-      expect(state.isLoadingMargin, isFalse);
       expect(state.isLoadingFundamentals, isFalse);
       expect(state.isLoadingInsider, isFalse);
       expect(state.isLoadingChip, isFalse);

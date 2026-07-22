@@ -21,7 +21,4 @@ class TwseMarketIndex {
 
   /// 漲跌百分比（%）
   final double changePercent;
-
-  /// 是否上漲
-  bool get isUp => change > 0;
 }

@@ -168,53 +168,6 @@ List<DailyPriceEntry> generateSwingPrices({
 // 反轉型態生成
 // ==========================================
 
-/// 生成更高低點型態，用於弱轉強反轉測試。
-///
-/// 型態說明：
-/// - 第 0-24 天：建立下降趨勢，低點約 80
-/// - 第 25-44 天：更深跌勢，低點達 65（最低點）
-/// - 第 45-64 天：恢復階段，低點維持約 72（高於 65）
-///
-/// 規則引擎比較：
-/// - 近期窗口（最後 20 天）：第 45-64 天最低點 ≈ 72
-/// - 前期窗口（第 25-44 天）：最低點 ≈ 65
-/// 結果：72 > 65 → 偵測到更高低點
-List<DailyPriceEntry> generateHigherLowPattern({
-  required int days,
-  String symbol = 'TEST',
-}) {
-  final now = DateTime.now();
-
-  return List.generate(days, (i) {
-    double price;
-    double low;
-
-    if (i < 25) {
-      // 階段一：初始下降趨勢，低點約 80
-      price = 100.0 - (i * 0.6); // 100 → 85
-      low = price - 5.0; // lows: 95 → 80
-    } else if (i < 45) {
-      // 階段二：深跌，低點達 65（最低）
-      price = 85.0 - ((i - 25) * 0.5); // 85 → 75
-      low = price - 10.0; // lows: 75 → 65
-    } else {
-      // 階段三：恢復期，價格平穩但低點更高
-      price = 75.0 - ((i - 45) * 0.1); // 75 → 73
-      low = price - 3.0; // lows: 72 → 70 (all higher than 65)
-    }
-
-    return createTestPrice(
-      symbol: symbol,
-      date: now.subtract(Duration(days: days - i - 1)),
-      open: price + 0.5,
-      high: price + 1.0,
-      low: low,
-      close: price,
-      volume: 1000,
-    );
-  });
-}
-
 // ==========================================
 // 異常型態生成
 // ==========================================
@@ -242,28 +195,6 @@ List<DailyPriceEntry> generatePricesWithVolumeSpike({
       low: open * 0.99,
       close: close,
       volume: isToday ? spikeVolume : normalVolume,
-    );
-  });
-}
-
-/// 生成最後一天價格爆增的資料。
-List<DailyPriceEntry> generatePricesWithPriceSpike({
-  required int days,
-  required double basePrice,
-  required double changePercent,
-  double volume = 1000,
-  String symbol = 'TEST',
-}) {
-  final now = DateTime.now();
-  final todayPrice = basePrice * (1 + changePercent / 100);
-
-  return List.generate(days, (i) {
-    final isToday = i == days - 1;
-    return createTestPrice(
-      symbol: symbol,
-      date: now.subtract(Duration(days: days - i - 1)),
-      close: isToday ? todayPrice : basePrice,
-      volume: volume,
     );
   });
 }
@@ -355,28 +286,6 @@ List<DailyInstitutionalEntry> generateInstitutionalHistory({
 // ==========================================
 // 新聞資料生成
 // ==========================================
-
-/// 建立測試用新聞項目。
-NewsItemEntry createTestNewsItem({
-  required String id,
-  String title = 'Test News',
-  String source = 'TestSource',
-  String category = 'OTHER',
-  String url = 'https://example.com/news',
-  DateTime? publishedAt,
-  DateTime? fetchedAt,
-}) {
-  final now = DateTime.now();
-  return NewsItemEntry(
-    id: id,
-    url: url,
-    title: title,
-    source: source,
-    category: category,
-    publishedAt: publishedAt ?? now,
-    fetchedAt: fetchedAt ?? now,
-  );
-}
 
 // ==========================================
 // 技術指標計算（供測試建立 AnalysisContext 用）

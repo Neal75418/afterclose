@@ -8,7 +8,6 @@ export 'daily_price.dart';
 export 'dividend.dart';
 export 'financial_statement.dart';
 export 'institutional.dart';
-export 'margin_data.dart';
 export 'per.dart';
 export 'revenue.dart';
 export 'shareholding.dart';

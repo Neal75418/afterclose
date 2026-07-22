@@ -82,7 +82,6 @@ class FundamentalsState {
 class ChipAnalysisState {
   const ChipAnalysisState({
     this.institutionalHistory = const [],
-    this.marginHistory = const [],
     this.marginTradingHistory = const [],
     this.dayTradingHistory = const [],
     this.shareholdingHistory = const [],
@@ -93,7 +92,6 @@ class ChipAnalysisState {
   });
 
   final List<DailyInstitutionalEntry> institutionalHistory;
-  final List<FinMindMarginData> marginHistory;
   final List<MarginTradingEntry> marginTradingHistory;
   final List<DayTradingEntry> dayTradingHistory;
   final List<ShareholdingEntry> shareholdingHistory;
@@ -104,7 +102,6 @@ class ChipAnalysisState {
 
   ChipAnalysisState copyWith({
     List<DailyInstitutionalEntry>? institutionalHistory,
-    List<FinMindMarginData>? marginHistory,
     List<MarginTradingEntry>? marginTradingHistory,
     List<DayTradingEntry>? dayTradingHistory,
     List<ShareholdingEntry>? shareholdingHistory,
@@ -115,7 +112,6 @@ class ChipAnalysisState {
   }) {
     return ChipAnalysisState(
       institutionalHistory: institutionalHistory ?? this.institutionalHistory,
-      marginHistory: marginHistory ?? this.marginHistory,
       marginTradingHistory: marginTradingHistory ?? this.marginTradingHistory,
       dayTradingHistory: dayTradingHistory ?? this.dayTradingHistory,
       shareholdingHistory: shareholdingHistory ?? this.shareholdingHistory,
@@ -131,28 +127,24 @@ class ChipAnalysisState {
 class LoadingState {
   const LoadingState({
     this.isLoading = false,
-    this.isLoadingMargin = false,
     this.isLoadingFundamentals = false,
     this.isLoadingInsider = false,
     this.isLoadingChip = false,
   });
 
   final bool isLoading;
-  final bool isLoadingMargin;
   final bool isLoadingFundamentals;
   final bool isLoadingInsider;
   final bool isLoadingChip;
 
   LoadingState copyWith({
     bool? isLoading,
-    bool? isLoadingMargin,
     bool? isLoadingFundamentals,
     bool? isLoadingInsider,
     bool? isLoadingChip,
   }) {
     return LoadingState(
       isLoading: isLoading ?? this.isLoading,
-      isLoadingMargin: isLoadingMargin ?? this.isLoadingMargin,
       isLoadingFundamentals:
           isLoadingFundamentals ?? this.isLoadingFundamentals,
       isLoadingInsider: isLoadingInsider ?? this.isLoadingInsider,
@@ -227,7 +219,6 @@ class StockDetailState {
     List<FinancialDataEntry>? epsHistory,
     // 籌碼欄位
     List<DailyInstitutionalEntry>? institutionalHistory,
-    List<FinMindMarginData>? marginHistory,
     List<MarginTradingEntry>? marginTradingHistory,
     List<DayTradingEntry>? dayTradingHistory,
     List<ShareholdingEntry>? shareholdingHistory,
@@ -237,7 +228,6 @@ class StockDetailState {
     ChipStrengthResult? chipStrength,
     // 載入狀態欄位
     bool? isLoading,
-    bool? isLoadingMargin,
     bool? isLoadingFundamentals,
     bool? isLoadingInsider,
     bool? isLoadingChip,
@@ -269,7 +259,6 @@ class StockDetailState {
 
     final needsChipUpdate =
         institutionalHistory != null ||
-        marginHistory != null ||
         marginTradingHistory != null ||
         dayTradingHistory != null ||
         shareholdingHistory != null ||
@@ -280,7 +269,6 @@ class StockDetailState {
 
     final needsLoadingUpdate =
         isLoading != null ||
-        isLoadingMargin != null ||
         isLoadingFundamentals != null ||
         isLoadingInsider != null ||
         isLoadingChip != null;
@@ -306,7 +294,6 @@ class StockDetailState {
       chip: needsChipUpdate
           ? chip.copyWith(
               institutionalHistory: institutionalHistory,
-              marginHistory: marginHistory,
               marginTradingHistory: marginTradingHistory,
               dayTradingHistory: dayTradingHistory,
               shareholdingHistory: shareholdingHistory,
@@ -319,7 +306,6 @@ class StockDetailState {
       loading: needsLoadingUpdate
           ? loading.copyWith(
               isLoading: isLoading,
-              isLoadingMargin: isLoadingMargin,
               isLoadingFundamentals: isLoadingFundamentals,
               isLoadingInsider: isLoadingInsider,
               isLoadingChip: isLoadingChip,

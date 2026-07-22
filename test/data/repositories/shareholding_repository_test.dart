@@ -64,10 +64,7 @@ void main() {
             foreignInvestmentRemainingShares: 5000000,
             foreignInvestmentSharesRatio: 75.5,
             foreignInvestmentUpperLimitRatio: 100.0,
-            chineseInvestmentUpperLimitRatio: 0.0,
             numberOfSharesIssued: 25930381,
-            recentlyDeclareDate: '',
-            note: '',
           ),
         ],
       );

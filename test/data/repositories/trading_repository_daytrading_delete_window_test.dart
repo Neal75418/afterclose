@@ -58,7 +58,6 @@ void main() {
           buyVolume: 100000,
           sellVolume: 90000,
           totalVolume: 3000,
-          ratio: 0,
         ),
       ],
     );

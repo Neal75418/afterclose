@@ -10,13 +10,11 @@ class ModeStockScore {
     required this.symbol,
     required this.modeScoreShort,
     required this.modeScoreLong,
-    required this.reasonCount,
   });
 
   final String symbol;
   final double modeScoreShort;
   final double modeScoreLong;
-  final int reasonCount;
 }
 
 /// 每日分析、原因、推薦操作
@@ -115,10 +113,9 @@ mixin AnalysisDaoMixin on $AppDatabase {
     final symbolCol = dailyReason.symbol;
     final shortSum = dailyReason.ruleScoreShort.sum();
     final longSum = dailyReason.ruleScoreLong.sum();
-    final reasonCount = dailyReason.reasonType.count();
 
     final query = selectOnly(dailyReason)
-      ..addColumns([symbolCol, shortSum, longSum, reasonCount])
+      ..addColumns([symbolCol, shortSum, longSum])
       ..where(dailyReason.date.equals(date))
       ..where(dailyReason.reasonType.isIn(reasonTypeCodes))
       ..groupBy([symbolCol]);
@@ -130,7 +127,6 @@ mixin AnalysisDaoMixin on $AppDatabase {
             symbol: row.read(symbolCol)!,
             modeScoreShort: row.read(shortSum) ?? 0,
             modeScoreLong: row.read(longSum) ?? 0,
-            reasonCount: row.read(reasonCount) ?? 0,
           ),
         )
         .toList();
@@ -164,7 +160,8 @@ mixin AnalysisDaoMixin on $AppDatabase {
     return grouped;
   }
 
-  /// 新增原因
+  /// 新增原因（⚠️ production 寫入一律走 replaceReasons；本方法僅測試
+  /// seeding 使用，2026-07-23 稽核確認 lib 零呼叫）
   Future<void> insertReasons(List<DailyReasonCompanion> entries) async {
     await batch((b) {
       for (final entry in entries) {

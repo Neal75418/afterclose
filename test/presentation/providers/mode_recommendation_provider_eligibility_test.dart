@@ -789,7 +789,6 @@ ModeStockScore _score({
   symbol: symbol,
   modeScoreShort: short.toDouble(),
   modeScoreLong: long.toDouble(),
-  reasonCount: 1,
 );
 
 /// 建立 DailyPriceEntry 的 helper — 只關心 close

@@ -483,21 +483,6 @@ class FinMindClient {
       ..sort((a, b) => a.date.compareTo(b.date));
   }
 
-  /// 取得融資融券資料
-  ///
-  /// 資料集: TaiwanStockMarginPurchaseShortSale
-  Future<List<FinMindMarginData>> getMarginData({
-    required String stockId,
-    required String startDate,
-    String? endDate,
-  }) => _fetchDateRange(
-    dataset: 'TaiwanStockMarginPurchaseShortSale',
-    stockId: stockId,
-    startDate: startDate,
-    endDate: endDate,
-    fromJson: FinMindMarginData.tryFromJson,
-  );
-
   /// 取得月營收資料
   ///
   /// 資料集: TaiwanStockMonthRevenue

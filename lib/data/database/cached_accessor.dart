@@ -129,21 +129,6 @@ class CachedDatabaseAccessor {
     _cache.clearAll();
   }
 
-  /// 僅清除價格相關快取
-  void invalidatePrices() {
-    _cache.clearPrices();
-  }
-
-  /// 僅清除分析結果快取
-  void invalidateAnalyses() {
-    _cache.clearAnalyses();
-  }
-
-  /// 僅清除推薦理由快取
-  void invalidateReasons() {
-    _cache.clearReasons();
-  }
-
   // ==================================================
   // 型別安全批次載入（Dart 3 Records）
   // ==================================================

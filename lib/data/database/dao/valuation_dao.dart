@@ -75,14 +75,4 @@ mixin ValuationDaoMixin on $AppDatabase {
       }
     });
   }
-
-  /// 取得指定日期的估值資料筆數
-  Future<int> getValuationCountForDate(DateTime date) async {
-    final countExpr = stockValuation.symbol.count();
-    final query = selectOnly(stockValuation)
-      ..addColumns([countExpr])
-      ..where(stockValuation.date.equals(date));
-    final result = await query.getSingle();
-    return result.read(countExpr) ?? 0;
-  }
 }

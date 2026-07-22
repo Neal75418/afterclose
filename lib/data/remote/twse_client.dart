@@ -906,7 +906,6 @@ class TwseClient {
           buyVolume: TwParseUtils.parseFormattedDouble(row[4]) ?? 0,
           sellVolume: TwParseUtils.parseFormattedDouble(row[5]) ?? 0,
           totalVolume: TwParseUtils.parseFormattedDouble(row[3]) ?? 0,
-          ratio: 0,
         );
       },
     );

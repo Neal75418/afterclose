@@ -110,13 +110,11 @@ void main() {
             symbol: 'DISP01', // top score —— 若無 Fix 2 會排 A 榜第 1 名
             modeScoreShort: 50,
             modeScoreLong: 50,
-            reasonCount: 1,
           ),
           ModeStockScore(
             symbol: 'ATT01',
             modeScoreShort: 40,
             modeScoreLong: 40,
-            reasonCount: 1,
           ),
         ];
       }
@@ -126,7 +124,6 @@ void main() {
             symbol: 'DISP_B', // strengthObserve 唯一候選 —— 若無 Fix 2 會排 B 榜
             modeScoreShort: 15,
             modeScoreLong: 15,
-            reasonCount: 1,
           ),
         ];
       }
@@ -136,7 +133,6 @@ void main() {
             symbol: 'DISP_C', // weaknessObserve 唯一候選 —— 若無 Fix 2 會排 C 榜
             modeScoreShort: 20,
             modeScoreLong: 20,
-            reasonCount: 1,
           ),
         ];
       }

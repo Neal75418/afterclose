@@ -1,7 +1,5 @@
 import 'package:afterclose/data/database/app_database.dart';
 
-import 'price_data_generators.dart';
-
 /// K 線型態測試資料產生器
 ///
 /// 提供各種經典 K 線型態的建構方法，搭配 candlestick_rules_test 使用。
@@ -325,23 +323,3 @@ List<DailyPriceEntry> createThreeBlackCrowsPattern({
 // ==========================================
 // 基底價格附加型態
 // ==========================================
-
-/// 在基底價格序列末尾附加型態 K 線
-///
-/// 先產生 [baseDays] 天的盤整價格，再附加 [patternCandles]。
-/// 用於確保規則有足夠的歷史資料計算 MA / RSI 等指標。
-List<DailyPriceEntry> withBaseHistory({
-  required List<DailyPriceEntry> patternCandles,
-  int baseDays = 25,
-  double basePrice = 100.0,
-  double volume = 1000,
-  String symbol = 'TEST',
-}) {
-  final base = generateFlatPrices(
-    days: baseDays,
-    basePrice: basePrice,
-    volume: volume,
-    symbol: symbol,
-  );
-  return [...base, ...patternCandles];
-}

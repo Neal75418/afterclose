@@ -154,14 +154,6 @@ class S {
     };
   }
 
-  static String? getReversalLabel(String? reversalState) {
-    return switch (reversalState) {
-      'W2S' => reasonReversalW2S,
-      'S2W' => reasonReversalS2W,
-      _ => null,
-    };
-  }
-
   // ==================================================
   // 價格
   // ==================================================
@@ -183,8 +175,6 @@ class S {
   // ==================================================
   // 推薦理由（訊號類型）
   // ==================================================
-  static String get reasonReversalW2S => 'reasons.reversalW2S'.tr();
-  static String get reasonReversalS2W => 'reasons.reversalS2W'.tr();
   static String get reasonsLabel => 'reasons.label'.tr();
 
   // ==================================================

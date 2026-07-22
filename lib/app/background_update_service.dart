@@ -2,7 +2,6 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart' show rootBundle;
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
 
 import 'package:afterclose/app/headless_update_runner.dart';
@@ -17,9 +16,6 @@ import 'package:afterclose/domain/services/update_service.dart';
 
 /// 背景更新任務名稱
 const kBackgroundUpdateTask = 'afterclose_daily_update';
-
-/// 背景更新設定 key
-const _keyAutoUpdateEnabled = 'settings_auto_update_enabled';
 
 /// 背景更新服務
 ///
@@ -110,27 +106,6 @@ class BackgroundUpdateService {
     }
 
     AppLogger.info('BackgroundUpdateService', '已停用自動更新');
-  }
-
-  /// 檢查是否啟用自動更新
-  Future<bool> isAutoUpdateEnabled() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_keyAutoUpdateEnabled) ?? false;
-  }
-
-  /// 立即執行一次背景更新（用於測試）
-  Future<void> runOnce() async {
-    if (!isSupported) {
-      AppLogger.debug('BackgroundUpdateService', '當前平台不支援背景更新');
-      return;
-    }
-
-    await Workmanager().registerOneOffTask(
-      '${kBackgroundUpdateTask}_once',
-      kBackgroundUpdateTask,
-      constraints: Constraints(networkType: NetworkType.connected),
-    );
-    AppLogger.info('BackgroundUpdateService', '已排程一次性更新');
   }
 }
 

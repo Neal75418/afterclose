@@ -3,7 +3,6 @@
 /// **重要:** TWSE TWTB4U API 提供的是買賣金額（新台幣），
 /// 而非成交量（股數）。欄位名稱維持 "volume" 以相容 FinMind 資料，
 /// 但實際存放的是金額。
-/// [ratio] 需另行從每日價格成交量資料計算。
 class TwseDayTrading {
   const TwseDayTrading({
     required this.date,
@@ -12,7 +11,6 @@ class TwseDayTrading {
     required this.buyVolume,
     required this.sellVolume,
     required this.totalVolume,
-    required this.ratio,
   });
 
   final DateTime date;
@@ -27,7 +25,4 @@ class TwseDayTrading {
 
   /// 當沖成交股數 (shares)
   final double totalVolume;
-
-  /// 當沖比例 (%) - calculated from daily price volume
-  final double ratio;
 }

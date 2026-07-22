@@ -133,10 +133,7 @@ class _IndicatorCardsSectionState extends State<IndicatorCardsSection> {
           BollingerCard(boll: boll, prices: prices),
         if (volumes.length >= 2) OBVCard(obv: obv),
         if (highs.length >= 14 && lows.length >= 14 && prices.length >= 14)
-          ATRCard(
-            atr: atr,
-            currentPrice: prices.isNotEmpty ? prices.last : null,
-          ),
+          ATRCard(atr: atr, currentPrice: prices.last),
       ],
     );
   }
