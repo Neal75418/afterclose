@@ -50,13 +50,6 @@ class StockData {
 
   /// 取得最新收盤價，若無資料則為 null
   double? get latestClose => latestPrice?.close;
-
-  /// 取得前一日價格，若少於 2 筆則為 null
-  DailyPriceEntry? get previousPrice =>
-      prices.length < 2 ? null : prices[prices.length - 2];
-
-  /// 取得前一日收盤價，若無資料則為 null
-  double? get previousClose => previousPrice?.close;
 }
 
 /// 股票分析規則的基礎介面

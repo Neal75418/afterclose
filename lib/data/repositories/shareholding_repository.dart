@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import 'package:afterclose/core/constants/chip_scoring_params.dart';
 import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
@@ -118,7 +119,7 @@ class ShareholdingRepository implements IShareholdingRepository {
   @override
   Future<Map<String, double>> getConcentrationRatioBatch(
     List<String> symbols, {
-    int thresholdLevel = 400,
+    int thresholdLevel = ChipScoringParams.largeHolderMinLot,
   }) async {
     final batchData = await _db.getLatestHoldingDistributionBatch(symbols);
     final result = <String, double>{};

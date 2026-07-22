@@ -27,24 +27,11 @@ void main() {
       expect(data.latestClose, equals(105.0));
     });
 
-    test('previousPrice returns second to last entry', () {
-      final prices = [
-        createTestPrice(date: DateTime.now(), close: 100.0),
-        createTestPrice(date: DateTime.now(), close: 105.0),
-      ];
-      final data = StockData(symbol: 'TEST', prices: prices);
-
-      expect(data.previousPrice, equals(prices.first));
-      expect(data.previousClose, equals(100.0));
-    });
-
     test('returns null when prices are empty', () {
       const data = StockData(symbol: 'TEST', prices: []);
 
       expect(data.latestPrice, isNull);
       expect(data.latestClose, isNull);
-      expect(data.previousPrice, isNull);
-      expect(data.previousClose, isNull);
     });
   });
 

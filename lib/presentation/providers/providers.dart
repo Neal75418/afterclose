@@ -17,14 +17,11 @@ import 'package:afterclose/data/remote/tdcc_client.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
 import 'package:afterclose/data/repositories/analysis_repository.dart';
 import 'package:afterclose/data/repositories/fundamental_repository.dart';
-import 'package:afterclose/data/repositories/institutional_repository.dart';
 import 'package:afterclose/data/repositories/market_data_repository.dart';
 import 'package:afterclose/data/repositories/news_repository.dart';
 import 'package:afterclose/data/repositories/price_repository.dart';
 import 'package:afterclose/data/repositories/settings_repository.dart';
 import 'package:afterclose/data/repositories/stock_repository.dart';
-import 'package:afterclose/data/repositories/shareholding_repository.dart';
-import 'package:afterclose/data/repositories/trading_repository.dart';
 import 'package:afterclose/data/repositories/warning_repository.dart';
 import 'package:afterclose/data/repositories/insider_repository.dart';
 import 'package:afterclose/data/repositories/event_repository.dart';
@@ -202,18 +199,6 @@ final analysisRepositoryProvider = Provider<AnalysisRepository>((ref) {
   );
 });
 
-/// 法人資料儲存庫 Provider
-final institutionalRepositoryProvider = Provider<InstitutionalRepository>((
-  ref,
-) {
-  return InstitutionalRepository(
-    database: ref.watch(databaseProvider),
-    finMindClient: ref.watch(finMindClientProvider),
-    twseClient: ref.watch(twseClientProvider),
-    tpexClient: ref.watch(tpexClientProvider),
-  );
-});
-
 /// 設定資料儲存庫 Provider（使用安全儲存空間存放敏感資料）
 final settingsRepositoryProvider = Provider<SettingsRepository>((ref) {
   return SettingsRepository(database: ref.watch(databaseProvider));
@@ -222,23 +207,6 @@ final settingsRepositoryProvider = Provider<SettingsRepository>((ref) {
 /// 市場資料儲存庫 Provider（第一階段：擴展市場資料）
 final marketDataRepositoryProvider = Provider<MarketDataRepository>((ref) {
   return MarketDataRepository(
-    database: ref.watch(databaseProvider),
-    finMindClient: ref.watch(finMindClientProvider),
-  );
-});
-
-/// 交易資料儲存庫 Provider（當沖 + 融資融券）
-final tradingRepositoryProvider = Provider<TradingRepository>((ref) {
-  return TradingRepository(
-    database: ref.watch(databaseProvider),
-    twseClient: ref.watch(twseClientProvider),
-    tpexClient: ref.watch(tpexClientProvider),
-  );
-});
-
-/// 持股資料儲存庫 Provider（外資持股 + 股權分散表）
-final shareholdingRepositoryProvider = Provider<ShareholdingRepository>((ref) {
-  return ShareholdingRepository(
     database: ref.watch(databaseProvider),
     finMindClient: ref.watch(finMindClientProvider),
   );

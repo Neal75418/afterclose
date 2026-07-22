@@ -1,3 +1,4 @@
+import 'package:afterclose/core/constants/chip_scoring_params.dart';
 import 'package:afterclose/data/database/app_database.dart';
 
 /// 持股資料儲存庫介面
@@ -34,6 +35,6 @@ abstract class IShareholdingRepository {
   /// 批次取得集中度比率
   Future<Map<String, double>> getConcentrationRatioBatch(
     List<String> symbols, {
-    int thresholdLevel = 400,
+    int thresholdLevel = ChipScoringParams.largeHolderMinLot,
   });
 }

@@ -51,13 +51,6 @@ final class ConfigException extends AppException {
   const ConfigException(super.message, [super.cause]);
 }
 
-/// FinMind API Token 未設定
-final class TokenNotConfiguredException extends ConfigException {
-  const TokenNotConfiguredException([
-    super.message = 'FinMind API Token 尚未設定，請至設定頁面新增您的 Token。',
-  ]);
-}
-
 /// API Token 格式無效
 final class InvalidTokenException extends ConfigException {
   const InvalidTokenException([super.message = 'API Token 格式無效']);
