@@ -24,6 +24,8 @@ import 'package:afterclose/data/remote/twse_client.dart';
 /// - [backfillDeepHistory] 分批回補至 ~370 天（~250 交易日）深度，解鎖
 ///   大盤位階所需的 MA60（60 交易日）長窗——DB 清空後只剩近期 API 回應窗
 ///   （~42 天），不足 MA60，且僅靠每日累積需近一年才能自然補齊。
+/// - [backfillTpexIndexHistory] 櫃買指數同深度回補（FinMind 單次呼叫，
+///   官方 TPEx 端點無歷史查詢能力）。
 ///
 /// ## 已知邊界：深度回補內部缺口不重訪（設計接受，非缺陷）
 ///
@@ -169,7 +171,91 @@ class MarketIndexSyncer {
       AppLogger.warning('MarketIndexSyncer', '指數深度回補失敗，不影響當日同步', e);
     }
 
+    // 櫃買指數歷史一次性回補（同上 fail-safe 慣例）
+    try {
+      await backfillTpexIndexHistory();
+    } catch (e) {
+      AppLogger.warning('MarketIndexSyncer', '櫃買指數歷史回補失敗，不影響當日同步', e);
+    }
+
     return synced;
+  }
+
+  /// 櫃買指數歷史一次性回補（解鎖櫃買位階 MA60 所需深度）
+  ///
+  /// TPEx 官方 OpenAPI 不支援日期參數、只回傳近月資料（見
+  /// [backfillDeepHistory] doc 的端點調查註記）——過去只能靠每日同步
+  /// 自然累積（~2 個多月才夠 MA60）。FinMind `TaiwanStockPrice` 以
+  /// `TPEx` 為 data_id 可**一次**拉整年日線，且數值與官方 TPEx OpenAPI
+  /// 分毫不差（2026-07-22 實測 368.53/381.96 逐筆吻合）。
+  ///
+  /// 配額：整段回補＝**1 次** FinMind 呼叫；最早一筆達
+  /// [ApiConfig.indexBackfillTargetCalendarDays] 深度後前置檢查短路 →
+  /// 穩態零呼叫。漲跌／漲跌幅由相鄰收盤推算（FinMind 該資料集無
+  /// spread 欄位可信賴），首筆無前日基期故略過。
+  ///
+  /// Idempotent：(date, name) UNIQUE upsert，與官方來源同日重複寫入
+  /// 無害（數值一致）。例外一律往上拋，由 [sync] 的 fail-soft
+  /// try/catch 吸收（與 [backfillDeepHistory] 同慣例）。
+  Future<int> backfillTpexIndexHistory() async {
+    final finMind = _finMind;
+    if (finMind == null) return 0;
+    final now = _clock.now();
+
+    final existing = await _db.getIndexHistoryBatch(
+      [MarketIndexNames.tpexIndex],
+      days: ApiConfig.indexBackfillTargetCalendarDays + _queryBufferDays,
+      now: now,
+    );
+    final rows = existing[MarketIndexNames.tpexIndex] ?? const [];
+    final targetDay = DateContext.normalize(
+      now.subtract(
+        const Duration(days: ApiConfig.indexBackfillTargetCalendarDays),
+      ),
+    );
+    if (rows.isNotEmpty &&
+        !DateContext.normalize(rows.first.date).isAfter(targetDay)) {
+      AppLogger.debug('MarketIndexSyncer', '櫃買指數歷史已達目標深度，略過');
+      return 0;
+    }
+
+    final prices = await finMind.getDailyPrices(
+      stockId: 'TPEx',
+      startDate: DateContext.formatYmd(targetDay),
+      endDate: DateContext.formatYmd(now),
+    );
+    final valid = prices.where((p) => p.close != null).toList()
+      ..sort((a, b) => a.date.compareTo(b.date));
+    if (valid.length < 2) {
+      AppLogger.warning(
+        'MarketIndexSyncer',
+        '櫃買指數歷史回補: FinMind 回應不足（${valid.length} 筆），略過',
+      );
+      return 0;
+    }
+
+    final companions = <MarketIndexCompanion>[];
+    for (var i = 1; i < valid.length; i++) {
+      final prevClose = valid[i - 1].close!;
+      final cur = valid[i];
+      if (prevClose == 0) continue;
+      final change = cur.close! - prevClose;
+      companions.add(
+        MarketIndexCompanion.insert(
+          date: DateTime.parse(cur.date),
+          name: MarketIndexNames.tpexIndex,
+          close: cur.close!,
+          change: change,
+          changePercent: change / prevClose * 100,
+        ),
+      );
+    }
+    await _db.upsertMarketIndices(companions);
+    AppLogger.info(
+      'MarketIndexSyncer',
+      '櫃買指數歷史回補完成: ${companions.length} 筆（1 次 API 呼叫）',
+    );
+    return companions.length;
   }
 
   /// 回補近 [_backfillCalendarDays] 天的歷史指數資料
@@ -239,7 +325,7 @@ class MarketIndexSyncer {
   /// **僅 TWSE**：TPEx 櫃買指數 OpenAPI（[TpexClient.getTpexIndex]）不支援
   /// date 參數、只回傳近月資料，無法逐日回補歷史（見 class doc 與
   /// `.superpowers/sdd/index-backfill-report.md` 的端點調查記錄）。櫃買指數
-  /// 的位階深度僅能靠每日同步逐步自然累積。
+  /// 的歷史深度改由 [backfillTpexIndexHistory]（FinMind，單次呼叫）承接。
   ///
   /// Idempotent：與 [backfill] 共用 (date, name) UNIQUE upsert，重複執行
   /// 安全。呼叫端（[sync]）以 try/catch 完整包裹本方法，任何例外（含
