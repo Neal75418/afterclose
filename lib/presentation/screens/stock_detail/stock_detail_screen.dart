@@ -101,8 +101,10 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
             next: neighbors.next,
             position: neighbors.position,
             total: neighbors.total,
-            onNavigate: (target) =>
-                context.pushReplacement(AppRoutes.stockDetail(target)),
+            onNavigate: (target) => context.pushReplacement(
+              AppRoutes.stockDetail(target),
+              extra: AppRoutes.stockDetailSwapExtra,
+            ),
           );
         },
       ),

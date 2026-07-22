@@ -3,6 +3,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:afterclose/core/constants/app_routes.dart';
 import 'package:afterclose/presentation/providers/stock_browsing_context_provider.dart';
 
 void main() {
@@ -55,6 +56,18 @@ void main() {
 
       container.read(stockBrowsingContextProvider.notifier).set(const ['8046']);
       expect(container.read(stockBrowsingContextProvider), ['8046']);
+    });
+  });
+
+  group('AppRoutes.isStockDetailSwap（換股無轉場契約）', () {
+    test('僅換股標記為 true，其他 extra 一律 false', () {
+      expect(
+        AppRoutes.isStockDetailSwap(AppRoutes.stockDetailSwapExtra),
+        isTrue,
+      );
+      expect(AppRoutes.isStockDetailSwap(null), isFalse);
+      expect(AppRoutes.isStockDetailSwap('other'), isFalse);
+      expect(AppRoutes.isStockDetailSwap(['2330']), isFalse);
     });
   });
 }
