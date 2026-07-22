@@ -306,7 +306,8 @@ class MarginTradingSection extends StatelessWidget {
                           '${ratio.toStringAsFixed(1)}%',
                           textAlign: TextAlign.end,
                           style: theme.textTheme.bodySmall?.copyWith(
-                            fontWeight: ratio > 10
+                            fontWeight:
+                                ratio > ChipScoringParams.highShortMarginRatio
                                 ? FontWeight.bold
                                 : FontWeight.normal,
                             color:

@@ -45,8 +45,8 @@ class HeroIndexSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    // index.isUp 是資料層旗標，與 change 的符號一致；統一走 getPriceColor
-    // 解析，淺色主題才拿得到較深的下跌綠／平盤灰。
+    // 漲跌方向由 change 符號決定；統一走 getPriceColor 解析，淺色主題
+    // 才拿得到較深的下跌綠／平盤灰。
     final color = AppTheme.getPriceColor(index.change, theme.brightness);
     final sign = index.change > 0 ? '+' : '';
     final formatter = NumberFormat('#,##0.00');

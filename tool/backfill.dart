@@ -1215,7 +1215,7 @@ class Backfiller {
       '= ~${tradingDays * 2}',
     );
     _log('    - Institutional: ~$tradingDays 交易日 × 2 市場 (per-day batch)');
-    _log('    - DayTrading:    ~$tradingDays 交易日 × 2 市場 (per-day batch)');
+    _log('    - DayTrading:    ~$tradingDays 交易日 × 1 市場（僅 TWSE TWTB4U）');
     _log('    - Revenue:       ${symbols.length} (FinMind per-symbol)');
     _log('    - Financial:     ${symbols.length} (FinMind per-symbol)');
     _log('    - Valuation:     ${symbols.length} (FinMind per-symbol)');

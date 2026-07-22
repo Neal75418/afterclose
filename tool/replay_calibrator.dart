@@ -501,8 +501,8 @@ class ReplayCalibrator {
 
       // 分數層驗證 hook（additive；sink 為 null 時零影響）：對有訊號的股票日，
       // 加總手調基礎分並 clamp [0, maxScore]，連同 forward return 交給 sink。
-      // 用 reason.score（基礎分）近似 app 行為（2026-07-13 promote 後僅 3 條
-      // rule 有 calibrated override，其餘 fallback 基礎分）。
+      // 用 reason.score（基礎分）近似 app 行為（2026-07-13 promote 後僅
+      // 3 筆 calibrated override——2 條 rule 橫跨 5D/60D，其餘 fallback）。
       if (_scoreSink != null) {
         var raw = 0.0;
         var modeMom = 0.0;
