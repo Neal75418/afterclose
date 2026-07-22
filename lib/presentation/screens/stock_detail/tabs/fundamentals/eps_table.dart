@@ -81,8 +81,9 @@ class EpsTable extends StatelessWidget {
                     textAlign: TextAlign.end,
                     style: theme.textTheme.bodySmall?.copyWith(
                       fontWeight: FontWeight.w600,
+                      // 負 EPS 走 canonical 下跌色（淺色主題取較深綠）
                       color: epsValue != null && epsValue < 0
-                          ? AppTheme.downColor
+                          ? AppTheme.getPriceColor(-1, theme.brightness)
                           : null,
                     ),
                   ),

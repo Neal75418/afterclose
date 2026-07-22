@@ -287,9 +287,12 @@ class TpexClient {
           date: date,
           code: code,
           name: row[1]?.toString().trim() ?? '',
-          foreignBuy: TwParseUtils.parseFormattedDouble(row[8]) ?? 0,
-          foreignSell: TwParseUtils.parseFormattedDouble(row[9]) ?? 0,
-          foreignNet: TwParseUtils.parseFormattedDouble(row[10]) ?? 0,
+          // [2-4] 外陸資(不含外資自營)——與 TWSE T86 主欄位同口徑
+          // （2026-07-23 稽核修復：原取 [8-10] 合計含外資自營，造成同一
+          // DB 欄上市/上櫃兩種口徑靜默不一致）
+          foreignBuy: TwParseUtils.parseFormattedDouble(row[2]) ?? 0,
+          foreignSell: TwParseUtils.parseFormattedDouble(row[3]) ?? 0,
+          foreignNet: TwParseUtils.parseFormattedDouble(row[4]) ?? 0,
           investmentTrustBuy: TwParseUtils.parseFormattedDouble(row[11]) ?? 0,
           investmentTrustSell: TwParseUtils.parseFormattedDouble(row[12]) ?? 0,
           investmentTrustNet: TwParseUtils.parseFormattedDouble(row[13]) ?? 0,

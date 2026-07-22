@@ -194,7 +194,10 @@ class OhlcvCard extends StatelessWidget {
   String _formatChangeBadge() {
     final pctText = AppNumberFormat.signedPercent(priceChange!, decimals: 2);
     final close = latestPrice?.close;
-    if (close != null && priceChange != 0) {
+    // 判零用「捨入後」值與 header badge 對齊（2026-07-23 稽核修復：原用
+    // 原始值判零，-0.004 時 header 顯示 0.00% 而這裡顯示 -0.00 (0.00%)）
+    final displayed = AppNumberFormat.roundForDisplay(priceChange!, 2);
+    if (close != null && displayed != 0) {
       final absChange = close * priceChange! / (100 + priceChange!);
       final absText = AppNumberFormat.signedFixed(absChange, decimals: 2);
       return '$absText ($pctText)';

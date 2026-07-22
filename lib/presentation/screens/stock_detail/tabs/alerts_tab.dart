@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/utils/number_formatter.dart';
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/presentation/widgets/alert_type_icon.dart';
 import 'package:afterclose/presentation/providers/price_alert_provider.dart';
 import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
 import 'package:afterclose/presentation/widgets/common/drag_handle.dart';
@@ -315,7 +316,7 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
               borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
             ),
             child: Icon(
-              _getAlertIcon(alertType),
+              alertType.icon,
               color: alert.isActive
                   ? theme.colorScheme.onPrimaryContainer
                   : theme.colorScheme.outline,
@@ -342,33 +343,6 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
         ),
       ),
     );
-  }
-
-  IconData _getAlertIcon(AlertType type) {
-    return switch (type) {
-      AlertType.above => Icons.trending_up,
-      AlertType.below => Icons.trending_down,
-      AlertType.changePct => Icons.percent,
-      AlertType.volumeSpike || AlertType.volumeAbove => Icons.bar_chart,
-      AlertType.rsiOverbought => Icons.arrow_upward,
-      AlertType.rsiOversold => Icons.arrow_downward,
-      AlertType.kdGoldenCross => Icons.add_circle_outline,
-      AlertType.kdDeathCross => Icons.remove_circle_outline,
-      AlertType.breakResistance => Icons.north_east,
-      AlertType.breakSupport => Icons.south_east,
-      AlertType.week52High => Icons.emoji_events,
-      AlertType.week52Low => Icons.trending_down,
-      AlertType.crossAboveMa || AlertType.crossBelowMa => Icons.timeline,
-      AlertType.revenueYoySurge ||
-      AlertType.highDividendYield ||
-      AlertType.peUndervalued => Icons.analytics,
-      // Killer Features：警示圖示
-      AlertType.tradingWarning => Icons.warning_amber,
-      AlertType.tradingDisposal => Icons.gpp_bad,
-      AlertType.insiderSelling => Icons.person_remove,
-      AlertType.insiderBuying => Icons.person_add,
-      AlertType.highPledgeRatio => Icons.lock,
-    };
   }
 
   void _showAddAlertDialog(

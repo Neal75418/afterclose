@@ -220,7 +220,7 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
                 ? '${change > 0 ? '+' : ''}${change.toStringAsFixed(2)}%'
                 : '-',
             icon: _getChangeIcon(change),
-            accentColor: _getChangeColor(change),
+            accentColor: _getChangeColor(context, change),
             subtitle: 'stockDetail.insiderChangeLabel'.tr(),
           ),
         ),
@@ -243,9 +243,11 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
   /// - 正數: upColor（增持為正面訊號）
   /// - 負數: downColor（減持為負面訊號）
   /// - 零或 null: 灰色（無變化）
-  Color _getChangeColor(double? change) {
-    if (change == null || change == 0) return Colors.grey;
-    return change > 0 ? AppTheme.upColor : AppTheme.downColor;
+  Color _getChangeColor(BuildContext context, double? change) {
+    // 走 canonical getPriceColor：淺色主題才拿得到較深的下跌綠與平盤灰
+    // （2026-07-23 稽核修復：原手刻 sign→raw 色，與 PriceColors.forChange
+    // 分岔——平盤 Colors.grey、負值淺色誤用深色版 downColor）
+    return AppTheme.getPriceColor(change ?? 0, Theme.of(context).brightness);
   }
 
   Widget _buildInsiderTable(
@@ -420,7 +422,7 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
     }
 
     // 使用與 _getChangeColor 一致的邏輯：0 為中性
-    final color = _getChangeColor(change);
+    final color = _getChangeColor(context, change);
     final prefix = change > 0 ? '+' : '';
     final isSignificant = change.abs() >= _kSignificantChangeThreshold;
 

@@ -121,11 +121,12 @@ class InsiderSection extends StatelessWidget {
                   formatSharesChange(sharesChange),
                   style: theme.textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: sharesChange > 0
-                        ? AppTheme.upColor
-                        : sharesChange < 0
-                        ? AppTheme.downColor
-                        : theme.colorScheme.onSurface,
+                    // canonical getPriceColor（2026-07-23 稽核修復：
+                    // 原三元手刻，淺色主題負值誤用深色版 downColor）
+                    color: AppTheme.getPriceColor(
+                      sharesChange,
+                      theme.brightness,
+                    ),
                   ),
                 ),
               ],

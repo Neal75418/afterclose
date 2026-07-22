@@ -248,16 +248,19 @@ void main() {
       expect(find.byIcon(Icons.trending_down), findsOneWidget);
     });
 
-    testWidgets('shows show_chart icon for CHANGE_PCT alert', (tester) async {
-      widenViewport(tester);
-      final alerts = [createAlert(alertType: 'CHANGE_PCT')];
-      await tester.pumpWidget(
-        buildTestWidget(alertState: PriceAlertState(alerts: alerts)),
-      );
-      await tester.pump(const Duration(seconds: 1));
+    testWidgets(
+      'shows percent icon for CHANGE_PCT alert（2026-07-23 稽核：兩處 switch 統一為 AlertTypeIcon extension）',
+      (tester) async {
+        widenViewport(tester);
+        final alerts = [createAlert(alertType: 'CHANGE_PCT')];
+        await tester.pumpWidget(
+          buildTestWidget(alertState: PriceAlertState(alerts: alerts)),
+        );
+        await tester.pump(const Duration(seconds: 1));
 
-      expect(find.byIcon(Icons.show_chart), findsOneWidget);
-    });
+        expect(find.byIcon(Icons.percent), findsOneWidget);
+      },
+    );
 
     testWidgets('shows bar_chart icon for VOLUME_SPIKE alert', (tester) async {
       widenViewport(tester);

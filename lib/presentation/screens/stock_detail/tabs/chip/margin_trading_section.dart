@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
+import 'package:afterclose/core/constants/chip_scoring_params.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/screens/stock_detail/widgets/mini_trend_chart.dart';
@@ -47,9 +48,11 @@ class MarginTradingSection extends StatelessWidget {
     final marginBal = latest.marginBalance ?? 0;
     final shortBal = latest.shortBalance ?? 0;
 
-    // 計算融券/融資比
+    // 計算融券/融資比——「高」門檻與評分層同一常數（2026-07-23 稽核修復：
+    // 原 hardcode 10 恰為評分層的**低**檔界線，同概念 3 倍差）
     final shortMarginRatio = marginBal > 0 ? (shortBal / marginBal * 100) : 0.0;
-    final isHighRatio = shortMarginRatio > 10;
+    final isHighRatio =
+        shortMarginRatio > ChipScoringParams.highShortMarginRatio;
 
     return Row(
       children: [
@@ -292,7 +295,7 @@ class MarginTradingSection extends StatelessWidget {
                           vertical: DesignTokens.spacing2,
                         ),
                         decoration: BoxDecoration(
-                          color: ratio > 10
+                          color: ratio > ChipScoringParams.highShortMarginRatio
                               ? AppTheme.downColor.withValues(alpha: 0.1)
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(
@@ -306,7 +309,8 @@ class MarginTradingSection extends StatelessWidget {
                             fontWeight: ratio > 10
                                 ? FontWeight.bold
                                 : FontWeight.normal,
-                            color: ratio > 10
+                            color:
+                                ratio > ChipScoringParams.highShortMarginRatio
                                 ? AppTheme.downColor
                                 : theme.colorScheme.onSurface,
                           ),
