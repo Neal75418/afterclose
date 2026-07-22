@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:drift/drift.dart' hide isNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqlite3/sqlite3.dart' as raw;
@@ -76,7 +75,7 @@ void main() {
     rawDb.execute(
       "UPDATE _drift_schema_fingerprint SET value = 'stale-old-fingerprint'",
     );
-    rawDb.dispose();
+    rawDb.close();
 
     // 3. 重開：beforeOpen 觸發 reset——修復前這裡炸
     //    SqliteException(index ... already exists)
@@ -120,7 +119,7 @@ void main() {
     rawDb.execute(
       "UPDATE _drift_schema_fingerprint SET value = 'stale-old-fingerprint'",
     );
-    rawDb.dispose();
+    rawDb.close();
 
     final db2 = AppDatabase(NativeDatabase(dbFile));
     await db2.customSelect('SELECT 1').get(); // reset 完成

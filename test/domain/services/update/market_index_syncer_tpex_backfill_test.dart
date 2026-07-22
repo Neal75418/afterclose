@@ -7,16 +7,13 @@
 //
 // 配額設計：整段回補=1 次 API 呼叫；達目標深度後前置檢查短路 → 穩態
 // 零呼叫。fail-soft 由 sync() 包裹（與 backfillDeepHistory 同慣例）。
-import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/constants/market_index_names.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/models/finmind/daily_price.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
 import 'package:afterclose/domain/services/update/market_index_syncer.dart';

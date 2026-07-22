@@ -52,18 +52,18 @@ void main() {
             ),
           // 兩日停牌
           createTestPrice(
-            date: now.add(Duration(days: 70)),
+            date: now.add(const Duration(days: 70)),
             close: null,
             volume: 0,
           ),
           createTestPrice(
-            date: now.add(Duration(days: 71)),
+            date: now.add(const Duration(days: 71)),
             close: null,
             volume: 0,
           ),
           // 復牌當日：若跨缺口價差被誤採計，會虛假觸發 RSI 超買警示
           createTestPrice(
-            date: now.add(Duration(days: 72)),
+            date: now.add(const Duration(days: 72)),
             close: 250.0,
             volume: 1000,
           ),

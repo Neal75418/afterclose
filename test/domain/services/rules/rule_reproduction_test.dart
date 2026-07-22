@@ -81,7 +81,7 @@ void main() {
       final context = AnalysisContext(
         evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
-        indicators: TechnicalIndicators(ma20: 102.5),
+        indicators: const TechnicalIndicators(ma20: 102.5),
       );
 
       // 需要至少 20 筆價格資料，且 close > MA20

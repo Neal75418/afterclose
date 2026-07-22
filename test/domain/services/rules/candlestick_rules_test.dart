@@ -19,7 +19,7 @@ void main() {
       final context = AnalysisContext(
         evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.down,
-        indicators: TechnicalIndicators(rsi: 25.0),
+        indicators: const TechnicalIndicators(rsi: 25.0),
       );
       final now = DateTime.now();
       final doji = createDojiCandle(date: now, price: 100.0, range: 10.0);
@@ -49,7 +49,7 @@ void main() {
       final context = AnalysisContext(
         evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.up,
-        indicators: TechnicalIndicators(rsi: 75.0),
+        indicators: const TechnicalIndicators(rsi: 75.0),
       );
       final now = DateTime.now();
       final doji = createDojiCandle(date: now, price: 100.0, range: 10.0);
@@ -66,7 +66,7 @@ void main() {
       final context = AnalysisContext(
         evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
-        indicators: TechnicalIndicators(rsi: 50.0),
+        indicators: const TechnicalIndicators(rsi: 50.0),
       );
       final now = DateTime.now();
       final doji = createDojiCandle(date: now, price: 100.0);

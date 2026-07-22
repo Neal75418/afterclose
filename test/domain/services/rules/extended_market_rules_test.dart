@@ -17,7 +17,7 @@ void main() {
       final context = AnalysisContext(
         evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
-        marketData: MarketDataContext(
+        marketData: const MarketDataContext(
           foreignSharesRatio: 30.0,
           foreignSharesRatioChange: 0.8, // >= 0.5
         ),
@@ -35,7 +35,7 @@ void main() {
       final context = AnalysisContext(
         evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
-        marketData: MarketDataContext(
+        marketData: const MarketDataContext(
           foreignSharesRatio: 30.0,
           foreignSharesRatioChange: 0.3, // < 0.5
         ),
@@ -66,7 +66,7 @@ void main() {
       final context = AnalysisContext(
         evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
-        marketData: MarketDataContext(
+        marketData: const MarketDataContext(
           foreignSharesRatio: 25.0,
           foreignSharesRatioChange: -0.7, // <= -0.5
         ),
@@ -84,7 +84,7 @@ void main() {
       final context = AnalysisContext(
         evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
-        marketData: MarketDataContext(
+        marketData: const MarketDataContext(
           foreignSharesRatio: 25.0,
           foreignSharesRatioChange: -0.2, // > -0.5
         ),
@@ -98,7 +98,7 @@ void main() {
       final context = AnalysisContext(
         evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
-        marketData: MarketDataContext(foreignSharesRatio: 25.0),
+        marketData: const MarketDataContext(foreignSharesRatio: 25.0),
       );
       const data = StockData(symbol: 'TEST', prices: []);
 
@@ -116,7 +116,9 @@ void main() {
       final context = AnalysisContext(
         evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
-        marketData: MarketDataContext(dayTradingRatio: 60.0), // 50-70 range
+        marketData: const MarketDataContext(
+          dayTradingRatio: 60.0,
+        ), // 50-70 range
       );
       final data = StockData(
         symbol: 'TEST',
@@ -146,7 +148,9 @@ void main() {
       final context = AnalysisContext(
         evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
-        marketData: MarketDataContext(dayTradingRatio: 55.0), // 50-70 range
+        marketData: const MarketDataContext(
+          dayTradingRatio: 55.0,
+        ), // 50-70 range
       );
       final data = StockData(
         symbol: 'TEST',
@@ -169,7 +173,7 @@ void main() {
       final context = AnalysisContext(
         evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
-        marketData: MarketDataContext(dayTradingRatio: 45.0), // < 50
+        marketData: const MarketDataContext(dayTradingRatio: 45.0), // < 50
       );
       final data = StockData(
         symbol: 'TEST',
@@ -185,7 +189,7 @@ void main() {
       final context = AnalysisContext(
         evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
-        marketData: MarketDataContext(dayTradingRatio: 75.0), // >= 70
+        marketData: const MarketDataContext(dayTradingRatio: 75.0), // >= 70
       );
       final data = StockData(
         symbol: 'TEST',
@@ -202,7 +206,7 @@ void main() {
       final context = AnalysisContext(
         evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
-        marketData: MarketDataContext(dayTradingRatio: 60.0),
+        marketData: const MarketDataContext(dayTradingRatio: 60.0),
       );
       final data = StockData(
         symbol: 'TEST',
@@ -229,7 +233,7 @@ void main() {
       final context = AnalysisContext(
         evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
-        marketData: MarketDataContext(dayTradingRatio: 75.0), // >= 70
+        marketData: const MarketDataContext(dayTradingRatio: 75.0), // >= 70
       );
       final data = StockData(
         symbol: 'TEST',
@@ -253,7 +257,7 @@ void main() {
       final context = AnalysisContext(
         evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
-        marketData: MarketDataContext(dayTradingRatio: 65.0), // < 70
+        marketData: const MarketDataContext(dayTradingRatio: 65.0), // < 70
       );
       final data = StockData(
         symbol: 'TEST',
@@ -269,7 +273,7 @@ void main() {
       final context = AnalysisContext(
         evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
-        marketData: MarketDataContext(dayTradingRatio: 75.0), // >= 70
+        marketData: const MarketDataContext(dayTradingRatio: 75.0), // >= 70
       );
       final data = StockData(
         symbol: 'TEST',
@@ -296,7 +300,7 @@ void main() {
       final context = AnalysisContext(
         evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
-        marketData: MarketDataContext(concentrationRatio: 75.0), // >= 60
+        marketData: const MarketDataContext(concentrationRatio: 75.0), // >= 60
       );
       const data = StockData(symbol: 'TEST', prices: []);
 
@@ -311,7 +315,7 @@ void main() {
       final context = AnalysisContext(
         evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
-        marketData: MarketDataContext(concentrationRatio: 55.0), // < 60
+        marketData: const MarketDataContext(concentrationRatio: 55.0), // < 60
       );
       const data = StockData(symbol: 'TEST', prices: []);
 
@@ -322,7 +326,7 @@ void main() {
       final context = AnalysisContext(
         evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
-        marketData: MarketDataContext(),
+        marketData: const MarketDataContext(),
       );
       const data = StockData(symbol: 'TEST', prices: []);
 
@@ -333,7 +337,7 @@ void main() {
       final context = AnalysisContext(
         evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
-        marketData: MarketDataContext(
+        marketData: const MarketDataContext(
           concentrationRatio:
               InstitutionalParams.concentrationHighThreshold, // 60.0
         ),
@@ -358,7 +362,7 @@ void main() {
       final context = AnalysisContext(
         evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
-        marketData: MarketDataContext(dayTradingRatio: null),
+        marketData: const MarketDataContext(dayTradingRatio: null),
       );
       final data = StockData(
         symbol: 'TEST',
@@ -374,7 +378,7 @@ void main() {
       final context = AnalysisContext(
         evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
-        marketData: MarketDataContext(dayTradingRatio: 60.0),
+        marketData: const MarketDataContext(dayTradingRatio: 60.0),
       );
       const data = StockData(symbol: 'TEST', prices: []);
 
@@ -385,7 +389,7 @@ void main() {
       final context = AnalysisContext(
         evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
-        marketData: MarketDataContext(
+        marketData: const MarketDataContext(
           dayTradingRatio: InstitutionalParams.dayTradingHighThreshold, // 50.0
         ),
       );
@@ -406,7 +410,7 @@ void main() {
       final context = AnalysisContext(
         evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
-        marketData: MarketDataContext(dayTradingRatio: 60.0),
+        marketData: const MarketDataContext(dayTradingRatio: 60.0),
       );
       final data = StockData(
         symbol: 'TEST',
@@ -426,7 +430,7 @@ void main() {
       final context = AnalysisContext(
         evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
-        marketData: MarketDataContext(dayTradingRatio: null),
+        marketData: const MarketDataContext(dayTradingRatio: null),
       );
       final data = StockData(
         symbol: 'TEST',
@@ -442,7 +446,7 @@ void main() {
       final context = AnalysisContext(
         evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
-        marketData: MarketDataContext(
+        marketData: const MarketDataContext(
           dayTradingRatio:
               InstitutionalParams.dayTradingExtremeThreshold, // 70.0
         ),

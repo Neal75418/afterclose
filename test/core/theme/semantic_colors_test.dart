@@ -760,8 +760,8 @@ void _phase1TintGuards() {
   const lightSurface = SemanticColors.lightSurface;
   const darkCard = SemanticColors.darkSurface;
   const darkScaffold = SemanticColors.darkBackground;
-  final warnOnTintL = WarningColors.onTintLight;
-  final warnOnTintD = WarningColors.onTintDark;
+  const warnOnTintL = WarningColors.onTintLight;
+  const warnOnTintD = WarningColors.onTintDark;
   const osvL = Color(0xFF666680);
   const osvD = SemanticColors.darkTextSecondary;
   const outlineL = Color(0xFFE0E0E8);
@@ -769,18 +769,18 @@ void _phase1TintGuards() {
 
   final scenarios = <_TintScenario>[
     // warning_badge.dart（α: 淺 0.15／深 0.25）
-    _TintScenario(
+    const _TintScenario(
       'WarningBadge.highPledge',
       warnOnTintL,
       warnOnTintD,
-      const Color(0xFFFFC107),
-      const Color(0xFFFFC107),
+      Color(0xFFFFC107),
+      Color(0xFFFFC107),
       0.15,
       0.25,
       white,
       darkCard,
     ),
-    _TintScenario(
+    const _TintScenario(
       'WarningBadge.attention',
       ErrorColors.attentionOnTintLight,
       ErrorColors.attentionOnTintDark,
@@ -791,7 +791,7 @@ void _phase1TintGuards() {
       white,
       darkCard,
     ),
-    _TintScenario(
+    const _TintScenario(
       'WarningBadge.disposal',
       ErrorColors.onTintLight,
       ErrorColors.onTintDark,
@@ -803,7 +803,7 @@ void _phase1TintGuards() {
       darkCard,
     ),
     // risk_badge_cluster.dart（moderate tint 依主題解析）
-    _TintScenario(
+    const _TintScenario(
       'RiskBadge.moderate',
       warnOnTintL,
       warnOnTintD,
@@ -814,7 +814,7 @@ void _phase1TintGuards() {
       white,
       darkCard,
     ),
-    _TintScenario(
+    const _TintScenario(
       'RiskBadge.severe',
       ErrorColors.onTintLight,
       ErrorColors.onTintDark,
@@ -826,7 +826,7 @@ void _phase1TintGuards() {
       darkCard,
     ),
     // atr_card.dart 波動徽章（indcard≈surface）
-    _TintScenario(
+    const _TintScenario(
       'ATR.medium',
       warnOnTintL,
       warnOnTintD,
@@ -837,7 +837,7 @@ void _phase1TintGuards() {
       lightSurface,
       darkCard,
     ),
-    _TintScenario(
+    const _TintScenario(
       'ATR.high',
       warnOnTintL,
       warnOnTintD,
@@ -848,7 +848,7 @@ void _phase1TintGuards() {
       lightSurface,
       darkCard,
     ),
-    _TintScenario(
+    const _TintScenario(
       'ATR.low',
       osvL,
       osvD,
@@ -860,7 +860,7 @@ void _phase1TintGuards() {
       darkCard,
     ),
     // alerts_screen.dart 狀態 pill
-    _TintScenario(
+    const _TintScenario(
       'Alerts.triggered',
       warnOnTintL,
       warnOnTintD,
@@ -871,7 +871,7 @@ void _phase1TintGuards() {
       white,
       darkCard,
     ),
-    _TintScenario(
+    const _TintScenario(
       'Alerts.active',
       QualityColors.brandOnLight,
       QualityColors.brandOnDecorative,
@@ -882,7 +882,7 @@ void _phase1TintGuards() {
       white,
       darkCard,
     ),
-    _TintScenario(
+    const _TintScenario(
       'Alerts.inactive',
       osvL,
       osvD,
@@ -894,7 +894,7 @@ void _phase1TintGuards() {
       darkCard,
     ),
     // ai_summary_card.dart 信心徽章
-    _TintScenario(
+    const _TintScenario(
       'AiConfidence.high',
       QualityColors.brandOnLight,
       QualityColors.brandOnDecorative,
@@ -905,7 +905,7 @@ void _phase1TintGuards() {
       white,
       darkCard,
     ),
-    _TintScenario(
+    const _TintScenario(
       'AiConfidence.medium',
       warnOnTintL,
       warnOnTintD,
@@ -916,7 +916,7 @@ void _phase1TintGuards() {
       white,
       darkCard,
     ),
-    _TintScenario(
+    const _TintScenario(
       'AiConfidence.low',
       osvL,
       osvD,
@@ -928,19 +928,19 @@ void _phase1TintGuards() {
       darkCard,
     ),
     // pinned_thesis_section.dart 失效狀態（error scheme 依主題）
-    _TintScenario(
+    const _TintScenario(
       'PinnedThesis.invalidated',
       ErrorColors.onTintLight,
       ErrorColors.onTintDark,
-      const Color(0xFFE53935),
-      const Color(0xFFFF6B6B),
+      Color(0xFFE53935),
+      Color(0xFFFF6B6B),
       0.12,
       0.12,
       white,
       darkCard,
     ),
     // chip_anomaly_row.dart
-    _TintScenario(
+    const _TintScenario(
       'Anomaly.banner',
       warnOnTintL,
       warnOnTintD,
@@ -951,7 +951,7 @@ void _phase1TintGuards() {
       white,
       darkCard,
     ),
-    _TintScenario(
+    const _TintScenario(
       'Anomaly.count',
       warnOnTintL,
       warnOnTintD,
@@ -962,7 +962,7 @@ void _phase1TintGuards() {
       white,
       darkCard,
     ),
-    _TintScenario(
+    const _TintScenario(
       'Anomaly.iconBox',
       warnOnTintL,
       warnOnTintD,
@@ -974,30 +974,30 @@ void _phase1TintGuards() {
       darkCard,
       threshold: 3.0,
     ),
-    _TintScenario(
+    const _TintScenario(
       'Anomaly.orangeBadge',
       warnOnTintL,
       warnOnTintD,
-      const Color(0xFFFF9800),
-      const Color(0xFFFF9800),
+      Color(0xFFFF9800),
+      Color(0xFFFF9800),
       0.10,
       0.10,
       white,
       darkCard,
     ),
-    _TintScenario(
+    const _TintScenario(
       'Anomaly.redBadge',
       ErrorColors.onTintLight,
       ErrorColors.onTintDark,
-      const Color(0xFFF44336),
-      const Color(0xFFF44336),
+      Color(0xFFF44336),
+      Color(0xFFF44336),
       0.10,
       0.10,
       white,
       darkCard,
     ),
     // market_dashboard.dart 過期廣度徽章（withAlpha(30)=30/255）
-    _TintScenario(
+    const _TintScenario(
       'StaleBreadth',
       warnOnTintL,
       warnOnTintD,
@@ -1009,7 +1009,7 @@ void _phase1TintGuards() {
       darkCard,
     ),
     // market_reading_line.dart 醒目 strip（tint=caution@0.10）
-    _TintScenario(
+    const _TintScenario(
       'ReadingLine.warningStrip',
       warnOnTintL,
       warnOnTintD,
@@ -1021,12 +1021,12 @@ void _phase1TintGuards() {
       darkCard,
     ),
     // onboarding step2 圖示（48px 大圖示 → 3.0）
-    _TintScenario(
+    const _TintScenario(
       'Onboarding.step2Icon',
       warnOnTintL,
       warnOnTintD,
-      const Color(0xFFFF9800),
-      const Color(0xFFFF9800),
+      Color(0xFFFF9800),
+      Color(0xFFFF9800),
       0.10,
       0.10,
       white,

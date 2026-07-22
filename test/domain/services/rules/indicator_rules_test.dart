@@ -520,7 +520,7 @@ void main() {
       final context = AnalysisContext(
         evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.down,
-        indicators: TechnicalIndicators(
+        indicators: const TechnicalIndicators(
           kdK: 35.0,
           kdD: 30.0,
           prevKdK: 25.0,
@@ -554,7 +554,7 @@ void main() {
       final context = AnalysisContext(
         evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
-        indicators: TechnicalIndicators(
+        indicators: const TechnicalIndicators(
           kdK: 55.0,
           kdD: 50.0,
           prevKdK: 50.0,
@@ -583,7 +583,7 @@ void main() {
       final context = AnalysisContext(
         evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.down,
-        indicators: TechnicalIndicators(
+        indicators: const TechnicalIndicators(
           kdK: 35.0,
           kdD: 30.0,
           prevKdK: 25.0,
@@ -631,7 +631,7 @@ void main() {
       final context = AnalysisContext(
         evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.up,
-        indicators: TechnicalIndicators(
+        indicators: const TechnicalIndicators(
           kdK: 65.0,
           kdD: 70.0,
           prevKdK: 75.0,
@@ -664,7 +664,7 @@ void main() {
       final context = AnalysisContext(
         evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
-        indicators: TechnicalIndicators(
+        indicators: const TechnicalIndicators(
           kdK: 45.0,
           kdD: 50.0,
           prevKdK: 50.0,

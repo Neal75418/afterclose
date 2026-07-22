@@ -16,7 +16,7 @@ void main() {
         final context = AnalysisContext(
           evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.range,
-          marketData: MarketDataContext(
+          marketData: const MarketDataContext(
             insiderData: InsiderDataContext(
               hasSellingStreak: true,
               sellingStreakMonths: 3,
@@ -39,7 +39,7 @@ void main() {
         final context = AnalysisContext(
           evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.range,
-          marketData: MarketDataContext(
+          marketData: const MarketDataContext(
             insiderData: InsiderDataContext(
               hasSellingStreak: true,
               sellingStreakMonths: 2,
@@ -60,7 +60,7 @@ void main() {
         final context = AnalysisContext(
           evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.range,
-          marketData: MarketDataContext(
+          marketData: const MarketDataContext(
             insiderData: InsiderDataContext(
               hasSellingStreak: false,
               sellingStreakMonths: 0,
@@ -85,7 +85,7 @@ void main() {
         final context = AnalysisContext(
           evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.range,
-          marketData: MarketDataContext(
+          marketData: const MarketDataContext(
             insiderData: InsiderDataContext(
               hasSignificantBuying: true,
               buyingChange: 6.0,
@@ -108,7 +108,7 @@ void main() {
         final context = AnalysisContext(
           evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.range,
-          marketData: MarketDataContext(
+          marketData: const MarketDataContext(
             insiderData: InsiderDataContext(
               hasSignificantBuying: true,
               buyingChange: 3.0,
@@ -129,7 +129,7 @@ void main() {
         final context = AnalysisContext(
           evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.range,
-          marketData: MarketDataContext(
+          marketData: const MarketDataContext(
             insiderData: InsiderDataContext(
               hasSignificantBuying: true,
               buyingChange: null,
@@ -154,7 +154,7 @@ void main() {
         final context = AnalysisContext(
           evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.range,
-          marketData: MarketDataContext(
+          marketData: const MarketDataContext(
             insiderData: InsiderDataContext(
               pledgeRatio: 75.0,
               insiderRatio: 20.0,
@@ -176,7 +176,7 @@ void main() {
         final context = AnalysisContext(
           evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.range,
-          marketData: MarketDataContext(
+          marketData: const MarketDataContext(
             insiderData: InsiderDataContext(
               pledgeRatio: 40.0,
               insiderRatio: 25.0,
@@ -196,7 +196,7 @@ void main() {
         final context = AnalysisContext(
           evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.range,
-          marketData: MarketDataContext(
+          marketData: const MarketDataContext(
             insiderData: InsiderDataContext(
               pledgeRatio: null,
               insiderRatio: 25.0,
@@ -222,7 +222,7 @@ void main() {
         final context = AnalysisContext(
           evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.range,
-          marketData: MarketDataContext(
+          marketData: const MarketDataContext(
             warningData: WarningDataContext(
               isAttention: true,
               isDisposal: false,
@@ -246,7 +246,7 @@ void main() {
         final context = AnalysisContext(
           evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.range,
-          marketData: MarketDataContext(
+          marketData: const MarketDataContext(
             warningData: WarningDataContext(
               isAttention: true,
               isDisposal: true,
@@ -271,7 +271,7 @@ void main() {
         final context = AnalysisContext(
           evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.range,
-          marketData: MarketDataContext(
+          marketData: const MarketDataContext(
             warningData: WarningDataContext(
               isAttention: false,
               isDisposal: true,
@@ -294,7 +294,7 @@ void main() {
         final context = AnalysisContext(
           evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.range,
-          marketData: MarketDataContext(
+          marketData: const MarketDataContext(
             warningData: WarningDataContext(
               isAttention: true,
               isDisposal: false,
@@ -318,7 +318,7 @@ void main() {
         final context = AnalysisContext(
           evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.range,
-          marketData: MarketDataContext(
+          marketData: const MarketDataContext(
             warningData: WarningDataContext(
               isDisposal: true,
               disposalMeasures: '分盤交易',
@@ -381,7 +381,7 @@ void main() {
         final context = AnalysisContext(
           evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.range,
-          marketData: MarketDataContext(
+          marketData: const MarketDataContext(
             warningData: WarningDataContext(isDisposal: true),
           ),
         );
@@ -417,7 +417,7 @@ void main() {
         final context = AnalysisContext(
           evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.range,
-          marketData: MarketDataContext(foreignSharesRatio: 65.0),
+          marketData: const MarketDataContext(foreignSharesRatio: 65.0),
         );
 
         final prices = generateFlatPrices(days: 20, basePrice: 100.0);
@@ -433,7 +433,7 @@ void main() {
         final context = AnalysisContext(
           evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.range,
-          marketData: MarketDataContext(foreignSharesRatio: 50.0),
+          marketData: const MarketDataContext(foreignSharesRatio: 50.0),
         );
 
         final prices = generateFlatPrices(days: 20, basePrice: 100.0);
@@ -452,7 +452,7 @@ void main() {
         final context = AnalysisContext(
           evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.range,
-          marketData: MarketDataContext(
+          marketData: const MarketDataContext(
             foreignSharesRatio: 40.0,
             foreignSharesRatioChange: -2.5,
           ),
@@ -472,7 +472,7 @@ void main() {
         final context = AnalysisContext(
           evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.range,
-          marketData: MarketDataContext(
+          marketData: const MarketDataContext(
             foreignSharesRatio: 40.0,
             foreignSharesRatioChange: -1.0,
           ),

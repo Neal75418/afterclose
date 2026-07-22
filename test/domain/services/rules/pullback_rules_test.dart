@@ -75,7 +75,7 @@ void main() {
     const rule = HealthyPullbackToMa20Rule();
     // 黃金路徑：bull stack 105>100>95、past20=90 (ma20 100>94.5)、今日收黑、量縮、
     // 距 MA20 0%、過去 5 日有紅 K
-    final goldenInd = const TechnicalIndicators(
+    const goldenInd = TechnicalIndicators(
       ma5: 105,
       ma20: 100,
       ma60: 95,
@@ -118,11 +118,7 @@ void main() {
     });
 
     test('returns null when ma20 unavailable', () {
-      final ind = const TechnicalIndicators(
-        ma5: 105,
-        ma60: 95,
-        volumeMA20: 1000,
-      );
+      const ind = TechnicalIndicators(ma5: 105, ma60: 95, volumeMA20: 1000);
       expect(rule.evaluate(ctx(ind), stock(goldenPrices())), isNull);
     });
 
@@ -132,7 +128,7 @@ void main() {
     });
 
     test('returns null when not bull stack (ma5 < ma20)', () {
-      final ind = const TechnicalIndicators(
+      const ind = TechnicalIndicators(
         ma5: 95,
         ma20: 100,
         ma60: 95,
@@ -203,7 +199,7 @@ void main() {
     const rule = HealthyPullbackToMa10Rule();
     // 黃金路徑：ma10 100 > ma20 95 > ma60 90、close 100 距 ma10 0%、close > ma20、
     // past20=90 (ma10 100>94.5)、今日收黑、量縮、過去 5 日有紅 K
-    final goldenInd = const TechnicalIndicators(
+    const goldenInd = TechnicalIndicators(
       ma10: 100,
       ma20: 95,
       ma60: 90,
@@ -268,7 +264,7 @@ void main() {
     );
 
     test('null when not mid-term bull stack (ma10 <= ma20)', () {
-      final ind = const TechnicalIndicators(
+      const ind = TechnicalIndicators(
         ma10: 95,
         ma20: 100,
         ma60: 90,
@@ -328,11 +324,7 @@ void main() {
     });
 
     test('null when ma10 unavailable', () {
-      final ind = const TechnicalIndicators(
-        ma20: 95,
-        ma60: 90,
-        volumeMA20: 1000,
-      );
+      const ind = TechnicalIndicators(ma20: 95, ma60: 90, volumeMA20: 1000);
       expect(rule.evaluate(ctx(ind), stock(goldenPrices())), isNull);
     });
   });
@@ -634,7 +626,7 @@ void main() {
   // ============================================================
   group('HammerAtSupportRule (widened)', () {
     const rule = HammerAtSupportRule();
-    final indGolden = const TechnicalIndicators(ma20: 100, ma60: 95);
+    const indGolden = TechnicalIndicators(ma20: 100, ma60: 95);
 
     // hammer: open=101 close=100.5 high=101 low=97（下影線 3.5 >= body 0.5*2、
     // 上影線 0 <= body 0.5*0.5、body 0.5 >= range 4*0.05）。
@@ -692,7 +684,7 @@ void main() {
     });
 
     test('null when bearish MA stack (ma20 <= ma60)', () {
-      final ind = const TechnicalIndicators(ma20: 95, ma60: 100);
+      const ind = TechnicalIndicators(ma20: 95, ma60: 100);
       expect(rule.evaluate(ctx(ind), stock(hammerPrices())), isNull);
     });
 
@@ -766,7 +758,7 @@ void main() {
           isMarketUptrend: uptrend,
         );
 
-    final ma20Ind = const TechnicalIndicators(
+    const ma20Ind = TechnicalIndicators(
       ma5: 105,
       ma20: 100,
       ma60: 95,
@@ -813,7 +805,7 @@ void main() {
     test('MA10/Hammer/KD 三條同樣被空頭 regime 擋下', () {
       // MA10
       const ma10Rule = HealthyPullbackToMa10Rule();
-      final ma10Ind = const TechnicalIndicators(
+      const ma10Ind = TechnicalIndicators(
         ma10: 100,
         ma20: 95,
         ma60: 90,
@@ -825,7 +817,7 @@ void main() {
       );
       // Hammer
       const hammerRule = HammerAtSupportRule();
-      final hammerInd = const TechnicalIndicators(ma20: 100, ma60: 95);
+      const hammerInd = TechnicalIndicators(ma20: 100, ma60: 95);
       final hp = buildPrices(count: 21);
       hp[0] = candle(dayIdx: 0, open: 90, high: 91, low: 89, close: 90);
       // Fix 2: 過去 5 日內至少 1 根紅 K（非瀑布跌）
@@ -848,7 +840,7 @@ void main() {
       );
       // KD
       const kdRule = KdHighLevelPullbackRule();
-      final kdInd = const TechnicalIndicators(
+      const kdInd = TechnicalIndicators(
         kdK: 70,
         kdD: 65,
         prevKdK: 85,
@@ -872,7 +864,7 @@ void main() {
 
     test('HealthyPullbackToMa20Rule 對 ETF 不觸發（同 setup 個股會 fire）', () {
       const rule = HealthyPullbackToMa20Rule();
-      final ind = const TechnicalIndicators(
+      const ind = TechnicalIndicators(
         ma5: 105,
         ma20: 100,
         ma60: 95,
@@ -901,7 +893,7 @@ void main() {
 
     test('HealthyPullbackToMa10Rule 對 ETF 不觸發', () {
       const rule = HealthyPullbackToMa10Rule();
-      final ind = const TechnicalIndicators(
+      const ind = TechnicalIndicators(
         ma10: 100,
         ma20: 95,
         ma60: 90,
@@ -929,7 +921,7 @@ void main() {
 
     test('HammerAtSupportRule 對 ETF 不觸發', () {
       const rule = HammerAtSupportRule();
-      final ind = const TechnicalIndicators(ma20: 100, ma60: 95);
+      const ind = TechnicalIndicators(ma20: 100, ma60: 95);
       final prices = buildPrices(count: 21);
       prices[0] = candle(dayIdx: 0, open: 90, high: 91, low: 89, close: 90);
       // Fix 2: 過去 5 日內至少 1 根紅 K（非瀑布跌）

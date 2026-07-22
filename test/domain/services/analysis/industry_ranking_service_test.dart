@@ -119,7 +119,7 @@ void main() {
     test('成員不足 rankingMinMembers 的產業不進排行（實例：農業科技業 4 檔小樣本）', () {
       // 比門檻少 1 檔——2026-07-22 實機看到 4 檔小樣本（兩漲兩跌拼出的
       // 中位數無代表性）後，門檻從 3 調到 5
-      final memberCount = SectorParams.rankingMinMembers - 1;
+      const memberCount = SectorParams.rankingMinMembers - 1;
       final rankings = service.rank(
         priceHistories: {
           for (var m = 0; m < memberCount; m++)

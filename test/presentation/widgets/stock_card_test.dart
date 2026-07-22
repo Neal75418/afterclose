@@ -105,7 +105,7 @@ void main() {
       // 既有的獨立問題，不在本迴歸範圍。
       await tester.pumpWidget(
         buildTestApp(
-          Center(
+          const Center(
             child: SizedBox(
               width: 100,
               child: StockCard(symbol: '2330', dualScore: (62, 62)),
@@ -120,7 +120,7 @@ void main() {
     testWidgets('極窄卡片下單一 score 徽章分支同樣不溢位', (tester) async {
       await tester.pumpWidget(
         buildTestApp(
-          Center(
+          const Center(
             child: SizedBox(
               width: 100,
               child: StockCard(symbol: '2330', score: 62),

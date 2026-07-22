@@ -12,7 +12,6 @@ import 'package:mocktail/mocktail.dart';
 
 import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/models/finmind/financial_statement.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
 import 'package:afterclose/data/remote/twse_client.dart';

@@ -56,7 +56,7 @@ void main() {
               '1,010.00',
               '990.00',
               '995.00',
-              "<p style= color:green>-</p>",
+              '<p style= color:green>-</p>',
               '5.00',
               '994.00',
               '1',

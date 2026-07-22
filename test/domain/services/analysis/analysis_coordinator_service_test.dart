@@ -29,19 +29,19 @@ void main() {
           ),
         // 兩日停牌（無成交）
         createTestPrice(
-          date: now.add(Duration(days: 70)),
+          date: now.add(const Duration(days: 70)),
           close: null,
           volume: 0,
         ),
         createTestPrice(
-          date: now.add(Duration(days: 71)),
+          date: now.add(const Duration(days: 71)),
           close: null,
           volume: 0,
         ),
         // 復牌當日（今天）：若跨缺口的價差被誤採計為單一交易日變動，
         // 會產生虛假極端 RSI
         createTestPrice(
-          date: now.add(Duration(days: 72)),
+          date: now.add(const Duration(days: 72)),
           close: 250.0,
           volume: 1000,
         ),
@@ -100,13 +100,13 @@ void main() {
             ),
           // 昨天停牌
           createTestPrice(
-            date: now.add(Duration(days: 65)),
+            date: now.add(const Duration(days: 65)),
             close: null,
             volume: 0,
           ),
           // 今天
           createTestPrice(
-            date: now.add(Duration(days: 66)),
+            date: now.add(const Duration(days: 66)),
             close: 105.0,
             volume: 1000,
           ),

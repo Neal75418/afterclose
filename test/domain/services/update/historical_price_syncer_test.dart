@@ -682,7 +682,6 @@ void main() {
       // 1/14（二）、1/13（一）、1/10（五）；1/11-12 為週末。
       final tue = DateTime(2025, 1, 14);
       final mon = DateTime(2025, 1, 13);
-      final sun = DateTime(2025, 1, 12);
 
       StockMasterEntry stockEntry(String symbol, String market) =>
           StockMasterEntry(

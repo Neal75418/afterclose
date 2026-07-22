@@ -13,13 +13,13 @@ void main() {
   group('readRunMeta', () {
     test('calibration_run_meta 表不存在（舊 DB）→ null', () {
       final db = sqlite3.openInMemory();
-      addTearDown(db.dispose);
+      addTearDown(db.close);
       expect(readRunMeta(db), isNull);
     });
 
     test('excess run → 解析 mode / threshold / 兩個 baseline', () {
       final db = sqlite3.openInMemory();
-      addTearDown(db.dispose);
+      addTearDown(db.close);
       db.execute(
         'CREATE TABLE calibration_run_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)',
       );
@@ -47,7 +47,7 @@ void main() {
 
     test('absolute run → isExcess false、baseline null', () {
       final db = sqlite3.openInMemory();
-      addTearDown(db.dispose);
+      addTearDown(db.close);
       db.execute(
         'CREATE TABLE calibration_run_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)',
       );
@@ -65,7 +65,7 @@ void main() {
   group('loadDailyMeans', () {
     test('依日期升序、按 period 過濾、多 rule 分組', () {
       final db = sqlite3.openInMemory();
-      addTearDown(db.dispose);
+      addTearDown(db.close);
       db.execute('''
         CREATE TABLE rule_daily_stats (
           rule_id TEXT NOT NULL, period TEXT NOT NULL, date TEXT NOT NULL,
@@ -93,7 +93,7 @@ void main() {
 
     test('rule_daily_stats 表不存在（舊 DB）→ 空 map', () {
       final db = sqlite3.openInMemory();
-      addTearDown(db.dispose);
+      addTearDown(db.close);
       expect(loadDailyMeans(db, '5D'), isEmpty);
     });
   });

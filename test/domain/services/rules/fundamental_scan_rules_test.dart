@@ -404,7 +404,7 @@ void main() {
       final context = AnalysisContext(
         evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
-        indicators: TechnicalIndicators(rsi: 80),
+        indicators: const TechnicalIndicators(rsi: 80),
       );
 
       final result = rule.evaluate(context, data);
