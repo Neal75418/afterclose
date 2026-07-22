@@ -1177,7 +1177,12 @@
     "confidenceLow": "佐證有限",
     "signalStrength": "訊號強度",
     "ruleAccuracy": "規則準確度",
-    "priceVolumeWeakRally": "出現價漲量縮警示，漲勢可能無力。"
+    "priceVolumeWeakRally": "出現價漲量縮警示，漲勢可能無力。",
+    "pullbackToMa20": "強勢股健康回檔至月線附近（距 {distance}%），回檔進場觀察點",
+    "pullbackToMa10": "強勢趨勢中淺回檔至 10 日線，趨勢未破壞",
+    "hammerAtSupport": "支撐位出現鎚子線，下影線顯示買盤承接",
+    "kdHighPullback": "KD 高檔回落，強勢股短線動能降溫、觀察回檔支撐",
+    "patternDojiBearish": "高檔十字線，多空猶豫、留意轉弱風險"
   },
   "comparison": {
     "title": "個股比較",

@@ -189,7 +189,8 @@ class TpexClient {
       operation: '每日價格',
       parser: () {
         final code = row[0]?.toString().trim() ?? '';
-        if (code.isEmpty || !StockPatterns.isTpexCode(code)) return null;
+        // isTpexPriceCode：含上櫃 ETF（2026-07-23 稽核修復，與歷史回補一致）
+        if (code.isEmpty || !StockPatterns.isTpexPriceCode(code)) return null;
         return TpexDailyPrice(
           date: date,
           code: code,

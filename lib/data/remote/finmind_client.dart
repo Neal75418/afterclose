@@ -210,8 +210,8 @@ class FinMindClient {
       throw NetworkException('Connection timeout after $attempt attempts', e);
     }
     if (e.response?.statusCode == 429) {
-      // 429 → 拋 RateLimitException（⚠️ _delay 的 isRateLimit 長退避目前
-      // 未接線——2026-07-23 稽核確認從未傳 true，是否啟用待決策）
+      // 429 → 立即拋 RateLimitException（配額型限流不做 client 端重試，
+      // 由預算 cooldown + rateLimitedAbort 承接）
       AppLogger.warning('FinMind', '$label: 429 流量限制，等待重試');
       _budgetTracker?.markRateLimited(ApiVendor.finMind);
       throw const RateLimitException();
@@ -321,16 +321,12 @@ class FinMindClient {
       case DioExceptionType.connectionError:
         return true;
       case DioExceptionType.badResponse:
-        // 伺服器錯誤 (5xx) 重試，客戶端錯誤 (4xx) 不重試
+        // 伺服器錯誤 (5xx) 重試，客戶端錯誤 (4xx 含 429) 不重試——
+        // 429 是小時配額型限流，重試只會多燒配額（每次 retry 都會
+        // recordCall），立即拋 RateLimitException 交給預算 cooldown +
+        // rateLimitedAbort（2026-07-23 稽核修復，與 MarketClientMixin 對齊）
         final statusCode = e.response?.statusCode;
-        if (statusCode != null && statusCode >= 500) {
-          return true;
-        }
-        // 429 (流量限制) 以退避方式重試
-        if (statusCode == 429) {
-          return true;
-        }
-        return false;
+        return statusCode != null && statusCode >= 500;
       default:
         return false;
     }
@@ -338,13 +334,11 @@ class FinMindClient {
 
   /// 計算指數退避延遲（含抖動）
   ///
-  /// [isRateLimit] 為 true 時用 4 倍基礎延遲——⚠️ 目前無呼叫端傳 true
-  /// （429 直接拋例外不重試），此分支實質未啟用，待決策啟用或移除
-  Future<void> _delay(int attempt, {bool isRateLimit = false}) async {
-    // 流量限制錯誤使用 4 倍基礎延遲（給 API 更多重置時間）
-    final baseMs = isRateLimit
-        ? _baseDelay.inMilliseconds * 4
-        : _baseDelay.inMilliseconds;
+  /// 僅用於網路/5xx 類可重試錯誤。429 不在此重試——FinMind 是小時配額型
+  /// 限流，秒級退避救不了配額耗盡，正確路徑是立即拋 RateLimitException
+  /// → 預算 cooldown → rateLimitedAbort 止血、下次更新續傳。
+  Future<void> _delay(int attempt) async {
+    final baseMs = _baseDelay.inMilliseconds;
     // 指數退避: baseDelay * 2^(attempt-1)
     final exponentialDelay = baseMs * (1 << (attempt - 1));
     // 加入抖動: ±25% 延遲

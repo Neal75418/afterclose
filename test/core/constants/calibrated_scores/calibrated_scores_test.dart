@@ -1059,26 +1059,31 @@ void main() {
     });
   });
 
-  group('ReasonType.scoreFor [Layer 3.5: end-to-end]', () {
+  group('registry snapshot → lookup ?? hardcoded [Layer 3.5: end-to-end]', () {
+    // 2026-07-23 稽核：原本經 ReasonType.scoreFor extension 測——但 production
+    // 評分實際走 snapshotForIsolate() → rule_engine 的 `lookup ?? hardcoded`
+    // 路徑，extension 生產零呼叫（假保護）。測試改打正路後 extension 已刪除。
     tearDown(() {
       CalibratedScoresRegistry.instance.resetForTesting();
     });
 
-    test('28. scoreFor_without_registry_load_uses_hardcoded', () {
-      // Registry is unloaded (tearDown ran). scoreFor should return the
-      // hardcoded RuleScores value via fallback.
+    int scoreVia(ReasonType rt, Horizon horizon) {
+      final ctx = CalibratedScoresRegistry.instance.snapshotForIsolate();
+      return ctx.lookup(horizon, rt.code) ?? rt.score;
+    }
+
+    test('28. without_registry_load_uses_hardcoded', () {
       expect(
-        ReasonType.reversalW2S.scoreFor(Horizon.short),
+        scoreVia(ReasonType.reversalW2S, Horizon.short),
         RuleScores.reversalW2S,
       );
       expect(
-        ReasonType.techBreakout.scoreFor(Horizon.long),
+        scoreVia(ReasonType.techBreakout, Horizon.long),
         RuleScores.techBreakout,
       );
     });
 
-    test('29. scoreFor_with_bindForTesting_uses_calibrated', () {
-      // Inject a fake table for short horizon with overridden scores.
+    test('29. with_bindForTesting_uses_calibrated', () {
       CalibratedScoresRegistry.instance.bindForTesting(
         short: const CalibratedScoresTable(
           horizon: Horizon.short,
@@ -1091,19 +1096,17 @@ void main() {
         ),
       );
 
-      expect(ReasonType.reversalW2S.scoreFor(Horizon.short), 42);
-      expect(ReasonType.techBreakout.scoreFor(Horizon.short), 18);
+      expect(scoreVia(ReasonType.reversalW2S, Horizon.short), 42);
+      expect(scoreVia(ReasonType.techBreakout, Horizon.short), 18);
 
       // Long horizon was not bound → fallback to hardcoded
       expect(
-        ReasonType.reversalW2S.scoreFor(Horizon.long),
+        scoreVia(ReasonType.reversalW2S, Horizon.long),
         RuleScores.reversalW2S,
       );
     });
 
-    test('30. scoreFor_unknown_rule_in_fake_table_falls_back', () {
-      // Fake table only has REVERSAL_W2S. Querying a rule not in the table
-      // should fall back to hardcoded.
+    test('30. unknown_rule_in_fake_table_falls_back', () {
       CalibratedScoresRegistry.instance.bindForTesting(
         short: const CalibratedScoresTable(
           horizon: Horizon.short,
@@ -1113,10 +1116,10 @@ void main() {
         ),
       );
 
-      expect(ReasonType.reversalW2S.scoreFor(Horizon.short), 42);
+      expect(scoreVia(ReasonType.reversalW2S, Horizon.short), 42);
       // TECH_BREAKOUT not in table → fallback
       expect(
-        ReasonType.techBreakout.scoreFor(Horizon.short),
+        scoreVia(ReasonType.techBreakout, Horizon.short),
         RuleScores.techBreakout,
       );
     });

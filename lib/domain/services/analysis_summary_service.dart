@@ -740,6 +740,8 @@ class AnalysisSummaryService {
       <String, LocalizableString Function(Map<String, dynamic>)>{
         SignalName.patternDoji: (_) =>
             const LocalizableString('summary.patternDoji'),
+        SignalName.patternDojiBearish: (_) =>
+            const LocalizableString('summary.patternDojiBearish'),
         SignalName.patternBullishEngulfing: (_) =>
             const LocalizableString('summary.patternBullishEngulfing'),
         SignalName.patternBearishEngulfing: (_) =>
@@ -915,6 +917,22 @@ class AnalysisSummaryService {
             const LocalizableString('summary.roeDeclining'),
       };
 
+  /// 回檔模式 v2 主訊號（2026-07-23 稽核修復：v2 上線時漏接摘要層，
+  /// 只靠回檔訊號上榜的股票摘要會不提核心訊號）
+  static final _pullbackSignals =
+      <String, LocalizableString Function(Map<String, dynamic>)>{
+        SignalName.pullbackToMa20: (e) => LocalizableString(
+          'summary.pullbackToMa20',
+          {'distance': _numStr(e['distanceToMa20Pct'])},
+        ),
+        SignalName.pullbackToMa10: (_) =>
+            const LocalizableString('summary.pullbackToMa10'),
+        SignalName.hammerAtSupport: (_) =>
+            const LocalizableString('summary.hammerAtSupport'),
+        SignalName.kdHighPullback: (_) =>
+            const LocalizableString('summary.kdHighPullback'),
+      };
+
   /// 合併所有分類的 signal builders
   static final Map<String, LocalizableString Function(Map<String, dynamic>)>
   _signalBuilders = {
@@ -922,6 +940,7 @@ class AnalysisSummaryService {
     ..._kdSignals,
     ..._institutionalStreakSignals,
     ..._candlestickPatterns,
+    ..._pullbackSignals,
     ..._technicalIndicators,
     ..._extendedMarketData,
     ..._priceVolumeDivergence,

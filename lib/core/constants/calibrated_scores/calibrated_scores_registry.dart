@@ -29,9 +29,8 @@ typedef CalibrationAssetLoader = Future<String> Function(String assetPath);
 /// 那邊記憶體與主 isolate 完全隔離，此 singleton 在 scoring isolate 內
 /// 是未初始化狀態（透過 [CalibratedScoreContext] snapshot DTO 傳遞）。
 ///
-/// production 評分實際走 [CalibratedScoreContext] snapshot 路徑；
-/// `ReasonType.scoreFor(Horizon)` extension 目前僅測試使用（潛在
-/// fallback，2026-07-23 稽核確認 production 零呼叫）。
+/// production 評分走 [CalibratedScoreContext] snapshot 路徑
+/// （[snapshotForIsolate] → rule_engine 的 `lookup ?? hardcoded`）。
 ///
 /// ## 生命週期
 ///
@@ -45,7 +44,7 @@ typedef CalibrationAssetLoader = Future<String> Function(String assetPath);
 /// - Registry 未載入時，`lookup` 永遠回 null
 /// - Asset 缺失或 JSON malformed 時，`_loadOne` 會 log error 並
 ///   綁定 `CalibratedScoresTable.empty()`，使後續 `lookup` 仍回 null
-/// - 呼叫端（`ReasonType.scoreFor`）遇到 null 會 fallback 到 hardcoded
+/// - 呼叫端（rule_engine 的 `lookup ?? hardcoded`）遇到 null 會 fallback 到 hardcoded
 ///   `RuleScores`，因此任何失敗路徑都不會讓 app 崩潰或顯示錯誤分數
 class CalibratedScoresRegistry {
   CalibratedScoresRegistry._();

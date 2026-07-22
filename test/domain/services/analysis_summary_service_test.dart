@@ -947,4 +947,44 @@ void main() {
       },
     );
   });
+  group('回檔模式 v2 訊號進摘要（2026-07-23 稽核修復）', () {
+    // Mode C v2（2026-06-19）的 4 條主訊號與空頭十字星當初未同步擴充
+    // 摘要 builders，被 whereType 靜默丟棄——只靠回檔訊號上榜的股票，
+    // AI 摘要完全不提其核心訊號。
+    SummaryData genWith(String code, double score) => service.generate(
+      analysis: createTestAnalysis(trendState: 'UP', score: 20),
+      reasons: [createTestReason(reasonType: code, ruleScore: score)],
+      latestPrice: null,
+      priceChange: 0.5,
+      institutionalHistory: [],
+      revenueHistory: [],
+      latestPER: null,
+      horizon: Horizon.short,
+    );
+
+    test('四條回檔主訊號各自出現在 keySignals', () {
+      const cases = {
+        'PULLBACK_TO_MA20': 'summary.pullbackToMa20',
+        'PULLBACK_TO_MA10': 'summary.pullbackToMa10',
+        'HAMMER_AT_SUPPORT': 'summary.hammerAtSupport',
+        'KD_HIGH_PULLBACK': 'summary.kdHighPullback',
+      };
+      cases.forEach((code, key) {
+        final result = genWith(code, 15);
+        expect(
+          result.keySignals.map((s) => s.key),
+          contains(key),
+          reason: code,
+        );
+      });
+    });
+
+    test('空頭十字星出現在 riskFactors', () {
+      final result = genWith('PATTERN_DOJI_BEARISH', -8);
+      expect(
+        result.riskFactors.map((s) => s.key),
+        contains('summary.patternDojiBearish'),
+      );
+    });
+  });
 }

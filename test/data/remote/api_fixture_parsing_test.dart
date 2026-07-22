@@ -98,14 +98,18 @@ void main() {
 
       final prices = await client.getAllDailyPrices(date: DateTime(2026, 7, 8));
 
-      // fixture 含 5 筆 ETF（006xxx，isTpexCode 過濾掉）+ 10 筆一般個股
-      expect(prices, hasLength(10));
-      final first = prices.first;
-      expect(first.code, '1240');
-      expect(first.name, '茂生農經');
-      expect(first.close, 57.80);
-      expect(first.change, -0.10);
-      expect(first.open, 58.40);
+      // fixture 含 1 筆純數字上櫃 ETF（006201）+ 4 筆字母尾碼債券 ETF
+      // + 10 筆一般個股。2026-07-23 稽核修復：每日 parser 放行純數字上櫃
+      // ETF（stock_master 實測 14 檔全為 00 開頭 5-6 碼純數字、與歷史回補
+      // 宇宙一致）；債券 ETF 不在 stock_master、續濾。
+      expect(prices, hasLength(11));
+      expect(prices.any((p) => p.code == '006201'), isTrue);
+      expect(prices.any((p) => p.code == '00679B'), isFalse);
+      final maosheng = prices.firstWhere((p) => p.code == '1240');
+      expect(maosheng.name, '茂生農經');
+      expect(maosheng.close, 57.80);
+      expect(maosheng.change, -0.10);
+      expect(maosheng.open, 58.40);
     });
   });
 

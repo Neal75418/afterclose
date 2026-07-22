@@ -60,7 +60,7 @@ class CalibratedScoresTable {
   /// **2026-06-19：0 視為 null（fallback 到 hardcoded）**
   ///
   /// 原本 `_scores[ruleId]` 對 score=0 視為「有值」，導致 calibrated 把規則
-  /// cut 到 0 後 `scoreFor()` 的 `calibrated ?? hardcoded` fallback 失效、
+  /// cut 到 0 後呼叫端的 `calibrated ?? hardcoded` fallback 失效、
   /// 把 hardcoded +22 一路覆蓋成 0。實質結果：38 條規則在 daily_reason 寫
   /// score=0，3-tab Mode UI 大部分 stocks 顯示 0/0、aggregator 無法排序。
   ///

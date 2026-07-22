@@ -73,6 +73,7 @@ abstract final class SignalName {
   // Candlestick Patterns
   // ==================================================
   static const patternDoji = 'PATTERN_DOJI';
+  static const patternDojiBearish = 'PATTERN_DOJI_BEARISH';
   static const patternBullishEngulfing = 'PATTERN_BULLISH_ENGULFING';
   static const patternBearishEngulfing = 'PATTERN_BEARISH_ENGULFING';
   static const patternHammer = 'PATTERN_HAMMER';
@@ -142,4 +143,12 @@ abstract final class SignalName {
   static const roeExcellent = 'ROE_EXCELLENT';
   static const roeImproving = 'ROE_IMPROVING';
   static const roeDeclining = 'ROE_DECLINING';
+
+  // ==================================================
+  // Pullback（回檔模式 v2 主訊號，2026-06-19；摘要接線 2026-07-23）
+  // ==================================================
+  static const pullbackToMa20 = 'PULLBACK_TO_MA20';
+  static const pullbackToMa10 = 'PULLBACK_TO_MA10';
+  static const hammerAtSupport = 'HAMMER_AT_SUPPORT';
+  static const kdHighPullback = 'KD_HIGH_PULLBACK';
 }

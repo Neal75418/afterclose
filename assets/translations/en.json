@@ -1177,7 +1177,12 @@
     "confidenceLow": "Limited",
     "signalStrength": "Signal Strength",
     "ruleAccuracy": "Rule Accuracy",
-    "priceVolumeWeakRally": "Weak rally signal: price up with declining volume."
+    "priceVolumeWeakRally": "Weak rally signal: price up with declining volume.",
+    "pullbackToMa20": "Healthy pullback to MA20 ({distance}% away) — pullback entry watch",
+    "pullbackToMa10": "Shallow pullback to MA10 within strong trend",
+    "hammerAtSupport": "Hammer at support — lower shadow shows buying",
+    "kdHighPullback": "KD pulling back from high — momentum cooling",
+    "patternDojiBearish": "Doji at highs — indecision, watch for weakness"
   },
   "comparison": {
     "title": "Stock Comparison",
