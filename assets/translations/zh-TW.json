@@ -1383,7 +1383,10 @@
     "viewStock": "查看個股",
     "eventDetail": "事件詳情",
     "export": "匯出行事曆",
-    "exportEmpty": "本月無事件可匯出"
+    "exportEmpty": "本月無事件可匯出",
+    "formatMonth": "月",
+    "formatTwoWeeks": "兩週",
+    "formatWeek": "週"
   },
   "warning": {
     "disposal": "處置",

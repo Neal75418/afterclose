@@ -15,6 +15,14 @@ abstract final class Breakpoints {
   /// 導航欄收合斷點（低於此寬度使用 BottomNav）
   static const double navigationRailBreakpoint = 600;
 
+  /// 全頁內容欄最大寬度（桌面）。
+  ///
+  /// 手機優先的頁面（行事曆等）直接鋪滿桌面視窗時，格線被拉到極寬、
+  /// 資訊密度崩壞；以 `Center + ConstrainedBox(maxWidth: 此值)` 收斂。
+  /// 1000 介於 M3 expanded pane（840）與雙欄佈局之間：7 欄月曆格
+  /// 每格仍有 ~140dp、清單行寬也不至於一行拉太長。
+  static const double contentMaxWidth = 1000;
+
   /// Modal bottom sheet 最大寬度。
   ///
   /// 寬視窗（桌面）下 modal bottom sheet 預設撐滿全寬、不置中，閱讀體驗差；

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:table_calendar/table_calendar.dart';
+
+import 'package:afterclose/core/theme/breakpoints.dart';
 
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/providers/event_calendar_provider.dart';
@@ -180,6 +183,36 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
 
       expect(find.byIcon(Icons.sync), findsOneWidget);
+    });
+
+    testWidgets('format button uses localized labels instead of package '
+        'English defaults', (tester) async {
+      widenViewport(tester);
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pump(const Duration(seconds: 1));
+
+      // 套件預設 availableCalendarFormats 是英文（'2 weeks' 等）；本 app 需
+      // 傳入 i18n key（測試環境 .tr() 回傳 key 本身）。formatButtonShowsNext
+      // 預設 true → 月檢視下按鈕顯示「下一個」格式（twoWeeks）的 label。
+      expect(find.text('2 weeks'), findsNothing);
+      expect(find.text('calendar.formatTwoWeeks'), findsOneWidget);
+    });
+
+    testWidgets('content width is constrained on wide viewport', (
+      tester,
+    ) async {
+      widenViewport(tester); // 5000x8000 physical / dpr 3 ≈ 1666 邏輯寬
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pump(const Duration(seconds: 1));
+
+      final width = tester
+          .getSize(find.byType(TableCalendar<StockEventEntry>))
+          .width;
+      expect(
+        width,
+        lessThanOrEqualTo(Breakpoints.contentMaxWidth),
+        reason: '桌面寬視窗下月曆應被 contentMaxWidth 收斂，不得撐滿全寬',
+      );
     });
 
     testWidgets('shows error state', (tester) async {

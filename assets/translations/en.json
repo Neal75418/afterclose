@@ -1383,7 +1383,10 @@
     "viewStock": "View Stock",
     "eventDetail": "Event Detail",
     "export": "Export Calendar",
-    "exportEmpty": "No events to export this month"
+    "exportEmpty": "No events to export this month",
+    "formatMonth": "Month",
+    "formatTwoWeeks": "2 weeks",
+    "formatWeek": "Week"
   },
   "warning": {
     "disposal": "Disposal",
