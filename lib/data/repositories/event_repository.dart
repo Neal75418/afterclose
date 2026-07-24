@@ -279,6 +279,11 @@ class EventRepository implements IEventRepository {
   /// 事件日＝「說明」內結構化欄位的**開會日**（非公告日）。t187ap04_L
   /// 是每日檔，公告只出現一次 → **累積式**寫入（先比對既有事件的
   /// (symbol, 日) 去重），不可用 delete-by-type 重建（會抹掉往日累積）。
+  ///
+  /// ⚠️ 若未來新增「財報公布」等第二個 EARNINGS producer：本方法的
+  /// (symbol, 日) 去重會讀到**兩個 producer 的事件互相壓制**（同日的
+  /// 法說會與財報被誤判重複）——屆時需以 title/來源子欄位區分，並考慮
+  /// prune 已過期的 auto EARNINGS（目前無人清理、全史累積）。
   @override
   Future<int> syncInvestorConferenceEvents() async {
     final client = _twseClient;
