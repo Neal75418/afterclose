@@ -188,14 +188,15 @@ extension ReasonTypeScoringMode on ReasonType {
   /// 該 rule 屬於哪個 mode
   ///
   /// **Rule 分類原則**（依使用者「找股目的」而非「rule 類型」）：
-  /// - momentumEntry: 反轉 / 突破 / 底部訊號 — 你想找還沒漲、即將起漲的股票
+  /// - momentumEntry: 反轉 / 突破 / 底部訊號 — 上升趨勢中順勢初升的進場點
+  ///   （60D>0 gate 篩掉底部抄底；非「還沒漲」）
   /// - strengthObserve: 大漲 / 籌碼集中度高 / 法人連買 — 你想追蹤強勢股、等回檔
   /// - weaknessObserve: 警示 / 看空 K 線 / 估值過高 — 你想避開或反向操作
   /// - neutral: 觸發頻繁但無 alpha 的 noise filter rule、value rule 跟 momentum
   ///   無關 — 仍寫進 daily_reason 顯示 evidence chip，但不影響任何 mode 排名
   ScoringMode get scoringMode => switch (this) {
     // ============ Mode A: 起漲候選（15 條 — 含 patternHammer 2026-06-20 回歸）============
-    // 反轉 / 突破 / 底部 / 逆勢買進訊號 — user mental model「找還沒漲、即將起漲」。
+    // 反轉 / 突破 / 底部 / 逆勢買進訊號 — user mental model「趨勢中順勢初升進場」。
     ReasonType.reversalW2S => ScoringMode.momentumEntry,
     ReasonType.techBreakout => ScoringMode.momentumEntry,
     ReasonType.patternBullishEngulfing => ScoringMode.momentumEntry,
