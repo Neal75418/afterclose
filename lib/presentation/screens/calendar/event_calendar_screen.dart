@@ -411,7 +411,7 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
           calendarStyle: const CalendarStyle(outsideDaysVisible: false),
         ),
         const Divider(height: 1),
-        _buildEventTypeFilterChips(state),
+        _buildEventTypeFilterChips(state, fabClearance: !isWide),
       ],
     );
   }
@@ -529,12 +529,22 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
         );
   }
 
-  Widget _buildEventTypeFilterChips(EventCalendarState state) {
+  /// [fabClearance] 窄版短視窗下 FAB 會壓住列尾最後一顆 chip，留 88dp
+  /// 尾距讓它能捲出來；寬版 chips 在左欄、離 FAB 遠，不加（避免置中偏移）
+  Widget _buildEventTypeFilterChips(
+    EventCalendarState state, {
+    bool fabClearance = false,
+  }) {
     final theme = Theme.of(context);
     final brightness = theme.brightness;
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: EdgeInsets.only(
+        left: 12,
+        top: 6,
+        bottom: 6,
+        right: fabClearance ? 88 : 12,
+      ),
       child: Row(
         children: EventType.values.map((type) {
           final selected = state.selectedEventTypes.contains(type);

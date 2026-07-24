@@ -572,6 +572,32 @@ void main() {
       expect(find.byIcon(Icons.event_busy), findsOneWidget);
     });
 
+    testWidgets('narrow chips row keeps FAB clearance at scroll end', (
+      tester,
+    ) async {
+      // 短視窗下 FAB 會壓住 chips 列最後一顆（自訂備忘）；窄版需
+      // 尾距讓它能捲出 FAB，寬版（chips 在左欄）不需要
+      tester.view.physicalSize = const Size(1680, 2400); // 邏輯 560 → 單欄
+      addTearDown(() => tester.view.resetPhysicalSize());
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pump(const Duration(seconds: 1));
+
+      final scroll = tester.widget<SingleChildScrollView>(
+        find
+            .ancestor(
+              of: find.byType(FilterChip).first,
+              matching: find.byType(SingleChildScrollView),
+            )
+            .first,
+      );
+      final padding = scroll.padding?.resolve(TextDirection.ltr);
+      expect(
+        padding?.right ?? 0,
+        greaterThanOrEqualTo(88),
+        reason: '窄版 chips 列尾端需留 FAB 迴避空間',
+      );
+    });
+
     testWidgets('shows error state', (tester) async {
       widenViewport(tester);
       await tester.pumpWidget(
