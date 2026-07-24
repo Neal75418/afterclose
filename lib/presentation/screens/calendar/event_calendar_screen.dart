@@ -230,12 +230,17 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
   /// placeholder 態（載入／空／錯誤）改 Column＋Expanded 給彈性高度，
   /// EmptyStates 的按鈕在固定小盒裡會垂直 overflow。
   Widget _buildRightPane(ThemeData theme, EventCalendarState state) {
+    // 空清單不得讓右欄整片虛空（區塊含標題會整個消失，看起來像壞掉）：
+    // 保留標題＋空狀態說明＋「查看全市場」捷徑
+    final upcomingBlock = state.visibleUpcomingEvents.isEmpty
+        ? _buildUpcomingEmptyHint(theme, state)
+        : _buildUpcoming(state, direction: Axis.vertical);
     final placeholder = _buildDayEventsPlaceholder(theme, state);
     if (placeholder != null) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildUpcoming(state, direction: Axis.vertical),
+          upcomingBlock,
           const Divider(height: 17),
           Expanded(child: placeholder),
         ],
@@ -245,7 +250,7 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
       // 底部留 FAB 迴避空間
       padding: const EdgeInsets.only(bottom: 88),
       children: [
-        _buildUpcoming(state, direction: Axis.vertical),
+        upcomingBlock,
         const Divider(height: 17),
         for (final event in state.selectedDayEvents)
           EventListTile(
@@ -260,6 +265,40 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
             onDelete: () => _confirmDelete(event),
           ),
       ],
+    );
+  }
+
+  /// 右欄「未來14天」的空狀態：標題照留、說明原因、給切全市場捷徑
+  Widget _buildUpcomingEmptyHint(ThemeData theme, EventCalendarState state) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'calendar.upcomingTitle'.tr(),
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'calendar.noUpcomingWatchlistEvents'.tr(),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.outline,
+            ),
+          ),
+          if (state.filter != CalendarFilter.all) ...[
+            const SizedBox(height: 8),
+            OutlinedButton(
+              onPressed: () => ref
+                  .read(eventCalendarProvider.notifier)
+                  .setFilter(CalendarFilter.all),
+              child: Text('calendar.showAllEvents'.tr()),
+            ),
+          ],
+        ],
+      ),
     );
   }
 

@@ -1390,7 +1390,9 @@
     "backToToday": "回今日",
     "monthStats": "本月事件",
     "typeDisposalEnd": "處置出關",
-    "typeShortSuspension": "停券預告"
+    "typeShortSuspension": "停券預告",
+    "noUpcomingWatchlistEvents": "未來 14 天內無符合目前篩選的事件（可按同步更新，或切換篩選）",
+    "showAllEvents": "查看全市場"
   },
   "warning": {
     "disposal": "處置",

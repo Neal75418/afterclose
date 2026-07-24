@@ -20,6 +20,7 @@ FakeEventCalendarNotifier? lastFakeNotifier;
 class FakeEventCalendarNotifier extends EventCalendarNotifier {
   EventCalendarState initialState = EventCalendarState();
   final toggled = <EventType>[];
+  final filters = <CalendarFilter>[];
 
   @override
   EventCalendarState build() => initialState;
@@ -34,7 +35,9 @@ class FakeEventCalendarNotifier extends EventCalendarNotifier {
   void selectDate(DateTime date) {}
 
   @override
-  Future<void> setFilter(CalendarFilter filter) async {}
+  Future<void> setFilter(CalendarFilter filter) async {
+    filters.add(filter);
+  }
 
   @override
   Future<void> addEvent({
@@ -522,6 +525,29 @@ void main() {
         padding?.bottom ?? 0,
         greaterThanOrEqualTo(80),
         reason: '清單底部需留 FAB 迴避空間',
+      );
+    });
+
+    testWidgets('wide right pane keeps structure when upcoming empty '
+        '(hint + show-all action)', (tester) async {
+      widenViewport(tester);
+      await tester.pumpWidget(
+        buildTestWidget(calendarState: EventCalendarState()),
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      // 空清單不得讓右欄整片虛空：保留標題＋空狀態說明＋切全市場捷徑
+      expect(find.text('calendar.upcomingTitle'), findsOneWidget);
+      expect(find.text('calendar.noUpcomingWatchlistEvents'), findsOneWidget);
+      final showAll = find.text('calendar.showAllEvents');
+      expect(showAll, findsOneWidget);
+
+      await tester.tap(showAll);
+      await tester.pump();
+      expect(
+        lastFakeNotifier!.filters,
+        contains(CalendarFilter.all),
+        reason: '捷徑應切換篩選為全部',
       );
     });
 
