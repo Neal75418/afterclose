@@ -135,47 +135,42 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
   }
 
   /// 雙欄（桌面）：左欄月曆＋篩選（flex 3、surface 卡定錨）、右欄
-  /// 未來14天＋當日清單（flex 2、單一捲動——避免內層固定高把卡片腰斬）
+  /// 未來14天＋當日清單（flex 2、單一捲動——避免內層固定高把卡片腰斬）。
+  ///
+  /// **自適應吃滿視窗**（僅留 16dp 外框）——置中限寬會在超寬視窗留大幅
+  /// 死空白（2026-07-24 使用者回饋）。
   Widget _buildWideBody(ThemeData theme, EventCalendarState state) {
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(
-          maxWidth: Breakpoints.contentMaxWidthWide,
-        ),
-        child: Column(
-          children: [
-            if (state.error != null && state.events.isNotEmpty)
-              _buildErrorBanner(state),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(
-                      flex: 3,
-                      child: SingleChildScrollView(
-                        // surface 卡片包月曆：裸月曆浮在黑底上沒有定錨、
-                        // 兩側留白讀起來像破版（2026-07-24 使用者回饋）
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.surfaceContainerLow,
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          child: _buildCalendarSection(theme, state),
-                        ),
+    return Column(
+      children: [
+        if (state.error != null && state.events.isNotEmpty)
+          _buildErrorBanner(state),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: SingleChildScrollView(
+                    // surface 卡片包月曆：裸月曆浮在黑底上沒有定錨
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surfaceContainerLow,
+                        borderRadius: BorderRadius.circular(16),
                       ),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: _buildCalendarSection(theme, state),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(flex: 2, child: _buildRightPane(theme, state)),
-                  ],
+                  ),
                 ),
-              ),
+                const SizedBox(width: 16),
+                Expanded(flex: 2, child: _buildRightPane(theme, state)),
+              ],
             ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 

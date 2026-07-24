@@ -63,7 +63,9 @@ enum EventType {
       case EventType.earnings:
         return Colors.green;
       case EventType.shareholderMeeting:
-        return Colors.purple;
+        // 紫→teal（2026-07-24 使用者回饋：粉紫不喜歡；teal 與品牌藍同
+        // 冷色溫層、與紅/橘/綠/藍四類皆可區分）
+        return Colors.teal;
       case EventType.custom:
         return Colors.blue;
     }
@@ -87,8 +89,8 @@ enum EventType {
         // 深色：綠家族淺綠（同 PriceColors.chipBearish 值，6.86:1）；淺色同上
         return isLight ? Colors.green : const Color(0xFF7DD8A0);
       case EventType.shareholderMeeting:
-        // 淺色 Colors.purple 本色即合格（4.72:1），深色需亮紫
-        return isLight ? Colors.purple : const Color(0xFFCE93D8);
+        // 淺色 teal 本色 3.1:1 不合格需壓深（teal800 5.5:1）；深色 teal200
+        return isLight ? const Color(0xFF00695C) : const Color(0xFF80CBC4);
       case EventType.custom:
         return isLight ? const Color(0xFF1565C0) : const Color(0xFF90CAF9);
     }

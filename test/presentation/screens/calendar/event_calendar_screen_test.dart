@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:table_calendar/table_calendar.dart';
 
-import 'package:afterclose/core/theme/breakpoints.dart';
-
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/providers/event_calendar_provider.dart';
 import 'package:afterclose/presentation/screens/calendar/event_calendar_screen.dart';
@@ -198,20 +196,22 @@ void main() {
       expect(find.text('calendar.formatTwoWeeks'), findsOneWidget);
     });
 
-    testWidgets('content width is constrained on wide viewport', (
+    testWidgets('wide viewport: two panes fill window width adaptively', (
       tester,
     ) async {
       widenViewport(tester); // 5000x8000 physical / dpr 3 ≈ 1666 邏輯寬
       await tester.pumpWidget(buildTestWidget());
       await tester.pump(const Duration(seconds: 1));
 
-      final width = tester
-          .getSize(find.byType(TableCalendar<StockEventEntry>))
-          .width;
+      // 自適應：雙欄吃滿視窗（僅留 16dp 外框），不得置中留大幅死空白
+      // （2026-07-24 使用者回饋：左右兩側空白很大）
+      final calendarLeft = tester
+          .getTopLeft(find.byType(TableCalendar<StockEventEntry>))
+          .dx;
       expect(
-        width,
-        lessThanOrEqualTo(Breakpoints.contentMaxWidth),
-        reason: '桌面寬視窗下月曆應被 contentMaxWidth 收斂，不得撐滿全寬',
+        calendarLeft,
+        lessThan(100),
+        reason: '左欄應貼近視窗左緣（外框 padding 內），非置中留白',
       );
     });
 
