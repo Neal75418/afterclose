@@ -184,9 +184,10 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
                       // 消掉下方大片留白；矮視窗回落 68 並由外層捲動。
                       // 以當月實際週數（4~6）反推，5 週月份才填得滿。
                       final rows = calendarWeekRows(_focusedDay);
+                      // 上限 176：128 在 2560 級大視窗會剩 ~400dp 黑底
                       final rowHeight = cons.maxHeight.isFinite
                           ? ((cons.maxHeight - _wideLeftFixedHeight) / rows)
-                                .clamp(68.0, 128.0)
+                                .clamp(68.0, 176.0)
                           : 68.0;
                       return SingleChildScrollView(
                         // surface 卡片包月曆：裸月曆浮在黑底上沒有定錨
@@ -241,7 +242,8 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
       );
     }
     return ListView(
-      padding: const EdgeInsets.only(bottom: 8),
+      // 底部留 FAB 迴避空間
+      padding: const EdgeInsets.only(bottom: 88),
       children: [
         _buildUpcoming(state, direction: Axis.vertical),
         const Divider(height: 17),
@@ -463,7 +465,8 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
   Widget _buildDayEventsBody(ThemeData theme, EventCalendarState state) {
     return _buildDayEventsPlaceholder(theme, state) ??
         ListView.builder(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          // 底部留 FAB 迴避空間，最後一張卡不被 + 鈕壓住
+          padding: const EdgeInsets.only(top: 8, bottom: 88),
           itemCount: state.selectedDayEvents.length,
           itemBuilder: (context, index) {
             final event = state.selectedDayEvents[index];

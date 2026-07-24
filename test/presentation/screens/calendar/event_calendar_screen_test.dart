@@ -326,8 +326,9 @@ void main() {
       final wide = tester.widget<TableCalendar<StockEventEntry>>(
         find.byType(TableCalendar<StockEventEntry>),
       );
-      // 高視窗（邏輯 2666 高）以當月實際週數動態撐滿 → 觸頂 128
-      expect(wide.rowHeight, 128, reason: '高視窗月曆格高應動態撐滿至上限');
+      // 高視窗（邏輯 2666 高）以當月實際週數動態撐滿 → 觸頂 176
+      // （128 在 2560 級大視窗會剩 ~400dp 黑底，2026-07-24 使用者回饋）
+      expect(wide.rowHeight, 176, reason: '高視窗月曆格高應動態撐滿至上限');
 
       tester.view.physicalSize = const Size(1680, 2400); // 邏輯 560 → 單欄
       await tester.pumpWidget(buildTestWidget());
@@ -499,6 +500,29 @@ void main() {
       expect(calendarWeekRows(DateTime(2026, 7)), 5); // 7/1 週三
       expect(calendarWeekRows(DateTime(2026, 8)), 6); // 8/1 週六
       expect(calendarWeekRows(DateTime(2027, 2)), 4); // 2/1 週一、28 天
+    });
+
+    testWidgets('day list keeps bottom clearance for FAB', (tester) async {
+      // 窄版 FAB 蓋住當日清單最後一張卡右下角（2026-07-24 使用者回饋）
+      tester.view.physicalSize = const Size(1680, 2400);
+      addTearDown(() => tester.view.resetPhysicalSize());
+      await tester.pumpWidget(
+        buildTestWidget(
+          calendarState: EventCalendarState(
+            selectedDate: DateTime(2026, 2, 20),
+            selectedDayEvents: [createEvent(id: 1, symbol: '2330')],
+          ),
+        ),
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      final list = tester.widget<ListView>(find.byType(ListView).last);
+      final padding = list.padding?.resolve(TextDirection.ltr);
+      expect(
+        padding?.bottom ?? 0,
+        greaterThanOrEqualTo(80),
+        reason: '清單底部需留 FAB 迴避空間',
+      );
     });
 
     testWidgets('shows error state', (tester) async {
