@@ -9,7 +9,10 @@ abstract final class NewsHeatParams {
   /// （避免字典演化造成的假爆量）。
   /// v2（2026-07-24）：補「塑化」——台塑化 +69% 當月最大主軸完全不在
   /// 字典內的實證 miss；人工字典會腐爛，長期解法是 app 內自訂題材編輯
-  static const int dictionaryVersion = 2;
+  /// v3（2026-07-25）：ThemeMatcher 加 ASCII-字母相鄰守衛，修 AI/EV
+  /// 英文子字串誤配（Taiwan→AI、7-Eleven→電動車；語料實測 ev 誤配率
+  /// 60%、ai 7%）——matching 行為變、bump 觸發快照重算
+  static const int dictionaryVersion = 3;
 
   /// 熱度近窗（天）
   static const int recentWindowDays = 7;
