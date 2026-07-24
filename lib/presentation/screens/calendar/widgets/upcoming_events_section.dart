@@ -151,7 +151,7 @@ class _UpcomingEventCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: DesignTokens.spacing6),
-              if (fullWidth)
+              if (fullWidth) ...[
                 Text(
                   event.title,
                   style: theme.textTheme.bodySmall?.copyWith(
@@ -159,8 +159,20 @@ class _UpcomingEventCard extends StatelessWidget {
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                )
-              else
+                ),
+                // 寬版卡片有餘裕：補描述行（事由／股利金額），免點進去
+                if (event.description?.isNotEmpty ?? false) ...[
+                  const SizedBox(height: DesignTokens.spacing4),
+                  Text(
+                    event.description!,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.outline,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ] else
                 Expanded(
                   child: Text(
                     event.title,

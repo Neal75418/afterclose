@@ -1386,7 +1386,9 @@
     "exportEmpty": "本月無事件可匯出",
     "formatMonth": "月",
     "formatTwoWeeks": "兩週",
-    "formatWeek": "週"
+    "formatWeek": "週",
+    "backToToday": "回今日",
+    "monthStats": "本月事件"
   },
   "warning": {
     "disposal": "處置",

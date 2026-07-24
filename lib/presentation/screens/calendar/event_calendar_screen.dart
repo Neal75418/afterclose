@@ -27,6 +27,11 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
   late DateTime _focusedDay;
   DateTime? _selectedDay;
 
+  /// 程式化跳月（回今日／date picker）的目標月；非 null 時，不合目標月的
+  /// onPageChanged 視為前一個翻頁動畫的**延遲殘響**、忽略——否則殘響會在
+  /// setState 之後抵達、把剛設好的 focusedDay 踩回舊月（實測 race）。
+  DateTime? _pendingFocusTarget;
+
   @override
   void initState() {
     super.initState();
@@ -45,6 +50,12 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
       appBar: AppBar(
         title: Text('calendar.title'.tr()),
         actions: [
+          // 回今日
+          IconButton(
+            icon: const Icon(Icons.today),
+            tooltip: 'calendar.backToToday'.tr(),
+            onPressed: _jumpToToday,
+          ),
           // 篩選
           PopupMenuButton<CalendarFilter>(
             icon: const Icon(Icons.filter_list),
@@ -124,7 +135,7 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
         child: Column(
           children: [
             _buildUpcoming(state, direction: Axis.horizontal),
-            _buildCalendarSection(theme, state),
+            _buildCalendarSection(theme, state, isWide: false),
             if (state.error != null && state.events.isNotEmpty)
               _buildErrorBanner(state),
             Expanded(child: _buildDayEventsBody(theme, state)),
@@ -154,13 +165,23 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
                   flex: 3,
                   child: SingleChildScrollView(
                     // surface 卡片包月曆：裸月曆浮在黑底上沒有定錨
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.surfaceContainerLow,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: _buildCalendarSection(theme, state),
+                    child: Column(
+                      children: [
+                        Container(
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surfaceContainerLow,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: _buildCalendarSection(
+                            theme,
+                            state,
+                            isWide: true,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildMonthStats(theme, state),
+                      ],
                     ),
                   ),
                 ),
@@ -232,7 +253,14 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
   }
 
   /// 月曆＋分隔線＋類型篩選 chips（單欄／雙欄共用）
-  Widget _buildCalendarSection(ThemeData theme, EventCalendarState state) {
+  ///
+  /// [isWide] 桌面雙欄時格高加高（52→68）、dot 放大——165dp 寬的格子配
+  /// 手機格高會扁成表格列。
+  Widget _buildCalendarSection(
+    ThemeData theme,
+    EventCalendarState state, {
+    required bool isWide,
+  }) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -242,6 +270,9 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
           focusedDay: _focusedDay,
           selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
           calendarFormat: state.calendarFormat,
+          rowHeight: isWide ? 68 : 52,
+          daysOfWeekHeight: isWide ? 24 : 16,
+          onHeaderTapped: (_) => _pickMonth(),
           // 取代套件英文預設（'Month'/'2 weeks'/'Week'）；按鈕顯示的是
           // 「下一個」格式的 label（formatButtonShowsNext 預設 true）。
           availableCalendarFormats: {
@@ -265,7 +296,17 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
             ref.read(eventCalendarProvider.notifier).setCalendarFormat(format);
           },
           onPageChanged: (focusedDay) {
-            _focusedDay = focusedDay;
+            final target = _pendingFocusTarget;
+            if (target != null) {
+              final arrived =
+                  focusedDay.year == target.year &&
+                  focusedDay.month == target.month;
+              if (!arrived) return; // 前一個翻頁動畫的延遲殘響，忽略
+              _pendingFocusTarget = null;
+            }
+            // 必須 setState：裸賦值會讓 widget 的 focusedDay 參數停在舊值，
+            // 程式化跳月與套件內部 page 狀態會不一致（2026-07-24 實測）
+            setState(() => _focusedDay = focusedDay);
             ref
                 .read(eventCalendarProvider.notifier)
                 .loadMonthEvents(DateTime(focusedDay.year, focusedDay.month));
@@ -273,7 +314,7 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
           calendarBuilders: CalendarBuilders(
             markerBuilder: (context, date, events) {
               if (events.isEmpty) return null;
-              return _buildEventMarkers(context, events);
+              return _buildEventMarkers(context, events, isWide: isWide);
             },
           ),
           headerStyle: HeaderStyle(
@@ -453,9 +494,11 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
 
   Widget _buildEventMarkers(
     BuildContext context,
-    List<StockEventEntry> events,
-  ) {
+    List<StockEventEntry> events, {
+    bool isWide = false,
+  }) {
     final brightness = Theme.of(context).brightness;
+    final dotSize = isWide ? 8.0 : 6.0;
     // 取不重複的事件類型，按 enum 順序排列（最多顯示 3 個 dot）
     final types =
         events.map((e) => EventType.fromValue(e.eventType)).toSet().toList()
@@ -468,8 +511,8 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
         mainAxisSize: MainAxisSize.min,
         children: displayTypes.map((type) {
           return Container(
-            width: 6,
-            height: 6,
+            width: dotSize,
+            height: dotSize,
             margin: const EdgeInsets.symmetric(horizontal: 1),
             decoration: BoxDecoration(
               color: type.colorFor(brightness),
@@ -477,6 +520,120 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
             ),
           );
         }).toList(),
+      ),
+    );
+  }
+
+  /// 跳回今天（focus＋選取＋載入當月）
+  void _jumpToToday() {
+    final today = DateTime.now();
+    _pendingFocusTarget = today;
+    setState(() {
+      _selectedDay = today;
+      _focusedDay = today;
+    });
+    ref.read(eventCalendarProvider.notifier).selectDate(today);
+    ref
+        .read(eventCalendarProvider.notifier)
+        .loadMonthEvents(DateTime(today.year, today.month));
+  }
+
+  /// 點月曆標題開 date picker 跳月
+  Future<void> _pickMonth() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _focusedDay,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+    if (picked == null || !mounted) return;
+    _pendingFocusTarget = picked;
+    setState(() {
+      _selectedDay = picked;
+      _focusedDay = picked;
+    });
+    ref.read(eventCalendarProvider.notifier).selectDate(picked);
+    ref
+        .read(eventCalendarProvider.notifier)
+        .loadMonthEvents(DateTime(picked.year, picked.month));
+  }
+
+  /// 本月事件統計卡（桌面左欄）——各類型 count、點列切換該類型篩選。
+  /// 統計基於當月**全部**事件（state.events 未過濾），與 chips 篩選狀態
+  /// 無關；被篩掉的類型以降透明度提示。
+  Widget _buildMonthStats(ThemeData theme, EventCalendarState state) {
+    final counts = <EventType, int>{};
+    for (final entry in state.events.entries) {
+      if (entry.key.year != _focusedDay.year ||
+          entry.key.month != _focusedDay.month) {
+        continue;
+      }
+      for (final e in entry.value) {
+        final t = EventType.fromValue(e.eventType);
+        counts[t] = (counts[t] ?? 0) + 1;
+      }
+    }
+    final brightness = theme.brightness;
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'calendar.monthStats'.tr(),
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          for (final type in EventType.values)
+            InkWell(
+              key: ValueKey('monthStat_${type.name}'),
+              borderRadius: BorderRadius.circular(8),
+              onTap: () => ref
+                  .read(eventCalendarProvider.notifier)
+                  .toggleEventType(type),
+              child: Opacity(
+                opacity: state.selectedEventTypes.contains(type) ? 1 : 0.4,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 6,
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: type.colorFor(brightness),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          type.i18nKey.tr(),
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ),
+                      Text(
+                        '${counts[type] ?? 0}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

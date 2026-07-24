@@ -1386,7 +1386,9 @@
     "exportEmpty": "No events to export this month",
     "formatMonth": "Month",
     "formatTwoWeeks": "2 weeks",
-    "formatWeek": "Week"
+    "formatWeek": "Week",
+    "backToToday": "Today",
+    "monthStats": "This month"
   },
   "warning": {
     "disposal": "Disposal",
