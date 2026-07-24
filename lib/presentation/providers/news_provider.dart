@@ -14,6 +14,7 @@ import 'package:afterclose/presentation/providers/providers.dart';
 /// 可用的新聞來源篩選選項
 enum NewsSource {
   all,
+  announcement,
   yahoo,
   cnyes,
   cna,
@@ -27,6 +28,7 @@ enum NewsSource {
   bool matches(String sourceName) {
     return switch (this) {
       NewsSource.all => true,
+      NewsSource.announcement => sourceName == '重大訊息',
       NewsSource.yahoo => sourceName == 'Yahoo財經',
       NewsSource.cnyes => sourceName == '鉅亨網',
       NewsSource.cna => sourceName == '中央社',

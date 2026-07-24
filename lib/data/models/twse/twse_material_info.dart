@@ -65,23 +65,9 @@ class TwseMaterialInfo {
   bool get isInvestorConference =>
       subject.contains('法人說明會') || description.contains('召開法人說明會');
 
-  static final _confDatePattern = RegExp(
-    r'召開法人說明會之日期[：:]\s*(\d{2,3})/(\d{1,2})/(\d{1,2})',
-  );
-
   /// 法說會**開會日**（自「說明」結構化欄位抽取；抽不到回 null）
-  DateTime? get conferenceDate {
-    final m = _confDatePattern.firstMatch(description);
-    if (m == null) return null;
-    final y = int.tryParse(m.group(1)!);
-    final mo = int.tryParse(m.group(2)!);
-    final d = int.tryParse(m.group(3)!);
-    if (y == null || mo == null || d == null) return null;
-    if (mo < 1 || mo > 12 || d < 1 || d > 31) return null;
-    final dt = DateTime(y + 1911, mo, d);
-    if (dt.month != mo || dt.day != d) return null;
-    return dt;
-  }
+  DateTime? get conferenceDate =>
+      investorConferenceDate('$subject\n$description');
 
   static DateTime? _rocToDate(String roc) {
     if (roc.length < 6 || roc.length > 7) return null;
@@ -94,4 +80,27 @@ class TwseMaterialInfo {
     if (dt.month != month || dt.day != day) return null;
     return dt;
   }
+}
+
+final _confDatePattern = RegExp(
+  r'召開法人說明會之日期[：:]\s*(\d{2,3})/(\d{1,2})/(\d{1,2})',
+);
+
+/// 從公告文字（主旨＋說明合併）判定法說會並抽開會日；非法說會或抽不到回 null。
+///
+/// **供「已存新聞」重用**——重大訊息 API 是單日檔（只含前一營業日公告），
+/// 過窗即失；行事曆法說會事件改由 news_item（source=重大訊息，永久累積）
+/// 解析，故需一個吃純文字的標準函式（2026-07-24 修：原靠重打 API=1 天窗）。
+DateTime? investorConferenceDate(String text) {
+  if (!text.contains('法人說明會')) return null;
+  final m = _confDatePattern.firstMatch(text);
+  if (m == null) return null;
+  final y = int.tryParse(m.group(1)!);
+  final mo = int.tryParse(m.group(2)!);
+  final d = int.tryParse(m.group(3)!);
+  if (y == null || mo == null || d == null) return null;
+  if (mo < 1 || mo > 12 || d < 1 || d > 31) return null;
+  final dt = DateTime(y + 1911, mo, d);
+  if (dt.month != mo || dt.day != d) return null;
+  return dt;
 }

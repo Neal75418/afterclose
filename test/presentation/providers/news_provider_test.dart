@@ -74,6 +74,12 @@ void main() {
       expect(NewsSource.all.matches('anything'), isTrue);
     });
 
+    test('announcement matches only 重大訊息', () {
+      expect(NewsSource.announcement.matches('重大訊息'), isTrue);
+      expect(NewsSource.announcement.matches('Yahoo財經'), isFalse);
+      expect(NewsSource.announcement.matches('鉅亨網'), isFalse);
+    });
+
     test('yahoo matches only Yahoo財經', () {
       expect(NewsSource.yahoo.matches('Yahoo財經'), isTrue);
       expect(NewsSource.yahoo.matches('鉅亨網'), isFalse);

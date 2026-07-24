@@ -3,6 +3,21 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:afterclose/data/models/twse/twse_material_info.dart';
 
 void main() {
+  group('investorConferenceDate 標準函式（供已存新聞重用）', () {
+    test('含法說會標記＋斜線日期→開會日', () {
+      expect(
+        investorConferenceDate('受邀參加法人說明會\n召開法人說明會之日期：115/07/24'),
+        DateTime(2026, 7, 24),
+      );
+    });
+    test('非法說會→null', () {
+      expect(investorConferenceDate('公告更名 115/07/24'), isNull);
+    });
+    test('法說會但無日期→null', () {
+      expect(investorConferenceDate('受邀參加法人說明會'), isNull);
+    });
+  });
+
   group('TwseMaterialInfo.fromJson', () {
     test('解析中文鍵（含「主旨 」尾空格陷阱）並清理換行', () {
       final info = TwseMaterialInfo.fromJson({

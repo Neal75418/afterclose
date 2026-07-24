@@ -702,7 +702,8 @@
     "networkError": "網路連線失敗",
     "networkErrorHint": "請檢查網路連線後再試",
     "sourceUdn": "經濟日報",
-    "sourceLtn": "自由財經"
+    "sourceLtn": "自由財經",
+    "sourceAnnouncement": "公告"
   },
   "accessibility": {
     "stock": "股票 {symbol}",

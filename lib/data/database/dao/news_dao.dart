@@ -30,6 +30,27 @@ mixin NewsDaoMixin on $AppDatabase {
     return grouped;
   }
 
+  /// 讀取所有已存的重大訊息公告（source=重大訊息）＋其關聯股票。
+  ///
+  /// 回傳 (symbol, text)：text＝標題＋內文合併，供 investorConferenceDate
+  /// 等純文字解析。公告永久累積（不像 API 單日檔），故法說會等衍生事件
+  /// 應以此為來源、不重打 API。
+  Future<List<({String symbol, String text})>>
+  getMaterialAnnouncements() async {
+    final rows = await (select(newsItem).join([
+      innerJoin(newsStockMap, newsStockMap.newsId.equalsExp(newsItem.id)),
+    ])..where(newsItem.source.equals('重大訊息'))).get();
+    return [
+      for (final r in rows)
+        (
+          symbol: r.readTable(newsStockMap).symbol,
+          text:
+              '${r.readTable(newsItem).title}\n'
+              '${r.readTable(newsItem).content ?? ''}',
+        ),
+    ];
+  }
+
   /// 批次寫入新聞與股票關聯（單一交易、insertOrIgnore 去重）
   ///
   /// 供重大訊息等非 RSS 來源共用；id 穩定即天然冪等。
