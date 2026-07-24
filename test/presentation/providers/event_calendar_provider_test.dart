@@ -71,6 +71,16 @@ void main() {
     mockEventRepo = MockEventRepository();
     fakeClock = _FakeClock(DateTime(2026, 2, 15, 10, 30));
 
+    // 預設 filter 已改 watchlistOnly：loadMonthEvents 一律會先讀
+    // watchlist 解析 filterSymbols；同步流程也會重建處置出關事件。
+    when(() => mockDb.getWatchlist()).thenAnswer((_) async => []);
+    when(
+      () => mockEventRepo.syncDisposalEndEvents(),
+    ).thenAnswer((_) async => 0);
+    when(
+      () => mockEventRepo.syncShortSuspensionEvents(),
+    ).thenAnswer((_) async => 0);
+
     container = ProviderContainer(
       overrides: [
         databaseProvider.overrideWithValue(mockDb),
@@ -119,6 +129,17 @@ void main() {
   // EventCalendarState
   // ==========================================
 
+  group('EventType.disposalEnd', () {
+    test('fromValue 對應 DISPOSAL_END', () {
+      expect(EventType.fromValue('DISPOSAL_END'), EventType.disposalEnd);
+      expect(EventType.disposalEnd.value, 'DISPOSAL_END');
+      expect(
+        EventType.fromValue('SHORT_SUSPENSION'),
+        EventType.shortSuspension,
+      );
+    });
+  });
+
   group('EventCalendarState', () {
     test('has correct default values', () {
       final state = EventCalendarState();
@@ -127,7 +148,7 @@ void main() {
       expect(state.selectedDate, isNull);
       expect(state.events, isEmpty);
       expect(state.selectedDayEvents, isEmpty);
-      expect(state.filter, CalendarFilter.all);
+      expect(state.filter, CalendarFilter.watchlistOnly);
       expect(state.isLoading, isFalse);
       expect(state.error, isNull);
     });
@@ -260,13 +281,15 @@ void main() {
       final notifier = container.read(eventCalendarProvider.notifier);
       await notifier.init();
 
-      when(() => mockDb.getWatchlist()).thenAnswer((_) async => []);
+      // 預設已是 watchlistOnly（init 就會讀 watchlist），改切 portfolioOnly
+      // 驗證換 filter 會以新範圍重載
+      when(() => mockDb.getPortfolioPositions()).thenAnswer((_) async => []);
 
-      await notifier.setFilter(CalendarFilter.watchlistOnly);
+      await notifier.setFilter(CalendarFilter.portfolioOnly);
 
       final state = container.read(eventCalendarProvider);
-      expect(state.filter, CalendarFilter.watchlistOnly);
-      verify(() => mockDb.getWatchlist()).called(1);
+      expect(state.filter, CalendarFilter.portfolioOnly);
+      verify(() => mockDb.getPortfolioPositions()).called(1);
     });
 
     test('addEvent calls repository and reloads', () async {
@@ -343,6 +366,27 @@ void main() {
       expect(result.exDividend, 3);
       expect(result.exRights, 2);
       verify(() => mockEventRepo.syncDividendEvents()).called(1);
+      verify(() => mockEventRepo.syncDisposalEndEvents()).called(1);
+      verify(() => mockEventRepo.syncShortSuspensionEvents()).called(1);
+    });
+
+    test('disposal 出關同步失敗不吞除權息結果（fail-soft）', () async {
+      when(
+        () => mockEventRepo.syncDividendEvents(),
+      ).thenAnswer((_) async => (exDividend: 2, exRights: 1, total: 3));
+      when(
+        () => mockEventRepo.syncDisposalEndEvents(),
+      ).thenThrow(Exception('db boom'));
+
+      final notifier = container.read(eventCalendarProvider.notifier);
+      final result = await notifier.syncDividendEvents();
+
+      expect(result.total, 3, reason: '出關同步炸掉不得影響除權息結果');
+      expect(
+        container.read(eventCalendarProvider).isSyncing,
+        isFalse,
+        reason: 'isSyncing 必須復位',
+      );
     });
   });
 
@@ -356,7 +400,7 @@ void main() {
       expect(state.events, isEmpty);
       expect(state.isLoading, isFalse);
       expect(state.error, isNull);
-      expect(state.filter, CalendarFilter.all);
+      expect(state.filter, CalendarFilter.watchlistOnly);
     });
   });
 
@@ -375,20 +419,26 @@ void main() {
 
       // 用 Completer 控制 2 月載入的完成時機
       final febCompleter = Completer<List<StockEventEntry>>();
-      var callCount = 0;
+      // 依請求月份分流（不能用 callCount：watchlistOnly 預設下
+      // loadMonthEvents 先 await getWatchlist，落後的 2 月請求會被
+      // generation 檢查提前棄單、根本不會打 getEventsInRange）
       when(
         () => mockEventRepo.getEventsInRange(
           any(),
           any(),
           symbols: any(named: 'symbols'),
         ),
-      ).thenAnswer((_) {
-        callCount++;
-        if (callCount == 1) return febCompleter.future; // 2 月：延遲
+      ).thenAnswer((inv) {
+        final start = inv.positionalArguments[0] as DateTime;
+        if (start.month == 2) return febCompleter.future; // 2 月：延遲
         return Future.value(marEvents); // 3 月：立即完成
       });
 
       final notifier = container.read(eventCalendarProvider.notifier);
+      // 切到 all：watchlistOnly 會先 await getWatchlist，落後請求在
+      // 「fetch 前」的 generation 檢查就被棄單，測不到「fetch 慢回來」
+      // 的 late-response guard（本測試的原始意圖）
+      await notifier.setFilter(CalendarFilter.all);
 
       // 先載入 2 月（不 await），再立刻切到 3 月
       final febFuture = notifier.loadMonthEvents(DateTime(2026, 2));

@@ -9,4 +9,5 @@ export 'twse_margin_trading.dart';
 export 'twse_market_index.dart';
 export 'twse_monthly_revenue.dart';
 export 'twse_trading_warning.dart';
+export 'twse_short_suspension.dart';
 export 'twse_valuation.dart';

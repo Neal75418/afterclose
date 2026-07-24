@@ -34,4 +34,12 @@ abstract class IEventRepository {
 
   /// 同步除權息事件，回傳分類明細
   Future<({int exDividend, int exRights, int total})> syncDividendEvents();
+
+  /// 從 active 處置股（trading_warning）重建「處置出關」自動事件，
+  /// 回傳產生筆數。
+  Future<int> syncDisposalEndEvents();
+
+  /// 從 TWSE 停資停券預告重建自選/持倉股「停券起始」自動事件，
+  /// 回傳產生筆數。
+  Future<int> syncShortSuspensionEvents();
 }

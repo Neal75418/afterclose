@@ -1388,7 +1388,9 @@
     "formatTwoWeeks": "兩週",
     "formatWeek": "週",
     "backToToday": "回今日",
-    "monthStats": "本月事件"
+    "monthStats": "本月事件",
+    "typeDisposalEnd": "處置出關",
+    "typeShortSuspension": "停券預告"
   },
   "warning": {
     "disposal": "處置",

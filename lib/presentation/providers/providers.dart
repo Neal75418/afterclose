@@ -247,7 +247,10 @@ final portfolioRepositoryProvider = Provider<PortfolioRepository>((ref) {
 
 /// 事件日曆儲存庫 Provider（Phase 4.3）
 final eventRepositoryProvider = Provider<EventRepository>((ref) {
-  return EventRepository(database: ref.watch(databaseProvider));
+  return EventRepository(
+    database: ref.watch(databaseProvider),
+    twseClient: ref.watch(twseClientProvider),
+  );
 });
 
 // ==================================================

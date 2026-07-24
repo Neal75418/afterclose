@@ -23,6 +23,8 @@ enum EventType {
   exRights('EX_RIGHTS'),
   earnings('EARNINGS'),
   shareholderMeeting('SHAREHOLDER_MEETING'),
+  disposalEnd('DISPOSAL_END'),
+  shortSuspension('SHORT_SUSPENSION'),
   custom('CUSTOM');
 
   const EventType(this.value);
@@ -45,6 +47,10 @@ enum EventType {
         return 'calendar.typeEarnings';
       case EventType.shareholderMeeting:
         return 'calendar.typeMeeting';
+      case EventType.disposalEnd:
+        return 'calendar.typeDisposalEnd';
+      case EventType.shortSuspension:
+        return 'calendar.typeShortSuspension';
       case EventType.custom:
         return 'calendar.typeCustom';
     }
@@ -66,6 +72,12 @@ enum EventType {
         // 紫→teal（2026-07-24 使用者回饋：粉紫不喜歡；teal 與品牌藍同
         // 冷色溫層、與紅/橘/綠/藍四類皆可區分）
         return Colors.teal;
+      case EventType.disposalEnd:
+        // 監管類事件走中性藍灰，與五個既有類別皆可區分
+        return Colors.blueGrey;
+      case EventType.shortSuspension:
+        // 棕：與紅/橘/綠/teal/藍灰/藍皆可區分、且非使用者排除的紫粉家族
+        return Colors.brown;
       case EventType.custom:
         return Colors.blue;
     }
@@ -91,6 +103,12 @@ enum EventType {
       case EventType.shareholderMeeting:
         // 淺色 teal 本色 3.1:1 不合格需壓深（teal800 5.5:1）；深色 teal200
         return isLight ? const Color(0xFF00695C) : const Color(0xFF80CBC4);
+      case EventType.disposalEnd:
+        // 淺色 blueGrey800、深色 blueGrey200
+        return isLight ? const Color(0xFF37474F) : const Color(0xFFB0BEC5);
+      case EventType.shortSuspension:
+        // 淺色 brown800、深色 brown200
+        return isLight ? const Color(0xFF4E342E) : const Color(0xFFBCAAA4);
       case EventType.custom:
         return isLight ? const Color(0xFF1565C0) : const Color(0xFF90CAF9);
     }
@@ -116,6 +134,10 @@ enum EventType {
         return Icons.article_outlined;
       case EventType.shareholderMeeting:
         return Icons.groups_outlined;
+      case EventType.disposalEnd:
+        return Icons.lock_open_outlined;
+      case EventType.shortSuspension:
+        return Icons.block_outlined;
       case EventType.custom:
         return Icons.edit_note;
     }
@@ -133,7 +155,9 @@ class EventCalendarState {
     this.events = const {},
     this.selectedDayEvents = const [],
     this.upcomingEvents = const [],
-    this.filter = CalendarFilter.all,
+    // 預設自選：全市場事件（尤其股東會）對交易流程是雜訊，
+    // 行事曆該回答「我的股票要發生什麼事」（2026-07-24 分析師視角檢討）
+    this.filter = CalendarFilter.watchlistOnly,
     Set<EventType>? selectedEventTypes,
     this.calendarFormat = CalendarFormat.month,
     this.isLoading = false,
@@ -428,6 +452,20 @@ class EventCalendarNotifier extends Notifier<EventCalendarState> {
     state = state.copyWith(isSyncing: true);
     try {
       final result = await _repo.syncDividendEvents();
+      // 兩個附帶同步皆 fail-soft：任何一個失敗都不得吞掉已完成的
+      // 除權息結果、也不得跳過後面的 reload
+      try {
+        // 處置出關（資料源：trading_warning，成本極低）
+        await _repo.syncDisposalEndEvents();
+      } catch (e) {
+        AppLogger.warning('EventCalendar', '處置出關同步失敗', e);
+      }
+      try {
+        // 停券預告走網路（BFI84U）
+        await _repo.syncShortSuspensionEvents();
+      } catch (e) {
+        AppLogger.warning('EventCalendar', '停券預告同步失敗', e);
+      }
       if (state.focusedMonth != null) {
         await loadMonthEvents(state.focusedMonth!);
       }

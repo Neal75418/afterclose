@@ -18,7 +18,8 @@ class StockEvent extends Table {
   /// 股票代碼（可為空，允許純個人備忘事件）
   TextColumn get symbol => text().nullable()();
 
-  /// 事件類型：EX_DIVIDEND, EX_RIGHTS, SHAREHOLDER_MEETING, CUSTOM（EARNINGS 保留無 producer）
+  /// 事件類型：EX_DIVIDEND, EX_RIGHTS, SHAREHOLDER_MEETING, DISPOSAL_END,
+  /// SHORT_SUSPENSION, CUSTOM（EARNINGS 保留無 producer）
   TextColumn get eventType => text()();
 
   /// 事件日期

@@ -23,8 +23,15 @@ mixin EventDaoMixin on $AppDatabase {
       )
       ..orderBy([(t) => OrderingTerm.asc(t.eventDate)]);
 
-    if (symbols != null && symbols.isNotEmpty) {
-      query.where((t) => t.symbol.isIn(symbols) | t.symbol.isNull());
+    // null＝不過濾；空清單＝「過濾到空集合」只剩無 symbol 的個人備忘。
+    // 不可把空清單當不過濾——預設 watchlistOnly 下，空自選使用者會
+    // 反而看到全市場事件（2026-07-24 審查修復）。
+    if (symbols != null) {
+      query.where(
+        (t) => symbols.isEmpty
+            ? t.symbol.isNull()
+            : (t.symbol.isIn(symbols) | t.symbol.isNull()),
+      );
     }
 
     return query.get();

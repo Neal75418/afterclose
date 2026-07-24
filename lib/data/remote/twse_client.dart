@@ -753,6 +753,59 @@ class TwseClient {
     });
   }
 
+  /// 取得停資停券預告表
+  ///
+  /// 來源: TWSE Open Data API (BFI84U)
+  /// 端點: https://openapi.twse.com.tw/v1/exchangeReport/BFI84U
+  /// 欄位: Code, Name, StartDate, EndDate, Reason（日期為民國年 yyyMMdd）
+  Future<List<TwseShortSuspension>> getShortSellingSuspensions() {
+    return MarketClientMixin.executeRequest(_tag, '停券預告', () async {
+      const cacheKey = 'short_suspension';
+      final cached = _cache.get(cacheKey) as List<TwseShortSuspension>?;
+      if (cached != null) return cached;
+
+      final openDataDio = Dio(
+        BaseOptions(
+          connectTimeout: const Duration(
+            seconds: ApiConfig.twseConnectTimeoutSec,
+          ),
+          receiveTimeout: const Duration(
+            seconds: ApiConfig.twseReceiveTimeoutSec,
+          ),
+        ),
+      );
+      final Response response;
+      try {
+        response = await openDataDio.get(
+          ApiEndpoints.twseShortSuspension,
+          options: Options(responseType: ResponseType.json),
+        );
+      } finally {
+        openDataDio.close();
+      }
+
+      if (response.statusCode != 200) {
+        throw ApiException(
+          '$_tag OpenData API error: ${response.statusCode}',
+          response.statusCode,
+        );
+      }
+
+      final data = response.data;
+      if (data is! List) {
+        AppLogger.warning(_tag, '停券預告: 非預期資料型別');
+        return <TwseShortSuspension>[];
+      }
+      final results = data
+          .map((e) => TwseShortSuspension.fromJson(e as Map<String, dynamic>))
+          .where((e) => e.code.isNotEmpty)
+          .toList();
+      AppLogger.info(_tag, '停券預告: ${results.length} 筆');
+      _cache.put(cacheKey, results);
+      return results;
+    });
+  }
+
   /// 取得所有股票的月營收（最新月份）
   ///
   /// 來源: TWSE Open Data API (t187ap05_L)

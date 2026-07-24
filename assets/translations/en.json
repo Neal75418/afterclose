@@ -1388,7 +1388,9 @@
     "formatTwoWeeks": "2 weeks",
     "formatWeek": "Week",
     "backToToday": "Today",
-    "monthStats": "This month"
+    "monthStats": "This month",
+    "typeDisposalEnd": "Disposal ends",
+    "typeShortSuspension": "Short-sell halt"
   },
   "warning": {
     "disposal": "Disposal",
