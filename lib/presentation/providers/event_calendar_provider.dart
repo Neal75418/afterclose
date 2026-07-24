@@ -193,6 +193,14 @@ class EventCalendarState {
   final String? error;
 
   /// 根據 selectedEventTypes 過濾後的事件 map
+  /// 套用類型篩選後的近期事件（未來14天卡列用）——與月曆 dots／當日
+  /// 清單同一套 selectedEventTypes，關掉的類型不得只從月曆消失
+  List<StockEventEntry> get visibleUpcomingEvents => upcomingEvents
+      .where(
+        (e) => selectedEventTypes.contains(EventType.fromValue(e.eventType)),
+      )
+      .toList();
+
   Map<DateTime, List<StockEventEntry>> get filteredEvents {
     if (selectedEventTypes.length == EventType.values.length) return events;
     final filtered = <DateTime, List<StockEventEntry>>{};
@@ -290,14 +298,7 @@ class EventCalendarNotifier extends Notifier<EventCalendarState> {
       );
 
       // 根據篩選取得 symbol 清單
-      List<String>? filterSymbols;
-      if (state.filter == CalendarFilter.watchlistOnly) {
-        final watchlist = await _db.getWatchlist();
-        filterSymbols = watchlist.map((e) => e.symbol).toList();
-      } else if (state.filter == CalendarFilter.portfolioOnly) {
-        final positions = await _db.getPortfolioPositions();
-        filterSymbols = positions.map((e) => e.symbol).toList();
-      }
+      final filterSymbols = await _resolveFilterSymbols();
 
       if (_loadGeneration != generation) return false;
 
@@ -352,6 +353,8 @@ class EventCalendarNotifier extends Notifier<EventCalendarState> {
     if (state.focusedMonth != null) {
       await loadMonthEvents(state.focusedMonth!);
     }
+    // 未來14天清單與月曆同一套過濾，換 filter 一併刷新
+    await _loadUpcomingEvents();
   }
 
   /// 儲存日曆格式偏好
@@ -476,6 +479,24 @@ class EventCalendarNotifier extends Notifier<EventCalendarState> {
     }
   }
 
+  /// 依目前 filter 解析 symbol 清單（null＝不過濾）
+  ///
+  /// loadMonthEvents 與 _loadUpcomingEvents 共用——兩個視圖必須同一
+  /// 套過濾，否則會出現「上方未來14天列著非自選股、下方當日卻說
+  /// 無事件」的自相矛盾（2026-07-24 實機截圖）。
+  Future<List<String>?> _resolveFilterSymbols() async {
+    switch (state.filter) {
+      case CalendarFilter.watchlistOnly:
+        final watchlist = await _db.getWatchlist();
+        return watchlist.map((e) => e.symbol).toList();
+      case CalendarFilter.portfolioOnly:
+        final positions = await _db.getPortfolioPositions();
+        return positions.map((e) => e.symbol).toList();
+      case CalendarFilter.all:
+        return null;
+    }
+  }
+
   /// 載入近期事件
   ///
   /// 失敗時寫入 [state.error]，讓呼叫端（如 syncDividendEvents）
@@ -487,7 +508,11 @@ class EventCalendarNotifier extends Notifier<EventCalendarState> {
       final end = today.add(
         const Duration(days: DataFreshness.upcomingEventsDays),
       );
-      final events = await _repo.getEventsInRange(today, end);
+      final events = await _repo.getEventsInRange(
+        today,
+        end,
+        symbols: await _resolveFilterSymbols(),
+      );
       state = state.copyWith(upcomingEvents: events);
     } catch (e) {
       AppLogger.warning('EventCalendarNotifier', '載入近期事件失敗', e);

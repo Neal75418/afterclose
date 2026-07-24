@@ -265,7 +265,7 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
 
   Widget _buildUpcoming(EventCalendarState state, {required Axis direction}) {
     return UpcomingEventsSection(
-      events: state.upcomingEvents,
+      events: state.visibleUpcomingEvents,
       direction: direction,
       onEventTap: (event) {
         setState(() {
