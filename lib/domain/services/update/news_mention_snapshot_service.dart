@@ -32,6 +32,10 @@ class NewsMentionSnapshotService {
   final INewsRepository _newsRepo;
   final AppClock _clock;
 
+  /// 標題正規化：僅保留文字與數字（去空白/全半形標點），供跨源去重比對
+  static String _normalizeTitle(String title) =>
+      title.replaceAll(RegExp(r'[^\p{L}\p{N}]', unicode: true), '');
+
   Future<void> snapshotRecentDays() async {
     final now = _clock.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -49,11 +53,17 @@ class NewsMentionSnapshotService {
 
     // (localDay, kind, key) → count
     final counts = <(DateTime, String, String), int>{};
+    // 跨源同題去重：同一條新聞被多家轉載（標題僅標點/空白略異）會把
+    // 提及數灌成「媒體迴聲數」；以（日, 正規化標題）為 key 只計首見。
+    final seenTitles = <(DateTime, String)>{};
     for (final n in news) {
       final local = n.publishedAt.toLocal();
       final day = DateTime(local.year, local.month, local.day);
       final diff = today.difference(day).inDays;
       if (diff < 0 || diff >= backfillDays) continue;
+
+      final normalized = _normalizeTitle(n.title);
+      if (!seenTitles.add((day, normalized))) continue;
 
       for (final sym in nameMatcher.match(n.title)) {
         final k = (day, 'stock', sym);

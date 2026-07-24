@@ -7,7 +7,9 @@ abstract final class NewsHeatParams {
   /// 字典版本：白名單或題材字典**語意性異動**時遞增。
   /// 寫進 news_mention_daily 快照，供未來回測取同版本區段
   /// （避免字典演化造成的假爆量）。
-  static const int dictionaryVersion = 1;
+  /// v2（2026-07-24）：補「塑化」——台塑化 +69% 當月最大主軸完全不在
+  /// 字典內的實證 miss；人工字典會腐爛，長期解法是 app 內自訂題材編輯
+  static const int dictionaryVersion = 2;
 
   /// 熱度近窗（天）
   static const int recentWindowDays = 7;
@@ -126,6 +128,7 @@ abstract final class NewsHeatParams {
     '光通訊': ['光通訊', '光收發'],
     '網通': ['網通', '交換器', '伺服器代工'],
     '面板': ['面板', 'OLED'],
+    '塑化': ['塑化', '石化', '乙烯', '塑膠股'],
     '航運': ['航運', '貨櫃', '散裝'],
     '金融': ['金控', '壽險', '銀行股'],
     '生技': ['生技', '新藥', '疫苗'],

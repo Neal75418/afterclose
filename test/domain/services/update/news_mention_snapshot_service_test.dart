@@ -75,6 +75,31 @@ void main() {
     expect(rows.any((r) => r.kind == 'theme' && r.itemKey == 'AI'), isTrue);
   });
 
+  test('跨源同題去重：同日同標題（不同來源/標點）只計一次', () async {
+    when(() => newsRepo.getRecentNews(days: any(named: 'days'))).thenAnswer(
+      (_) async => [
+        news('a1', '台積電法說會亮眼 上調全年展望', DateTime(2026, 7, 15, 9)),
+        // 同一條新聞被另一來源轉載：標點/空白略異，語意相同
+        NewsItemEntry(
+          id: 'b2',
+          source: 'Yahoo財經',
+          title: '台積電法說會亮眼，上調全年展望！',
+          url: 'https://example.com/b2',
+          category: 'OTHER',
+          publishedAt: DateTime(2026, 7, 15, 10),
+          fetchedAt: DateTime(2026, 7, 15, 10),
+        ),
+      ],
+    );
+
+    await service.snapshotRecentDays();
+
+    final rows = await db.getMentionCounts(from: DateTime(2026, 7, 1));
+    final tsmc = rows.where((r) => r.kind == 'stock' && r.itemKey == '2330');
+    expect(tsmc, hasLength(1));
+    expect(tsmc.first.mentionCount, 1, reason: '五源轉載同一條新聞不得灌水成多次提及');
+  });
+
   test('重跑冪等（同日重寫不重複累加）', () async {
     when(
       () => newsRepo.getRecentNews(days: any(named: 'days')),
