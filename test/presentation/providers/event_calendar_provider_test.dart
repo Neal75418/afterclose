@@ -80,6 +80,9 @@ void main() {
     when(
       () => mockEventRepo.syncShortSuspensionEvents(),
     ).thenAnswer((_) async => 0);
+    when(
+      () => mockEventRepo.syncInvestorConferenceEvents(),
+    ).thenAnswer((_) async => 0);
 
     container = ProviderContainer(
       overrides: [
@@ -470,6 +473,7 @@ void main() {
       verify(() => mockEventRepo.syncDividendEvents()).called(1);
       verify(() => mockEventRepo.syncDisposalEndEvents()).called(1);
       verify(() => mockEventRepo.syncShortSuspensionEvents()).called(1);
+      verify(() => mockEventRepo.syncInvestorConferenceEvents()).called(1);
     });
 
     test('disposal 出關同步失敗不吞除權息結果（fail-soft）', () async {

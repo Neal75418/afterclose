@@ -74,6 +74,7 @@ class UpdateServiceFactory {
     final newsRepo = NewsRepository(
       database: database,
       rssParser: rssParser,
+      twseClient: twseClient,
       clock: clock,
     );
     final analysisRepo = AnalysisRepository(database: database, clock: clock);

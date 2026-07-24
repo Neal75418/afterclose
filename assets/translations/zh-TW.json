@@ -1354,7 +1354,7 @@
     "eventStock": "關聯股票（選填）",
     "typeExDividend": "除息日",
     "typeExRights": "除權日",
-    "typeEarnings": "財報公布",
+    "typeEarnings": "財報/法說",
     "typeCustom": "自訂備忘",
     "filter": "篩選",
     "filterAll": "全部股票",

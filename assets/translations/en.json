@@ -1354,7 +1354,7 @@
     "eventStock": "Related Stock (optional)",
     "typeExDividend": "Ex-Dividend",
     "typeExRights": "Ex-Rights",
-    "typeEarnings": "Earnings",
+    "typeEarnings": "Earnings/IR",
     "typeCustom": "Custom Memo",
     "filter": "Filter",
     "filterAll": "All Stocks",

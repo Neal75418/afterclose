@@ -469,6 +469,12 @@ class EventCalendarNotifier extends Notifier<EventCalendarState> {
       } catch (e) {
         AppLogger.warning('EventCalendar', '停券預告同步失敗', e);
       }
+      try {
+        // 法說會（自重大訊息 t187ap04_L 抽取，累積式）
+        await _repo.syncInvestorConferenceEvents();
+      } catch (e) {
+        AppLogger.warning('EventCalendar', '法說會同步失敗', e);
+      }
       if (state.focusedMonth != null) {
         await loadMonthEvents(state.focusedMonth!);
       }

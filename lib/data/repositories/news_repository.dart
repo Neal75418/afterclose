@@ -4,6 +4,7 @@ import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/rss_parser.dart';
+import 'package:afterclose/data/remote/twse_client.dart';
 import 'package:afterclose/domain/repositories/news_repository.dart';
 
 /// 新聞資料 Repository
@@ -11,13 +12,18 @@ class NewsRepository implements INewsRepository {
   NewsRepository({
     required AppDatabase database,
     required RssParser rssParser,
+    TwseClient? twseClient,
     AppClock clock = const SystemClock(),
   }) : _db = database,
        _rssParser = rssParser,
+       _twseClient = twseClient,
        _clock = clock;
 
   final AppDatabase _db;
   final RssParser _rssParser;
+
+  /// 重大訊息同步用；null 時 [syncMaterialInfo] 直接回 0（測試便利）
+  final TwseClient? _twseClient;
   final AppClock _clock;
 
   /// 從所有 RSS feeds 同步新聞
@@ -94,6 +100,52 @@ class NewsRepository implements INewsRepository {
       itemsAdded: newsCompanions.length,
       errors: parseResult.errors,
     );
+  }
+
+  /// 同步自選∪持倉股的重大訊息公告（TWSE t187ap04_L 當日檔）
+  ///
+  /// 公告是**一手訊號**（庫藏股/大單/法說會/財測），比媒體新聞快且官方；
+  /// 以穩定 id（mops_代號_日期_時間）insertOrIgnore，每日檔天然累積、
+  /// 重跑冪等。公司代號直接建立股票關聯（100% 對應，免抽取）。
+  Future<int> syncMaterialInfo() async {
+    final client = _twseClient;
+    if (client == null) return 0;
+
+    final watchlistEntries = await _db.getWatchlist();
+    final portfolioPositions = await _db.getPortfolioPositions();
+    final symbols = <String>{
+      ...watchlistEntries.map((e) => e.symbol),
+      ...portfolioPositions.map((e) => e.symbol),
+    };
+    if (symbols.isEmpty) return 0;
+
+    final rows = await client.getMaterialInformation();
+    final newsRows = <NewsItemCompanion>[];
+    final mappingRows = <NewsStockMapCompanion>[];
+    for (final info in rows) {
+      if (!symbols.contains(info.code)) continue;
+      final publishedAt = info.publishedAtUtc;
+      if (publishedAt == null || info.subject.isEmpty) continue;
+      final id = 'mops_${info.code}_${info.speakDate}_${info.speakTime}';
+      newsRows.add(
+        NewsItemCompanion.insert(
+          id: id,
+          source: '重大訊息',
+          title: '${info.code} ${info.name}｜${info.subject}',
+          content: Value(info.description),
+          // 資料集無單則深連結，指向 MOPS 重大訊息查詢頁
+          url: 'https://mops.twse.com.tw/mops/web/t05st01',
+          category: 'ANNOUNCEMENT',
+          publishedAt: publishedAt,
+        ),
+      );
+      mappingRows.add(
+        NewsStockMapCompanion.insert(newsId: id, symbol: info.code),
+      );
+    }
+
+    await _db.insertNewsWithMappings(newsRows, mappingRows);
+    return newsRows.length;
   }
 
   /// 取得最近新聞（Database 層級過濾）

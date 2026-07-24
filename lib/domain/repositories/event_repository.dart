@@ -42,4 +42,8 @@ abstract class IEventRepository {
   /// 從 TWSE 停資停券預告重建自選/持倉股「停券起始」自動事件，
   /// 回傳產生筆數。
   Future<int> syncShortSuspensionEvents();
+
+  /// 從當日重大訊息抽自選/持倉股法說會，累積寫入 EARNINGS 自動事件，
+  /// 回傳新增筆數。
+  Future<int> syncInvestorConferenceEvents();
 }

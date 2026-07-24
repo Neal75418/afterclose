@@ -753,6 +753,57 @@ class TwseClient {
     });
   }
 
+  /// 取得上市公司每日重大訊息（當日檔）
+  ///
+  /// 來源: TWSE Open Data API (t187ap04_L)；中文鍵、「主旨 」尾帶空格
+  Future<List<TwseMaterialInfo>> getMaterialInformation() {
+    return MarketClientMixin.executeRequest(_tag, '重大訊息', () async {
+      const cacheKey = 'material_info';
+      final cached = _cache.get(cacheKey) as List<TwseMaterialInfo>?;
+      if (cached != null) return cached;
+
+      final openDataDio = Dio(
+        BaseOptions(
+          connectTimeout: const Duration(
+            seconds: ApiConfig.twseConnectTimeoutSec,
+          ),
+          receiveTimeout: const Duration(
+            seconds: ApiConfig.twseReceiveTimeoutSec,
+          ),
+        ),
+      );
+      final Response response;
+      try {
+        response = await openDataDio.get(
+          ApiEndpoints.twseMaterialInfo,
+          options: Options(responseType: ResponseType.json),
+        );
+      } finally {
+        openDataDio.close();
+      }
+
+      if (response.statusCode != 200) {
+        throw ApiException(
+          '$_tag OpenData API error: ${response.statusCode}',
+          response.statusCode,
+        );
+      }
+
+      final data = response.data;
+      if (data is! List) {
+        AppLogger.warning(_tag, '重大訊息: 非預期資料型別');
+        return <TwseMaterialInfo>[];
+      }
+      final results = data
+          .map((e) => TwseMaterialInfo.fromJson(e as Map<String, dynamic>))
+          .where((e) => e.code.isNotEmpty)
+          .toList();
+      AppLogger.info(_tag, '重大訊息: ${results.length} 筆');
+      _cache.put(cacheKey, results);
+      return results;
+    });
+  }
+
   /// 取得停資停券預告表
   ///
   /// 來源: TWSE Open Data API (BFI84U)

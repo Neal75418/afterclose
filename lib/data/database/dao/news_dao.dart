@@ -30,6 +30,30 @@ mixin NewsDaoMixin on $AppDatabase {
     return grouped;
   }
 
+  /// 批次寫入新聞與股票關聯（單一交易、insertOrIgnore 去重）
+  ///
+  /// 供重大訊息等非 RSS 來源共用；id 穩定即天然冪等。
+  Future<void> insertNewsWithMappings(
+    List<NewsItemCompanion> newsRows,
+    List<NewsStockMapCompanion> mappingRows,
+  ) async {
+    if (newsRows.isEmpty) return;
+    await transaction(() async {
+      await batch((b) {
+        for (final r in newsRows) {
+          b.insert(newsItem, r, mode: InsertMode.insertOrIgnore);
+        }
+      });
+      if (mappingRows.isNotEmpty) {
+        await batch((b) {
+          for (final r in mappingRows) {
+            b.insert(newsStockMap, r, mode: InsertMode.insertOrIgnore);
+          }
+        });
+      }
+    });
+  }
+
   // ==================================================
   // 每日提及數快照（新聞熱度發現層）
   // ==================================================

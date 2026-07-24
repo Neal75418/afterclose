@@ -32,6 +32,15 @@ class NewsSyncer {
       AppLogger.warning('NewsSyncer', '新聞同步失敗', e);
     }
 
+    // 重大訊息公告（一手訊號）fail-soft：失敗不影響 RSS 結果
+    try {
+      final added = await _newsRepo.syncMaterialInfo();
+      itemsAdded += added;
+    } catch (e) {
+      errors.add('重大訊息同步失敗: $e');
+      AppLogger.warning('NewsSyncer', '重大訊息同步失敗', e);
+    }
+
     return NewsSyncResult(itemsAdded: itemsAdded, errors: errors);
   }
 

@@ -188,6 +188,7 @@ final newsRepositoryProvider = Provider<NewsRepository>((ref) {
   return NewsRepository(
     database: ref.watch(databaseProvider),
     rssParser: ref.watch(rssParserProvider),
+    twseClient: ref.watch(twseClientProvider),
   );
 });
 

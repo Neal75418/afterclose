@@ -1,6 +1,7 @@
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:afterclose/data/remote/rss_parser.dart';
+import 'package:afterclose/data/remote/twse_client.dart';
 import 'package:afterclose/data/repositories/news_repository.dart';
 import 'package:afterclose/domain/repositories/news_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -21,6 +22,8 @@ class MockAppDatabase extends Mock implements AppDatabase {
 }
 
 class MockRssParser extends Mock implements RssParser {}
+
+class MockTwseClient extends Mock implements TwseClient {}
 
 void main() {
   late MockAppDatabase mockDb;
@@ -263,6 +266,76 @@ void main() {
       );
 
       expect(item.extractStockCodes(), equals(['00919']));
+    });
+  });
+
+  group('syncMaterialInfo', () {
+    late MockTwseClient client;
+    late MockAppDatabase db2;
+    late NewsRepository repo2;
+
+    TwseMaterialInfo mat({
+      required String code,
+      String subject = '公告',
+      String desc = '',
+    }) {
+      return TwseMaterialInfo.fromJson({
+        '發言日期': '1150723',
+        '發言時間': '151812',
+        '公司代號': code,
+        '公司名稱': 'X',
+        '主旨 ': subject,
+        '說明': desc,
+      });
+    }
+
+    setUp(() {
+      client = MockTwseClient();
+      db2 = MockAppDatabase();
+      repo2 = NewsRepository(
+        database: db2,
+        rssParser: mockRssParser,
+        twseClient: client,
+      );
+    });
+
+    test('過濾自選∪持倉、穩定 id、寫入 news_item 與股票關聯', () async {
+      when(() => db2.getWatchlist()).thenAnswer(
+        (_) async => [
+          WatchlistEntry(symbol: '1537', createdAt: DateTime(2026, 1, 1)),
+        ],
+      );
+      when(() => db2.getPortfolioPositions()).thenAnswer((_) async => []);
+      when(() => client.getMaterialInformation()).thenAnswer(
+        (_) async => [
+          mat(code: '1537', subject: '受邀參加法人說明會'),
+          mat(code: '9999', subject: '非自選公告'),
+        ],
+      );
+      final inserted = <NewsItemCompanion>[];
+      final mapped = <NewsStockMapCompanion>[];
+      when(() => db2.insertNewsWithMappings(any(), any())).thenAnswer((
+        inv,
+      ) async {
+        inserted.addAll(inv.positionalArguments[0] as List<NewsItemCompanion>);
+        mapped.addAll(
+          inv.positionalArguments[1] as List<NewsStockMapCompanion>,
+        );
+      });
+
+      final count = await repo2.syncMaterialInfo();
+
+      expect(count, 1);
+      expect(inserted, hasLength(1));
+      expect(inserted.first.id.value, 'mops_1537_1150723_151812');
+      expect(inserted.first.source.value, '重大訊息');
+      expect(inserted.first.title.value, contains('1537'));
+      expect(mapped.single.symbol.value, '1537');
+    });
+
+    test('未注入 client 回 0', () async {
+      final bare = NewsRepository(database: db2, rssParser: mockRssParser);
+      expect(await bare.syncMaterialInfo(), 0);
     });
   });
 }
