@@ -6,6 +6,19 @@ import 'package:afterclose/core/constants/calibrated_scores/calibrated_scores_ta
 import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 
 void main() {
+  group('isCalibrationBacked', () {
+    test('任一 horizon 有非零校準分即 true；0 或查無為 false', () {
+      const ctx = CalibratedScoreContext(
+        shortScores: {'WEEK_52_HIGH': 35, 'KD_GOLDEN_CROSS': 0},
+        longScores: {'EPS_CONSECUTIVE_GROWTH': 22},
+      );
+      expect(ctx.isCalibrationBacked('WEEK_52_HIGH'), isTrue);
+      expect(ctx.isCalibrationBacked('EPS_CONSECUTIVE_GROWTH'), isTrue);
+      expect(ctx.isCalibrationBacked('KD_GOLDEN_CROSS'), isFalse);
+      expect(ctx.isCalibrationBacked('UNKNOWN'), isFalse);
+    });
+  });
+
   group('CalibratedScoreContext', () {
     tearDown(() {
       CalibratedScoresRegistry.instance.resetForTesting();

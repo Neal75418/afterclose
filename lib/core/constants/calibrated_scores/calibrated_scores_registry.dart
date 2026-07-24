@@ -210,6 +210,14 @@ class CalibratedScoresRegistry {
     Horizon.long => _long?.lookup(ruleId),
   };
 
+  /// 該規則是否經校準背書（任一 horizon 有非零校準分）。
+  ///
+  /// 主 isolate 供 UI（reason chip 標記）同步查詢；registry 未載入時
+  /// 兩個 lookup 皆 null → 回 false（保守不標記，寧可少標不誤標）。
+  bool isCalibrationBacked(String ruleId) =>
+      lookup(Horizon.short, ruleId) != null ||
+      lookup(Horizon.long, ruleId) != null;
+
   /// 打包兩個 horizon 的 calibrated score maps 為 isolate-safe DTO
   ///
   /// 主 isolate 在呼叫 scoring isolate 前呼叫此 method，把回傳的

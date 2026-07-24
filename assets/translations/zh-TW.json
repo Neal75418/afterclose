@@ -1510,5 +1510,8 @@
     "summaryInvalidated": "{n} 已失效",
     "history": "封存紀錄",
     "historyEmpty": "尚無封存紀錄"
+  },
+  "reasonTags": {
+    "calibrationBackedNote": "此訊號經回測校準驗證有統計 edge；其餘為啟發式訊號，分數僅供發現排序、非 edge 排名。"
   }
 }

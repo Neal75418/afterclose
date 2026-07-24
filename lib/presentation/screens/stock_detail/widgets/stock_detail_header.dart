@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 
+import 'package:afterclose/core/constants/calibrated_scores/calibrated_scores_registry.dart';
 import 'package:afterclose/core/theme/semantic_colors.dart';
 
 import 'package:afterclose/core/constants/market_codes.dart';
@@ -128,9 +129,13 @@ class StockDetailHeader extends StatelessWidget {
     super.key,
     required this.data,
     required this.symbol,
+    this.isCalibrationBacked,
   });
 
   final StockHeaderData data;
+
+  /// 判定 reason code 是否經校準背書；null → 用 registry（見 ReasonTags）
+  final bool Function(String code)? isCalibrationBacked;
   final String symbol;
 
   @override
@@ -276,11 +281,16 @@ class StockDetailHeader extends StatelessWidget {
   }
 
   Widget _buildReasonTags(ThemeData theme) {
+    final backedFn =
+        isCalibrationBacked ??
+        (code) => CalibratedScoresRegistry.instance.isCalibrationBacked(code);
     return Wrap(
       spacing: DesignTokens.spacing6,
       runSpacing: DesignTokens.spacing4,
       children: data.reasons.take(3).map((reason) {
-        return Container(
+        final backed = backedFn(reason);
+        final onColor = theme.colorScheme.onPrimaryContainer;
+        final chip = Container(
           padding: const EdgeInsets.symmetric(
             horizontal: DesignTokens.spacing8,
             vertical: DesignTokens.spacing2,
@@ -289,13 +299,29 @@ class StockDetailHeader extends StatelessWidget {
             color: theme.colorScheme.primaryContainer,
             borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
           ),
-          child: Text(
-            ReasonTags.translateReasonCode(reason),
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onPrimaryContainer,
-              fontWeight: FontWeight.w500,
-            ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (backed) ...[
+                Icon(Icons.verified_outlined, size: 12, color: onColor),
+                const SizedBox(width: DesignTokens.spacing4),
+              ],
+              Text(
+                ReasonTags.translateReasonCode(reason),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: onColor,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
           ),
+        );
+        if (!backed) return chip;
+        return Tooltip(
+          message: 'reasonTags.calibrationBackedNote'.tr(),
+          triggerMode: TooltipTriggerMode.tap,
+          preferBelow: true,
+          child: chip,
         );
       }).toList(),
     );

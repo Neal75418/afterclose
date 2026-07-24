@@ -101,6 +101,25 @@ void main() {
     );
   }
 
+  group('StockDetailHeader 校準背書標記', () {
+    testWidgets('背書的 reason 顯示 verified 標記、未背書的不顯示', (tester) async {
+      widenViewport(tester);
+      final state = createHeaderData(
+        reasons: const ['WEEK_52_HIGH', 'KD_GOLDEN_CROSS'],
+      );
+      await tester.pumpWidget(
+        buildTestApp(
+          StockDetailHeader(
+            data: state,
+            symbol: '2330',
+            isCalibrationBacked: (code) => code == 'WEEK_52_HIGH',
+          ),
+        ),
+      );
+      expect(find.byIcon(Icons.verified_outlined), findsOneWidget);
+    });
+  });
+
   group('StockDetailHeader', () {
     testWidgets('displays stock name', (tester) async {
       widenViewport(tester);

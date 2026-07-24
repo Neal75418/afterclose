@@ -1510,5 +1510,8 @@
     "summaryInvalidated": "{n} invalidated",
     "history": "Archive",
     "historyEmpty": "No archived theses"
+  },
+  "reasonTags": {
+    "calibrationBackedNote": "This signal is backtest-validated with statistical edge; others are heuristic — the score ranks discovery, not edge."
   }
 }

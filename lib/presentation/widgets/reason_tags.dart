@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/constants/api_config.dart';
+import 'package:afterclose/core/constants/calibrated_scores/calibrated_scores_registry.dart';
 import 'package:afterclose/core/constants/reason_type.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
@@ -23,6 +24,7 @@ class ReasonTags extends StatelessWidget {
     this.size = ReasonTagSize.normal,
     this.maxTags,
     this.translateCodes = false,
+    this.isCalibrationBacked,
   });
 
   /// 要顯示的原因標籤或代碼列表
@@ -37,6 +39,13 @@ class ReasonTags extends StatelessWidget {
   /// 是否翻譯原因代碼（用於原始資料庫代碼）
   final bool translateCodes;
 
+  /// 判定某 reason code 是否經回測校準背書（有真 edge）。
+  ///
+  /// null → 用 [CalibratedScoresRegistry.instance]（production 預設）；
+  /// 測試可注入 fake predicate。**僅在 [translateCodes] 為 true 時生效**
+  /// （否則 reasons 是已翻譯 label 非 code，無法對應校準狀態）。
+  final bool Function(String code)? isCalibrationBacked;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -45,19 +54,33 @@ class ReasonTags extends StatelessWidget {
     final displayReasons = maxTags != null ? reasons.take(maxTags!) : reasons;
 
     final isCompact = size == ReasonTagSize.compact;
+    final backedFn =
+        isCalibrationBacked ??
+        (code) => CalibratedScoresRegistry.instance.isCalibrationBacked(code);
 
     return Wrap(
       spacing: isCompact ? DesignTokens.spacing6 : DesignTokens.spacing8,
       runSpacing: isCompact ? DesignTokens.spacing4 : DesignTokens.spacing8,
       children: displayReasons.map((reason) {
         final label = translateCodes ? translateReasonCode(reason) : reason;
-        final tooltip = translateCodes ? tooltipForReasonCode(reason) : null;
+        // 校準背書僅在 translateCodes（reason 是 code）時可判定
+        final backed = translateCodes && backedFn(reason);
+        final baseTooltip = translateCodes
+            ? tooltipForReasonCode(reason)
+            : null;
+        final tooltip = backed
+            ? [
+                ?baseTooltip,
+                'reasonTags.calibrationBackedNote'.tr(),
+              ].join('\n\n')
+            : baseTooltip;
         return _ReasonTag(
           label: label,
           tooltip: tooltip,
           isCompact: isCompact,
           isDark: isDark,
           theme: theme,
+          isBacked: backed,
         );
       }).toList(),
     );
@@ -93,6 +116,7 @@ class _ReasonTag extends StatelessWidget {
     required this.isCompact,
     required this.isDark,
     required this.theme,
+    this.isBacked = false,
   });
 
   final String label;
@@ -100,6 +124,9 @@ class _ReasonTag extends StatelessWidget {
   final bool isCompact;
   final bool isDark;
   final ThemeData theme;
+
+  /// 經回測校準背書（有真 edge）→ 加 verified 標記
+  final bool isBacked;
 
   @override
   Widget build(BuildContext context) {
@@ -124,31 +151,55 @@ class _ReasonTag extends StatelessWidget {
               )
             : null,
       ),
-      child: Text(
-        label,
-        style:
-            (isCompact
-                    ? theme.textTheme.labelSmall
-                    : theme.textTheme.labelMedium)
-                ?.copyWith(
-                  // 文字承載對比義務。深色主題的底色（見上方 decoration）是
-                  // brandDecorative 以 25% alpha 疊加卡片背景的合成色，而非
-                  // 平面背景——colorScheme.primary（解析為 brand）只對平面
-                  // 背景校準過對比度，對此合成色僅 4.1:1，故改用專為此疊色
-                  // 情境校準的 brandOnDecorative（見
-                  // test/core/theme/semantic_colors_test.dart 疊色守門測試）。
-                  // 淺色主題底色是 primaryColor 10% 疊白，colorScheme.primary
-                  // （解析為 brandOnLight）仍合格，維持不變。
-                  color: isDark
-                      ? AppTheme.brandOnDecorative
-                      : theme.colorScheme.primary,
-                  fontWeight: FontWeight.w500,
-                ),
+      child: _content(
+        Text(
+          label,
+          style:
+              (isCompact
+                      ? theme.textTheme.labelSmall
+                      : theme.textTheme.labelMedium)
+                  ?.copyWith(
+                    // 文字承載對比義務。深色主題的底色（見上方 decoration）是
+                    // brandDecorative 以 25% alpha 疊加卡片背景的合成色，而非
+                    // 平面背景——colorScheme.primary（解析為 brand）只對平面
+                    // 背景校準過對比度，對此合成色僅 4.1:1，故改用專為此疊色
+                    // 情境校準的 brandOnDecorative（見
+                    // test/core/theme/semantic_colors_test.dart 疊色守門測試）。
+                    // 淺色主題底色是 primaryColor 10% 疊白，colorScheme.primary
+                    // （解析為 brandOnLight）仍合格，維持不變。
+                    color: isDark
+                        ? AppTheme.brandOnDecorative
+                        : theme.colorScheme.primary,
+                    fontWeight: FontWeight.w500,
+                  ),
+        ),
       ),
     );
 
     if (tooltip == null) return tag;
 
+    return _wrapTooltip(tag);
+  }
+
+  /// 背書時在 label 前加 verified 小標記
+  Widget _content(Widget text) {
+    if (!isBacked) return text;
+    final color = isDark
+        ? AppTheme.brandOnDecorative
+        : theme.colorScheme.primary;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.verified_outlined, size: isCompact ? 12 : 14, color: color),
+        SizedBox(
+          width: isCompact ? DesignTokens.spacing4 : DesignTokens.spacing6,
+        ),
+        text,
+      ],
+    );
+  }
+
+  Widget _wrapTooltip(Widget tag) {
     return Tooltip(
       message: tooltip!,
       preferBelow: true,

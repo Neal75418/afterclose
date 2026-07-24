@@ -8,6 +8,37 @@ import 'package:afterclose/presentation/widgets/reason_tags.dart';
 import '../../helpers/widget_test_helpers.dart';
 
 void main() {
+  setUpAll(() async {
+    await setupTestLocalization();
+  });
+
+  group('ReasonTags 校準背書標記', () {
+    testWidgets('背書的 reason chip 顯示 verified 標記，其餘不顯示', (tester) async {
+      await tester.pumpWidget(
+        buildTestApp(
+          ReasonTags(
+            reasons: const ['WEEK_52_HIGH', 'KD_GOLDEN_CROSS'],
+            translateCodes: true,
+            isCalibrationBacked: (code) => code == 'WEEK_52_HIGH',
+          ),
+        ),
+      );
+      expect(find.byIcon(Icons.verified_outlined), findsOneWidget);
+    });
+
+    testWidgets('translateCodes=false（傳的是 label 非 code）時不標記', (tester) async {
+      await tester.pumpWidget(
+        buildTestApp(
+          ReasonTags(
+            reasons: const ['WEEK_52_HIGH'],
+            isCalibrationBacked: (_) => true,
+          ),
+        ),
+      );
+      expect(find.byIcon(Icons.verified_outlined), findsNothing);
+    });
+  });
+
   group('ReasonTags', () {
     testWidgets('displays all reason labels', (tester) async {
       await tester.pumpWidget(

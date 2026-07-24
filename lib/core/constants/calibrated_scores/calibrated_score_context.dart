@@ -74,6 +74,16 @@ class CalibratedScoreContext {
     return (v == null || v == 0) ? null : v;
   }
 
+  /// 該規則是否「經校準背書」——任一 horizon 有非零 calibrated 分數
+  /// （即 [lookup] 回非 null）。用於 UI 區分「回測驗證過 edge 的訊號」
+  /// vs「fallback 到 hardcoded 的啟發式訊號」。
+  ///
+  /// 目前僅 WEEK_52_HIGH（short）與 EPS_CONSECUTIVE_GROWTH（short+long）
+  /// 為 true；其餘 ~40 條被校準砍到 0、走 hardcoded fallback → false。
+  bool isCalibrationBacked(String ruleId) =>
+      lookup(Horizon.short, ruleId) != null ||
+      lookup(Horizon.long, ruleId) != null;
+
   /// 序列化為 `Map<String, dynamic>` 供 isolate 邊界傳輸
   ///
   /// 因為內部只有 `Map<String, int>`（primitive-only），序列化不需要
