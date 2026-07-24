@@ -23,6 +23,12 @@ abstract final class Breakpoints {
   /// 每格仍有 ~140dp、清單行寬也不至於一行拉太長。
   static const double contentMaxWidth = 1000;
 
+  /// 雙欄（master-detail）頁的內容最大寬度。
+  ///
+  /// 行事曆等桌面雙欄佈局：左欄月曆（flex 3）＋右欄清單（flex 2），
+  /// 1440 下左欄約 860dp、右欄約 575dp，各自都在舒適閱讀寬內。
+  static const double contentMaxWidthWide = 1440;
+
   /// Modal bottom sheet 最大寬度。
   ///
   /// 寬視窗（桌面）下 modal bottom sheet 預設撐滿全寬、不置中，閱讀體驗差；

@@ -5,16 +5,23 @@ import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/providers/event_calendar_provider.dart';
 
-/// 即將到來事件摘要（水平捲動卡片）
+/// 即將到來事件摘要
+///
+/// [direction] horizontal＝水平捲動卡片（手機單欄）；vertical＝右欄
+/// 直列清單（桌面雙欄），高度上限 [_verticalMaxHeight] 內自行捲動。
 class UpcomingEventsSection extends StatelessWidget {
   const UpcomingEventsSection({
     super.key,
     required this.events,
     this.onEventTap,
+    this.direction = Axis.horizontal,
   });
 
   final List<StockEventEntry> events;
   final void Function(StockEventEntry event)? onEventTap;
+  final Axis direction;
+
+  static const double _verticalMaxHeight = 280;
 
   @override
   Widget build(BuildContext context) {
@@ -25,6 +32,7 @@ class UpcomingEventsSection extends StatelessWidget {
       child: events.isEmpty
           ? const SizedBox.shrink()
           : Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
@@ -39,22 +47,43 @@ class UpcomingEventsSection extends StatelessWidget {
                     ),
                   ),
                 ),
-                SizedBox(
-                  height: 76,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: DesignTokens.spacing12,
+                if (direction == Axis.horizontal)
+                  SizedBox(
+                    height: 76,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: DesignTokens.spacing12,
+                      ),
+                      itemCount: events.length,
+                      itemBuilder: (context, index) {
+                        return _UpcomingEventCard(
+                          event: events[index],
+                          onTap: () => onEventTap?.call(events[index]),
+                        );
+                      },
                     ),
-                    itemCount: events.length,
-                    itemBuilder: (context, index) {
-                      return _UpcomingEventCard(
-                        event: events[index],
-                        onTap: () => onEventTap?.call(events[index]),
-                      );
-                    },
+                  )
+                else
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      maxHeight: _verticalMaxHeight,
+                    ),
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: DesignTokens.spacing12,
+                      ),
+                      itemCount: events.length,
+                      itemBuilder: (context, index) {
+                        return _UpcomingEventCard(
+                          event: events[index],
+                          onTap: () => onEventTap?.call(events[index]),
+                          fullWidth: true,
+                        );
+                      },
+                    ),
                   ),
-                ),
                 const SizedBox(height: DesignTokens.spacing4),
               ],
             ),
@@ -63,17 +92,27 @@ class UpcomingEventsSection extends StatelessWidget {
 }
 
 class _UpcomingEventCard extends StatelessWidget {
-  const _UpcomingEventCard({required this.event, this.onTap});
+  const _UpcomingEventCard({
+    required this.event,
+    this.onTap,
+    this.fullWidth = false,
+  });
 
   final StockEventEntry event;
   final VoidCallback? onTap;
+
+  /// true＝直列模式：卡片吃滿欄寬、高度自適應（標題不用 Expanded）
+  final bool fullWidth;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final type = EventType.fromValue(event.eventType);
-    final color = type.color;
+    final color = type.colorFor(theme.brightness);
     final date = event.eventDate;
+    // 不依賴 EasyLocalization ancestor（context.locale）——MaterialApp 的
+    // Localizations 就有 active locale，production 兩者同值、測試不用多包一層
+    final localeName = Localizations.localeOf(context).toString();
 
     return Semantics(
       button: true,
@@ -82,8 +121,10 @@ class _UpcomingEventCard extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         child: Container(
-          width: 140,
-          margin: const EdgeInsets.symmetric(horizontal: DesignTokens.spacing4),
+          width: fullWidth ? null : 140,
+          margin: fullWidth
+              ? const EdgeInsets.symmetric(vertical: DesignTokens.spacing4)
+              : const EdgeInsets.symmetric(horizontal: DesignTokens.spacing4),
           padding: const EdgeInsets.all(DesignTokens.spacing10),
           decoration: BoxDecoration(
             color: theme.colorScheme.surfaceContainerLow,
@@ -91,12 +132,13 @@ class _UpcomingEventCard extends StatelessWidget {
             border: Border(left: BorderSide(color: color, width: 3)),
           ),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
                   Text(
-                    DateFormat('MM/dd', context.locale.toString()).format(date),
+                    DateFormat('MM/dd', localeName).format(date),
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: color,
                       fontWeight: FontWeight.w700,
@@ -104,7 +146,7 @@ class _UpcomingEventCard extends StatelessWidget {
                   ),
                   const SizedBox(width: DesignTokens.spacing4),
                   Text(
-                    DateFormat.E(context.locale.toString()).format(date),
+                    DateFormat.E(localeName).format(date),
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: theme.colorScheme.outline,
                     ),
@@ -112,16 +154,26 @@ class _UpcomingEventCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: DesignTokens.spacing6),
-              Expanded(
-                child: Text(
+              if (fullWidth)
+                Text(
                   event.title,
                   style: theme.textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.w500,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
+                )
+              else
+                Expanded(
+                  child: Text(
+                    event.title,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-              ),
             ],
           ),
         ),

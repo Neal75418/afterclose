@@ -215,6 +215,100 @@ void main() {
       );
     });
 
+    testWidgets('wide viewport uses two-pane layout (calendar left, '
+        'upcoming+day events right)', (tester) async {
+      widenViewport(tester); // 邏輯寬 ~1666 ≥ Breakpoints.tablet → 雙欄
+      await tester.pumpWidget(
+        buildTestWidget(
+          calendarState: EventCalendarState(
+            selectedDate: DateTime(2026, 2, 20),
+            upcomingEvents: [createEvent(id: 9, symbol: '2330')],
+          ),
+        ),
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      final calendarRight = tester
+          .getBottomRight(find.byType(TableCalendar<StockEventEntry>))
+          .dx;
+      final upcomingLeft = tester
+          .getTopLeft(find.text('calendar.upcomingTitle'))
+          .dx;
+      expect(
+        upcomingLeft,
+        greaterThan(calendarRight),
+        reason: '寬視窗下「未來14天」應在月曆右側欄，而非上方',
+      );
+    });
+
+    testWidgets('narrow viewport keeps single-column layout '
+        '(upcoming above calendar)', (tester) async {
+      // 邏輯 560x800（<1024 仍屬單欄）。不用 400：測試環境 .tr() 會把
+      // 'calendar.formatTwoWeeks' key 原樣渲染進 format 按鈕，400 寬會被
+      // 長 key 撐爆 header Row（僅測試 artifact，真翻譯為「兩週」）。
+      tester.view.physicalSize = const Size(1680, 2400);
+      addTearDown(() => tester.view.resetPhysicalSize());
+      await tester.pumpWidget(
+        buildTestWidget(
+          calendarState: EventCalendarState(
+            upcomingEvents: [createEvent(id: 9, symbol: '2330')],
+          ),
+        ),
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      final upcomingBottom = tester
+          .getBottomLeft(find.text('calendar.upcomingTitle'))
+          .dy;
+      final calendarTop = tester
+          .getTopLeft(find.byType(TableCalendar<StockEventEntry>))
+          .dy;
+      expect(
+        upcomingBottom,
+        lessThan(calendarTop),
+        reason: '窄視窗維持單欄：「未來14天」在月曆上方',
+      );
+    });
+
+    testWidgets('filter chips: unselected is neutral, selected uses '
+        'onTint foreground', (tester) async {
+      widenViewport(tester);
+      await tester.pumpWidget(
+        buildTestWidget(
+          calendarState: EventCalendarState(
+            selectedEventTypes: EventType.values.toSet()
+              ..remove(EventType.exDividend),
+          ),
+        ),
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      final chips = tester
+          .widgetList<FilterChip>(find.byType(FilterChip))
+          .toList();
+      final unselected = chips.singleWhere((c) => !c.selected);
+      final selectedSample = chips.firstWhere((c) => c.selected);
+
+      // 未選中：無彩色前景（label 用預設色）、avatar 是小色點非彩色 icon
+      expect(
+        unselected.labelStyle?.color,
+        isNull,
+        reason: '未選中 chip 的 label 不應著類型色',
+      );
+      expect(
+        unselected.avatar,
+        isNot(isA<Icon>()),
+        reason: '未選中 chip 的 avatar 應為小色點而非彩色 icon',
+      );
+      // 選中：前景走 onTintFor（守門測試背書的對比色），非 Material 原色。
+      // chips 按 EventType.values 順序建立 → 第二顆 = exRights（選中）。
+      expect(
+        selectedSample.labelStyle?.color,
+        EventType.exRights.onTintFor(Brightness.light),
+        reason: '選中 chip 前景應為 onTintFor 對比色',
+      );
+    });
+
     testWidgets('shows error state', (tester) async {
       widenViewport(tester);
       await tester.pumpWidget(

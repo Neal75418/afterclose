@@ -22,7 +22,8 @@ class EventListTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final type = EventType.fromValue(event.eventType);
-    final color = type.color;
+    // 左框（solid）走主題調和色；icon 底 tint 維持 .color@0.15（守門組合）
+    final color = type.colorFor(theme.brightness);
 
     return Dismissible(
       key: ValueKey(event.id),
@@ -60,7 +61,7 @@ class EventListTile extends StatelessWidget {
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.15),
+                    color: type.color.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
                   ),
                   child: Icon(
@@ -83,7 +84,8 @@ class EventListTile extends StatelessWidget {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: color.withValues(alpha: 0.15),
+                              // tint 底維持 .color（守門組合），同上方 icon 底
+                              color: type.color.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(
                                 DesignTokens.radiusXs,
                               ),

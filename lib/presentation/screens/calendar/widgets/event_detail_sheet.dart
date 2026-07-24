@@ -76,7 +76,8 @@ class _EventDetailSheetState extends ConsumerState<EventDetailSheet> {
     final theme = Theme.of(context);
     final event = widget.event;
     final type = EventType.fromValue(event.eventType);
-    final color = type.color;
+    // badge tint 維持 .color@0.15＋onTintFor 前景（守門測試組合）；
+    // 本 sheet 無 solid 識別色裝飾，不需 colorFor
 
     return Padding(
       padding: EdgeInsets.only(
@@ -100,7 +101,7 @@ class _EventDetailSheetState extends ConsumerState<EventDetailSheet> {
                   vertical: DesignTokens.spacing4,
                 ),
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.15),
+                  color: type.color.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(DesignTokens.radiusSm),
                 ),
                 child: Row(

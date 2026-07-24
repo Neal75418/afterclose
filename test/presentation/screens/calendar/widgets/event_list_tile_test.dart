@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/presentation/providers/event_calendar_provider.dart';
 import 'package:afterclose/presentation/screens/calendar/widgets/event_list_tile.dart';
 
 import '../../../../helpers/widget_test_helpers.dart';
@@ -32,6 +33,33 @@ void main() {
   }
 
   group('EventListTile', () {
+    testWidgets('dark mode: tint 底一律用 .color 而非 colorFor 粉彩', (tester) async {
+      // 守門：粉彩（onTintFor 家族）當 tint 基底會把合成底拉亮、前景對比
+      // 跌破 4.5（見 EventType.colorFor docstring）。tile 兩個 tint 站
+      // （icon 底、label badge 底）在深色都必須維持 .color@0.15。
+      await tester.pumpWidget(
+        buildTestApp(
+          EventListTile(event: createEvent(eventType: 'CUSTOM')),
+          brightness: Brightness.dark,
+        ),
+      );
+
+      const type = EventType.custom;
+      final expected = type.color.withValues(alpha: 0.15);
+      final forbidden = type.colorFor(Brightness.dark).withValues(alpha: 0.15);
+      final tintBoxes = tester
+          .widgetList<Container>(find.byType(Container))
+          .map((c) => c.decoration)
+          .whereType<BoxDecoration>()
+          .where((d) => d.color == expected || d.color == forbidden)
+          .toList();
+
+      expect(tintBoxes, isNotEmpty, reason: '應找到 tint 底容器');
+      for (final d in tintBoxes) {
+        expect(d.color, expected, reason: 'tint 底必須是 .color@0.15，非粉彩');
+      }
+    });
+
     testWidgets('displays event title', (tester) async {
       await tester.pumpWidget(
         buildTestApp(EventListTile(event: createEvent(title: '台積電除息'))),

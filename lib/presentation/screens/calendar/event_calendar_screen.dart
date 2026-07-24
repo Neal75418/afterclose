@@ -97,209 +97,15 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
             ),
         ],
       ),
-      // 桌面寬視窗下收斂內容欄，避免月曆格線被拉到極寬（dot 漂在
-      // 巨大空格中）；窄視窗不受影響（maxWidth 只設上限）。
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            maxWidth: Breakpoints.contentMaxWidth,
-          ),
-          child: Column(
-            children: [
-              // 即將到來事件摘要
-              UpcomingEventsSection(
-                events: state.upcomingEvents,
-                onEventTap: (event) {
-                  setState(() {
-                    _selectedDay = event.eventDate;
-                    _focusedDay = event.eventDate;
-                  });
-                  ref
-                      .read(eventCalendarProvider.notifier)
-                      .selectDate(event.eventDate);
-                  ref
-                      .read(eventCalendarProvider.notifier)
-                      .loadMonthEvents(
-                        DateTime(event.eventDate.year, event.eventDate.month),
-                      );
-                },
-              ),
-
-              // 日曆
-              TableCalendar<StockEventEntry>(
-                firstDay: DateTime(2000),
-                lastDay: DateTime(2100),
-                focusedDay: _focusedDay,
-                selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-                calendarFormat: state.calendarFormat,
-                // 取代套件英文預設（'Month'/'2 weeks'/'Week'）；按鈕顯示的是
-                // 「下一個」格式的 label（formatButtonShowsNext 預設 true）。
-                availableCalendarFormats: {
-                  CalendarFormat.month: 'calendar.formatMonth'.tr(),
-                  CalendarFormat.twoWeeks: 'calendar.formatTwoWeeks'.tr(),
-                  CalendarFormat.week: 'calendar.formatWeek'.tr(),
-                },
-                startingDayOfWeek: StartingDayOfWeek.monday,
-                eventLoader: (day) {
-                  final dateKey = DateContext.normalize(day);
-                  return state.filteredEvents[dateKey] ?? [];
-                },
-                onDaySelected: (selectedDay, focusedDay) {
-                  setState(() {
-                    _selectedDay = selectedDay;
-                    _focusedDay = focusedDay;
-                  });
-                  ref
-                      .read(eventCalendarProvider.notifier)
-                      .selectDate(selectedDay);
-                },
-                onFormatChanged: (format) {
-                  ref
-                      .read(eventCalendarProvider.notifier)
-                      .setCalendarFormat(format);
-                },
-                onPageChanged: (focusedDay) {
-                  _focusedDay = focusedDay;
-                  ref
-                      .read(eventCalendarProvider.notifier)
-                      .loadMonthEvents(
-                        DateTime(focusedDay.year, focusedDay.month),
-                      );
-                },
-                calendarBuilders: CalendarBuilders(
-                  markerBuilder: (context, date, events) {
-                    if (events.isEmpty) return null;
-                    return _buildEventMarkers(events);
-                  },
-                ),
-                headerStyle: HeaderStyle(
-                  formatButtonVisible: true,
-                  titleCentered: true,
-                  titleTextFormatter: (date, locale) =>
-                      DateFormat.yMMMM(locale).format(date),
-                ),
-                calendarStyle: CalendarStyle(
-                  todayDecoration: BoxDecoration(
-                    color: theme.colorScheme.primaryContainer,
-                    shape: BoxShape.circle,
-                  ),
-                  todayTextStyle: TextStyle(
-                    color: theme.colorScheme.onPrimaryContainer,
-                  ),
-                  selectedDecoration: BoxDecoration(
-                    color: theme.colorScheme.primary,
-                    shape: BoxShape.circle,
-                  ),
-                  selectedTextStyle: TextStyle(
-                    color: theme.colorScheme.onPrimary,
-                  ),
-                  outsideDaysVisible: false,
-                ),
-              ),
-
-              const Divider(height: 1),
-
-              // 事件類型篩選
-              _buildEventTypeFilterChips(state),
-
-              // Refresh 失敗但有舊資料時顯示 MaterialBanner
-              if (state.error != null && state.events.isNotEmpty)
-                MaterialBanner(
-                  content: Text(state.error!),
-                  actions: [
-                    TextButton(
-                      onPressed: () {
-                        if (state.focusedMonth != null) {
-                          ref
-                              .read(eventCalendarProvider.notifier)
-                              .loadMonthEvents(state.focusedMonth!);
-                        }
-                      },
-                      child: Text('common.retry'.tr()),
-                    ),
-                    TextButton(
-                      onPressed: () =>
-                          ref.read(eventCalendarProvider.notifier).clearError(),
-                      child: Text('common.dismiss'.tr()),
-                    ),
-                  ],
-                ),
-
-              // 選取日期的事件列表
-              Expanded(
-                child: state.error != null && state.events.isEmpty
-                    ? ErrorDisplay.isNetworkError(state.error!)
-                          ? EmptyStates.networkError(
-                              onRetry: () {
-                                if (state.focusedMonth != null) {
-                                  ref
-                                      .read(eventCalendarProvider.notifier)
-                                      .loadMonthEvents(state.focusedMonth!);
-                                }
-                              },
-                            )
-                          : EmptyStates.error(
-                              message: state.error!,
-                              onRetry: () {
-                                if (state.focusedMonth != null) {
-                                  ref
-                                      .read(eventCalendarProvider.notifier)
-                                      .loadMonthEvents(state.focusedMonth!);
-                                }
-                              },
-                            )
-                    : state.isLoading
-                    ? const Center(
-                        child: SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      )
-                    : state.selectedDayEvents.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.event_busy,
-                              size: 48,
-                              color: theme.colorScheme.outline.withValues(
-                                alpha: 0.5,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'calendar.noEvents'.tr(),
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: theme.colorScheme.outline,
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        itemCount: state.selectedDayEvents.length,
-                        itemBuilder: (context, index) {
-                          final event = state.selectedDayEvents[index];
-                          return EventListTile(
-                            event: event,
-                            onTap: () => showEventDetailSheet(
-                              context,
-                              event,
-                              onDelete: event.isAutoGenerated
-                                  ? null
-                                  : () => _confirmDelete(event),
-                            ),
-                            onDelete: () => _confirmDelete(event),
-                          );
-                        },
-                      ),
-              ),
-            ],
-          ),
-        ),
+      // 響應式：≥ tablet 斷點雙欄（月曆左、未來14天＋當日事件右），
+      // 空間用起來、不再是置中浮島；窄視窗維持單欄。兩者皆置中限寬。
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isWide = constraints.maxWidth >= Breakpoints.tablet;
+          return isWide
+              ? _buildWideBody(theme, state)
+              : _buildNarrowBody(theme, state);
+        },
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddEvent(),
@@ -308,13 +114,264 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
     );
   }
 
+  /// 單欄（手機／窄視窗）：未來14天橫向卡 → 月曆＋篩選 → 當日清單
+  Widget _buildNarrowBody(ThemeData theme, EventCalendarState state) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(
+          maxWidth: Breakpoints.contentMaxWidth,
+        ),
+        child: Column(
+          children: [
+            _buildUpcoming(state, direction: Axis.horizontal),
+            _buildCalendarSection(theme, state),
+            if (state.error != null && state.events.isNotEmpty)
+              _buildErrorBanner(state),
+            Expanded(child: _buildDayEventsBody(theme, state)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 雙欄（桌面）：左欄月曆＋篩選（flex 3）、右欄未來14天＋當日清單（flex 2）
+  Widget _buildWideBody(ThemeData theme, EventCalendarState state) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(
+          maxWidth: Breakpoints.contentMaxWidthWide,
+        ),
+        child: Column(
+          children: [
+            if (state.error != null && state.events.isNotEmpty)
+              _buildErrorBanner(state),
+            Expanded(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: SingleChildScrollView(
+                      child: _buildCalendarSection(theme, state),
+                    ),
+                  ),
+                  const VerticalDivider(width: 1),
+                  Expanded(
+                    flex: 2,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildUpcoming(state, direction: Axis.vertical),
+                        const Divider(height: 1),
+                        Expanded(child: _buildDayEventsBody(theme, state)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUpcoming(EventCalendarState state, {required Axis direction}) {
+    return UpcomingEventsSection(
+      events: state.upcomingEvents,
+      direction: direction,
+      onEventTap: (event) {
+        setState(() {
+          _selectedDay = event.eventDate;
+          _focusedDay = event.eventDate;
+        });
+        ref.read(eventCalendarProvider.notifier).selectDate(event.eventDate);
+        ref
+            .read(eventCalendarProvider.notifier)
+            .loadMonthEvents(
+              DateTime(event.eventDate.year, event.eventDate.month),
+            );
+      },
+    );
+  }
+
+  /// 月曆＋分隔線＋類型篩選 chips（單欄／雙欄共用）
+  Widget _buildCalendarSection(ThemeData theme, EventCalendarState state) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        TableCalendar<StockEventEntry>(
+          firstDay: DateTime(2000),
+          lastDay: DateTime(2100),
+          focusedDay: _focusedDay,
+          selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+          calendarFormat: state.calendarFormat,
+          // 取代套件英文預設（'Month'/'2 weeks'/'Week'）；按鈕顯示的是
+          // 「下一個」格式的 label（formatButtonShowsNext 預設 true）。
+          availableCalendarFormats: {
+            CalendarFormat.month: 'calendar.formatMonth'.tr(),
+            CalendarFormat.twoWeeks: 'calendar.formatTwoWeeks'.tr(),
+            CalendarFormat.week: 'calendar.formatWeek'.tr(),
+          },
+          startingDayOfWeek: StartingDayOfWeek.monday,
+          eventLoader: (day) {
+            final dateKey = DateContext.normalize(day);
+            return state.filteredEvents[dateKey] ?? [];
+          },
+          onDaySelected: (selectedDay, focusedDay) {
+            setState(() {
+              _selectedDay = selectedDay;
+              _focusedDay = focusedDay;
+            });
+            ref.read(eventCalendarProvider.notifier).selectDate(selectedDay);
+          },
+          onFormatChanged: (format) {
+            ref.read(eventCalendarProvider.notifier).setCalendarFormat(format);
+          },
+          onPageChanged: (focusedDay) {
+            _focusedDay = focusedDay;
+            ref
+                .read(eventCalendarProvider.notifier)
+                .loadMonthEvents(DateTime(focusedDay.year, focusedDay.month));
+          },
+          calendarBuilders: CalendarBuilders(
+            markerBuilder: (context, date, events) {
+              if (events.isEmpty) return null;
+              return _buildEventMarkers(context, events);
+            },
+          ),
+          headerStyle: HeaderStyle(
+            formatButtonVisible: true,
+            titleCentered: true,
+            titleTextFormatter: (date, locale) =>
+                DateFormat.yMMMM(locale).format(date),
+          ),
+          calendarStyle: CalendarStyle(
+            todayDecoration: BoxDecoration(
+              color: theme.colorScheme.primaryContainer,
+              shape: BoxShape.circle,
+            ),
+            todayTextStyle: TextStyle(
+              color: theme.colorScheme.onPrimaryContainer,
+            ),
+            selectedDecoration: BoxDecoration(
+              color: theme.colorScheme.primary,
+              shape: BoxShape.circle,
+            ),
+            selectedTextStyle: TextStyle(color: theme.colorScheme.onPrimary),
+            outsideDaysVisible: false,
+          ),
+        ),
+        const Divider(height: 1),
+        _buildEventTypeFilterChips(state),
+      ],
+    );
+  }
+
+  /// Refresh 失敗但有舊資料時的 MaterialBanner
+  Widget _buildErrorBanner(EventCalendarState state) {
+    return MaterialBanner(
+      content: Text(state.error!),
+      actions: [
+        TextButton(
+          onPressed: () {
+            if (state.focusedMonth != null) {
+              ref
+                  .read(eventCalendarProvider.notifier)
+                  .loadMonthEvents(state.focusedMonth!);
+            }
+          },
+          child: Text('common.retry'.tr()),
+        ),
+        TextButton(
+          onPressed: () =>
+              ref.read(eventCalendarProvider.notifier).clearError(),
+          child: Text('common.dismiss'.tr()),
+        ),
+      ],
+    );
+  }
+
+  /// 選取日期的事件列表（錯誤／載入／空／清單四態）
+  Widget _buildDayEventsBody(ThemeData theme, EventCalendarState state) {
+    return state.error != null && state.events.isEmpty
+        ? ErrorDisplay.isNetworkError(state.error!)
+              ? EmptyStates.networkError(
+                  onRetry: () {
+                    if (state.focusedMonth != null) {
+                      ref
+                          .read(eventCalendarProvider.notifier)
+                          .loadMonthEvents(state.focusedMonth!);
+                    }
+                  },
+                )
+              : EmptyStates.error(
+                  message: state.error!,
+                  onRetry: () {
+                    if (state.focusedMonth != null) {
+                      ref
+                          .read(eventCalendarProvider.notifier)
+                          .loadMonthEvents(state.focusedMonth!);
+                    }
+                  },
+                )
+        : state.isLoading
+        ? const Center(
+            child: SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          )
+        : state.selectedDayEvents.isEmpty
+        ? Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.event_busy,
+                  size: 48,
+                  color: theme.colorScheme.outline.withValues(alpha: 0.5),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'calendar.noEvents'.tr(),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.outline,
+                  ),
+                ),
+              ],
+            ),
+          )
+        : ListView.builder(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            itemCount: state.selectedDayEvents.length,
+            itemBuilder: (context, index) {
+              final event = state.selectedDayEvents[index];
+              return EventListTile(
+                event: event,
+                onTap: () => showEventDetailSheet(
+                  context,
+                  event,
+                  onDelete: event.isAutoGenerated
+                      ? null
+                      : () => _confirmDelete(event),
+                ),
+                onDelete: () => _confirmDelete(event),
+              );
+            },
+          );
+  }
+
   Widget _buildEventTypeFilterChips(EventCalendarState state) {
+    final brightness = Theme.of(context).brightness;
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: Row(
         children: EventType.values.map((type) {
           final selected = state.selectedEventTypes.contains(type);
+          final onTint = type.onTintFor(brightness);
           return Padding(
             padding: const EdgeInsets.only(right: 6),
             child: FilterChip(
@@ -323,11 +380,22 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
               onSelected: (_) {
                 ref.read(eventCalendarProvider.notifier).toggleEventType(type);
               },
-              selectedColor: type.color.withValues(alpha: 0.2),
-              checkmarkColor: type.color,
-              avatar: Icon(type.icon, size: 16, color: type.color),
+              // tint 底維持 .color、alpha 對齊守門測試組合（0.15）
+              selectedColor: type.color.withValues(alpha: 0.15),
+              checkmarkColor: onTint,
+              // 未選中＝中性：小色點保留類型識別、其餘灰階，消掉整排糖果感
+              avatar: selected
+                  ? Icon(type.icon, size: 16, color: onTint)
+                  : Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: type.colorFor(brightness),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
               labelStyle: TextStyle(
-                color: selected ? type.color : null,
+                color: selected ? onTint : null,
                 fontSize: 12,
               ),
               visualDensity: VisualDensity.compact,
@@ -339,7 +407,11 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
     );
   }
 
-  Widget _buildEventMarkers(List<StockEventEntry> events) {
+  Widget _buildEventMarkers(
+    BuildContext context,
+    List<StockEventEntry> events,
+  ) {
+    final brightness = Theme.of(context).brightness;
     // 取不重複的事件類型，按 enum 順序排列（最多顯示 3 個 dot）
     final types =
         events.map((e) => EventType.fromValue(e.eventType)).toSet().toList()
@@ -356,7 +428,7 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
             height: 6,
             margin: const EdgeInsets.symmetric(horizontal: 1),
             decoration: BoxDecoration(
-              color: type.color,
+              color: type.colorFor(brightness),
               shape: BoxShape.circle,
             ),
           );

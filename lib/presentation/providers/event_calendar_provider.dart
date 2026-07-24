@@ -94,6 +94,16 @@ enum EventType {
     }
   }
 
+  /// 主題調和後的**實心**識別色——dot、卡片左框、日期字、chip 色點等
+  /// 「直接畫在 surface 上」的裝飾。深色沿用 [onTintFor] 的粉彩家族
+  /// （對 dark surface 對比有守門背書），淺色維持本色。
+  ///
+  /// 注意：**tint 底（@0.15 疊色）仍走 [color]**——粉彩當 tint 基底會把
+  /// 合成底拉亮、讓前景對比跌破 4.5（custom 實算 ~4.2），守門測試的
+  /// 組合（fg=onTintFor、tint=color@0.15）維持不動。
+  Color colorFor(Brightness brightness) =>
+      brightness == Brightness.light ? color : onTintFor(brightness);
+
   IconData get icon {
     switch (this) {
       case EventType.exDividend:
