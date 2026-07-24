@@ -1,4 +1,5 @@
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/design_tokens.dart';
@@ -49,18 +50,30 @@ class UpcomingEventsSection extends StatelessWidget {
                 if (direction == Axis.horizontal)
                   SizedBox(
                     height: 76,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: DesignTokens.spacing12,
+                    // 桌面預設 dragDevices 不含 mouse，橫向卡列會拖不動
+                    // （2026-07-24 使用者回饋：縮小視窗時不能右滑）
+                    child: ScrollConfiguration(
+                      behavior: ScrollConfiguration.of(context).copyWith(
+                        dragDevices: {
+                          PointerDeviceKind.touch,
+                          PointerDeviceKind.mouse,
+                          PointerDeviceKind.trackpad,
+                          PointerDeviceKind.stylus,
+                        },
                       ),
-                      itemCount: events.length,
-                      itemBuilder: (context, index) {
-                        return _UpcomingEventCard(
-                          event: events[index],
-                          onTap: () => onEventTap?.call(events[index]),
-                        );
-                      },
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: DesignTokens.spacing12,
+                        ),
+                        itemCount: events.length,
+                        itemBuilder: (context, index) {
+                          return _UpcomingEventCard(
+                            event: events[index],
+                            onTap: () => onEventTap?.call(events[index]),
+                          );
+                        },
+                      ),
                     ),
                   )
                 else

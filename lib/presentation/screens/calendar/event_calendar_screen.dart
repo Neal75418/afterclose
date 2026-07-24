@@ -23,6 +23,10 @@ class EventCalendarScreen extends ConsumerStatefulWidget {
       _EventCalendarScreenState();
 }
 
+/// 桌面左欄固定件（月曆 header＋星期列＋chips＋統計卡＋間距）估算高，
+/// 供動態 rowHeight 反推：(可用高 − 此值) / 6 週列。
+const double _wideLeftFixedHeight = 360;
+
 class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
   late DateTime _focusedDay;
   DateTime? _selectedDay;
@@ -163,26 +167,41 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
               children: [
                 Expanded(
                   flex: 3,
-                  child: SingleChildScrollView(
-                    // surface 卡片包月曆：裸月曆浮在黑底上沒有定錨
-                    child: Column(
-                      children: [
-                        Container(
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.surfaceContainerLow,
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          child: _buildCalendarSection(
-                            theme,
-                            state,
-                            isWide: true,
-                          ),
+                  child: LayoutBuilder(
+                    builder: (context, cons) {
+                      // 高視窗把月曆格高撐開填滿（Google Calendar 式），
+                      // 消掉下方大片留白；矮視窗回落 68 並由外層捲動。
+                      // _wideLeftFixedHeight＝月曆 header/星期列/chips/
+                      // 統計卡等固定件的估算高。
+                      final rowHeight = cons.maxHeight.isFinite
+                          ? ((cons.maxHeight - _wideLeftFixedHeight) / 6).clamp(
+                              68.0,
+                              112.0,
+                            )
+                          : 68.0;
+                      return SingleChildScrollView(
+                        // surface 卡片包月曆：裸月曆浮在黑底上沒有定錨
+                        child: Column(
+                          children: [
+                            Container(
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.surfaceContainerLow,
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: _buildCalendarSection(
+                                theme,
+                                state,
+                                isWide: true,
+                                rowHeight: rowHeight,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            _buildMonthStats(theme, state),
+                          ],
                         ),
-                        const SizedBox(height: 12),
-                        _buildMonthStats(theme, state),
-                      ],
-                    ),
+                      );
+                    },
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -260,6 +279,7 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
     ThemeData theme,
     EventCalendarState state, {
     required bool isWide,
+    double rowHeight = 52,
   }) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -270,7 +290,7 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
           focusedDay: _focusedDay,
           selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
           calendarFormat: state.calendarFormat,
-          rowHeight: isWide ? 68 : 52,
+          rowHeight: rowHeight,
           daysOfWeekHeight: isWide ? 24 : 16,
           onHeaderTapped: (_) => _pickMonth(),
           // 取代套件英文預設（'Month'/'2 weeks'/'Week'）；按鈕顯示的是

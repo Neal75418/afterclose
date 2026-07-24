@@ -1,4 +1,5 @@
 import 'package:easy_localization/easy_localization.dart' show DateFormat;
+import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:table_calendar/table_calendar.dart';
@@ -325,7 +326,8 @@ void main() {
       final wide = tester.widget<TableCalendar<StockEventEntry>>(
         find.byType(TableCalendar<StockEventEntry>),
       );
-      expect(wide.rowHeight, 68, reason: '桌面格高應加高至 68');
+      // 高視窗（邏輯 2666 高）動態撐滿 → 觸頂 112；矮視窗會落 68~112 間
+      expect(wide.rowHeight, 112, reason: '高視窗月曆格高應動態撐滿至上限');
 
       tester.view.physicalSize = const Size(1680, 2400); // 邏輯 560 → 單欄
       await tester.pumpWidget(buildTestWidget());
@@ -424,6 +426,34 @@ void main() {
         lastFakeNotifier!.toggled,
         contains(EventType.exDividend),
         reason: '點統計列應切換該類型篩選',
+      );
+    });
+
+    testWidgets('horizontal upcoming strip is mouse-draggable', (tester) async {
+      // 桌面單欄：Flutter 預設 dragDevices 不含 mouse，橫向卡列會拖不動
+      tester.view.physicalSize = const Size(1680, 2400); // 邏輯 560 → 單欄
+      addTearDown(() => tester.view.resetPhysicalSize());
+      await tester.pumpWidget(
+        buildTestWidget(
+          calendarState: EventCalendarState(
+            upcomingEvents: [createEvent(id: 9, symbol: '2330')],
+          ),
+        ),
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      final config = tester.widget<ScrollConfiguration>(
+        find
+            .ancestor(
+              of: find.byType(ListView),
+              matching: find.byType(ScrollConfiguration),
+            )
+            .first,
+      );
+      expect(
+        config.behavior.dragDevices,
+        containsAll([PointerDeviceKind.mouse, PointerDeviceKind.trackpad]),
+        reason: '橫向卡列須可用滑鼠/觸控板拖動',
       );
     });
 
