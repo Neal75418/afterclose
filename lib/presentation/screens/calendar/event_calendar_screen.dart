@@ -23,9 +23,20 @@ class EventCalendarScreen extends ConsumerStatefulWidget {
       _EventCalendarScreenState();
 }
 
-/// 桌面左欄固定件（月曆 header＋星期列＋chips＋統計卡＋間距）估算高，
-/// 供動態 rowHeight 反推：(可用高 − 此值) / 6 週列。
-const double _wideLeftFixedHeight = 360;
+/// 桌面左欄固定件（月曆 header＋星期列＋chips＋統計 pills 卡＋間距）
+/// 估算高，供動態 rowHeight 反推：(可用高 − 此值) / 當月週數。
+const double _wideLeftFixedHeight = 270;
+
+/// 當月在「週一起算」月曆上實際佔的週列數（4~6）。
+///
+/// 動態 rowHeight 用 6 週硬除會在 5 週月份少算 ~20%、填不滿留白。
+@visibleForTesting
+int calendarWeekRows(DateTime month) {
+  final first = DateTime(month.year, month.month, 1);
+  final offset = first.weekday - DateTime.monday; // 週一=0 … 週日=6
+  final days = DateUtils.getDaysInMonth(month.year, month.month);
+  return (offset + days + 6) ~/ 7;
+}
 
 class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
   late DateTime _focusedDay;
@@ -171,13 +182,11 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
                     builder: (context, cons) {
                       // 高視窗把月曆格高撐開填滿（Google Calendar 式），
                       // 消掉下方大片留白；矮視窗回落 68 並由外層捲動。
-                      // _wideLeftFixedHeight＝月曆 header/星期列/chips/
-                      // 統計卡等固定件的估算高。
+                      // 以當月實際週數（4~6）反推，5 週月份才填得滿。
+                      final rows = calendarWeekRows(_focusedDay);
                       final rowHeight = cons.maxHeight.isFinite
-                          ? ((cons.maxHeight - _wideLeftFixedHeight) / 6).clamp(
-                              68.0,
-                              112.0,
-                            )
+                          ? ((cons.maxHeight - _wideLeftFixedHeight) / rows)
+                                .clamp(68.0, 128.0)
                           : 68.0;
                       return SingleChildScrollView(
                         // surface 卡片包月曆：裸月曆浮在黑底上沒有定錨
@@ -336,6 +345,20 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
               if (events.isEmpty) return null;
               return _buildEventMarkers(context, events, isWide: isWide);
             },
+            // 固定 44dp 圈：預設 decoration 會隨 rowHeight 等比放大成
+            // 氣球（格高 128 時圈徑近 100）
+            selectedBuilder: (context, day, _) => _buildDayCircle(
+              day,
+              key: const ValueKey('selectedDayCircle'),
+              background: theme.colorScheme.primary,
+              foreground: theme.colorScheme.onPrimary,
+            ),
+            todayBuilder: (context, day, _) => _buildDayCircle(
+              day,
+              key: const ValueKey('todayCircle'),
+              background: theme.colorScheme.primaryContainer,
+              foreground: theme.colorScheme.onPrimaryContainer,
+            ),
           ),
           headerStyle: HeaderStyle(
             formatButtonVisible: true,
@@ -343,21 +366,8 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
             titleTextFormatter: (date, locale) =>
                 DateFormat.yMMMM(locale).format(date),
           ),
-          calendarStyle: CalendarStyle(
-            todayDecoration: BoxDecoration(
-              color: theme.colorScheme.primaryContainer,
-              shape: BoxShape.circle,
-            ),
-            todayTextStyle: TextStyle(
-              color: theme.colorScheme.onPrimaryContainer,
-            ),
-            selectedDecoration: BoxDecoration(
-              color: theme.colorScheme.primary,
-              shape: BoxShape.circle,
-            ),
-            selectedTextStyle: TextStyle(color: theme.colorScheme.onPrimary),
-            outsideDaysVisible: false,
-          ),
+          // today/selected 外觀由上方 builders 接管（固定 44dp 圈）
+          calendarStyle: const CalendarStyle(outsideDaysVisible: false),
         ),
         const Divider(height: 1),
         _buildEventTypeFilterChips(state),
@@ -544,6 +554,28 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
     );
   }
 
+  /// 今日／選中日的固定尺寸圓圈（44dp，不隨 rowHeight 膨脹）
+  Widget _buildDayCircle(
+    DateTime day, {
+    required Key key,
+    required Color background,
+    required Color foreground,
+  }) {
+    return Center(
+      child: Container(
+        key: key,
+        width: 44,
+        height: 44,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(color: background, shape: BoxShape.circle),
+        child: Text(
+          '${day.day}',
+          style: TextStyle(color: foreground, fontSize: 16),
+        ),
+      ),
+    );
+  }
+
   /// 跳回今天（focus＋選取＋載入當月）
   void _jumpToToday() {
     final today = DateTime.now();
@@ -611,48 +643,65 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          for (final type in EventType.values)
-            InkWell(
-              key: ValueKey('monthStat_${type.name}'),
-              borderRadius: BorderRadius.circular(8),
-              onTap: () => ref
-                  .read(eventCalendarProvider.notifier)
-                  .toggleEventType(type),
-              child: Opacity(
-                opacity: state.selectedEventTypes.contains(type) ? 1 : 0.4,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 4,
-                    vertical: 6,
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: type.colorFor(brightness),
-                          shape: BoxShape.circle,
-                        ),
+          // 橫向 pills：整寬直列會讓 label 與數字相距上千 dp、掃視困難；
+          // 0 場次或被篩掉的類型降透明度
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final type in EventType.values)
+                InkWell(
+                  key: ValueKey('monthStat_${type.name}'),
+                  borderRadius: BorderRadius.circular(20),
+                  onTap: () => ref
+                      .read(eventCalendarProvider.notifier)
+                      .toggleEventType(type),
+                  child: Opacity(
+                    opacity:
+                        (state.selectedEventTypes.contains(type) &&
+                            (counts[type] ?? 0) > 0)
+                        ? 1
+                        : 0.4,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          type.i18nKey.tr(),
-                          style: theme.textTheme.bodySmall,
-                        ),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surfaceContainerHigh,
+                        borderRadius: BorderRadius.circular(20),
                       ),
-                      Text(
-                        '${counts[type] ?? 0}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: type.colorFor(brightness),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            type.i18nKey.tr(),
+                            style: theme.textTheme.bodySmall,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            '${counts[type] ?? 0}',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
-              ),
-            ),
+            ],
+          ),
         ],
       ),
     );

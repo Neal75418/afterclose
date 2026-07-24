@@ -326,8 +326,8 @@ void main() {
       final wide = tester.widget<TableCalendar<StockEventEntry>>(
         find.byType(TableCalendar<StockEventEntry>),
       );
-      // 高視窗（邏輯 2666 高）動態撐滿 → 觸頂 112；矮視窗會落 68~112 間
-      expect(wide.rowHeight, 112, reason: '高視窗月曆格高應動態撐滿至上限');
+      // 高視窗（邏輯 2666 高）以當月實際週數動態撐滿 → 觸頂 128
+      expect(wide.rowHeight, 128, reason: '高視窗月曆格高應動態撐滿至上限');
 
       tester.view.physicalSize = const Size(1680, 2400); // 邏輯 560 → 單欄
       await tester.pumpWidget(buildTestWidget());
@@ -420,12 +420,34 @@ void main() {
       expect(find.text('calendar.monthStats'), findsOneWidget);
       final exDivRow = find.byKey(const ValueKey('monthStat_exDividend'));
       expect(exDivRow, findsOneWidget);
+
+      // pills 橫排：前兩類 pill 應在同一列（Wrap，非整寬直列）
+      final dy1 = tester.getTopLeft(exDivRow).dy;
+      final dy2 = tester
+          .getTopLeft(find.byKey(const ValueKey('monthStat_exRights')))
+          .dy;
+      expect(dy1, dy2, reason: '統計 pills 應橫向排列');
+
+      // 零場次類型（earnings 本月 0）降透明度；有場次（exDividend 1）全亮
+      double opacityOf(String name) => tester
+          .widget<Opacity>(
+            find
+                .descendant(
+                  of: find.byKey(ValueKey('monthStat_$name')),
+                  matching: find.byType(Opacity),
+                )
+                .first,
+          )
+          .opacity;
+      expect(opacityOf('earnings'), lessThan(1), reason: '0 場次應降透明');
+      expect(opacityOf('exDividend'), 1.0);
+
       await tester.tap(exDivRow);
       await tester.pump();
       expect(
         lastFakeNotifier!.toggled,
         contains(EventType.exDividend),
-        reason: '點統計列應切換該類型篩選',
+        reason: '點統計 pill 應切換該類型篩選',
       );
     });
 
@@ -455,6 +477,28 @@ void main() {
         containsAll([PointerDeviceKind.mouse, PointerDeviceKind.trackpad]),
         reason: '橫向卡列須可用滑鼠/觸控板拖動',
       );
+    });
+
+    testWidgets('selected day circle keeps fixed size at tall rows', (
+      tester,
+    ) async {
+      widenViewport(tester); // rowHeight 觸頂，圈不得跟著膨脹
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pump(const Duration(seconds: 1));
+
+      final circle = find.byKey(const ValueKey('selectedDayCircle'));
+      expect(circle, findsOneWidget);
+      expect(
+        tester.getSize(circle),
+        const Size(44, 44),
+        reason: '今日/選中圈固定 44dp，不隨格高等比放大成氣球',
+      );
+    });
+
+    test('calendarWeekRows 按週一起算回實際週數', () {
+      expect(calendarWeekRows(DateTime(2026, 7)), 5); // 7/1 週三
+      expect(calendarWeekRows(DateTime(2026, 8)), 6); // 8/1 週六
+      expect(calendarWeekRows(DateTime(2027, 2)), 4); // 2/1 週一、28 天
     });
 
     testWidgets('shows error state', (tester) async {
