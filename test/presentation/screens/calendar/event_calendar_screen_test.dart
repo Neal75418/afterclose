@@ -270,8 +270,7 @@ void main() {
       );
     });
 
-    testWidgets('filter chips: unselected is neutral, selected uses '
-        'onTint foreground', (tester) async {
+    testWidgets('filter chips: 兩態皆中性、類型色只留色點 avatar', (tester) async {
       widenViewport(tester);
       await tester.pumpWidget(
         buildTestWidget(
@@ -286,26 +285,26 @@ void main() {
       final chips = tester
           .widgetList<FilterChip>(find.byType(FilterChip))
           .toList();
-      final unselected = chips.singleWhere((c) => !c.selected);
-      final selectedSample = chips.firstWhere((c) => c.selected);
+      expect(chips, hasLength(EventType.values.length));
 
-      // 未選中：無彩色前景（label 用預設色）、avatar 是小色點非彩色 icon
+      // 預設五類全選會恆常呈彩虹，故兩態 label 皆不得著類型色、
+      // avatar 一律為小色點（識別靠色點、選取靠底色＋勾勾）
+      for (final chip in chips) {
+        expect(
+          chip.labelStyle?.color,
+          isNull,
+          reason: 'chip label 不著類型色（選中與否皆同）',
+        );
+        expect(
+          chip.avatar,
+          isNot(isA<Icon>()),
+          reason: 'avatar 一律為色點而非彩色 icon',
+        );
+      }
       expect(
-        unselected.labelStyle?.color,
-        isNull,
-        reason: '未選中 chip 的 label 不應著類型色',
-      );
-      expect(
-        unselected.avatar,
-        isNot(isA<Icon>()),
-        reason: '未選中 chip 的 avatar 應為小色點而非彩色 icon',
-      );
-      // 選中：前景走 onTintFor（守門測試背書的對比色），非 Material 原色。
-      // chips 按 EventType.values 順序建立 → 第二顆 = exRights（選中）。
-      expect(
-        selectedSample.labelStyle?.color,
-        EventType.exRights.onTintFor(Brightness.light),
-        reason: '選中 chip 前景應為 onTintFor 對比色',
+        chips.where((c) => !c.selected),
+        hasLength(1),
+        reason: 'exDividend 應為唯一未選中',
       );
     });
 

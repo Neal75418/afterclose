@@ -8,7 +8,8 @@ import 'package:afterclose/presentation/providers/event_calendar_provider.dart';
 /// 即將到來事件摘要
 ///
 /// [direction] horizontal＝水平捲動卡片（手機單欄）；vertical＝右欄
-/// 直列清單（桌面雙欄），高度上限 [_verticalMaxHeight] 內自行捲動。
+/// 直列展開（桌面雙欄）——**不自行捲動**，交由外層右欄統一捲，
+/// 避免固定高度把卡片腰斬的裁切感。
 class UpcomingEventsSection extends StatelessWidget {
   const UpcomingEventsSection({
     super.key,
@@ -20,8 +21,6 @@ class UpcomingEventsSection extends StatelessWidget {
   final List<StockEventEntry> events;
   final void Function(StockEventEntry event)? onEventTap;
   final Axis direction;
-
-  static const double _verticalMaxHeight = 280;
 
   @override
   Widget build(BuildContext context) {
@@ -65,23 +64,19 @@ class UpcomingEventsSection extends StatelessWidget {
                     ),
                   )
                 else
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      maxHeight: _verticalMaxHeight,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: DesignTokens.spacing12,
                     ),
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: DesignTokens.spacing12,
-                      ),
-                      itemCount: events.length,
-                      itemBuilder: (context, index) {
-                        return _UpcomingEventCard(
-                          event: events[index],
-                          onTap: () => onEventTap?.call(events[index]),
-                          fullWidth: true,
-                        );
-                      },
+                    child: Column(
+                      children: [
+                        for (final event in events)
+                          _UpcomingEventCard(
+                            event: event,
+                            onTap: () => onEventTap?.call(event),
+                            fullWidth: true,
+                          ),
+                      ],
                     ),
                   ),
                 const SizedBox(height: DesignTokens.spacing4),
@@ -139,8 +134,10 @@ class _UpcomingEventCard extends StatelessWidget {
                 children: [
                   Text(
                     DateFormat('MM/dd', localeName).format(date),
+                    // 中性色：類型色只留左框——同類型事件連發時（如股東會季）
+                    // 著色文字會把整欄漆成單一色海（2026-07-24 使用者回饋）
                     style: theme.textTheme.labelSmall?.copyWith(
-                      color: color,
+                      color: theme.colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
