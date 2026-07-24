@@ -478,22 +478,27 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
     }
     if (state.selectedDayEvents.isEmpty) {
       return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.event_busy,
-              size: 48,
-              color: theme.colorScheme.outline.withValues(alpha: 0.5),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'calendar.noEvents'.tr(),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.outline,
+        // scaleDown：矮視窗下 Expanded 可能只剩 ~80dp，icon48+文字會
+        // 垂直溢位（2026-07-24 實機紅條）；FittedBox 只在不夠時縮小
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.event_busy,
+                size: 48,
+                color: theme.colorScheme.outline.withValues(alpha: 0.5),
               ),
-            ),
-          ],
+              const SizedBox(height: 8),
+              Text(
+                'calendar.noEvents'.tr(),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.outline,
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }

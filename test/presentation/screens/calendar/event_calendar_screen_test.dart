@@ -551,6 +551,27 @@ void main() {
       );
     });
 
+    testWidgets('narrow cramped height: empty day state must not overflow', (
+      tester,
+    ) async {
+      // 邏輯 560x625：上方（未來14天卡＋月曆＋chips）吃掉大半高度後，
+      // Expanded 剩 ~80dp，空狀態 icon48+文字 需可縮放不得溢位
+      tester.view.physicalSize = const Size(1680, 1875);
+      addTearDown(() => tester.view.resetPhysicalSize());
+      await tester.pumpWidget(
+        buildTestWidget(
+          calendarState: EventCalendarState(
+            selectedDate: DateTime(2026, 2, 20),
+            upcomingEvents: [createEvent(id: 9, symbol: '2330')],
+          ),
+        ),
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(tester.takeException(), isNull, reason: '不得 RenderFlex 溢位');
+      expect(find.byIcon(Icons.event_busy), findsOneWidget);
+    });
+
     testWidgets('shows error state', (tester) async {
       widenViewport(tester);
       await tester.pumpWidget(
