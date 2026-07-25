@@ -30,9 +30,14 @@ class BatchDataBuilder {
   }) {
     final result = <String, ShareholdingData>{};
     final allSymbols = {...shareholdingEntries.keys, ...concentrationMap.keys};
-    final cutoff = TaiwanCalendar.subtractTradingDays(
+    // 兩道門檻：變化量嚴（stale 時是捏造值）、水位寬（真實觀測、緩慢移動）
+    final changeCutoff = TaiwanCalendar.subtractTradingDays(
       evaluationDate,
       InstitutionalParams.foreignShareholdingMaxStaleTradingDays,
+    );
+    final levelCutoff = TaiwanCalendar.subtractTradingDays(
+      evaluationDate,
+      InstitutionalParams.foreignShareholdingLevelMaxStaleTradingDays,
     );
     // 分市場統計：閘門會把「靜默的錯訊號」換成「靜默的無訊號」，若不揭露
     // 覆蓋退化，使用者只會覺得「上櫃外資訊號怎麼變少了」而不知原因。
@@ -43,16 +48,20 @@ class BatchDataBuilder {
 
     for (final k in allSymbols) {
       final entry = shareholdingEntries[k];
-      final isStale = entry != null && entry.date.isBefore(cutoff);
+      final changeStale = entry != null && entry.date.isBefore(changeCutoff);
+      final levelStale = entry != null && entry.date.isBefore(levelCutoff);
       if (entry != null) {
         final market = symbolMarkets[k] ?? '?';
-        final bucket = isStale ? stale : fresh;
+        final bucket = changeStale ? stale : fresh;
         bucket[market] = (bucket[market] ?? 0) + 1;
       }
-      if (isStale) staleCount++;
+      if (changeStale) staleCount++;
 
-      final currentRatio = isStale ? null : entry?.foreignSharesRatio;
-      final prevRatio = isStale
+      // 水位走寬門檻——ForeignConcentrationWarningRule(-8) 只讀水位，
+      // 與變化量同閘門會隱藏真實風險
+      final currentRatio = levelStale ? null : entry?.foreignSharesRatio;
+      // 變化量走嚴門檻，且水位本身過期時也不算
+      final prevRatio = (changeStale || levelStale)
           ? null
           : prevShareholdingEntries[k]?.foreignSharesRatio;
 
@@ -78,7 +87,8 @@ class BatchDataBuilder {
       AppLogger.info(
         'BatchDataBuilder',
         '外資持股新鮮度: $breakdown（新鮮/有資料；'
-            '過期 $staleCount 檔早於 ${cutoff.toIso8601String().substring(0, 10)}，'
+            '過期 $staleCount 檔早於 '
+            '${changeCutoff.toIso8601String().substring(0, 10)}，'
             '多為未被上櫃配額覆蓋者，其外資訊號本輪不計分）',
       );
     }

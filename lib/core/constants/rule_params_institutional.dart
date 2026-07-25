@@ -118,7 +118,19 @@ abstract final class InstitutionalParams {
   /// （change 0.84→1.23→1.22→1.22，ratio 恆為 7.63）。
   ///
   /// 用交易日而非日曆天：週一用上週五資料是 3 日曆天但僅隔 1 交易日。
-  static const int foreignShareholdingMaxStaleTradingDays = 1;
+  static const int foreignShareholdingMaxStaleTradingDays = 2;
+
+  /// 外資持股**水位**可接受的最大陳舊度（交易日）
+  ///
+  /// 與 [foreignShareholdingMaxStaleTradingDays]（管**變化量**）刻意分開：
+  /// - **水位**（ratio）是真實觀測值，持股比例以月為單位緩慢移動，隔幾天仍
+  ///   具參考性。`ForeignConcentrationWarningRule`(-8) 只讀水位、不碰變化量，
+  ///   若與變化量同閘門一起關掉，等於**隱藏真實風險**（fail-open）。
+  /// - **變化量**（change）在 stale 時是捏造值：current 端凍結、prev 端隨
+  ///   evaluationDate 往回滾，訊號強度會「自己變強」。
+  ///
+  /// 取 20 個交易日（約一個月）為寬鬆上界，避免用季度前的水位當現況。
+  static const int foreignShareholdingLevelMaxStaleTradingDays = 20;
 
   /// 高當沖比例門檻（50%）
   static const double dayTradingHighThreshold = 50.0;

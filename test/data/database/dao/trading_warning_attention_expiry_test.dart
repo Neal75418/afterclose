@@ -167,6 +167,35 @@ void main() {
       expect(rows.single.date, d2);
     });
 
+    test('🚨 DISPOSAL 的 NULL endDate 不得永久生效（同型 bug 掃除）', () async {
+      // endDate 是 DateTime?：TWSE 改分隔符號、欄位位移或民國日期解析失敗都會
+      // 讓它變 null（twse_client.dart:1396-1405）。而 updateExpiredWarnings 的
+      // `disposal_end_date < now` 對 NULL 恆不成立 → -50 分 + 三模式硬排除
+      // **永久生效**，該股再也不會出現在任何推薦榜。
+      await db.insertWarningData([
+        TradingWarningCompanion.insert(
+          symbol: '2330',
+          date: DateTime(2026, 5, 1), // 遠早於容忍窗
+          warningType: 'DISPOSAL',
+          isActive: const Value(true),
+        ),
+        // 對照組：近期的 NULL endDate 仍保留（可能真的還在處置中）
+        TradingWarningCompanion.insert(
+          symbol: '2317',
+          date: d2,
+          warningType: 'DISPOSAL',
+          isActive: const Value(true),
+        ),
+      ]);
+
+      await db.updateExpiredWarnings(now: DateTime(2026, 7, 24));
+
+      final active = (await db.getActiveWarningsByType(
+        'DISPOSAL',
+      )).map((r) => r.symbol).toSet();
+      expect(active, {'2317'}, reason: '陳舊的 NULL endDate 處置必須失效，近期的保守保留');
+    });
+
     test('未同步任何市場時為 no-op', () async {
       await seedAttention(['2330', '3088'], d1);
 

@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/data/database/app_database.drift.dart';
 import 'package:afterclose/data/database/tables/market_data_tables.drift.dart';
@@ -165,11 +166,30 @@ mixin TradingWarningDaoMixin on $AppDatabase {
   /// 將處置結束日已過的警示標記為非生效。
   /// **僅涵蓋 DISPOSAL**（依賴 disposalEndDate）；注意股的失效走
   /// [deactivateStaleAttentionWarnings]。
+  ///
+  /// 兩條失效條件：
+  /// 1. `disposal_end_date < now` — 正常路徑。
+  /// 2. `disposal_end_date IS NULL` 且該列已超過
+  ///    [FundamentalParams.disposalNullEndDateMaxDays] 天 — **同型 bug 掃除**。
+  ///    endDate 為 `DateTime?`，TWSE 改分隔符號、欄位位移或民國日期解析失敗
+  ///    都會讓它變 null（twse_client.dart:1396-1405）。而 SQL 三值邏輯下
+  ///    `NULL < ?` 恆不成立，這類列會與注意股同病：**永久 is_active=1**，
+  ///    造成 -50 分 + 三模式硬排除永久生效，該股再也不會出現在任何推薦榜。
+  ///    保守保留一段時間（可能真的還在處置中）後強制失效，避免永久幽靈。
   Future<int> updateExpiredWarnings({DateTime? now}) async {
     final effectiveNow = now ?? DateTime.now();
+    final nullEndDateCutoff = effectiveNow.subtract(
+      const Duration(days: FundamentalParams.disposalNullEndDateMaxDays),
+    );
     return (update(tradingWarning)
           ..where((t) => t.isActive.equals(true))
-          ..where((t) => t.disposalEndDate.isSmallerThanValue(effectiveNow)))
+          ..where(
+            (t) =>
+                t.disposalEndDate.isSmallerThanValue(effectiveNow) |
+                (t.warningType.equals('DISPOSAL') &
+                    t.disposalEndDate.isNull() &
+                    t.date.isSmallerThanValue(nullEndDateCutoff)),
+          ))
         .write(const TradingWarningCompanion(isActive: Value(false)));
   }
 

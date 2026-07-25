@@ -106,6 +106,14 @@ abstract final class FundamentalParams {
   /// 1 天確保結束當日仍視為生效狀態。
   static const int disposalEndDateGraceDays = 1;
 
+  /// NULL endDate 的處置股最長保留天數
+  ///
+  /// endDate 解析失敗（TWSE 改格式/欄位位移/民國日期異常）會讓該欄為 null，
+  /// 而 `disposal_end_date < now` 在 SQL 三值邏輯下對 NULL 恆不成立 →
+  /// **-50 分 + 三模式硬排除永久生效**。台股處置期最長約 12 個交易日，
+  /// 取 30 個日曆天為保守上界：真的還在處置中就保留、解析失敗則有限期自癒。
+  static const int disposalNullEndDateMaxDays = 30;
+
   /// 外資持股集中度警示門檻（%）
   ///
   /// 外資持股超過 60% 且快速增加時觸發風險警示。

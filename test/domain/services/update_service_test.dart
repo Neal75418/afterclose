@@ -256,6 +256,30 @@ void main() {
       expect(result.hasWarnings, isTrue);
     });
 
+    test('🚨 日期回滾時不得誤報缺市場（早盤假 partial）', () async {
+      // 交易日盤前/盤中：TPEx 當日行情檔未發布 → 空；TWSE 端點自動回上一交易日
+      // → dataDate 早於 targetDate、觸發回滾。此時「TPEx 今日零筆」是預期的，
+      // 而回滾後那一天的資料 DB 早已完整，記 error 會讓每個交易日早盤都假 partial。
+      final prevDay = tradingDay.subtract(const Duration(days: 1));
+      when(() => mockPriceRepo.syncAllPricesForDate(any())).thenAnswer(
+        (_) async => MarketSyncResult(
+          count: 1200,
+          candidates: const [],
+          dataDate: prevDay,
+          emptyMarkets: const ['TPEx'],
+        ),
+      );
+
+      final service = buildService();
+      final result = await service.runDailyUpdate(forDate: tradingDay);
+
+      expect(
+        result.errors.where((e) => e.contains('TPEx')),
+        isEmpty,
+        reason: '日期已回滾到有完整資料的那天，不該報缺市場',
+      );
+    });
+
     test('兩個市場都有資料時不得誤報錯誤', () async {
       final service = buildService();
       final result = await service.runDailyUpdate(forDate: tradingDay);

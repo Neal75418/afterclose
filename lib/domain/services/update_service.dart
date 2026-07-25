@@ -453,12 +453,14 @@ class UpdateService {
       );
 
       // 日期校正
+      var dateRolledBack = false;
       if (syncResult.dataDate != null) {
         final dataDate = DateContext.normalize(syncResult.dataDate!);
         if (dataDate.year != normalizedDate.year ||
             dataDate.month != normalizedDate.month ||
             dataDate.day != normalizedDate.day) {
           normalizedDate = dataDate;
+          dateRolledBack = true;
         }
       }
 
@@ -468,8 +470,16 @@ class UpdateService {
       // 缺整個市場的當日價格必須可見：來源失敗被 safeAwait 吞成空清單，
       // 只有兩市場皆空才會拋錯；僅單一市場掛掉時流程照常走完，規則層仍以
       // `prices.last` 當「今日」，等於拿昨日 K 棒算今日訊號、UI 綠燈零警告。
-      // 快取路徑（skipped）不回報——那不是抓取行為。
-      if (!syncResult.skipped && syncResult.emptyMarkets.isNotEmpty) {
+      //
+      // 兩個不回報的情況：
+      // - 快取路徑（skipped）：不是抓取行為。
+      // - **日期已回滾**：交易日盤前/盤中 TPEx 當日檔未發布（空），而 TWSE
+      //   端點自動回上一交易日 → dataDate 早於目標日。此時「今日零筆」是預期，
+      //   且回滾後那天的資料 DB 早已完整；不排除會讓每個交易日早盤都假 partial，
+      //   造成警告疲勞、真正的缺市場反而被淹沒。
+      if (!syncResult.skipped &&
+          !dateRolledBack &&
+          syncResult.emptyMarkets.isNotEmpty) {
         final markets = syncResult.emptyMarkets.join('/');
         AppLogger.warning('UpdateService', '價格同步缺市場: $markets');
         ctx.result.recordError('$markets 當日價格為零筆，評分資料不完整');
