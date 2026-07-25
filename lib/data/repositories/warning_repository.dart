@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import 'package:afterclose/core/constants/data_freshness.dart';
+import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/date_context.dart';
@@ -94,6 +95,12 @@ class WarningRepository {
       List<TwseTradingWarning> twseDisposals = [];
       var failCount = 0;
 
+      // 注意股是逐日名單，需 full-refresh；但只能清「本輪確實取得新名單」的
+      // 市場，否則某市場失敗/跳過時會誤殺該市場全部注意股（表無 market 欄，
+      // 市場歸屬由 stock_master 推導）。
+      var twseAttentionSynced = false;
+      var tpexAttentionSynced = false;
+
       // TWSE 請求（僅交易日，兩個 TWSE 請求可並行——TWSE 伺服器穩定）
       if (isTradingDay) {
         final twseWarningFuture = _twseClient.getTradingWarnings(date: today);
@@ -101,6 +108,7 @@ class WarningRepository {
 
         try {
           twseWarnings = await twseWarningFuture;
+          twseAttentionSynced = true;
         } on RateLimitException {
           rethrow;
         } on NetworkException {
@@ -126,6 +134,7 @@ class WarningRepository {
       // TPEX 請求（序列化——TPEX OpenAPI 對併行連線敏感）
       try {
         tpexWarnings = await _tpexClient.getTradingWarnings();
+        tpexAttentionSynced = true;
       } on RateLimitException {
         rethrow;
       } on NetworkException {
@@ -225,16 +234,36 @@ class WarningRepository {
           );
         }
 
-        if (entries.isEmpty) {
+        // 寫入資料庫（entries 為空是合法狀態——今日確實沒有任何警示；
+        // 「所有來源都失敗」已在上方 throw，不會走到這裡）
+        if (entries.isNotEmpty) {
+          await _db.insertWarningData(entries);
+        }
+
+        // 注意股 full-refresh：不在今日名單者失效。必須在 insert 之後，
+        // 且只清本輪確實取得名單的市場。
+        final syncedAttentionMarkets = <String>{
+          if (twseAttentionSynced) MarketCode.twse,
+          if (tpexAttentionSynced) MarketCode.tpex,
+        };
+        final currentAttentionSymbols = <String>{
+          if (twseAttentionSynced) ...twseWarnings.map((w) => w.code),
+          if (tpexAttentionSynced) ...tpexWarnings.map((w) => w.code),
+        };
+        final deactivated = await _db.deactivateStaleAttentionWarnings(
+          currentSymbols: currentAttentionSymbols,
+          syncedMarkets: syncedAttentionMarkets,
+          syncDate: normalizedDate,
+        );
+
+        // 更新過期的處置股（移出 entries.isEmpty 早退分支——過去 0 筆的日子
+        // 連 DISPOSAL 過期都不會被清理）
+        await _db.updateExpiredWarnings(now: today);
+
+        if (entries.isEmpty && deactivated == 0) {
           AppLogger.info('WarningRepo', '無新警示資料');
           return 0;
         }
-
-        // 寫入資料庫
-        await _db.insertWarningData(entries);
-
-        // 更新過期的警示狀態
-        await _db.updateExpiredWarnings();
 
         AppLogger.info(
           'WarningRepo',
