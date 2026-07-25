@@ -51,6 +51,9 @@ void main() {
     ).thenAnswer((_) async => {});
     when(() => db.getActiveWarningsMapBatch(any())).thenAnswer((_) async => {});
     when(
+      () => db.getMarketsForSymbolsBatch(any()),
+    ).thenAnswer((_) async => <String, String>{});
+    when(
       () => db.getLatestInsiderHoldingsBatch(any()),
     ).thenAnswer((_) async => {});
     when(() => db.getEPSHistoryBatch(any())).thenAnswer((_) async => {});

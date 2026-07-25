@@ -104,6 +104,19 @@ void main() {
       expect(map['3479']!.concentrationRatio, 42.0);
     });
 
+    test('分市場新鮮度統計不影響閘門結果（純可觀測性）', () {
+      final map = BatchDataBuilder.buildShareholdingMap(
+        {'2330': entry('2330', fri, 8.0), '3479': entry('3479', tue, 7.63)},
+        const {},
+        const {},
+        evaluationDate: fri,
+        symbolMarkets: const {'2330': 'TWSE', '3479': 'TPEx'},
+      );
+
+      expect(map['2330']!.foreignSharesRatio, 8.0);
+      expect(map['3479']!.foreignSharesRatio, isNull);
+    });
+
     test('門檻常數存在且為交易日語意', () {
       expect(
         InstitutionalParams.foreignShareholdingMaxStaleTradingDays,

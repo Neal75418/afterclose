@@ -120,6 +120,10 @@ class BatchDataLoader {
         ),
       ),
     );
+    final symbolMarketsFuture = timed(
+      'symbolMarkets',
+      _db.getMarketsForSymbolsBatch(candidates),
+    );
     final warningFuture = timed(
       'warning',
       _db.getActiveWarningsMapBatch(candidates),
@@ -198,6 +202,7 @@ class BatchDataLoader {
       prevShareholdingEntries,
       concentrationMap,
       evaluationDate: date,
+      symbolMarkets: await symbolMarketsFuture,
     );
 
     final warningMap = warningEntries.map(

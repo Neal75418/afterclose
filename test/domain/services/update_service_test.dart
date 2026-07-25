@@ -156,6 +156,9 @@ void main() {
       () => mockDb.getActiveWarningsMapBatch(any()),
     ).thenAnswer((_) async => {});
     when(
+      () => mockDb.getMarketsForSymbolsBatch(any()),
+    ).thenAnswer((_) async => <String, String>{});
+    when(
       () => mockDb.getLatestInsiderHoldingsBatch(any()),
     ).thenAnswer((_) async => {});
     when(() => mockDb.getEPSHistoryBatch(any())).thenAnswer((_) async => {});

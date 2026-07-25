@@ -52,6 +52,24 @@ mixin StockDaoMixin on $AppDatabase {
         .get();
   }
 
+  /// 批次取得 symbol → market 對照（覆蓋率統計用）
+  ///
+  /// 只取兩個欄位，避免 [getStocksByMarket] 那種全表 materialize；
+  /// symbol 是 PK，走索引。
+  Future<Map<String, String>> getMarketsForSymbolsBatch(
+    List<String> symbols,
+  ) async {
+    if (symbols.isEmpty) return {};
+    final query = selectOnly(stockMaster)
+      ..addColumns([stockMaster.symbol, stockMaster.market])
+      ..where(stockMaster.symbol.isIn(symbols));
+    final rows = await query.get();
+    return {
+      for (final r in rows)
+        r.read(stockMaster.symbol)!: r.read(stockMaster.market)!,
+    };
+  }
+
   /// 依市場計算在市股票數（覆蓋率門檻用；不需要 row 內容就別 materialize）
   Future<int> countStocksByMarket(String market) async {
     final countExpr = stockMaster.symbol.count();
