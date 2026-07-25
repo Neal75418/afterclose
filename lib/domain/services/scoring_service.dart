@@ -84,6 +84,8 @@ class ScoringService {
     var skippedNoData = 0;
     var skippedInsufficientData = 0;
     var skippedLowLiquidity = 0;
+    var skippedNoAnalysis = 0;
+    var skippedNoReasons = 0;
     var skippedLowScore = 0;
     var stocksWithSufficientData = 0;
 
@@ -112,8 +114,12 @@ class ScoringService {
       final turnover = latest.close! * latest.volume!;
 
       // 執行分析
+      // 回 null 屬異常（資格檢查已保證資料量），必須計數避免無聲消失
       final analysisResult = _analysisService.analyzeStock(prices);
-      if (analysisResult == null) continue;
+      if (analysisResult == null) {
+        skippedNoAnalysis++;
+        continue;
+      }
 
       // 為第 4 階段訊號建立市場資料上下文（可選）
       MarketDataContext? marketData;
@@ -150,7 +156,11 @@ class ScoringService {
       );
       final reasons = _ruleEngine.evaluateStock(context, stockData);
 
-      if (reasons.isEmpty) continue;
+      // 無訊號是正常結果，但仍須計數讓帳目平
+      if (reasons.isEmpty) {
+        skippedNoReasons++;
+        continue;
+      }
 
       // 雙 horizon 評分核心（共用 pipeline，與 isolate 路徑同一實作）
       final scored = scoreReasonsDualHorizon(
@@ -239,7 +249,10 @@ class ScoringService {
       skippedNoData,
       skippedInsufficientData,
       skippedLowLiquidity,
+      skippedNoAnalysis,
+      skippedNoReasons,
       skippedLowScore,
+      candidateCount: candidates.length,
     );
 
     // 依流動性加權分數（短線 horizon）排序
@@ -412,7 +425,10 @@ class ScoringService {
     int skippedNoData,
     int skippedInsufficient,
     int skippedLiquidity,
+    int skippedNoAnalysis,
+    int skippedNoReasons,
     int skippedLowScore, {
+    required int candidateCount,
     String suffix = '',
   }) {
     final maxScoreShort = scored.isEmpty
@@ -422,21 +438,37 @@ class ScoringService {
         skippedNoData +
         skippedInsufficient +
         skippedLiquidity +
+        skippedNoAnalysis +
+        skippedNoReasons +
         skippedLowScore;
     AppLogger.info(
       'ScoringService',
       '評分完成: ${scored.length} 檔 (short max $maxScoreShort 分), '
-          '跳過 $skippedTotal 檔$suffix',
+          '跳過 $skippedTotal 檔 '
+          '(無資料 $skippedNoData, 資料不足 $skippedInsufficient, '
+          '低流動 $skippedLiquidity, 無訊號 $skippedNoReasons, '
+          '分數不足 $skippedLowScore)$suffix',
     );
+
+    // 與 isolate 路徑同一診斷契約（見 _logScoringResultsFromIsolate）
+    if (skippedNoAnalysis > 0) {
+      AppLogger.warning(
+        'ScoringService',
+        '技術分析失敗 $skippedNoAnalysis 檔（資格檢查已過仍回 null，'
+            '可能為價格資料異常）',
+      );
+    }
+    if (scored.length + skippedTotal != candidateCount) {
+      AppLogger.warning(
+        'ScoringService',
+        '評分帳目不平: 候選 $candidateCount != 輸出 ${scored.length} + '
+            '跳過 $skippedTotal（有候選股未被分類，請檢查是否新增未計數分支）',
+      );
+    }
   }
 
   /// 記錄 Isolate 評分結果統計
   void _logScoringResultsFromIsolate(ScoringBatchResult result) {
-    final skippedTotal =
-        result.skippedNoData +
-        result.skippedInsufficientData +
-        result.skippedLowLiquidity +
-        result.skippedLowScore;
     final maxShort = result.outputs.isEmpty
         ? 0
         : result.outputs
@@ -445,8 +477,32 @@ class ScoringService {
     AppLogger.info(
       'ScoringService',
       '評分完成: ${result.outputs.length} 檔 (short max $maxShort 分), '
-          '跳過 $skippedTotal 檔 (Isolate)',
+          '跳過 ${result.skippedTotal} 檔 '
+          '(無資料 ${result.skippedNoData}, 資料不足 '
+          '${result.skippedInsufficientData}, 低流動 '
+          '${result.skippedLowLiquidity}, 無訊號 ${result.skippedNoReasons}, '
+          '分數不足 ${result.skippedLowScore}) (Isolate)',
     );
+
+    // 技術分析回 null 屬異常路徑：資格檢查已保證資料量，仍失敗代表資料有問題。
+    // 過去此路徑無聲 continue，股票在帳目上消失且無跡可循。
+    if (result.skippedNoAnalysis > 0) {
+      AppLogger.warning(
+        'ScoringService',
+        '技術分析失敗 ${result.skippedNoAnalysis} 檔（資格檢查已過仍回 null，'
+            '可能為價格資料異常）',
+      );
+    }
+
+    // 帳目不平＝有候選股未被任何分類認領，屬程式缺陷而非資料問題
+    if (!result.accountingBalances) {
+      AppLogger.warning(
+        'ScoringService',
+        '評分帳目不平: 候選 ${result.candidateCount} != 輸出 '
+            '${result.outputs.length} + 跳過 ${result.skippedTotal}'
+            '（有候選股未被分類，請檢查 scoring_isolate 是否新增未計數分支）',
+      );
+    }
     // 反序列化失敗在 M8 fix 後直接 throw FormatException，scoring 整批 abort，
     // 不再 silent skip — 改在 try/catch 處 surface 給 UI / Sentry。
   }

@@ -378,26 +378,56 @@ class ScoringIsolateOutput {
 }
 
 /// 批次評分結果
+///
+/// **帳目不變量**：`outputs.length + skippedTotal == candidateCount`。
+/// 每個候選股都必須有歸屬，不得無聲消失——否則「評分變少」時無從追查。
 class ScoringBatchResult {
   const ScoringBatchResult({
     required this.outputs,
+    required this.candidateCount,
     required this.skippedNoData,
     required this.skippedInsufficientData,
     required this.skippedLowLiquidity,
+    required this.skippedNoAnalysis,
+    required this.skippedNoReasons,
     required this.skippedLowScore,
   });
 
   final List<ScoringIsolateOutput> outputs;
+
+  /// 進入評分的候選股總數（帳目分母）
+  final int candidateCount;
   final int skippedNoData;
   final int skippedInsufficientData;
   final int skippedLowLiquidity;
+
+  /// 技術分析回傳 null——異常路徑，非預期結果
+  final int skippedNoAnalysis;
+
+  /// 規則引擎未觸發任何訊號——正常結果（多數股票屬此類）
+  final int skippedNoReasons;
   final int skippedLowScore;
+
+  int get skippedTotal =>
+      skippedNoData +
+      skippedInsufficientData +
+      skippedLowLiquidity +
+      skippedNoAnalysis +
+      skippedNoReasons +
+      skippedLowScore;
+
+  /// 帳目是否平——false 代表有候選股未被任何分類認領（程式缺陷）
+  bool get accountingBalances =>
+      outputs.length + skippedTotal == candidateCount;
 
   Map<String, dynamic> toMap() => {
     'outputs': outputs.map((o) => o.toMap()).toList(),
+    'candidateCount': candidateCount,
     'skippedNoData': skippedNoData,
     'skippedInsufficientData': skippedInsufficientData,
     'skippedLowLiquidity': skippedLowLiquidity,
+    'skippedNoAnalysis': skippedNoAnalysis,
+    'skippedNoReasons': skippedNoReasons,
     'skippedLowScore': skippedLowScore,
   };
 
@@ -408,9 +438,13 @@ class ScoringBatchResult {
             (e) => ScoringIsolateOutput.fromMap(Map<String, dynamic>.from(e)),
           )
           .toList(),
+      // 新欄位對舊 map 容錯（跨版本 isolate payload）
+      candidateCount: map['candidateCount'] as int? ?? 0,
       skippedNoData: map['skippedNoData'] as int,
       skippedInsufficientData: map['skippedInsufficientData'] as int,
       skippedLowLiquidity: map['skippedLowLiquidity'] as int,
+      skippedNoAnalysis: map['skippedNoAnalysis'] as int? ?? 0,
+      skippedNoReasons: map['skippedNoReasons'] as int? ?? 0,
       skippedLowScore: map['skippedLowScore'] as int,
     );
   }
@@ -450,6 +484,8 @@ Map<String, dynamic> _evaluateStocksIsolated(Map<String, dynamic> inputMap) {
   var skippedNoData = 0;
   var skippedInsufficientData = 0;
   var skippedLowLiquidity = 0;
+  var skippedNoAnalysis = 0;
+  var skippedNoReasons = 0;
   var skippedLowScore = 0;
 
   for (final symbol in input.candidates) {
@@ -473,8 +509,13 @@ Map<String, dynamic> _evaluateStocksIsolated(Map<String, dynamic> inputMap) {
     final turnover = latest.close! * latest.volume!;
 
     // 3. 技術分析
+    // analyzeStock 回 null 屬異常（資格檢查已保證資料量足夠），不是預期結果。
+    // 必須計數，否則該股在帳目上無聲消失、「評分變少」時無從追查。
     final analysisResult = analysisService.analyzeStock(prices);
-    if (analysisResult == null) continue;
+    if (analysisResult == null) {
+      skippedNoAnalysis++;
+      continue;
+    }
 
     // 4. 建立市場資料上下文
     final marketData = _buildMarketDataContext(input, symbol);
@@ -515,7 +556,11 @@ Map<String, dynamic> _evaluateStocksIsolated(Map<String, dynamic> inputMap) {
     );
     final reasons = ruleEngine.evaluateStock(context, stockData);
 
-    if (reasons.isEmpty) continue;
+    // 無訊號是正常結果（多數股票屬此類），但仍須計數讓帳目平
+    if (reasons.isEmpty) {
+      skippedNoReasons++;
+      continue;
+    }
 
     // 7. 雙 horizon 評分核心（共用 pipeline，與主執行緒路徑同一實作；
     //    mutex 策略、門檻語意與設計決議見 scoring_pipeline.dart）
@@ -553,9 +598,12 @@ Map<String, dynamic> _evaluateStocksIsolated(Map<String, dynamic> inputMap) {
 
   return ScoringBatchResult(
     outputs: outputs,
+    candidateCount: input.candidates.length,
     skippedNoData: skippedNoData,
     skippedInsufficientData: skippedInsufficientData,
     skippedLowLiquidity: skippedLowLiquidity,
+    skippedNoAnalysis: skippedNoAnalysis,
+    skippedNoReasons: skippedNoReasons,
     skippedLowScore: skippedLowScore,
   ).toMap();
 }
