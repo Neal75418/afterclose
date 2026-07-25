@@ -1,6 +1,8 @@
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
+import 'package:afterclose/core/constants/market_codes.dart';
+import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/data/repositories/warning_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -10,6 +12,13 @@ class MockAppDatabase extends Mock implements AppDatabase {}
 class MockTpexClient extends Mock implements TpexClient {}
 
 class MockTwseClient extends Mock implements TwseClient {}
+
+class _FixedClock implements AppClock {
+  const _FixedClock(this._now);
+  final DateTime _now;
+  @override
+  DateTime now() => _now;
+}
 
 void main() {
   late MockAppDatabase mockDb;
@@ -148,6 +157,135 @@ void main() {
         expect(result, equals(warnings));
         verify(() => mockDb.getActiveWarningsByType('DISPOSAL')).called(1);
       });
+    });
+  });
+
+  group('syncAllMarketWarnings 接線層（HIGH bug 的實際住所）', () {
+    final tradingDay = DateTime(2026, 7, 24, 18); // 週五交易日
+
+    late WarningRepository repo;
+
+    void stubDbAndDisposals() {
+      when(
+        () => mockDb.getLatestWarningSyncTime(),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockDb.getWarningCountForDate(any()),
+      ).thenAnswer((_) async => 0);
+      when(() => mockDb.getAllActiveStocks()).thenAnswer((_) async => []);
+      when(() => mockDb.insertWarningData(any())).thenAnswer((_) async {});
+      when(
+        () => mockDb.updateExpiredWarnings(now: any(named: 'now')),
+      ).thenAnswer((_) async => 0);
+      when(
+        () => mockDb.deactivateStaleAttentionWarnings(
+          currentSymbols: any(named: 'currentSymbols'),
+          syncedMarkets: any(named: 'syncedMarkets'),
+          syncDate: any(named: 'syncDate'),
+        ),
+      ).thenAnswer((_) async => 0);
+      when(
+        () => mockTwseClient.getDisposalInfo(date: any(named: 'date')),
+      ).thenAnswer((_) async => []);
+      when(() => mockTpexClient.getDisposalInfo()).thenAnswer((_) async => []);
+      when(() => mockDb.transaction<int>(any())).thenAnswer(
+        (inv) => (inv.positionalArguments[0] as Future<int> Function())(),
+      );
+    }
+
+    setUp(() {
+      repo = WarningRepository(
+        database: mockDb,
+        tpexClient: mockTpexClient,
+        twseClient: mockTwseClient,
+        clock: _FixedClock(tradingDay),
+      );
+      stubDbAndDisposals();
+    });
+
+    Set<String> capturedSyncedMarkets() {
+      final captured = verify(
+        () => mockDb.deactivateStaleAttentionWarnings(
+          currentSymbols: any(named: 'currentSymbols'),
+          syncedMarkets: captureAny(named: 'syncedMarkets'),
+          syncDate: any(named: 'syncDate'),
+        ),
+      ).captured;
+      return captured.single as Set<String>;
+    }
+
+    test('🚨 來源回空清單的市場不得進 syncedMarkets（否則整市場被清空）', () async {
+      // client 在 decodeResponseData 回 null 或 stat != 'OK' 時是 return []
+      // 而非拋例外 → 呼叫端收不到例外、會誤判為同步成功。
+      when(
+        () => mockTwseClient.getTradingWarnings(date: any(named: 'date')),
+      ).thenAnswer((_) async => []);
+      when(() => mockTpexClient.getTradingWarnings()).thenAnswer(
+        (_) async => [
+          TpexTradingWarning(
+            date: tradingDay,
+            code: '3088',
+            warningType: 'ATTENTION',
+          ),
+        ],
+      );
+
+      await repo.syncAllMarketWarnings();
+
+      expect(capturedSyncedMarkets(), {
+        MarketCode.tpex,
+      }, reason: 'TWSE 回空清單無法與「今日真的沒有」區分，不得當權威名單');
+    });
+
+    test('非交易日不得把 TWSE 當已同步', () async {
+      final holidayRepo = WarningRepository(
+        database: mockDb,
+        tpexClient: mockTpexClient,
+        twseClient: mockTwseClient,
+        clock: _FixedClock(DateTime(2026, 7, 25, 18)), // 週六
+      );
+      when(() => mockTpexClient.getTradingWarnings()).thenAnswer(
+        (_) async => [
+          TpexTradingWarning(
+            date: DateTime(2026, 7, 25),
+            code: '3088',
+            warningType: 'ATTENTION',
+          ),
+        ],
+      );
+
+      await holidayRepo.syncAllMarketWarnings();
+
+      expect(capturedSyncedMarkets(), {
+        MarketCode.tpex,
+      }, reason: 'TWSE 端點在非交易日被跳過，不該被當成取得了權威名單');
+    });
+
+    test('兩市場都取得非空名單時，兩者都進 syncedMarkets', () async {
+      when(
+        () => mockTwseClient.getTradingWarnings(date: any(named: 'date')),
+      ).thenAnswer(
+        (_) async => [
+          TwseTradingWarning(
+            date: tradingDay,
+            code: '2330',
+            warningType: 'ATTENTION',
+          ),
+        ],
+      );
+      when(() => mockTpexClient.getTradingWarnings()).thenAnswer(
+        (_) async => [
+          TpexTradingWarning(
+            date: tradingDay,
+            code: '3088',
+            warningType: 'ATTENTION',
+          ),
+        ],
+      );
+
+      await repo.syncAllMarketWarnings();
+
+      expect(capturedSyncedMarkets(), {MarketCode.twse, MarketCode.tpex});
     });
   });
 }

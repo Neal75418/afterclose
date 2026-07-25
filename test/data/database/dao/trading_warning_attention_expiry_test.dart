@@ -196,6 +196,25 @@ void main() {
       expect(active, {'2317'}, reason: '陳舊的 NULL endDate 處置必須失效，近期的保守保留');
     });
 
+    test('🚨 同日名單縮減時，NOT IN 是唯一防線（date< 抓不到）', () async {
+      // mutation testing 發現：把 `symbol NOT IN (...)` 拿掉後測試仍全綠——
+      // 因為既有案例的舊列都是被 `date < syncDate` 順帶清掉。同日二次同步
+      // （force 重整、6 小時視窗過期重跑）時當日列的 date == syncDate，
+      // `date <` 為 false，只有 NOT IN 能讓已下架的股票失效。
+      await seedAttention(['2330', '2317'], d2);
+
+      // 同一天稍後重跑：2317 已從名單下架
+      await db.deactivateStaleAttentionWarnings(
+        currentSymbols: {'2330'},
+        syncedMarkets: {MarketCode.twse},
+        syncDate: d2,
+      );
+
+      expect(await activeAttention(), {
+        '2330',
+      }, reason: '同日重跑時 date< 無效，2317 必須靠 NOT IN 失效');
+    });
+
     test('未同步任何市場時為 no-op', () async {
       await seedAttention(['2330', '3088'], d1);
 

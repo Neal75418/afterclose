@@ -1,3 +1,4 @@
+import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -268,6 +269,60 @@ void main() {
         );
 
         expect(result.count, equals(1));
+        // producer 端斷言：safeAwait 把 TPEx 例外吞成空清單，這正是
+        // 「僅單一市場掛掉、流程照常走完」的情境——必須讓呼叫端看得見，
+        // 否則會用半個市場的資料照常評分且無人知曉。
+        expect(
+          result.emptyMarkets,
+          equals([MarketCode.tpex]),
+          reason: 'TPEx 抓取失敗必須回報，且不得誤報 TWSE',
+        );
+      });
+
+      test('兩個市場都有資料時 emptyMarkets 為空', () async {
+        when(
+          () => mockDb.getPriceCountForDate(any()),
+        ).thenAnswer((_) async => 0);
+        when(() => mockTwseClient.getAllDailyPrices()).thenAnswer(
+          (_) async => [
+            TwseDailyPrice(
+              code: '2330',
+              name: '台積電',
+              date: DateTime(2024, 6, 15),
+              open: 500.0,
+              high: 510.0,
+              low: 495.0,
+              close: 505.0,
+              change: 5.0,
+              volume: 20000000,
+            ),
+          ],
+        );
+        when(
+          () => mockTpexClient.getAllDailyPrices(date: any(named: 'date')),
+        ).thenAnswer(
+          (_) async => [
+            TpexDailyPrice(
+              code: '6488',
+              name: '環球晶',
+              date: DateTime(2024, 6, 15),
+              open: 500.0,
+              high: 510.0,
+              low: 495.0,
+              close: 505.0,
+              change: 5.0,
+              volume: 5000000,
+            ),
+          ],
+        );
+        when(() => mockDb.upsertStocks(any())).thenAnswer((_) async {});
+        when(() => mockDb.insertPrices(any())).thenAnswer((_) async {});
+
+        final result = await repository.syncAllPricesForDate(
+          DateTime(2024, 6, 15),
+        );
+
+        expect(result.emptyMarkets, isEmpty, reason: '正常路徑不得產生假警告（會造成警告疲勞）');
       });
     });
 
