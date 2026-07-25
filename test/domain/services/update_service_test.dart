@@ -3,6 +3,10 @@ import 'package:afterclose/data/remote/tdcc_client.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
 import 'package:afterclose/data/repositories/analysis_repository.dart';
 import 'package:afterclose/data/repositories/fundamental_repository.dart';
+import 'package:afterclose/data/repositories/insider_repository.dart';
+import 'package:afterclose/data/repositories/shareholding_repository.dart';
+import 'package:afterclose/data/repositories/trading_repository.dart';
+import 'package:afterclose/data/repositories/warning_repository.dart';
 import 'package:afterclose/data/repositories/news_repository.dart';
 import 'package:afterclose/data/repositories/price_repository.dart';
 import 'package:afterclose/data/repositories/stock_repository.dart';
@@ -38,6 +42,15 @@ class MockScoringService extends Mock implements ScoringService {}
 
 class MockNewsMentionSnapshotService extends Mock
     implements NewsMentionSnapshotService {}
+
+class MockTradingRepository extends Mock implements TradingRepository {}
+
+class MockShareholdingRepository extends Mock
+    implements ShareholdingRepository {}
+
+class MockWarningRepository extends Mock implements WarningRepository {}
+
+class MockInsiderRepository extends Mock implements InsiderRepository {}
 
 void main() {
   late MockAppDatabase mockDb;
@@ -194,6 +207,10 @@ void main() {
     TpexClient? tpex,
     FundamentalRepository? fundamental,
     NewsMentionSnapshotService? newsMentionSnapshot,
+    TradingRepository? trading,
+    ShareholdingRepository? shareholding,
+    WarningRepository? warning,
+    InsiderRepository? insider,
   }) {
     return UpdateService(
       database: mockDb,
@@ -203,6 +220,10 @@ void main() {
         news: mockNewsRepo,
         analysis: mockAnalysisRepo,
         fundamental: fundamental,
+        trading: trading,
+        shareholding: shareholding,
+        warning: warning,
+        insider: insider,
       ),
       clients: UpdateClients(tdcc: mockTdcc, tpex: tpex),
       services: UpdateServices(
@@ -289,6 +310,73 @@ void main() {
         isEmpty,
         reason: '正常路徑不得產生假警告',
       );
+    });
+
+    test('🚨 警示同步失敗必須轉發到 errors（處置股是硬排除、非額外功能）', () async {
+      // KillerFeaturesSyncResult 的 warningError/insiderError 過去零消費點，
+      // 且裸 catch 明寫「額外功能不影響主流程」。但處置股是三模式榜的硬性
+      // 宇宙排除（-50 分 + droppedDisposal），缺名單是 fail-open：危險股照常
+      // 上榜、風險徽章不亮，而使用者看到綠燈。
+      final trading = MockTradingRepository();
+      final shareholding = MockShareholdingRepository();
+      final warningRepo = MockWarningRepository();
+      final insider = MockInsiderRepository();
+
+      // 步驟 4.5 籌碼鏈：讓它安靜通過
+      when(
+        () => trading.syncAllDayTradingFromTwse(date: any(named: 'date')),
+      ).thenAnswer((_) async => 0);
+      when(
+        () => trading.syncAllMarginTradingFromTwse(date: any(named: 'date')),
+      ).thenAnswer((_) async => 0);
+      when(
+        () => shareholding.syncShareholding(
+          any(),
+          startDate: any(named: 'startDate'),
+          endDate: any(named: 'endDate'),
+        ),
+      ).thenAnswer((_) async => 0);
+      when(
+        () => mockDb.getLatestDayTradingDate(),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockDb.getDayTradingCountForDate(any()),
+      ).thenAnswer((_) async => 1);
+      when(
+        () => mockDb.countStocksByMarket(any()),
+      ).thenAnswer((_) async => 100);
+      when(
+        () => mockDb.countPricesByDateAndMarket(any(), any()),
+      ).thenAnswer((_) async => 100);
+      when(
+        () => mockDb.countMarginTradingByDateAndMarket(any(), any()),
+      ).thenAnswer((_) async => 100);
+      when(() => mockDb.getStocksByMarket(any())).thenAnswer((_) async => []);
+
+      // 步驟 4.8：警示同步失敗（generic，非 rate limit）
+      when(
+        () => warningRepo.syncAllMarketWarnings(force: any(named: 'force')),
+      ).thenThrow(Exception('TWSE announcement 500'));
+      when(
+        () => insider.syncAllInsiderHoldings(force: any(named: 'force')),
+      ).thenAnswer((_) async => 0);
+
+      final service = buildService(
+        trading: trading,
+        shareholding: shareholding,
+        warning: warningRepo,
+        insider: insider,
+      );
+      final result = await service.runDailyUpdate(forDate: tradingDay);
+
+      expect(
+        result.errors,
+        anyElement(contains('警示')),
+        reason: '缺處置股名單會讓危險股照常上榜，必須進 errors 讓 run 降級',
+      );
+      // 不斷言 hasWarnings：它是 `errors.isNotEmpty && success`，而本測試的
+      // 精簡 harness 未 stub 全部步驟、success 未必為 true。要釘的契約是
+      // 「警示失敗有沒有進 errors」，那才是本次修復的內容。
     });
 
     test('內部人轉讓 generic 同步失敗應記錄到 result.errors', () async {

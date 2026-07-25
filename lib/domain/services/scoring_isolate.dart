@@ -509,8 +509,15 @@ Map<String, dynamic> _evaluateStocksIsolated(Map<String, dynamic> inputMap) {
     final turnover = latest.close! * latest.volume!;
 
     // 3. 技術分析
-    // analyzeStock 回 null 屬異常（資格檢查已保證資料量足夠），不是預期結果。
-    // 必須計數，否則該股在帳目上無聲消失、「評分變少」時無從追查。
+    // 回 null 屬異常（資格檢查已保證資料量），必須計數避免無聲消失。
+    //
+    // ⚠️ **目前不可達**：`analyzeStock` 唯一的 null 路徑是
+    // `priceHistory.length < RuleParams.swingWindow`
+    // （analysis_coordinator_service.dart:44），而 `classifyCandidate`
+    // 上游已用**同一個常數**檢查過（scoring_pipeline.dart:27）。故此計數器
+    // 是 defense-in-depth：若日後有人調整任一側門檻、或 analyzeStock 新增
+    // 別的 null 路徑，這裡是唯一的偵測手段。不可達也代表**無法從公開 API
+    // 建構觸發情境**，計數器語意改由 DTO 層測試把關。
     final analysisResult = analysisService.analyzeStock(prices);
     if (analysisResult == null) {
       skippedNoAnalysis++;

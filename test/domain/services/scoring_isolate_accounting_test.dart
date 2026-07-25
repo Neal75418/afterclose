@@ -5,6 +5,7 @@
 // reasons.isEmpty）。前者更是靜默失敗——技術分析失敗的股票直接消失，
 // 無 log 無計數，與同檔案「fail-loud 比 silent fallback 更安全」的既定
 // 原則矛盾。此測試釘住「帳目必須平」的不變量。
+import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/services/scoring_isolate.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -98,6 +99,41 @@ void main() {
         isTrue,
         reason: '每個候選股都必須落在某個 skip 分類，不得無聲消失',
       );
+    });
+
+    test('🚨 通過資格檢查但零規則觸發 → 計入 skippedNoReasons（實跑迴圈）', () async {
+      // 對抗審查（mutation testing）指出：原本唯一的實跑案例餵空 pricesMap，
+      // 被 classifyCandidate 的 noData 提早攔截，迴圈根本到不了規則引擎——
+      // 把 `skippedNoReasons++` 整行刪掉測試仍全綠。
+      //
+      // 本案例造出「資格通過但無訊號」：完全平盤 30 日（長度 ≥ swingWindow=20、
+      // 量 200 萬股 ≥ 100 萬、成交額 1 億 ≥ 3000 萬），走勢平淡不觸發任何規則。
+      final flat = List.generate(
+        30,
+        (i) => DailyPriceEntry(
+          symbol: 'FLAT',
+          date: DateTime(2026, 6, 1).add(Duration(days: i)),
+          open: 50.0,
+          high: 50.0,
+          low: 50.0,
+          close: 50.0,
+          volume: 2000000,
+        ),
+      );
+
+      final input = ScoringIsolateInput(
+        candidates: const ['FLAT'],
+        pricesMap: {'FLAT': flat},
+        newsMap: const {'FLAT': []},
+        institutionalMap: const {'FLAT': []},
+        date: DateTime(2026, 6, 30),
+      );
+
+      final result = await evaluateStocksInIsolate(input);
+
+      expect(result.skippedNoReasons, 1, reason: '無訊號是正常結果，但必須計數否則帳目對不上');
+      expect(result.outputs, isEmpty);
+      expect(result.accountingBalances, isTrue);
     });
   });
 }
