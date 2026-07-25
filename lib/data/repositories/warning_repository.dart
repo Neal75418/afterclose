@@ -242,9 +242,12 @@ class WarningRepository {
 
         // 注意股 full-refresh：不在今日名單者失效。必須在 insert 之後，
         // 且只清本輪確實取得名單的市場。
+        // ⚠️ 只有「取得非空名單」才算取得權威名單。client 在解析失敗或
+        // stat != 'OK' 時是 return [] 而非拋例外（twse_client.dart:1297-1300），
+        // 空清單無法與「今日真的沒有注意股」區分——把它當名單會清空整個市場。
         final syncedAttentionMarkets = <String>{
-          if (twseAttentionSynced) MarketCode.twse,
-          if (tpexAttentionSynced) MarketCode.tpex,
+          if (twseAttentionSynced && twseWarnings.isNotEmpty) MarketCode.twse,
+          if (tpexAttentionSynced && tpexWarnings.isNotEmpty) MarketCode.tpex,
         };
         final currentAttentionSymbols = <String>{
           if (twseAttentionSynced) ...twseWarnings.map((w) => w.code),

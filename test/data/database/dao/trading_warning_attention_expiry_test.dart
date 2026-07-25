@@ -87,29 +87,39 @@ void main() {
     test('⚠️ 只同步上櫃時，上市注意股不得被誤殺', () async {
       await seedAttention(['2330', '2317', '3088'], d1);
 
-      // 非交易日情境：TWSE 端點被跳過，只有 TPEx 名單是新的（且今日為空）
+      // 非交易日情境：TWSE 端點被跳過，只有 TPEx 拿到新名單（含 8069、不含 3088）
+      await seedAttention(['8069'], d2);
       await db.deactivateStaleAttentionWarnings(
-        currentSymbols: const {},
+        currentSymbols: {'8069'},
         syncedMarkets: {MarketCode.tpex},
         syncDate: d2,
       );
 
-      expect(await activeAttention(), {
-        '2330',
-        '2317',
-      }, reason: '上櫃 3088 應失效；上市 2330/2317 未同步、必須原封不動');
+      expect(
+        await activeAttention(),
+        {'2330', '2317', '8069'},
+        reason: '上櫃 3088 不在新名單應失效；上市 2330/2317 未同步、必須原封不動',
+      );
     });
 
-    test('該市場今日名單為空時，其舊列全部失效', () async {
+    test('🚨 空名單一律不清（無法與「抓取失敗」區分）', () async {
+      // TWSE/TPEx client 在解析失敗或 stat != 'OK' 時是 return [] 而非拋例外
+      // （twse_client.dart:1297-1300）→ 呼叫端收不到例外、誤判為同步成功。
+      // 若把空清單當權威名單做 full-refresh，一次來源退化就清空整個市場的
+      // 注意股旗標：-15 分整批消失、風險徽章不亮，而 run 仍是綠燈。
       await seedAttention(['3088', '8069'], d1);
 
-      await db.deactivateStaleAttentionWarnings(
+      final n = await db.deactivateStaleAttentionWarnings(
         currentSymbols: const {},
         syncedMarkets: {MarketCode.tpex},
         syncDate: d2,
       );
 
-      expect(await activeAttention(), isEmpty);
+      expect(n, 0);
+      expect(await activeAttention(), {
+        '3088',
+        '8069',
+      }, reason: '寧可舊旗標多留一天，也不能因來源退化清空整個市場');
     });
 
     test('不得誤傷 DISPOSAL（處置股走 disposalEndDate 期間語意）', () async {
@@ -123,9 +133,10 @@ void main() {
         ),
       ]);
       await seedAttention(['2317'], d1);
+      await seedAttention(['3088'], d2);
 
       await db.deactivateStaleAttentionWarnings(
-        currentSymbols: const {},
+        currentSymbols: {'3088'},
         syncedMarkets: {MarketCode.twse, MarketCode.tpex},
         syncDate: d2,
       );
@@ -134,7 +145,7 @@ void main() {
       expect(disposals.map((r) => r.symbol), [
         '2330',
       ], reason: '處置股仍在處置期內，不得被注意股清理波及');
-      expect(await activeAttention(), isEmpty);
+      expect(await activeAttention(), {'3088'});
     });
 
     test('同一檔連續多日上榜，只保留今日那列 active', () async {

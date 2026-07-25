@@ -102,8 +102,17 @@ mixin TradingWarningDaoMixin on $AppDatabase {
   /// 欄，市場歸屬由 stock_master 推導；若不限定市場，在「非交易日只同步上櫃」
   /// 這類情境會把未同步市場的注意股全部誤殺。
   ///
-  /// [currentSymbols] 本輪取得的注意股名單（空集合＝該市場今日無注意股，
-  /// 其舊列應全數失效）；[syncDate] 本輪同步日。回傳實際失效的列數。
+  /// ⚠️ [currentSymbols] **為空時一律 no-op**。TWSE/TPEx client 在
+  /// `decodeResponseData` 回 null 或 `stat != 'OK'` 時是 **return \[\] 而非拋
+  /// 例外**（見 twse_client.dart:1297-1300），因此「今日真的沒有注意股」與
+  /// 「抓取/解析失敗」在此處**無法區分**——兩者都是空清單。若把空清單當權威
+  /// 名單做 full-refresh，一次來源退化就會清空整個市場的注意股旗標，方向正是
+  /// 本次修復要消滅的 fail-open（-15 分整批消失、風險徽章不亮、run 仍是綠燈）。
+  ///
+  /// 取捨：真的零注意股的日子，舊旗標會多留一天，等下一次非空名單同步時清掉。
+  /// 這遠好過整個市場被清空。
+  ///
+  /// [syncDate] 本輪同步日。回傳實際失效的列數。
   ///
   /// 失效條件為「不在今日名單」**或**「日期早於本輪」——後者確保同一檔連續
   /// 多日上榜時只留今日那列 active。否則同 symbol 會有多筆 active，而讀取端
@@ -115,6 +124,8 @@ mixin TradingWarningDaoMixin on $AppDatabase {
     required DateTime syncDate,
   }) async {
     if (syncedMarkets.isEmpty) return 0;
+    // 空名單無法與「抓取失敗」區分 → 一律不清（見上方 docstring）
+    if (currentSymbols.isEmpty) return 0;
 
     final vars = <Variable<Object>>[];
     final marketPlaceholders = syncedMarkets
@@ -124,18 +135,13 @@ mixin TradingWarningDaoMixin on $AppDatabase {
         })
         .join(', ');
 
-    // currentSymbols 為空時省略 NOT IN 子句——`NOT IN ()` 在 SQLite 是語法錯誤，
-    // 且語意上「今日名單為空」本就等於「該市場所有舊列都該失效」。
-    var staleClause = 'date < ?';
-    if (currentSymbols.isNotEmpty) {
-      final symbolPlaceholders = currentSymbols
-          .map((s) {
-            vars.add(Variable<String>(s));
-            return '?';
-          })
-          .join(', ');
-      staleClause = 'symbol NOT IN ($symbolPlaceholders) OR date < ?';
-    }
+    final symbolPlaceholders = currentSymbols
+        .map((s) {
+          vars.add(Variable<String>(s));
+          return '?';
+        })
+        .join(', ');
+    final staleClause = 'symbol NOT IN ($symbolPlaceholders) OR date < ?';
     vars.add(Variable<DateTime>(syncDate));
 
     return customUpdate(
