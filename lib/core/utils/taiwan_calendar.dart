@@ -207,6 +207,29 @@ class TaiwanCalendar {
     return current;
   }
 
+  /// 從指定日期往前推 N 個交易日
+  ///
+  /// [addTradingDays] 的對稱操作——它的迴圈條件 `count < tradingDays` 對負值
+  /// 立即為 false、會原樣回傳，故往前推必須用本方法。
+  ///
+  /// 資料新鮮度必須以**交易日**為單位：週一評估用上週五資料是 3 個日曆天但
+  /// 只隔 1 個交易日，用日曆天判斷會把合法資料誤判為過期。
+  static DateTime subtractTradingDays(DateTime date, int tradingDays) {
+    if (tradingDays <= 0) return date;
+    var current = date;
+    var count = 0;
+    var iterations = 0;
+    final maxIterations = tradingDays * 5 + 14; // 安全上限（含 14 天連假緩衝）
+    while (count < tradingDays && iterations < maxIterations) {
+      current = current.subtract(const Duration(days: 1));
+      iterations++;
+      if (isTradingDay(current)) {
+        count++;
+      }
+    }
+    return current;
+  }
+
   /// 從指定日期往後推 N 個交易日
   ///
   /// 例如：週五 +1 交易日 = 下週一（跳過週末）。

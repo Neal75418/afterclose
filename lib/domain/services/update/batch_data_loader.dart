@@ -197,6 +197,7 @@ class BatchDataLoader {
       shareholdingEntries,
       prevShareholdingEntries,
       concentrationMap,
+      evaluationDate: date,
     );
 
     final warningMap = warningEntries.map(

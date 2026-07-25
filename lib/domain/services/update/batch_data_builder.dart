@@ -1,3 +1,6 @@
+import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:afterclose/core/utils/logger.dart';
+import 'package:afterclose/core/utils/taiwan_calendar.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/repositories/insider_repository.dart';
 import 'package:afterclose/domain/models/analysis_context.dart';
@@ -10,18 +13,37 @@ class BatchDataBuilder {
   const BatchDataBuilder._();
 
   /// 建構外資持股 Map（含變化量計算 + 籌碼集中度）
+  ///
+  /// [evaluationDate] 用於新鮮度閘門：外資持股超過
+  /// [InstitutionalParams.foreignShareholdingMaxStaleTradingDays] 個交易日未更新
+  /// 者，ratio 與 change 一律不供給——**陳舊資料主動製造假訊號比沒資料更危險**。
+  ///
+  /// 閘門設在此處而非各規則內，是為了一處攔截全部消費端（外資增持/減持、
+  /// 內部人規則的兩條）；若逐條補，任何新規則都會再度繞過。籌碼集中度來自
+  /// 不同資料源，不受此閘門影響。
   static Map<String, ShareholdingData> buildShareholdingMap(
     Map<String, ShareholdingEntry> shareholdingEntries,
     Map<String, ShareholdingEntry> prevShareholdingEntries,
-    Map<String, double> concentrationMap,
-  ) {
+    Map<String, double> concentrationMap, {
+    required DateTime evaluationDate,
+  }) {
     final result = <String, ShareholdingData>{};
     final allSymbols = {...shareholdingEntries.keys, ...concentrationMap.keys};
+    final cutoff = TaiwanCalendar.subtractTradingDays(
+      evaluationDate,
+      InstitutionalParams.foreignShareholdingMaxStaleTradingDays,
+    );
+    var staleCount = 0;
+
     for (final k in allSymbols) {
       final entry = shareholdingEntries[k];
-      final currentRatio = entry?.foreignSharesRatio;
-      final prevEntry = prevShareholdingEntries[k];
-      final prevRatio = prevEntry?.foreignSharesRatio;
+      final isStale = entry != null && entry.date.isBefore(cutoff);
+      if (isStale) staleCount++;
+
+      final currentRatio = isStale ? null : entry?.foreignSharesRatio;
+      final prevRatio = isStale
+          ? null
+          : prevShareholdingEntries[k]?.foreignSharesRatio;
 
       double? ratioChange;
       if (currentRatio != null && prevRatio != null) {
@@ -32,6 +54,14 @@ class BatchDataBuilder {
         foreignSharesRatio: currentRatio,
         foreignSharesRatioChange: ratioChange,
         concentrationRatio: concentrationMap[k],
+      );
+    }
+
+    if (staleCount > 0) {
+      AppLogger.debug(
+        'BatchDataBuilder',
+        '外資持股過期跳過 $staleCount 檔（早於 '
+            '${cutoff.toIso8601String().substring(0, 10)}，多為未被上櫃配額覆蓋者）',
       );
     }
     return result;

@@ -109,6 +109,17 @@ abstract final class InstitutionalParams {
   /// 外資持股變化回溯天數
   static const int foreignShareholdingLookbackDays = 5;
 
+  /// 外資持股資料可接受的最大陳舊度（**交易日**）
+  ///
+  /// 外資持股於 T 日盤後公布，正常同步當日即可取得；容許 1 個交易日涵蓋
+  /// 發布延遲。超過此值代表該股**未被本輪配額覆蓋**（上櫃候選受 20/269 限制），
+  /// 此時最新一筆是數日前的死值——2026-07-25 實測 3479 連四天以同一筆 7/21
+  /// 資料觸發 +18，且因 prev 端隨日期往回滾，訊號強度還「自己變強」
+  /// （change 0.84→1.23→1.22→1.22，ratio 恆為 7.63）。
+  ///
+  /// 用交易日而非日曆天：週一用上週五資料是 3 日曆天但僅隔 1 交易日。
+  static const int foreignShareholdingMaxStaleTradingDays = 1;
+
   /// 高當沖比例門檻（50%）
   static const double dayTradingHighThreshold = 50.0;
 
