@@ -464,6 +464,16 @@ class UpdateService {
 
       ctx.result.pricesUpdated = syncResult.count;
       ctx.marketCandidates = syncResult.candidates;
+
+      // 缺整個市場的當日價格必須可見：來源失敗被 safeAwait 吞成空清單，
+      // 只有兩市場皆空才會拋錯；僅單一市場掛掉時流程照常走完，規則層仍以
+      // `prices.last` 當「今日」，等於拿昨日 K 棒算今日訊號、UI 綠燈零警告。
+      // 快取路徑（skipped）不回報——那不是抓取行為。
+      if (!syncResult.skipped && syncResult.emptyMarkets.isNotEmpty) {
+        final markets = syncResult.emptyMarkets.join('/');
+        AppLogger.warning('UpdateService', '價格同步缺市場: $markets');
+        ctx.result.recordError('$markets 當日價格為零筆，評分資料不完整');
+      }
     } on RateLimitException catch (e) {
       ctx.rateLimitedAbort = true;
       AppLogger.warning('UpdateService', '價格同步失敗 (rate limit)', e);
@@ -736,6 +746,23 @@ class UpdateService {
         'UpdateService',
         '步驟 4.8: 警示=${killerResult.warningCount}, 董監=${killerResult.insiderCount}',
       );
+
+      // `KillerFeaturesSyncResult` 的兩個 error 欄位過去零消費點——欄位是死的。
+      // 警示不是「額外功能」：處置股是三模式榜的**硬性宇宙排除**（-50 分 +
+      // droppedDisposal），缺名單是 fail-open——危險股照常上榜、風險徽章不亮，
+      // 而使用者看到的是綠燈。必須讓 run 降級為 partial。
+      if (killerResult.warningError != null) {
+        ctx.result.recordError(
+          '警示（注意/處置）資料同步失敗: ${killerResult.warningError}',
+          killerResult.warningError,
+        );
+      }
+      if (killerResult.insiderError != null) {
+        ctx.result.recordError(
+          '董監持股資料同步失敗: ${killerResult.insiderError}',
+          killerResult.insiderError,
+        );
+      }
     } on RateLimitException catch (e) {
       ctx.rateLimitedAbort = true;
       AppLogger.warning(
@@ -745,8 +772,13 @@ class UpdateService {
       );
       ctx.result.recordError('Killer Features (rate limit): $e', e);
     } catch (e) {
-      // 不加入 errors，因為這是額外功能，不影響主流程
+      // 過去這裡註記「額外功能不影響主流程」故不記 errors，但該假設不成立：
+      // 警示線失敗會讓處置股漏掉硬排除。且 warning_repository 對每個來源
+      // `on NetworkException { rethrow; }`，而 market_client_mixin 把所有
+      // DioException（4xx/5xx/timeout/連線錯誤）都轉成 NetworkException——
+      // 也就是**最常見的失敗會直接穿透到這裡**，過去一個字都不會留下。
       AppLogger.warning('UpdateService', 'Killer Features 資料更新失敗', e);
+      ctx.result.recordError('Killer Features（警示/董監）資料更新失敗: $e', e);
     }
   }
 
@@ -997,7 +1029,9 @@ class UpdateResult {
   Map<String, double> priceChanges = {};
 
   /// 記錄錯誤，同時自動偵測 RateLimitException
-  void recordError(String message, Object exception) {
+  /// [exception] 可為 null——並非所有失敗都來自例外，缺整個市場的當日價格
+  /// 是資料條件而非拋錯，但同樣必須讓 run 降級為 partial。
+  void recordError(String message, [Object? exception]) {
     errors.add(message);
     if (exception is RateLimitException) hasRateLimitError = true;
   }

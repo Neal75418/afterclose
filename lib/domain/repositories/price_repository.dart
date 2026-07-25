@@ -90,6 +90,7 @@ class MarketSyncResult {
     required this.candidates,
     this.dataDate,
     this.skipped = false,
+    this.emptyMarkets = const [],
   });
 
   final int count;
@@ -99,4 +100,14 @@ class MarketSyncResult {
   final DateTime? dataDate;
 
   final bool skipped;
+
+  /// 本輪回傳零筆的市場（`MarketCode` 值）
+  ///
+  /// 來源失敗被 `safeAwait` 吞成空清單，只有**兩個市場皆空**才會被察覺；
+  /// 若僅 TWSE 掛掉，TPEx 非空就不進該分支，等於用半個市場的資料照常評分
+  /// 而無人知曉。呼叫端必須據此 `recordError`，讓 run 降級為 partial。
+  ///
+  /// 交易日空清單才代表異常——非交易日 TPEx 本就回零筆，故僅在有實際
+  /// 抓取行為時填入（快取路徑不填）。
+  final List<String> emptyMarkets;
 }

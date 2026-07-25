@@ -233,6 +233,40 @@ void main() {
       expect(result.hasWarnings, isTrue);
     });
 
+    test('半個市場價格取得失敗必須可見（TWSE 空、TPEx 有資料）', () async {
+      // safeAwait 把來源失敗吞成空陣列：只有 TWSE 掛掉時 tpexPrices 非空、
+      // 不進「兩者皆空」分支 → 用半個市場的資料照常評分且無人知曉。
+      when(() => mockPriceRepo.syncAllPricesForDate(any())).thenAnswer(
+        (_) async => MarketSyncResult(
+          count: 900,
+          candidates: const [],
+          dataDate: tradingDay,
+          emptyMarkets: const ['TWSE'],
+        ),
+      );
+
+      final service = buildService();
+      final result = await service.runDailyUpdate(forDate: tradingDay);
+
+      expect(
+        result.errors,
+        anyElement(contains('TWSE')),
+        reason: '缺半個市場卻回報成功，等於讓使用者用殘缺資料下單',
+      );
+      expect(result.hasWarnings, isTrue);
+    });
+
+    test('兩個市場都有資料時不得誤報錯誤', () async {
+      final service = buildService();
+      final result = await service.runDailyUpdate(forDate: tradingDay);
+
+      expect(
+        result.errors.where((e) => e.contains('價格')),
+        isEmpty,
+        reason: '正常路徑不得產生假警告',
+      );
+    });
+
     test('內部人轉讓 generic 同步失敗應記錄到 result.errors', () async {
       final mockTpex = MockTpexClient();
       // TDCC 成功（回空資料 → 跳過寫入）

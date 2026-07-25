@@ -353,7 +353,11 @@ class PriceRepository implements IPriceRepository {
 
       if (twsePrices.isEmpty && tpexPrices.isEmpty) {
         AppLogger.warning('PriceRepo', '價格同步: 無資料');
-        return const MarketSyncResult(count: 0, candidates: []);
+        return const MarketSyncResult(
+          count: 0,
+          candidates: [],
+          emptyMarkets: [MarketCode.twse, MarketCode.tpex],
+        );
       }
 
       // 委託給市場資料來源處理轉換和篩選
@@ -391,10 +395,18 @@ class PriceRepository implements IPriceRepository {
             '候選 ${allCandidates.length})',
       );
 
+      // 回報零筆的市場：safeAwait 把來源失敗吞成空清單，只有兩市場皆空才會
+      // 被上方分支攔下；僅單一市場掛掉時流程照常走完，必須讓呼叫端看得見。
+      final emptyMarkets = <String>[
+        if (twseResult.priceEntries.isEmpty) MarketCode.twse,
+        if (tpexResult.priceEntries.isEmpty) MarketCode.tpex,
+      ];
+
       return MarketSyncResult(
         count: allPriceEntries.length,
         candidates: allCandidates,
         dataDate: dataDate,
+        emptyMarkets: emptyMarkets,
       );
     } on RateLimitException {
       rethrow;
