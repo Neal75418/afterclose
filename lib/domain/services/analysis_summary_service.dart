@@ -896,10 +896,15 @@ class AnalysisSummaryService {
           'summary.revenueYoyDecline',
           {'growth': _numStr(e['yoyGrowth'])},
         ),
-        SignalName.revenueMomGrowth: (e) => LocalizableString(
-          'summary.revenueMomGrowth',
-          {'months': _numStr(e['consecutiveMonths'], fractionDigits: 0)},
-        ),
+        // 單月不說「連續」——與 fundamental_scan_rules 的 description 同一判斷。
+        // revenueMomConsecutiveMonths 目前為 1，故正式環境恆走單月分支。
+        SignalName.revenueMomGrowth: (e) => e['consecutiveMonths'] == 1
+            ? LocalizableString('summary.revenueMomGrowthSingle', {
+                'growth': _numStr(e['avgMomGrowth']),
+              })
+            : LocalizableString('summary.revenueMomGrowth', {
+                'months': _numStr(e['consecutiveMonths'], fractionDigits: 0),
+              }),
         SignalName.revenueNewHigh: (e) => LocalizableString(
           'summary.revenueNewHigh',
           {'surpassPct': _numStr(e['surpassPct'])},
