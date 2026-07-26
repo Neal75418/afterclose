@@ -443,12 +443,33 @@ class RuleAccuracyService {
     final stats = await getRuleStats(ruleId, period: '${holdingDays}D');
     if (stats == null || stats.triggerCount < 5) return null;
 
-    final hitRateStr = stats.hitRate.toStringAsFixed(0);
+    // 相對隨機基準的 lift（P1-9）：裸命中率會被雙向誤讀。
+    // `successProbabilityBaselines` 是實測的 per-period 基準（5D=0.3461），
+    // 過去只被 calibration 消費、UI 零引用。實測後果（production DB, 5D）：
+    // CONCENTRATION_HIGH 22.8% 讀起來像「差但堪用」，實際低於隨機 12pp；
+    // INSTITUTIONAL_BUY_STREAK 33.3% 讀起來像「很爛」，實際只是持平。
+    //
+    // 三個數字都先捨入再相減，確保畫面上「命中率 − 基準 = lift」自洽——
+    // 否則 33% 與 35% 並列卻寫 −1pp，使用者會以為算錯。
+    final baseline =
+        CalibrationThresholds.successProbabilityBaselines[holdingDays] ??
+        CalibrationThresholds.defaultBaselineProbability;
+    final hitRounded = stats.hitRate.roundToDouble();
+    final baselineRounded = (baseline * 100).roundToDouble();
+    final liftStr = AppNumberFormat.signedFixed(
+      hitRounded - baselineRounded,
+      decimals: 0,
+    );
+
+    final hitRateStr = hitRounded.toStringAsFixed(0);
+    final baselineStr = baselineRounded.toStringAsFixed(0);
     final returnStr = AppNumberFormat.signedPercent(
       stats.avgReturn,
       decimals: 1,
     );
-    final summary = '命中率 $hitRateStr%，平均 $holdingDays 日報酬 $returnStr';
+    final summary =
+        '命中率 $hitRateStr%（隨機基準 $baselineStr%，${liftStr}pp）'
+        '，平均 $holdingDays 日報酬 $returnStr';
 
     if (stats.triggerCount < CalibrationThresholds.sampleSizeCutThreshold) {
       return '$summary（樣本數 ${stats.triggerCount} 筆，信心度較低）';

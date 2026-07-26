@@ -1049,7 +1049,75 @@ void main() {
           );
 
       final text = await service.getRuleSummaryText('TECH_BREAKOUT');
-      expect(text, '命中率 71%，平均 5 日報酬 +2.3%');
+      expect(text, '命中率 71%（隨機基準 35%，+36pp），平均 5 日報酬 +2.3%');
+    });
+
+    // ======================================================================
+    // 相對隨機基準的 lift（P1-9）
+    //
+    // `successProbabilityBaselines` 是實測的 per-period 隨機基準
+    // （5D=0.3461），過去**只被 calibration 消費、UI 零引用**，使用者看到的
+    // 是裸命中率。實測後果（使用者 production DB，5D）：
+    //   CONCENTRATION_HIGH 22.8%(n=276) / INSTITUTIONAL_BUY_STREAK 33.3%(n=111)
+    // 前者讀起來像「差但堪用」，實際低於隨機 12pp；後者讀起來像「很爛」，
+    // 實際只是持平。兩個方向的誤讀都直接改變部位配置。
+    // ======================================================================
+
+    test('🚨 低於隨機基準時必須顯示負 lift（否則會被誤讀為堪用）', () async {
+      // 23% vs 5D 基準 34.6% → −12pp
+      await db
+          .into(db.ruleAccuracy)
+          .insert(
+            RuleAccuracyCompanion.insert(
+              ruleId: 'CONCENTRATION_HIGH',
+              period: '5D',
+              triggerCount: const Value(276),
+              successCount: const Value(63),
+              avgReturn: const Value(-0.8),
+            ),
+          );
+
+      final text = await service.getRuleSummaryText('CONCENTRATION_HIGH');
+      expect(text, contains('隨機基準 35%'));
+      expect(text, contains('-12pp'), reason: '低於基準必須顯示為負，不能只給裸命中率');
+    });
+
+    test('持平於基準時 lift 近 0（不該讀成「很爛」）', () async {
+      // 33.3% vs 34.6% → −1pp
+      await db
+          .into(db.ruleAccuracy)
+          .insert(
+            RuleAccuracyCompanion.insert(
+              ruleId: 'INSTITUTIONAL_BUY_STREAK',
+              period: '5D',
+              triggerCount: const Value(111),
+              successCount: const Value(37),
+              avgReturn: const Value(-1.05),
+            ),
+          );
+
+      final text = await service.getRuleSummaryText('INSTITUTIONAL_BUY_STREAK');
+      expect(text, contains('-2pp'));
+    });
+
+    test('未列入 baseline 的 period 走 0.5 保守 fallback', () async {
+      await db
+          .into(db.ruleAccuracy)
+          .insert(
+            RuleAccuracyCompanion.insert(
+              ruleId: 'TECH_BREAKOUT',
+              period: '1D',
+              triggerCount: const Value(40),
+              successCount: const Value(24),
+              avgReturn: const Value(0.5),
+            ),
+          );
+
+      final text = await service.getRuleSummaryText(
+        'TECH_BREAKOUT',
+        holdingDays: 1,
+      );
+      expect(text, contains('隨機基準 50%'));
     });
 
     // ======================================================================
@@ -1080,13 +1148,13 @@ void main() {
         expect(text, isNotNull);
         expect(
           text,
-          contains('命中率 70%，平均 5 日報酬 +2.3%'),
+          contains('命中率 70%（隨機基準 35%，+35pp），平均 5 日報酬 +2.3%'),
           reason: '核心數字不因低信心註記而消失',
         );
         expect(text, contains('10'), reason: '低信心註記須帶出實際樣本數，而非只是模糊警語');
         expect(
           text!.length,
-          greaterThan('命中率 70%，平均 5 日報酬 +2.3%'.length),
+          greaterThan('命中率 70%（隨機基準 35%，+35pp），平均 5 日報酬 +2.3%'.length),
           reason: 'n=10 < sampleSizeCutThreshold(30) → 必須附加低信心註記',
         );
       },
