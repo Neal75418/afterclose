@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:afterclose/core/utils/number_formatter.dart';
 
 import 'package:collection/collection.dart';
 
@@ -168,7 +169,19 @@ class AnalysisSummaryService {
     }
 
     final close = latestPrice?.close?.toStringAsFixed(1) ?? '-';
-    final change = priceChange?.abs().toStringAsFixed(1) ?? '0.0';
+    // **帶正負號**（2026-07-26 修）：曾用 `.abs()` 剝掉符號，再由句子的
+    // 「漲幅／跌幅」用詞表達方向——但那個用詞取自 `analysis.trendState`
+    // （趨勢），不是當日漲跌的方向。兩者本來就可能不一致：處於上升趨勢的
+    // 股票今天當然可以大跌。
+    //
+    // 實機（1810 和成，2026-07-24）：頁首 ↓ −2.15（−6.99%），摘要卻寫
+    // 「上升趨勢…漲幅 7.0%」——同一天一個說跌、一個說漲。
+    //
+    // 現在句子只陳述趨勢，當日漲跌一律帶號、用詞中性（見 summary.overall*
+    // 的 i18n）。
+    final change = priceChange == null
+        ? '0.0'
+        : AppNumberFormat.signedFixed(priceChange, decimals: 1);
 
     // 有匯流時用合成敘述開頭
     final hasConfluence =

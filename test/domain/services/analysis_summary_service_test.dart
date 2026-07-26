@@ -1119,4 +1119,69 @@ void main() {
       );
     });
   });
+  // ====================================================================
+  // 當日漲跌的方向不得由「趨勢狀態」決定（2026-07-26 實機發現）
+  //
+  // 實機（1810 和成，2026-07-24）：頁首顯示 ↓ −2.15（−6.99%），AI 摘要
+  // 卻寫「目前呈現上升趨勢，收盤價 28.6 元，**漲幅 7.0%**」——同一檔股票
+  // 同一天，一個說跌 7%、一個說漲 7%。DB 實證：收 28.60、前收 30.75。
+  //
+  // 根因兩層：
+  //   (1) `priceChange?.abs()` 把正負號剝掉
+  //   (2) 「漲幅/跌幅」的用詞來自 `analysis.trendState`（趨勢），不是當日
+  //       漲跌的方向。而這兩件事本來就可能不一致——處於上升趨勢的股票
+  //       今天當然可以大跌。模板卻強迫它們一致。
+  //
+  // 修法：句子仍陳述趨勢（那部分是對的），但當日漲跌改為**帶正負號**且
+  // 用詞中性，不再宣稱方向。
+  // ====================================================================
+  group('當日漲跌不得與趨勢用詞綁定', () {
+    test('🚨 上升趨勢但當日下跌時，數字必須帶負號', () {
+      final result = service.generate(
+        analysis: createTestAnalysis(trendState: 'UP', score: 20),
+        reasons: [createTestReason(reasonType: 'TECH_BREAKOUT', ruleScore: 15)],
+        latestPrice: DailyPriceEntry(
+          symbol: 'TEST',
+          date: DateTime(2026, 7, 24),
+          close: 28.6,
+        ),
+        priceChange: -6.99,
+        institutionalHistory: [],
+        revenueHistory: [],
+        latestPER: null,
+        horizon: Horizon.short,
+      );
+
+      final overall = result.overallParts.firstWhere(
+        (p) => p.key == 'summary.overallUp',
+      );
+      expect(
+        overall.namedArgs['change'],
+        startsWith('-'),
+        reason: '當日跌 6.99% 卻顯示為正數，會被讀成上漲——方向完全相反',
+      );
+    });
+
+    test('上升趨勢且當日上漲時帶正號', () {
+      final result = service.generate(
+        analysis: createTestAnalysis(trendState: 'UP', score: 20),
+        reasons: [createTestReason(reasonType: 'TECH_BREAKOUT', ruleScore: 15)],
+        latestPrice: DailyPriceEntry(
+          symbol: 'TEST',
+          date: DateTime(2026, 7, 24),
+          close: 30.0,
+        ),
+        priceChange: 3.5,
+        institutionalHistory: [],
+        revenueHistory: [],
+        latestPER: null,
+        horizon: Horizon.short,
+      );
+
+      final overall = result.overallParts.firstWhere(
+        (p) => p.key == 'summary.overallUp',
+      );
+      expect(overall.namedArgs['change'], startsWith('+'));
+    });
+  });
 }
