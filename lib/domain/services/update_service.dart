@@ -284,17 +284,21 @@ class UpdateService {
       // daily_reason）、不再產生 / 儲存 Top-20 推薦清單。
       ctx.onProgress?.call(9, 10, '完成分析');
       ctx.onProgress?.call(10, 10, '完成');
-      await _finishUpdate(ctx, result);
-
-      // 步驟 10+: 重算規則準確度統計。docstring 自承「非阻塞」，但這裡 await =
-      // foreground 仍會等到統計更新完成才 return。從 user 角度本來就是 run
-      // 完整個 update 才看到結果，所以等統計更新跑完一起回也合理。
-      // 真正「非阻塞」語意要 `unawaited(...)` —— 但 background WorkManager
-      // 路徑若不 await，isolate 可能在統計更新跑完前被 OS 殺掉。所以維持 await
-      // 是 by-design，docstring 同步澄清。
-      await _updateRuleAccuracyStatsFailSafe();
-      await _snapshotNewsMentionsFailSafe();
+      // 步驟 10+: 三個後處理。**必須在 _finishUpdate 之前**——後者依
+      // `result.errors` 決定 update_run 狀態並設 `result.success = true`，
+      // 跑在它之後等於這三步的失敗永遠反映不到狀態上（finding #23）。
+      //
+      // 維持 await：docstring 曾自承「非阻塞」，但 background WorkManager
+      // 路徑若不 await，isolate 可能在跑完前被 OS 殺掉；foreground 從 user
+      // 角度本來就是等整個 update 跑完才看到結果。
+      //
+      // fail-safe 的語意是「不中斷流程」，不是「不留下痕跡」——三者皆
+      // 捕捉例外後 recordError，不 rethrow。
+      await _updateRuleAccuracyStatsFailSafe(ctx);
+      await _snapshotNewsMentionsFailSafe(ctx);
       await _checkPinnedThesesFailSafe(ctx);
+
+      await _finishUpdate(ctx, result);
 
       return result;
     } catch (e) {
@@ -901,7 +905,7 @@ class UpdateService {
   ///
   /// 命名重點：「fail-safe」≠「非阻塞」。caller 仍會 await 等統計更新跑完才
   /// return（避免 background isolate 被 WorkManager kill）。
-  Future<void> _updateRuleAccuracyStatsFailSafe() async {
+  Future<void> _updateRuleAccuracyStatsFailSafe(_UpdateContext ctx) async {
     final service = _ruleAccuracyService;
     if (service == null) return;
 
@@ -910,12 +914,13 @@ class UpdateService {
       AppLogger.info('UpdateService', '步驟 10+: 規則準確度統計更新完成');
     } catch (e, stack) {
       AppLogger.error('UpdateService', '規則準確度統計更新失敗（fail-safe）', e, stack);
+      ctx.result.recordError('規則準確度統計更新失敗: $e', e);
     }
   }
 
   /// 新聞提及數快照（新聞熱度發現層）。**fail-safe**：失敗只 log、
   /// 不影響 update result（與 [_updateRuleAccuracyStatsFailSafe] 同模式）。
-  Future<void> _snapshotNewsMentionsFailSafe() async {
+  Future<void> _snapshotNewsMentionsFailSafe(_UpdateContext ctx) async {
     final service = _newsMentionSnapshotService;
     if (service == null) return;
 
@@ -926,6 +931,7 @@ class UpdateService {
       // 非關鍵路徑（顯示層不依賴此表）：降級 warning，只留 Sentry
       // breadcrumb，不觸發 Sentry 錯誤事件（`.error` 才會 capture exception）
       AppLogger.warning('UpdateService', '新聞提及快照失敗（不影響更新）', e);
+      ctx.result.recordError('新聞提及快照失敗: $e', e);
     }
   }
 
@@ -940,6 +946,7 @@ class UpdateService {
       AppLogger.info('UpdateService', '步驟 10+: 釘選論點檢查完成（失效 $n 筆）');
     } catch (e, stack) {
       AppLogger.error('UpdateService', '釘選論點檢查失敗（fail-safe）', e, stack);
+      ctx.result.recordError('釘選論點檢查失敗: $e', e);
     }
   }
 

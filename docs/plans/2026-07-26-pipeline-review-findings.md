@@ -308,7 +308,18 @@
 
 ### 23. 三個步驟 10+ 跑在 _finishUpdate 之後，失敗無法反映到 update_run 狀態或 result.errors——出場層（釘選論點失效檢查）整個沒跑也顯示「更新完成」
 
-**狀態**：❓ 未查證
+**狀態**：✅ 已修 — 查證屬實。`_finishUpdate` 依 `result.errors` 決定
+`update_run` 狀態並設 `result.success = true`，而三個 fail-safe 跑在它之後
+且只 `AppLogger`，故失敗永遠反映不到狀態上。
+
+修法：三個 fail-safe 移到 `_finishUpdate` **之前**，並在 catch 內
+`recordError`（仍不 rethrow，維持「不中斷流程」語意）。既有測試釘住的
+`result.success == true` 契約不變，只是 `update_run` 會正確標為 PARTIAL。
+
+此修法安全的前提是同批已修的冷啟動 gate（`ccc630d`）：在那之前 PARTIAL
+會把自動更新擋滿 6 小時，讓 PARTIAL 更準確反而有害。
+
+測試 +2，順序與記錄兩個面向各經 mutation 驗證。
 
 **證據**：lib/domain/services/update_service.dart:287 先 `await _finishUpdate(ctx, result)`，該方法內 844-848 已寫 `finishUpdateRun(success)` 並在 850-851 設 `result.success = true; result.message = '更新完成'`；之後 295-297 才跑三個 FailSafe。`_checkPinnedThesesFailSafe`（892-902）catch 所有例外後只 `AppLogger.error`，不碰 result.errors、不改 update_run。`_updateRuleAccuracyStatsFailSafe`（862-872）、`_snapshotNewsMentionsFailSafe`（876-888）同型。
 

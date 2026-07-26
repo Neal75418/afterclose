@@ -17,6 +17,7 @@ import 'package:afterclose/domain/repositories/price_repository.dart'
     show MarketSyncResult;
 import 'package:afterclose/domain/services/scoring_service.dart';
 import 'package:afterclose/domain/services/update/news_mention_snapshot_service.dart';
+import 'package:afterclose/domain/services/thesis/thesis_monitor_service.dart';
 import 'package:afterclose/domain/services/update_service.dart';
 import 'package:afterclose/domain/services/update_service_deps.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -42,6 +43,8 @@ class MockScoringService extends Mock implements ScoringService {}
 
 class MockNewsMentionSnapshotService extends Mock
     implements NewsMentionSnapshotService {}
+
+class MockThesisMonitorService extends Mock implements ThesisMonitorService {}
 
 class MockTradingRepository extends Mock implements TradingRepository {}
 
@@ -212,6 +215,7 @@ void main() {
     ShareholdingRepository? shareholding,
     WarningRepository? warning,
     InsiderRepository? insider,
+    ThesisMonitorService? thesisMonitor,
   }) {
     return UpdateService(
       database: mockDb,
@@ -230,6 +234,7 @@ void main() {
       services: UpdateServices(
         scoring: mockScoring,
         newsMentionSnapshot: newsMentionSnapshot,
+        thesisMonitor: thesisMonitor,
       ),
     );
   }
@@ -579,6 +584,61 @@ void main() {
       // 快照失敗不應中斷或拖垮整體更新結果（fail-safe：只 log，不 rethrow）
       expect(result.success, isTrue);
       verify(() => mockSnapshotService.snapshotRecentDays()).called(1);
+    });
+
+    // ====================================================================
+    // 步驟 10+ 的失敗必須可見（finding #23）
+    //
+    // 三個 fail-safe（規則準確度統計、新聞提及快照、釘選論點失效檢查）原本
+    // 跑在 `_finishUpdate` **之後**，且只 AppLogger、不碰 result.errors。
+    // 而 `_finishUpdate` 依 result.errors 決定 update_run 狀態並設
+    // `result.success = true` —— 於是這三步整個沒跑，畫面仍是乾淨的
+    // 「更新完成」、update_run 仍是 SUCCESS。
+    //
+    // 影響最重的是釘選論點檢查：那是**出場層**。它靜默沒跑代表該失效的
+    // 論點不會被標記，使用者會抱著一個已達出場條件的部位而毫不知情。
+    // 新聞提及快照失敗則是永久損失——news_mention_daily 在 wipe 白名單內
+    // 正因為「歷史不可重建」。
+    //
+    // fail-safe 的語意是「不中斷流程」，不是「不留下痕跡」。
+    // ====================================================================
+
+    test('🚨 快照失敗必須進 result.errors（fail-safe ≠ 無痕）', () async {
+      when(
+        () => mockTdcc.getAllHoldingDistribution(),
+      ).thenAnswer((_) async => {});
+
+      final mockSnapshotService = MockNewsMentionSnapshotService();
+      when(
+        () => mockSnapshotService.snapshotRecentDays(),
+      ).thenThrow(Exception('snapshot boom'));
+
+      final service = buildService(newsMentionSnapshot: mockSnapshotService);
+      final result = await service.runDailyUpdate(forDate: tradingDay);
+
+      expect(result.success, isTrue, reason: 'fail-safe 仍不得中斷流程');
+      expect(
+        result.errors,
+        anyElement(contains('新聞提及快照')),
+        reason: '失敗必須留下痕跡，否則使用者看到的是乾淨的「更新完成」',
+      );
+    });
+
+    test('🚨 釘選論點檢查失敗必須進 result.errors（出場層靜默沒跑最危險）', () async {
+      when(
+        () => mockTdcc.getAllHoldingDistribution(),
+      ).thenAnswer((_) async => {});
+
+      final mockThesis = MockThesisMonitorService();
+      when(
+        () => mockThesis.checkActiveTheses(asOf: any(named: 'asOf')),
+      ).thenThrow(Exception('thesis boom'));
+
+      final service = buildService(thesisMonitor: mockThesis);
+      final result = await service.runDailyUpdate(forDate: tradingDay);
+
+      expect(result.success, isTrue);
+      expect(result.errors, anyElement(contains('釘選論點')));
     });
   });
 }
