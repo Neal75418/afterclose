@@ -35,6 +35,7 @@
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:afterclose/core/constants/chip_scoring_params.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/services/chip_anomaly_service.dart';
@@ -272,6 +273,89 @@ void main() {
       await addMargin('9002', baseline: 20, todayShort: 200);
 
       expect(await shortSurgeSymbols(), contains('9002'));
+    });
+  });
+
+  // ETF 過濾發生在「取前 N 之後」——席位空轉不遞補
+  //
+  // b66b6de 為流動性閘門立下的規則就寫在 chip_anomaly_service.dart:439-442：
+  // 「必須在取前 N 之前過濾……若先取前 N 再過濾，名單只會變短、真訊號永遠
+  // 遞補不上來」。但同一個檔案裡還有**更晚的一層**：ETF 排除在彙總處
+  // （:93 `if (etfSymbols.contains(anomaly.symbol)) continue;`）執行，而各
+  // detector 早已各自 `LIMIT 5`（:163/:219/:262/:342）或 `.take(5)`（:459）。
+  // 被丟掉的席位不會由第 6 名遞補。
+  //
+  // 實測（正式 DB 2026-07-17）：融券暴增 top-5 是
+  // [1514 亞力 57.4×, 3149 正達 37.7×, **00940 元大台灣價值高息(ETF)** 32.3×,
+  //  2303 聯電 32.1×, 3324 雙鴻 29.0×] —— 00940 佔第 3 名後被丟棄，該區只剩
+  // 4 檔，而排第 6 的個股永遠補不進來。使用者看不見：類別徽章顯示的是過濾
+  // 後的數量，縮水完全靜默。
+  //
+  // 修法不是把 ETF 條件推進各 detector 的 SQL —— :65-69 的 docstring 明說
+  // 刻意在彙總處單點過濾（宇宙定義 DRY，與 mode_recommendation_provider 的
+  // droppedEtf 同一理由）。正解是**把「取前 N」也移到彙總處、排在所有過濾
+  // 之後**：SQL 依序回傳全部 → detector 內流動性過濾 → 彙總處 ETF 過濾 →
+  // 取前 N。各 detector 無上限的列數實測為 6/23/24/33，量體安全。
+  group('ETF 過濾不得讓席位空轉', () {
+    Future<void> addMargin(
+      String symbol, {
+      required double baseline,
+      required double todayShort,
+    }) => db.insertMarginTradingData([
+      MarginTradingCompanion.insert(
+        symbol: symbol,
+        date: asOf,
+        shortSell: Value(todayShort),
+      ),
+      for (var i = 1; i <= 6; i++)
+        MarginTradingCompanion.insert(
+          symbol: symbol,
+          date: asOf.subtract(Duration(days: i)),
+          shortSell: Value(baseline),
+        ),
+    ]);
+
+    Future<List<String>> shortSurgeSymbols() async {
+      final byMarket = await service.detectAnomaliesByMarket(asOf);
+      return [
+        for (final list in byMarket.values)
+          for (final a in list)
+            if (a.type == ChipAnomalyType.shortSurge) a.symbol,
+      ];
+    }
+
+    test('🚨 ETF 佔住的席位須由下一名遞補，不得讓名單縮水', () async {
+      // 6 檔合格，倍數遞減：E1(ETF) 排第 3，S6 排第 6
+      const ratios = [10.0, 8.0, 6.0, 5.0, 4.0, 3.5];
+      for (var i = 0; i < 6; i++) {
+        final isEtf = i == 2;
+        final sym = isEtf ? '00940' : 'S${i + 1}';
+        await db.upsertStocks([
+          StockMasterCompanion.insert(
+            symbol: sym,
+            name: isEtf ? '元大台灣價值高息' : '個股${i + 1}',
+            market: 'TWSE',
+            industry: Value(isEtf ? 'ETF' : '電子工業'),
+          ),
+        ]);
+        await addMargin(sym, baseline: 100, todayShort: 100 * ratios[i]);
+      }
+
+      final got = await shortSurgeSymbols();
+
+      expect(
+        got,
+        isNot(contains('00940')),
+        reason: 'ETF 本來就該排除（宇宙定義），這部分現行行為正確',
+      );
+      expect(
+        got.length,
+        ChipAnomalyParams.maxResultsPerType,
+        reason:
+            'ETF 讓出的席位必須由第 6 名遞補。現行實作先 LIMIT 5 再丟 ETF，'
+            '名單直接縮成 4 筆，而符合條件的個股永遠補不進來',
+      );
+      expect(got, contains('S6'), reason: '第 6 名就是應該遞補上來的那一檔');
     });
   });
 }
