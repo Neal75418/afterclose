@@ -178,7 +178,7 @@ void main() {
       'trigger_count INTEGER NOT NULL DEFAULT 0, '
       'success_count INTEGER NOT NULL DEFAULT 0, '
       'avg_return REAL NOT NULL DEFAULT 0.0, '
-      "updated_at TEXT NOT NULL DEFAULT (CURRENT_TIMESTAMP), "
+      'updated_at TEXT NOT NULL DEFAULT (CURRENT_TIMESTAMP), '
       'PRIMARY KEY (rule_id, period))',
     );
     await db.close();

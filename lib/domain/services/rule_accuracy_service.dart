@@ -445,26 +445,30 @@ class RuleAccuracyService {
     final stats = await getRuleStats(ruleId, period: '${holdingDays}D');
     if (stats == null || stats.triggerCount < 5) return null;
 
-    // 相對隨機基準的 lift（P1-9）：裸命中率會被雙向誤讀。
-    // `successProbabilityBaselines` 是實測的 per-period 基準（5D=0.3461），
-    // 過去只被 calibration 消費、UI 零引用。實測後果（production DB, 5D）：
-    // CONCENTRATION_HIGH 22.8% 讀起來像「差但堪用」，實際低於隨機 12pp；
-    // INSTITUTIONAL_BUY_STREAK 33.3% 讀起來像「很爛」，實際只是持平。
+    // **不顯示隨機基準比較**（2026-07-26 移除 P1-9 加入的 lift）。
     //
-    // 三個數字都先捨入再相減，確保畫面上「命中率 − 基準 = lift」自洽——
-    // 否則 33% 與 35% 並列卻寫 −1pp，使用者會以為算錯。
-    final baseline =
-        CalibrationThresholds.successProbabilityBaselines[holdingDays] ??
-        CalibrationThresholds.defaultBaselineProbability;
-    final hitRounded = stats.hitRate.roundToDouble();
-    final baselineRounded = (baseline * 100).roundToDouble();
-    final liftStr = AppNumberFormat.signedFixed(
-      hitRounded - baselineRounded,
-      decimals: 0,
-    );
-
-    final hitRateStr = hitRounded.toStringAsFixed(0);
-    final baselineStr = baselineRounded.toStringAsFixed(0);
+    // 曾以 `CalibrationThresholds.successProbabilityBaselines`（5D=0.3461）
+    // 當基準顯示 lift。實測後發現該比較兩端來自完全不同的市場環境：
+    // - 基準是 2026-06-18 在**另一個 dev DB** 上對全期算的靜態值；
+    //   本機全期實測其實是 29.23%，並非 34.61%
+    // - 而 hit_rate 來自 `daily_reason`，僅 8 天；5D 前瞻只有最早三天的
+    //   觸發有結果，那三天之後緊接 2026-07-17 全市場單日 −3.95% 的崩盤
+    // - 該窗實測基準是 **19.04%**。逐日基準全期範圍 5.79%~66.20%、
+    //   標準差 13.06pp —— 靜態基準在這種變異下沒有意義
+    //
+    // 後果是方向性的：以靜態基準計，14 條有樣本的規則中 13 條顯示為負；
+    // 以同窗基準計，11 條為正，**10 條正負號翻轉**。顯示一個方向相反的
+    // 比較，比不顯示更糟。
+    //
+    // 要正確做需要與量測窗同期的實測 baseline（`tool/replay_calibrator.dart`
+    // 的超額模式已有正解，資產 `assets/rule_scores_calibrated_short.json`
+    // 也已帶 `backtest.baseline_hit_rate`），但那只涵蓋 44 條規則中的 41 條，
+    // 且 `daily_reason` 僅 8 天時任何基準設計都算不出可信數字。待資料深度
+    // 足夠（≥ `minDistinctDates` 個觸發日）再回頭處理。
+    //
+    // 兩個常數本身**不得刪**：`tool/recalibrate.dart:635-636` 的 absolute
+    // 路徑仍以它們為 H0。
+    final hitRateStr = stats.hitRate.roundToDouble().toStringAsFixed(0);
     final returnStr = AppNumberFormat.signedPercent(
       stats.avgReturn,
       decimals: 1,
@@ -477,8 +481,7 @@ class RuleAccuracyService {
     // 筆數判斷信心度：實測 CONCENTRATION_HIGH 761 筆全來自 8 個交易日，
     // 遠超門檻 30 卻以「完全有信心」的樣子呈現。
     final summary =
-        '命中率 $hitRateStr%（隨機基準 $baselineStr%，${liftStr}pp）'
-        '，平均 $holdingDays 日報酬 $returnStr'
+        '命中率 $hitRateStr%，平均 $holdingDays 日報酬 $returnStr'
         '（樣本 ${stats.triggerCount} 筆 / ${stats.distinctDates} 個觸發日）';
 
     if (stats.distinctDates < CalibrationThresholds.minDistinctDates ||

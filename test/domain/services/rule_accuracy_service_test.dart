@@ -1155,26 +1155,27 @@ void main() {
           );
 
       final text = await service.getRuleSummaryText('TECH_BREAKOUT');
-      expect(
-        text,
-        '命中率 71%（隨機基準 35%，+36pp），平均 5 日報酬 +2.3%'
-        '（樣本 35 筆 / 40 個觸發日）',
-      );
+      expect(text, '命中率 71%，平均 5 日報酬 +2.3%（樣本 35 筆 / 40 個觸發日）');
     });
 
     // ======================================================================
-    // 相對隨機基準的 lift（P1-9）
+    // 不得顯示無法佐證的隨機基準（2026-07-26 移除 P1-9）
     //
-    // `successProbabilityBaselines` 是實測的 per-period 隨機基準
-    // （5D=0.3461），過去**只被 calibration 消費、UI 零引用**，使用者看到的
-    // 是裸命中率。實測後果（使用者 production DB，5D）：
-    //   CONCENTRATION_HIGH 22.8%(n=276) / INSTITUTIONAL_BUY_STREAK 33.3%(n=111)
-    // 前者讀起來像「差但堪用」，實際低於隨機 12pp；後者讀起來像「很爛」，
-    // 實際只是持平。兩個方向的誤讀都直接改變部位配置。
+    // 曾顯示「命中率 X%（隨機基準 35%，Ypp）」。移除原因是該比較兩端來自
+    // 完全不同的市場環境：基準是在**另一個 dev DB** 上對全期算的靜態
+    // 34.61%（本機全期實測其實 29.23%），而 hit_rate 來自僅 8 天的
+    // daily_reason，5D 前瞻只有最早三天有結果、且緊接 2026-07-17 全市場
+    // 單日 −3.95% 的崩盤，該窗實測基準是 19.04%。
+    //
+    // 逐日基準全期範圍 5.79%~66.20%、標準差 13.06pp。以靜態基準計，14 條
+    // 有樣本的規則中 13 條顯示為負；以同窗基準計 11 條為正 —— **10 條正負
+    // 號翻轉**。顯示方向相反的比較，比不顯示更糟。
+    //
+    // 此測試釘住「不得再加回未經同窗實測的基準」。要重新加入，必須先有
+    // 與量測窗同期的實測 baseline。
     // ======================================================================
 
-    test('🚨 低於隨機基準時必須顯示負 lift（否則會被誤讀為堪用）', () async {
-      // 23% vs 5D 基準 34.6% → −12pp
+    test('🚨 摘要不得宣稱無法佐證的隨機基準', () async {
       await db
           .into(db.ruleAccuracy)
           .insert(
@@ -1184,50 +1185,17 @@ void main() {
               triggerCount: const Value(276),
               successCount: const Value(63),
               avgReturn: const Value(-0.8),
+              distinctDates: const Value(40),
             ),
           );
 
       final text = await service.getRuleSummaryText('CONCENTRATION_HIGH');
-      expect(text, contains('隨機基準 35%'));
-      expect(text, contains('-12pp'), reason: '低於基準必須顯示為負，不能只給裸命中率');
-    });
 
-    test('持平於基準時 lift 近 0（不該讀成「很爛」）', () async {
-      // 33.3% vs 34.6% → −1pp
-      await db
-          .into(db.ruleAccuracy)
-          .insert(
-            RuleAccuracyCompanion.insert(
-              ruleId: 'INSTITUTIONAL_BUY_STREAK',
-              period: '5D',
-              triggerCount: const Value(111),
-              successCount: const Value(37),
-              avgReturn: const Value(-1.05),
-            ),
-          );
-
-      final text = await service.getRuleSummaryText('INSTITUTIONAL_BUY_STREAK');
-      expect(text, contains('-2pp'));
-    });
-
-    test('未列入 baseline 的 period 走 0.5 保守 fallback', () async {
-      await db
-          .into(db.ruleAccuracy)
-          .insert(
-            RuleAccuracyCompanion.insert(
-              ruleId: 'TECH_BREAKOUT',
-              period: '1D',
-              triggerCount: const Value(40),
-              successCount: const Value(24),
-              avgReturn: const Value(0.5),
-            ),
-          );
-
-      final text = await service.getRuleSummaryText(
-        'TECH_BREAKOUT',
-        holdingDays: 1,
-      );
-      expect(text, contains('隨機基準 50%'));
+      expect(text, isNotNull);
+      expect(text, contains('命中率 23%'), reason: '裸命中率仍須顯示');
+      expect(text, isNot(contains('基準')), reason: '靜態基準與量測窗來自不同市場環境，方向會相反');
+      expect(text, isNot(contains('pp')), reason: 'lift 依附於基準，一併移除');
+      expect(text, contains('40 個觸發日'), reason: '樣本基礎必須保留 —— 那是使用者判斷可信度的唯一依據');
     });
 
     // ======================================================================
@@ -1258,13 +1226,13 @@ void main() {
         expect(text, isNotNull);
         expect(
           text,
-          contains('命中率 70%（隨機基準 35%，+35pp），平均 5 日報酬 +2.3%'),
+          contains('命中率 70%，平均 5 日報酬 +2.3%'),
           reason: '核心數字不因低信心註記而消失',
         );
         expect(text, contains('10'), reason: '低信心註記須帶出實際樣本數，而非只是模糊警語');
         expect(
           text!.length,
-          greaterThan('命中率 70%（隨機基準 35%，+35pp），平均 5 日報酬 +2.3%'.length),
+          greaterThan('命中率 70%，平均 5 日報酬 +2.3%'.length),
           reason: 'n=10 < sampleSizeCutThreshold(30) → 必須附加低信心註記',
         );
       },
