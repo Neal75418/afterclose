@@ -199,12 +199,33 @@ mixin RevenueDaoMixin on $AppDatabase {
   /// 取得指定年/月的月營收資料筆數
   ///
   /// 用於檢查是否已有該月的全市場營收資料，以避免重複的 API 呼叫。
-  Future<int> getRevenueCountForYearMonth(int year, int month) async {
+  /// [market] 給定時只數該市場的筆數
+  ///
+  /// 「該月抓齊了沒」的判斷必須與**實際抓取的範圍**同市場。全市場營收
+  /// 同步只抓上市（`getAllMonthlyRevenue`），上櫃由另一條流程寫入；用
+  /// 不分市場的總數判斷，等於讓上櫃的筆數替上市背書。
+  ///
+  /// 實測 2026/06：全市場 1,316 = 上市 1,067 + 上櫃 249，門檻 1,000。
+  /// 四分之一的判斷依據不是它要判斷的市場，而上市自身只有 6.7% 餘裕。
+  Future<int> getRevenueCountForYearMonth(
+    int year,
+    int month, {
+    String? market,
+  }) async {
     final countExpr = monthlyRevenue.symbol.count();
     final query = selectOnly(monthlyRevenue)
       ..addColumns([countExpr])
       ..where(monthlyRevenue.revenueYear.equals(year))
       ..where(monthlyRevenue.revenueMonth.equals(month));
+    if (market != null) {
+      query.join([
+        innerJoin(
+          stockMaster,
+          stockMaster.symbol.equalsExp(monthlyRevenue.symbol),
+        ),
+      ]);
+      query.where(stockMaster.market.equals(market));
+    }
     final result = await query.getSingle();
     return result.read(countExpr) ?? 0;
   }

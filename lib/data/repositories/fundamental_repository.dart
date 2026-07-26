@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import 'package:afterclose/core/constants/data_freshness.dart';
+import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/date_context.dart';
@@ -310,16 +311,20 @@ class FundamentalRepository implements IFundamentalRepository {
       final dataMonth = sample.month;
 
       if (!force) {
+        // 只數上市：本方法抓的是 `getAllMonthlyRevenue()`（上市），上櫃
+        // 由 syncOtcCandidatesFundamentals 另外寫入。用不分市場的總數
+        // 判斷，等於讓上櫃的筆數替上市背書 —— 實測 2026/06 全市場 1,316
+        // 筆裡有 249 筆是上櫃，而上市自身 1,067 對門檻只有 6.7% 餘裕。
         final existingCount = await _db.getRevenueCountForYearMonth(
           dataYear,
           dataMonth,
+          market: MarketCode.twse,
         );
-        // 若該月已有 >1000 筆資料則跳過
-        // （全市場通常有 ~1800+ 檔股票）
+        // 門檻 1000：上市非 ETF 約 1,080 檔，實測涵蓋率 98%
         if (existingCount > DataFreshness.revenueRecordThreshold) {
           AppLogger.debug(
             'FundamentalRepo',
-            '$dataYear/$dataMonth 營收資料已快取 ($existingCount 筆)，跳過同步',
+            '$dataYear/$dataMonth 上市營收已快取 ($existingCount 筆)，跳過同步',
           );
           return null;
         }
