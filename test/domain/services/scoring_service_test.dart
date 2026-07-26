@@ -42,6 +42,13 @@ class MockAnalysisRepository extends Mock implements AnalysisRepository {
   }
 }
 
+/// 本檔所有 scoreStocks 呼叫共用的評分日。
+///
+/// 價格 fixture 必須以此為最後一根 bar：scoring_pipeline 的 staleBar 檢查
+/// 會比對 `prices.last.date` 與評分日，不一致者整批判為陳舊而跳過。
+/// （generator 預設以 DateTime.now() 收尾，與這裡的 2025-06-15 差一年以上。）
+final _scoringDate = DateTime(2025, 6, 15);
+
 void main() {
   late ScoringService scoringService;
   late MockAnalysisService mockAnalysisService;
@@ -114,7 +121,7 @@ void main() {
     registerFallbackValue(
       MonthlyRevenueEntry(
         symbol: 'TEST',
-        date: DateTime(2025, 6, 15),
+        date: _scoringDate,
         revenueYear: 2023,
         revenueMonth: 1,
         revenue: 0,
@@ -125,7 +132,7 @@ void main() {
     registerFallbackValue(
       StockValuationEntry(
         symbol: 'TEST',
-        date: DateTime(2025, 6, 15),
+        date: _scoringDate,
         per: 0,
         pbr: 0,
         dividendYield: 0,
@@ -139,13 +146,14 @@ void main() {
       // Volume = 100K shares (Fail < 200K min)
       final prices = [
         ...generatePricesWithVolumeSpike(
+          endDate: _scoringDate,
           days: 30,
           normalVolume: 1000,
           spikeVolume: 5000,
         ),
         DailyPriceEntry(
           symbol: 'LOW_VOL',
-          date: DateTime(2025, 6, 15),
+          date: _scoringDate,
           open: 100,
           high: 105,
           low: 95,
@@ -161,7 +169,7 @@ void main() {
       // Act
       final result = await scoringService.scoreStocks(
         candidates: ['LOW_VOL'],
-        date: DateTime(2025, 6, 15),
+        date: _scoringDate,
         batchData: ScoringBatchData(pricesMap: pricesMap, newsMap: {}),
       );
 
@@ -177,13 +185,14 @@ void main() {
       // Turnover = 2.5M (Fail < 20M)
       final prices = [
         ...generatePricesWithVolumeSpike(
+          endDate: _scoringDate,
           days: 30,
           normalVolume: 1000,
           spikeVolume: 5000,
         ),
         DailyPriceEntry(
           symbol: 'LOW_TURN',
-          date: DateTime(2025, 6, 15),
+          date: _scoringDate,
           open: 5,
           high: 6,
           low: 4,
@@ -197,7 +206,7 @@ void main() {
       // Act
       final result = await scoringService.scoreStocks(
         candidates: ['LOW_TURN'],
-        date: DateTime(2025, 6, 15),
+        date: _scoringDate,
         batchData: ScoringBatchData(pricesMap: pricesMap, newsMap: {}),
       );
 
@@ -213,13 +222,14 @@ void main() {
       // Turnover = 450M (OK > 20M)
       final prices = [
         ...generatePricesWithVolumeSpike(
+          endDate: _scoringDate,
           days: 30,
           normalVolume: 1000,
           spikeVolume: 5000,
         ),
         DailyPriceEntry(
           symbol: 'GOOD',
-          date: DateTime(2025, 6, 15),
+          date: _scoringDate,
           open: 148,
           high: 152,
           low: 149,
@@ -299,7 +309,7 @@ void main() {
       // Act
       final result = await scoringService.scoreStocks(
         candidates: ['GOOD'],
-        date: DateTime(2025, 6, 15),
+        date: _scoringDate,
         batchData: ScoringBatchData(pricesMap: pricesMap, newsMap: {}),
       );
 
@@ -314,6 +324,7 @@ void main() {
       final pricesMap = {
         'HIGH_SCORE': [
           ...generatePricesWithVolumeSpike(
+            endDate: _scoringDate,
             days: 30,
             normalVolume:
                 2000000, // Increase to pass turnover filter (2M * 100 = 200M > 20M)
@@ -322,6 +333,7 @@ void main() {
         ],
         'LOW_SCORE': [
           ...generatePricesWithVolumeSpike(
+            endDate: _scoringDate,
             days: 30,
             normalVolume: 2000000,
             spikeVolume: 5000000,
@@ -411,7 +423,7 @@ void main() {
       // Pass in reverse order to ensure sorting works
       final result = await scoringService.scoreStocks(
         candidates: ['LOW_SCORE', 'HIGH_SCORE'],
-        date: DateTime(2025, 6, 15),
+        date: _scoringDate,
         batchData: ScoringBatchData(pricesMap: pricesMap, newsMap: {}),
       );
 
@@ -431,13 +443,14 @@ void main() {
       // Arrange：一檔可通過流動性過濾並成功評分的股票
       final prices = [
         ...generatePricesWithVolumeSpike(
+          endDate: _scoringDate,
           days: 30,
           normalVolume: 1000,
           spikeVolume: 5000,
         ),
         DailyPriceEntry(
           symbol: 'GOOD',
-          date: DateTime(2025, 6, 15),
+          date: _scoringDate,
           open: 148,
           high: 152,
           low: 149,
@@ -522,7 +535,7 @@ void main() {
       // Act
       await scoringService.scoreStocks(
         candidates: ['GOOD'],
-        date: DateTime(2025, 6, 15),
+        date: _scoringDate,
         batchData: ScoringBatchData(pricesMap: {'GOOD': prices}, newsMap: {}),
       );
 
@@ -555,7 +568,7 @@ void main() {
     test('return empty list when candidates list is empty', () async {
       final result = await scoringService.scoreStocks(
         candidates: [],
-        date: DateTime(2025, 6, 15),
+        date: _scoringDate,
         batchData: ScoringBatchData(pricesMap: const {}, newsMap: const {}),
       );
 
@@ -566,7 +579,7 @@ void main() {
     test('skip stocks with no price data in pricesMap', () async {
       final result = await scoringService.scoreStocks(
         candidates: ['MISSING'],
-        date: DateTime(2025, 6, 15),
+        date: _scoringDate,
         batchData: ScoringBatchData(pricesMap: const {}, newsMap: const {}),
       );
 
@@ -583,8 +596,31 @@ void main() {
 
       final result = await scoringService.scoreStocks(
         candidates: ['SHORT'],
-        date: DateTime(2025, 6, 15),
+        date: _scoringDate,
         batchData: ScoringBatchData(pricesMap: {'SHORT': prices}, newsMap: {}),
+      );
+
+      expect(result, isEmpty);
+      verifyNever(() => mockAnalysisService.analyzeStock(any()));
+    });
+
+    // 接線守門（P1-8 L1）：staleBar 的判斷邏輯由 scoring_pipeline_test.dart
+    // 覆蓋，但純函式測試抓不到「主執行緒 caller 忘了把評分日傳下去」。
+    // 把 scoring_service.dart 的 `asOf: date` 拿掉，本測試即變紅。
+    test('🚨 最後一根 bar 不是評分日 → 跳過，不得進技術分析', () async {
+      // fixture 收在評分日前一天：DB 缺當日資料時 prices.last 就是這個樣子
+      final prices = generatePricesWithVolumeSpike(
+        endDate: _scoringDate.subtract(const Duration(days: 1)),
+        days: 30,
+        normalVolume: 2000000,
+        spikeVolume: 5000000,
+        symbol: 'STALE',
+      );
+
+      final result = await scoringService.scoreStocks(
+        candidates: ['STALE'],
+        date: _scoringDate,
+        batchData: ScoringBatchData(pricesMap: {'STALE': prices}, newsMap: {}),
       );
 
       expect(result, isEmpty);
@@ -600,6 +636,7 @@ void main() {
     /// 建立通過流動性門檻的有效價格資料
     List<DailyPriceEntry> validPrices(String symbol) {
       return generatePricesWithVolumeSpike(
+        endDate: _scoringDate,
         days: 30,
         normalVolume: 2000000,
         spikeVolume: 5000000,
@@ -614,7 +651,7 @@ void main() {
 
       final result = await scoringService.scoreStocks(
         candidates: ['NULL_ANALYSIS'],
-        date: DateTime(2025, 6, 15),
+        date: _scoringDate,
         batchData: ScoringBatchData(
           pricesMap: {'NULL_ANALYSIS': prices},
           newsMap: {},
@@ -655,7 +692,7 @@ void main() {
 
       final result = await scoringService.scoreStocks(
         candidates: ['EMPTY_REASONS'],
-        date: DateTime(2025, 6, 15),
+        date: _scoringDate,
         batchData: ScoringBatchData(
           pricesMap: {'EMPTY_REASONS': prices},
           newsMap: {},
@@ -751,6 +788,7 @@ void main() {
 
     List<DailyPriceEntry> validPrices(String symbol) {
       return generatePricesWithVolumeSpike(
+        endDate: _scoringDate,
         days: 30,
         normalVolume: 2000000,
         spikeVolume: 5000000,
@@ -764,7 +802,7 @@ void main() {
 
       final result = await scoringService.scoreStocks(
         candidates: ['NOISE'],
-        date: DateTime(2025, 6, 15),
+        date: _scoringDate,
         batchData: ScoringBatchData(pricesMap: {'NOISE': prices}, newsMap: {}),
       );
 
@@ -780,7 +818,7 @@ void main() {
 
         final result = await scoringService.scoreStocks(
           candidates: ['OBS'],
-          date: DateTime(2025, 6, 15),
+          date: _scoringDate,
           batchData: ScoringBatchData(pricesMap: {'OBS': prices}, newsMap: {}),
         );
 
@@ -796,7 +834,7 @@ void main() {
 
       final result = await scoringService.scoreStocks(
         candidates: ['BOUNDARY'],
-        date: DateTime(2025, 6, 15),
+        date: _scoringDate,
         batchData: ScoringBatchData(
           pricesMap: {'BOUNDARY': prices},
           newsMap: {},
@@ -815,6 +853,7 @@ void main() {
   group('ScoringService Optional Features', () {
     List<DailyPriceEntry> validPrices(String symbol) {
       return generatePricesWithVolumeSpike(
+        endDate: _scoringDate,
         days: 30,
         normalVolume: 2000000,
         spikeVolume: 5000000,
@@ -831,7 +870,7 @@ void main() {
 
       await scoringService.scoreStocks(
         candidates: ['A', 'B', 'C'],
-        date: DateTime(2025, 6, 15),
+        date: _scoringDate,
         batchData: ScoringBatchData(
           pricesMap: {'A': prices, 'B': prices, 'C': prices},
           newsMap: {},
@@ -909,7 +948,7 @@ void main() {
       var builderCalled = false;
       await scoringService.scoreStocks(
         candidates: ['MKT'],
-        date: DateTime(2025, 6, 15),
+        date: _scoringDate,
         batchData: ScoringBatchData(pricesMap: {'MKT': prices}, newsMap: {}),
         marketDataBuilder: (symbol) async {
           builderCalled = true;

@@ -22,6 +22,63 @@ void main() {
           volume: volume,
         );
 
+    // ==================================================================
+    // 陳舊 bar 檢查（P1-8 L1）
+    //
+    // 病灶：本函式只驗 null/empty、length、liquidity，**從不比對
+    // prices.last.date 與評分日**。而 batch_data_loader 的價格窗以
+    // endDate = 評分日 收斂，DB 沒有當日 bar 時 prices.last 會自動退化成
+    // 前一交易日 —— 這就是「昨日 K 棒掛今日日期寫進 daily_analysis」
+    // 能無聲通過的直接機制。
+    //
+    // 實測基準：2026-07-15~07-24 共 8 個交易日、1,568 列 daily_analysis，
+    // 「當日無有效價格 bar」的有 **0 列** → 健康日此檢查是 no-op，
+    // 只在故障路徑上生效。
+    // ==================================================================
+
+    // 產生 60 根連續日 bar，最後一根落在 [endDate]
+    List<DailyPriceEntry> history(DateTime endDate) => List.generate(
+      60,
+      (i) => DailyPriceEntry(
+        symbol: 'T',
+        date: endDate.subtract(Duration(days: 59 - i)),
+        close: 100,
+        volume: 3000000,
+      ),
+    );
+
+    test('🚨 最後一根 bar 不是評分日 → staleBar', () {
+      final prices = history(DateTime(2026, 7, 8));
+
+      expect(
+        classifyCandidate(prices, asOf: DateTime(2026, 7, 9)),
+        CandidateSkipReason.staleBar,
+        reason: '拿昨日 K 棒算今日分析等於偽造當日訊號',
+      );
+    });
+
+    test('最後一根 bar 就是評分日 → 通過', () {
+      final prices = history(DateTime(2026, 7, 8));
+
+      expect(classifyCandidate(prices, asOf: DateTime(2026, 7, 8)), isNull);
+    });
+
+    test('asOf 帶時分秒仍視為同一天（必須逐欄比 y/m/d，不可用 DateTime ==）', () {
+      final prices = history(DateTime(2026, 7, 8));
+
+      expect(
+        classifyCandidate(prices, asOf: DateTime(2026, 7, 8, 15, 30)),
+        isNull,
+        reason: 'DateTime 相等會連時分秒一起比，正常評分日就會被全數誤殺',
+      );
+    });
+
+    test('省略 asOf 時不做新鮮度檢查（向後相容，isolate 無日期時 no-op）', () {
+      final prices = history(DateTime(2026, 7, 8));
+
+      expect(classifyCandidate(prices), isNull);
+    });
+
     test('無價格資料 → noData', () {
       expect(classifyCandidate(null), CandidateSkipReason.noData);
       expect(classifyCandidate([]), CandidateSkipReason.noData);

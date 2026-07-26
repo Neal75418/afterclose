@@ -388,6 +388,7 @@ class ScoringBatchResult {
     required this.skippedNoData,
     required this.skippedInsufficientData,
     required this.skippedLowLiquidity,
+    this.skippedStaleBar = 0,
     required this.skippedNoAnalysis,
     required this.skippedNoReasons,
     required this.skippedLowScore,
@@ -401,6 +402,9 @@ class ScoringBatchResult {
   final int skippedInsufficientData;
   final int skippedLowLiquidity;
 
+  /// 最後一根 bar 不是評分日——DB 缺當日資料，不得拿昨日 K 棒算今日訊號
+  final int skippedStaleBar;
+
   /// 技術分析回傳 null——異常路徑，非預期結果
   final int skippedNoAnalysis;
 
@@ -412,6 +416,7 @@ class ScoringBatchResult {
       skippedNoData +
       skippedInsufficientData +
       skippedLowLiquidity +
+      skippedStaleBar +
       skippedNoAnalysis +
       skippedNoReasons +
       skippedLowScore;
@@ -426,6 +431,7 @@ class ScoringBatchResult {
     'skippedNoData': skippedNoData,
     'skippedInsufficientData': skippedInsufficientData,
     'skippedLowLiquidity': skippedLowLiquidity,
+    'skippedStaleBar': skippedStaleBar,
     'skippedNoAnalysis': skippedNoAnalysis,
     'skippedNoReasons': skippedNoReasons,
     'skippedLowScore': skippedLowScore,
@@ -443,6 +449,7 @@ class ScoringBatchResult {
       skippedNoData: map['skippedNoData'] as int,
       skippedInsufficientData: map['skippedInsufficientData'] as int,
       skippedLowLiquidity: map['skippedLowLiquidity'] as int,
+      skippedStaleBar: map['skippedStaleBar'] as int? ?? 0,
       skippedNoAnalysis: map['skippedNoAnalysis'] as int? ?? 0,
       skippedNoReasons: map['skippedNoReasons'] as int? ?? 0,
       skippedLowScore: map['skippedLowScore'] as int,
@@ -484,6 +491,7 @@ Map<String, dynamic> _evaluateStocksIsolated(Map<String, dynamic> inputMap) {
   var skippedNoData = 0;
   var skippedInsufficientData = 0;
   var skippedLowLiquidity = 0;
+  var skippedStaleBar = 0;
   var skippedNoAnalysis = 0;
   var skippedNoReasons = 0;
   var skippedLowScore = 0;
@@ -491,7 +499,8 @@ Map<String, dynamic> _evaluateStocksIsolated(Map<String, dynamic> inputMap) {
   for (final symbol in input.candidates) {
     // 1-2. 資格檢查（共用 pipeline，與主執行緒路徑同一實作）
     final prices = input.pricesMap[symbol];
-    final skipReason = classifyCandidate(prices);
+    // asOf 為 nullable：input.date 缺席時新鮮度檢查自動 no-op
+    final skipReason = classifyCandidate(prices, asOf: input.date);
     if (skipReason != null) {
       switch (skipReason) {
         case CandidateSkipReason.noData:
@@ -500,6 +509,8 @@ Map<String, dynamic> _evaluateStocksIsolated(Map<String, dynamic> inputMap) {
           skippedInsufficientData++;
         case CandidateSkipReason.lowLiquidity:
           skippedLowLiquidity++;
+        case CandidateSkipReason.staleBar:
+          skippedStaleBar++;
       }
       continue;
     }
@@ -609,6 +620,7 @@ Map<String, dynamic> _evaluateStocksIsolated(Map<String, dynamic> inputMap) {
     skippedNoData: skippedNoData,
     skippedInsufficientData: skippedInsufficientData,
     skippedLowLiquidity: skippedLowLiquidity,
+    skippedStaleBar: skippedStaleBar,
     skippedNoAnalysis: skippedNoAnalysis,
     skippedNoReasons: skippedNoReasons,
     skippedLowScore: skippedLowScore,

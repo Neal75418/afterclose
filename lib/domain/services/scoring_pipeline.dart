@@ -16,16 +16,46 @@ import 'package:afterclose/domain/models/models.dart';
 import 'package:afterclose/domain/services/rule_engine.dart';
 
 /// 候選股被略過的原因分類（統計計數用）
-enum CandidateSkipReason { noData, insufficientData, lowLiquidity }
+enum CandidateSkipReason { noData, insufficientData, lowLiquidity, staleBar }
 
-/// 資格檢查：價格資料存在、歷史長度足夠、流動性合格。
+/// 資格檢查：價格資料存在、歷史長度足夠、當日 bar 新鮮、流動性合格。
 ///
 /// 回傳 null 表示通過；通過時保證 `prices.last` 的 close/volume 非 null
 /// （由 [LiquidityChecker] 的 MISSING_DATA 檢查擔保）。
-CandidateSkipReason? classifyCandidate(List<DailyPriceEntry>? prices) {
+///
+/// [asOf] 為評分日。給定時會要求 `prices.last` 就是該日的 bar，否則回
+/// [CandidateSkipReason.staleBar]。
+///
+/// 為什麼需要這道檢查：`batch_data_loader` 的價格窗以 `endDate = 評分日`
+/// 收斂，所以 DB 缺當日 bar 時 `prices.last` 會**自動退化成前一交易日**，
+/// 而本函式原本只驗 null/長度/流動性 —— 於是「昨日 K 棒算出的訊號掛上
+/// 今日日期寫進 daily_analysis」可以無聲通過。這條路徑不只在 API 限流時
+/// 出現：`price_repository.dart` 的「兩市場皆空」是正常回傳（不拋例外）、
+/// NetworkException 也不會翻起 `rateLimitedAbort`，所以上游任何以旗標為
+/// 基礎的閘門都擋不住，必須在此處以資料本身為準。
+///
+/// 實測：2026-07-15~07-24 共 8 個交易日、1,568 列 daily_analysis，「當日
+/// 無有效價格 bar」的有 0 列 —— 健康日此檢查是 no-op，只在故障路徑生效。
+///
+/// [asOf] 省略時不做此檢查（向後相容；isolate 輸入的 date 可為 null）。
+CandidateSkipReason? classifyCandidate(
+  List<DailyPriceEntry>? prices, {
+  DateTime? asOf,
+}) {
   if (prices == null || prices.isEmpty) return CandidateSkipReason.noData;
   if (prices.length < RuleParams.swingWindow) {
     return CandidateSkipReason.insufficientData;
+  }
+  if (asOf != null) {
+    // 逐欄比 y/m/d：DateTime 的 == 連時分秒與 isUtc 一起比，
+    // 評分日帶了時間就會把整批股票誤殺。與 update_service 既有回滾
+    // 比較法同源。
+    final last = prices.last.date;
+    if (last.year != asOf.year ||
+        last.month != asOf.month ||
+        last.day != asOf.day) {
+      return CandidateSkipReason.staleBar;
+    }
   }
   final liquidity = LiquidityChecker.checkCandidateLiquidity(prices.last);
   if (liquidity != null) {

@@ -84,6 +84,7 @@ class ScoringService {
     var skippedNoData = 0;
     var skippedInsufficientData = 0;
     var skippedLowLiquidity = 0;
+    var skippedStaleBar = 0;
     var skippedNoAnalysis = 0;
     var skippedNoReasons = 0;
     var skippedLowScore = 0;
@@ -95,7 +96,7 @@ class ScoringService {
 
       // 資格檢查（共用 pipeline，與 isolate 路徑同一實作）
       final prices = batchData.pricesMap[symbol];
-      final skipReason = classifyCandidate(prices);
+      final skipReason = classifyCandidate(prices, asOf: date);
       if (skipReason != null) {
         switch (skipReason) {
           case CandidateSkipReason.noData:
@@ -104,6 +105,8 @@ class ScoringService {
             skippedInsufficientData++;
           case CandidateSkipReason.lowLiquidity:
             skippedLowLiquidity++;
+          case CandidateSkipReason.staleBar:
+            skippedStaleBar++;
         }
         continue;
       }
@@ -257,6 +260,7 @@ class ScoringService {
       skippedNoData,
       skippedInsufficientData,
       skippedLowLiquidity,
+      skippedStaleBar,
       skippedNoAnalysis,
       skippedNoReasons,
       skippedLowScore,
@@ -433,6 +437,7 @@ class ScoringService {
     int skippedNoData,
     int skippedInsufficient,
     int skippedLiquidity,
+    int skippedStaleBar,
     int skippedNoAnalysis,
     int skippedNoReasons,
     int skippedLowScore, {
@@ -446,6 +451,7 @@ class ScoringService {
         skippedNoData +
         skippedInsufficient +
         skippedLiquidity +
+        skippedStaleBar +
         skippedNoAnalysis +
         skippedNoReasons +
         skippedLowScore;
@@ -454,8 +460,8 @@ class ScoringService {
       '評分完成: ${scored.length} 檔 (short max $maxScoreShort 分), '
           '跳過 $skippedTotal 檔 '
           '(無資料 $skippedNoData, 資料不足 $skippedInsufficient, '
-          '低流動 $skippedLiquidity, 無訊號 $skippedNoReasons, '
-          '分數不足 $skippedLowScore)$suffix',
+          '低流動 $skippedLiquidity, 非當日 bar $skippedStaleBar, '
+          '無訊號 $skippedNoReasons, 分數不足 $skippedLowScore)$suffix',
     );
 
     // 與 isolate 路徑同一診斷契約（見 _logScoringResultsFromIsolate）
@@ -488,7 +494,8 @@ class ScoringService {
           '跳過 ${result.skippedTotal} 檔 '
           '(無資料 ${result.skippedNoData}, 資料不足 '
           '${result.skippedInsufficientData}, 低流動 '
-          '${result.skippedLowLiquidity}, 無訊號 ${result.skippedNoReasons}, '
+          '${result.skippedLowLiquidity}, 非當日 bar '
+          '${result.skippedStaleBar}, 無訊號 ${result.skippedNoReasons}, '
           '分數不足 ${result.skippedLowScore}) (Isolate)',
     );
 

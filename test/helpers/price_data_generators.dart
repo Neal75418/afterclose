@@ -180,8 +180,13 @@ List<DailyPriceEntry> generatePricesWithVolumeSpike({
   required double spikeVolume,
   double basePrice = 100.0,
   String symbol = 'TEST',
+  DateTime? endDate,
 }) {
-  final now = DateTime.now();
+  // endDate 省略時沿用 DateTime.now()（既有呼叫端行為不變）。
+  // 需要與評分日對齊的測試務必顯式指定——scoring_pipeline 的 staleBar
+  // 檢查會比對 prices.last.date 與評分日，日期不一致的 fixture 會被
+  // 整批判為陳舊而跳過。
+  final now = endDate ?? DateTime.now();
   return List.generate(days, (i) {
     final isToday = i == days - 1;
     // 最後一天：開盤於基準價，收盤高 3% 以滿足 minPriceChangeForVolume (1.5%)

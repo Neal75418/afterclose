@@ -135,5 +135,71 @@ void main() {
       expect(result.outputs, isEmpty);
       expect(result.accountingBalances, isTrue);
     });
+
+    // ==================================================================
+    // 陳舊 bar（P1-8 L1）— 此測試釘住的是「接線」而非純函式邏輯
+    //
+    // classifyCandidate 本身的行為由 scoring_pipeline_test.dart 覆蓋；
+    // 但純函式測試抓不到「caller 忘了把評分日傳下去」。本測試實跑
+    // evaluateStocksInIsolate，把 asOf 從 scoring_isolate.dart 的
+    // classifyCandidate 呼叫拿掉就會變紅。
+    // ==================================================================
+    test('🚨 最後一根 bar 不是評分日 → 計入 skippedStaleBar，不得產出分析', () async {
+      // 30 根平盤 bar，最後一根停在 6/30；評分日卻是 7/1
+      final stale = List.generate(
+        30,
+        (i) => DailyPriceEntry(
+          symbol: 'STALE',
+          date: DateTime(2026, 6, 1).add(Duration(days: i)),
+          open: 50.0,
+          high: 50.0,
+          low: 50.0,
+          close: 50.0,
+          volume: 2000000,
+        ),
+      );
+
+      final result = await evaluateStocksInIsolate(
+        ScoringIsolateInput(
+          candidates: const ['STALE'],
+          pricesMap: {'STALE': stale},
+          newsMap: const {'STALE': []},
+          institutionalMap: const {'STALE': []},
+          date: DateTime(2026, 7, 1),
+        ),
+      );
+
+      expect(result.skippedStaleBar, 1, reason: '拿昨日 K 棒算今日分析等於偽造當日訊號，必須攔下並計數');
+      expect(result.outputs, isEmpty);
+      expect(result.accountingBalances, isTrue, reason: '新分類必須進 skippedTotal');
+    });
+
+    test('bar 就是評分日時不得被誤判為 staleBar', () async {
+      final fresh = List.generate(
+        30,
+        (i) => DailyPriceEntry(
+          symbol: 'FRESH',
+          date: DateTime(2026, 6, 1).add(Duration(days: i)),
+          open: 50.0,
+          high: 50.0,
+          low: 50.0,
+          close: 50.0,
+          volume: 2000000,
+        ),
+      );
+
+      final result = await evaluateStocksInIsolate(
+        ScoringIsolateInput(
+          candidates: const ['FRESH'],
+          pricesMap: {'FRESH': fresh},
+          newsMap: const {'FRESH': []},
+          institutionalMap: const {'FRESH': []},
+          date: DateTime(2026, 6, 30), // = fresh.last.date
+        ),
+      );
+
+      expect(result.skippedStaleBar, 0);
+      expect(result.accountingBalances, isTrue);
+    });
   });
 }
