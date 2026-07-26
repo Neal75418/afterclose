@@ -154,10 +154,28 @@ class UpdateService {
         analysisRepository: _analysisRepo,
       );
 
-  /// 防止並發更新的 Completer 鎖
+  /// 同一個 [UpdateService] 實例內的並發更新鎖
   ///
-  /// 當更新正在執行時，後續呼叫會共享同一個 Future 結果，
-  /// 避免重複 API 呼叫和 DB 寫入競爭。
+  /// 更新執行中時，後續呼叫共享同一個 Future 結果，避免重複 API 呼叫與
+  /// DB 寫入競爭。
+  ///
+  /// ## ⚠️ 這是 instance 級、不是跨 isolate 級
+  ///
+  /// 背景 WorkManager 路徑（`headless_update_runner`）在**另一個 isolate**
+  /// 用 `UpdateServiceFactory` 另建一整套服務圖，含自己的 [AppDatabase] 與
+  /// 自己的 `ApiBudgetTracker`（後者的 docstring 自承 process-local、
+  /// 「新 isolate 等於 reset」）。此欄位對那條路徑**完全無效**。
+  ///
+  /// 目前不修，判定依據：
+  /// - 背景任務只在 Android / iOS 註冊（`background_update_service.dart`
+  ///   的 `Platform.isAndroid || Platform.isIOS`），**macOS 不存在此路徑**
+  /// - iOS 上要碰撞需背景任務（15:00）與前景冷啟動同時發生，且冷啟動
+  ///   gate 的兩個條件（距上次成功 ≥6h、距上次嘗試 ≥60min）皆通過
+  /// - 跨 isolate 互斥需引入檔案鎖或 DB lock 表，兩者都帶新的失效模式
+  ///   （isolate 被 OS 殺掉後鎖殘留），代價與風險不成比例
+  ///
+  /// 若日後背景路徑擴及 macOS，或觀察到 API 配額異常消耗 / 當日分析被
+  /// 重複 clear-then-write，須重新評估。
   Completer<UpdateResult>? _activeUpdate;
 
   /// 執行完整每日更新流程

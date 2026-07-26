@@ -355,7 +355,16 @@
 
 ### 26. 下市/長停股整檔剔除 = 用訊號當下不可知的未來資訊做樣本選擇，把最壞的尾部（下市 -100%）從統計中系統性抹掉
 
-**狀態**：❓ 未查證
+**狀態**：📋 已記錄未修 — 偏誤屬實，但**建議的修法不可行**，且現況影響為零。
+
+- 「用最後有效收盤價當出場價」不可行：下市前多為連續跌停無量，該價格不是
+  可成交價
+- 「固定懲罰 -60%」是憑空數字——用假數字取代有偏誤的統計並不更誠實
+- 現況 `daily_reason` 僅 8 天，而下市需數月，實際排除量為零
+
+正確方向是**揭露而非修正**：把 `skippedStaleSymbol` 佔比呈現到規則命中率
+UI（目前只寫 AppLogger）。待 `daily_reason` 累積至有意義深度後再做。
+已把此限制與判定理由寫進 `rule_accuracy_service` 的 survivorship 註解。
 
 **證據**：lib/domain/services/rule_accuracy_service.dart:208-227：用 `getLatestPricesBatch`（全域最新價，非 as-of 訊號日）與 `getLatestDataDate()` 判定 staleSymbols，:283-287 整檔 symbol 的所有 reason 全數 skip（計入 `skippedStaleSymbol`）。判定依據 CalibrationThresholds.stalePriceThresholdDays。docstring :256-264 明確說明這是為了避免「winner 全留、崩盤前夕靜默消失」——但整檔排除的實際效果是連崩盤/下市這個事件本身也一併排除。
 
@@ -379,7 +388,18 @@
 
 ### 28. 前景與背景更新沒有跨 isolate 互斥：_activeUpdate 是 instance 欄位，背景 isolate 另建一整套服務圖與獨立的 API 預算追蹤器
 
-**狀態**：❓ 未查證
+**狀態**：📋 已記錄未修 — 機制查證屬實，但**在主要使用平台不可達**。
+
+- 背景 WorkManager 只在 Android / iOS 註冊
+  （`background_update_service.dart` 的 `Platform.isAndroid || Platform.isIOS`），
+  **macOS 不存在此路徑**
+- iOS 上要碰撞需背景任務（15:00）與前景冷啟動同時發生，且冷啟動 gate 的
+  兩個條件（距上次成功 ≥6h、距上次嘗試 ≥60min，見 `ccc630d`）皆通過
+- 跨 isolate 互斥需引入檔案鎖或 DB lock 表，兩者都帶新的失效模式
+  （isolate 被 OS 殺掉後鎖殘留），代價與風險不成比例
+
+已把 `_activeUpdate` 的 docstring 由「防止並發更新」改為事實陳述（instance
+級、跨 isolate 無效、平台限定），並註明重新評估的觸發條件。
 
 **證據**：lib/domain/services/update_service.dart:161-194 的 `_activeUpdate` Completer 是 instance 欄位（docstring 178 行宣稱「防止並發更新」）。lib/app/headless_update_runner.dart:95-104 在 WorkManager isolate 內用 UpdateServiceFactory 另建一個 UpdateService，並注入自己的 AppDatabase（48、116 行 db.close()）與自己的 ApiBudgetTracker（77）；lib/data/remote/api_budget_tracker.dart:10、22-24 明文寫著 tracker 是 process-local、「背景跑 WorkManager 觸發新 isolate 也是新 tracker，等於 reset」。lib/app/background_update_service.dart:65-84 把背景任務排在每天 15:00（ApiConfig.marketCloseHour）——正是使用者盤後打開 app、觸發 cold-start auto-update（today_provider.dart:149-155 的 B-lite 開關）的時間窗。
 

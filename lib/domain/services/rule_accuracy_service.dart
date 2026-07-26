@@ -263,6 +263,22 @@ class RuleAccuracyService {
     // skippedNoExitPrice（仍保留——正常股「訊號太新、還沒到出場日」的
     // immature case）分開揭露，兩者語意不同不應混為一談。
     //
+    // **⚠️ 整股排除本身也是一種 survivorship**：判定用的是全域最新價
+    // （`getLatestPricesBatch`），而非訊號當下可知的資訊。訊號發生時無從
+    // 得知該股三個月後會下市，卻據此把它整批剔除——統計因此活在一個
+    // 「事後確認活到今天」的宇宙裡，對專打弱勢股的規則（52 週新低、
+    // RSI 極度超賣、PBR 低估等價值陷阱高發區）影響最大，因為它們真正的
+    // 風險就是被剔掉的那條尾巴。
+    //
+    // 目前接受此限制，不改成「以最後有效收盤價入帳」：下市前多為連續跌停
+    // 無量，該價格不是可成交價；而「固定懲罰值」是憑空數字，用假數字取代
+    // 有偏誤的統計並不更誠實。且以現況資料（daily_reason 僅 8 天）下市需
+    // 數月，實際排除量為零。
+    //
+    // 正確的處置方向是**揭露而非修正**——把 skippedStaleSymbol 佔比呈現到
+    // 規則命中率 UI（目前只寫 AppLogger）。待 daily_reason 累積至有意義的
+    // 深度後再做。
+    //
     // **(3) Co-occurrence inflation**：同 (symbol, date) 多條規則同時觸發
     // 時，**同一個** forward return 被計入每條規則 → Calibrator 的
     // hit_rate × avg_return × √n 三項全被膨脹。`coOccurrenceEvents`
