@@ -12,6 +12,78 @@ import 'package:afterclose/domain/models/scoring_batch_data.dart';
 class BatchDataBuilder {
   const BatchDataBuilder._();
 
+  /// 為「當日無法人進出」的交易日補上淨額 0 的列
+  ///
+  /// 交易所對當日無法人進出的股票**根本不發列**（DB 實測：三法人全零的列
+  /// 0 筆），每個交易日約有 100~168 檔股票有價格列卻無法人列。那些日子的
+  /// 法人淨額就是 0，但連續買賣超規則的迴圈只走陣列、不比對日期，會把缺列
+  /// 直接跳過、將不相鄰的兩天接成「連續」——憑空拉長 streak。
+  ///
+  /// 補零選在資料層而非規則迴圈，是因為迴圈內無法區分「中間的缺口」（該斷）
+  /// 與「窗的邊界」（該標 truncated）：要區分就得把交易日曆塞進純函數規則，
+  /// 而台股有臨時休市（颱風假），日曆猜錯會把跨越該日的 streak 全部誤斷。
+  /// 補完之後窗內每個交易日都有列，歧義從源頭消失，規則一行都不用改。
+  ///
+  /// 判準（三種缺列語意必須分開處理，混為一談就會捏造資料）：
+  /// - **該股有價格列 + 市場當日有法人資料** → 當日無進出，補 0
+  /// - **該股無價格列** → 停牌，沒有交易時段，不補（streak 自然跨越）
+  /// - **市場當日無任何法人資料** → 該日在同步窗外，我們一無所知，不得捏造
+  ///
+  /// 「市場當日是否有資料」以 [institutionalMap] 全體出現過的日期為準——只要
+  /// 有任一檔在該日有列，就代表同步涵蓋該日。
+  ///
+  /// 窗內完全沒有法人列的股票不補：`history.isEmpty` 是規則判定「無資料」的
+  /// 依據，補成一整排 0 會把「沒資料」偽裝成「法人都沒動作」。
+  static Map<String, List<DailyInstitutionalEntry>> fillNoActivityDays(
+    Map<String, List<DailyInstitutionalEntry>> institutionalMap,
+    Map<String, List<DailyPriceEntry>> pricesMap,
+  ) {
+    final syncedDates = <DateTime>{
+      for (final entries in institutionalMap.values)
+        for (final e in entries) e.date,
+    };
+    if (syncedDates.isEmpty) return institutionalMap;
+
+    var filledCount = 0;
+    final result = <String, List<DailyInstitutionalEntry>>{};
+
+    institutionalMap.forEach((symbol, entries) {
+      if (entries.isEmpty) {
+        result[symbol] = entries;
+        return;
+      }
+      final have = {for (final e in entries) e.date};
+      final missing = <DateTime>[
+        for (final p in pricesMap[symbol] ?? const <DailyPriceEntry>[])
+          if (syncedDates.contains(p.date) && !have.contains(p.date)) p.date,
+      ];
+      if (missing.isEmpty) {
+        result[symbol] = entries;
+        return;
+      }
+      filledCount += missing.length;
+      result[symbol] = [
+        ...entries,
+        for (final d in missing)
+          DailyInstitutionalEntry(
+            symbol: symbol,
+            date: d,
+            foreignNet: 0,
+            investmentTrustNet: 0,
+            dealerNet: 0,
+          ),
+      ]..sort((a, b) => a.date.compareTo(b.date)); // 規則以 last 為今日
+    });
+
+    if (filledCount > 0) {
+      AppLogger.info(
+        'BatchDataBuilder',
+        '法人無進出日補零：$filledCount 筆（涵蓋 ${syncedDates.length} 個同步日）',
+      );
+    }
+    return result;
+  }
+
   /// 建構外資持股 Map（含變化量計算 + 籌碼集中度）
   ///
   /// [evaluationDate] 用於新鮮度閘門：外資持股超過

@@ -146,11 +146,19 @@ class BatchDataLoader {
     );
 
     // 型別安全的並行等待（Dart 3 Record 解構）
-    final (pricesMap, newsMap, institutionalMap) = await (
+    final (pricesMap, newsMap, rawInstitutionalMap) = await (
       pricesFuture,
       newsFuture,
       instFuture,
     ).wait;
+
+    // 交易所對「當日無法人進出」的股票不發列，缺列會被規則迴圈直接跳過、
+    // 把不相鄰的兩天接成連續。以價格列為 ground truth 補回淨額 0 的日子，
+    // 讓規則既有的門檻檢查自然中斷 streak（見 fillNoActivityDays）。
+    final institutionalMap = BatchDataBuilder.fillNoActivityDays(
+      rawInstitutionalMap,
+      pricesMap,
+    );
     final (
       revenueMap,
       valuationMap,

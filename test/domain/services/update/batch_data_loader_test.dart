@@ -135,4 +135,66 @@ void main() {
           '讓「連買 9 日」與「連買 25 日」在畫面上長得一樣',
     );
   });
+
+  test('法人「當日無進出」缺列必須在評分路徑補零', () async {
+    // 補零函式本身的語意在 institutional_no_activity_fill_test.dart 釘住；
+    // 此測試只確認 loader 真的有接上——否則規則仍會拿到帶缺口的資料。
+    final d1 = DateTime(2026, 7, 20);
+    final d2 = DateTime(2026, 7, 21);
+    final d3 = DateTime(2026, 7, 22);
+
+    when(
+      () => db.getPriceHistoryBatch(
+        any(),
+        startDate: any(named: 'startDate'),
+        endDate: any(named: 'endDate'),
+      ),
+    ).thenAnswer(
+      (_) async => {
+        'AAA': [
+          for (final d in [d1, d2, d3])
+            DailyPriceEntry(
+              symbol: 'AAA',
+              date: d,
+              open: 50,
+              high: 50,
+              low: 50,
+              close: 50,
+              volume: 1000000,
+            ),
+        ],
+      },
+    );
+    when(
+      () => db.getInstitutionalHistoryBatch(
+        any(),
+        startDate: any(named: 'startDate'),
+        endDate: any(named: 'endDate'),
+      ),
+    ).thenAnswer(
+      (_) async => {
+        // AAA 缺 7/21；BBB 在 7/21 有列 → 證明同步涵蓋該日
+        'AAA': [
+          DailyInstitutionalEntry(symbol: 'AAA', date: d1, foreignNet: 600000),
+          DailyInstitutionalEntry(symbol: 'AAA', date: d3, foreignNet: 600000),
+        ],
+        'BBB': [
+          DailyInstitutionalEntry(symbol: 'BBB', date: d2, foreignNet: 100000),
+        ],
+      },
+    );
+
+    final loader = BatchDataLoader(
+      database: db,
+      newsRepository: newsRepo,
+      institutionalRepository: _MockInstRepo(),
+    );
+
+    final result = await loader.loadBatchData(DateTime(2026, 7, 22), ['AAA']);
+    final aaa = result.institutional.institutionalMap!['AAA']!;
+
+    expect(aaa.length, 3, reason: '缺列未補 → 規則會把 7/20 與 7/22 接成連續');
+    expect(aaa.map((e) => e.date), [d1, d2, d3]);
+    expect(aaa[1].foreignNet, 0);
+  });
 }
