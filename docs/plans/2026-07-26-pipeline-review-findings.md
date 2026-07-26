@@ -636,7 +636,25 @@ UI（目前只寫 AppLogger）。待 `daily_reason` 累積至有意義深度後�
 
 ### 46. 預算計量本身不可信：日誌把「寫入筆數」當成「API 呼叫數」報，而真正精確的 ApiBudgetTracker 數字從不印出
 
-**狀態**：❓ 未查證
+**狀態**：✅ 已修（第一步）— 查證屬實且比描述更嚴重。
+
+`estimatedApiCalls = fundResult.total + marketResult.total`，而兩個 `total`
+加的全是**寫入筆數**（`valuationCount + revenueCount`、
+`dayTradingCount + shareholdingCount`），完全沒有 API 呼叫的成分。
+
+2026-07-26 實測一次更新報「API ~94 calls」，真實 API 呼叫約 **2 次**
+（上櫃估值與營收都走 TPEx OpenAPI 單次批次端點）——**高報 47 倍**。
+高報方向特別有害：會讓人誤以為配額已緊而不敢調高 `maxSyncCount`，而
+FinMind 配額正是上櫃涵蓋率上不去的瓶頸。
+
+已把標籤改為「寫入 N 筆」並在註解記錄實測。`FundamentalRepository` 的
+「API calls: 1」是正確的，未動。
+
+**第二步待辦**：`ApiBudgetTracker`（per-vendor、sliding 1hr、只掛
+FinMindClient）內部第 94 行算出的 `used` **沒有公開讀取點**，只在配額用完
+時出現於例外訊息——等看到已來不及；且 tracker 未注入 `UpdateService`。
+要印真值需動依賴注入鏈，且跨 isolate 各自一份 tracker 使數字只反映本次
+process，故分開處理。
 
 **證據**：update_service.dart:792-800 `estimatedApiCalls = fundResult.total + marketResult.total` → 日誌「步驟 6.5: …(API ~94 calls)」，但那 94 來自 syncOtcRevenue 的比對成功筆數，實際只有 1 次 TPEX 批次呼叫（fundamental_repository.dart:414-448 `_tpex.getAllMonthlyRevenue()` 一次抓全市場後本地過濾）。同理 market_data_updater.dart:312-332 的「持股=39」對 skip 與 sync 都 `return true`，看不出真實呼叫數。lib/data/remote/api_budget_tracker.dart:67 已有精確的 `callsInLastHourFor`，但全 repo 沒有任何地方把它印進更新日誌。
 

@@ -853,14 +853,27 @@ class UpdateService {
         );
       }
 
-      final estimatedApiCalls = fundResult.total + marketResult.total;
-      if (estimatedApiCalls > 0) {
+      // 這裡加總的是**寫入筆數**，不是 API 呼叫數。上櫃估值與營收都走 TPEx
+      // OpenAPI 的單次批次端點（見 FundamentalRepository 的「API calls: 1」），
+      // 只有外資持股是 per-symbol。
+      //
+      // 曾標為「API ~N calls」：2026-07-26 實測一次更新報 94 calls，真實
+      // API 呼叫約 2 次，**高報 47 倍**。高報的方向特別有害——會讓人誤以為
+      // 配額已緊而不敢調高 `maxSyncCount`，而 FinMind 配額正是上櫃資料
+      // 涵蓋率上不去的瓶頸（估值 249/904、外資持股全市場僅 147 檔）。
+      //
+      // 真實用量在 `ApiBudgetTracker`（per-vendor、sliding 1hr、只掛
+      // FinMindClient）。但它目前**沒有公開讀取點**，內部算出的 used 只在
+      // 配額用完時出現在例外訊息裡——等看到已經來不及；且 tracker 未注入
+      // UpdateService。待接出來後改印真值。
+      final syncedRows = fundResult.total + marketResult.total;
+      if (syncedRows > 0) {
         AppLogger.info(
           'UpdateService',
           '步驟 6.5: 上櫃 (${marketResult.syncedCandidates}/${marketResult.totalCandidates} 檔): '
               '估值=${fundResult.valuationCount}, 營收=${fundResult.revenueCount}, '
               '當沖=${marketResult.dayTradingCount}, 持股=${marketResult.shareholdingCount} '
-              '(API ~$estimatedApiCalls calls)',
+              '(寫入 $syncedRows 筆)',
         );
       }
     } on RateLimitException catch (e) {
