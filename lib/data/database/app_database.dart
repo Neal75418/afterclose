@@ -189,6 +189,7 @@ class AppDatabase extends $AppDatabase
       // 會把所有 Drift managed table drop 後由 Migrator 重建。
       await _ensureSchemaFingerprint();
       await _ensureDealerSelfNetColumn();
+      await _ensureRuleAccuracyDistinctDatesColumn();
       await _ensureWatchlistGroupsSchema();
       await _ensurePinnedThesisSchema();
       await customStatement('PRAGMA foreign_keys = ON');
@@ -213,6 +214,36 @@ class AppDatabase extends $AppDatabase
   ///
   /// SQLite 的 `ALTER TABLE ADD COLUMN` 不支援 `IF NOT EXISTS`，故先以
   /// `PRAGMA table_info` 判斷欄位是否存在，確保 idempotent（每次開啟可安全重跑）。
+  /// Pre-launch idempotent 加欄：為既有 DB 補上 `rule_accuracy.distinct_dates`。
+  ///
+  /// **不走 [appSchemaFingerprint] bump**：指紋機制會 drop 全部非 whitelist
+  /// 表重建，而 `daily_price` 不在 whitelist —— 實測使用者 live DB 有 275 個
+  /// 交易日 / 565,570 列，wipe 後 Phase 0 市場日快照單次上限 30 次呼叫
+  /// （[ApiConfig.historicalMarketDayMaxCalls]），回到原深度約需 19 次每日
+  /// 更新。為了一個純附加欄位付這個代價不成比例。
+  ///
+  /// 沿用 [_ensureDealerSelfNetColumn] 的先例：`PRAGMA table_info` 檢查後
+  /// `ALTER TABLE ADD COLUMN`，既有 DB 零損失、全新安裝由 createAll 先建好
+  /// 這裡 no-op、重跑安全。
+  Future<void> _ensureRuleAccuracyDistinctDatesColumn() async {
+    final columns = await customSelect(
+      "PRAGMA table_info('rule_accuracy')",
+    ).get();
+    final hasColumn = columns.any(
+      (row) => row.read<String>('name') == 'distinct_dates',
+    );
+    if (hasColumn) return;
+
+    await customStatement(
+      'ALTER TABLE rule_accuracy ADD COLUMN distinct_dates '
+      'INTEGER NOT NULL DEFAULT 0',
+    );
+    AppLogger.info(
+      'AppDatabase',
+      'rule_accuracy.distinct_dates 欄位已補上（idempotent ALTER，未 wipe）',
+    );
+  }
+
   Future<void> _ensureDealerSelfNetColumn() async {
     final columns = await customSelect(
       "PRAGMA table_info('daily_institutional')",
@@ -428,8 +459,7 @@ class AppDatabase extends $AppDatabase
 /// Public（而非 private）是因為 `tool/backfill.dart` 要在**開啟 DB 之前**
 /// 比對它：對 app 而言 reset 只是重抓 derived data，對 `tool/calibration.db`
 /// 卻是九年歷史當場歸零。見該檔的 `_checkSchemaFingerprint`。
-const String appSchemaFingerprint =
-    'stage5b-rule-accuracy-distinct-dates-2026-07-26';
+const String appSchemaFingerprint = 'stage5b-news-mention-daily-2026-07-15';
 
 // 原 `QueryExecutor _openConnection()` 已搬到 `app_database_flutter.dart`
 // 並改為 public `openDriftFlutterConnection()`，避免 `drift_flutter` import

@@ -143,4 +143,70 @@ void main() {
     expect(stocks.read<int>('c'), 1);
     await db3.close();
   });
+  // ====================================================================
+  // 加欄不得走 fingerprint bump（2026-07-26）
+  //
+  // fingerprint 機制會 drop 全部非 whitelist 表重建，而 daily_price 不在
+  // whitelist —— 實測使用者 live DB 有 275 個交易日 / 565,570 列，wipe 後
+  // Phase 0 市場日快照單次上限 30 次呼叫，回到原深度約需 19 次每日更新。
+  //
+  // 曾為了替 rule_accuracy 加一個純附加欄位而 bump 指紋（commit f8de299），
+  // 等於用整份價格歷史換一個欄位。正確做法是 _ensureDealerSelfNetColumn
+  // 式的 idempotent `PRAGMA table_info` + `ALTER TABLE ADD COLUMN`。
+  // ====================================================================
+  test('🚨 既有 DB 開啟後自動補上 rule_accuracy.distinct_dates，且不 wipe 價格', () async {
+    // 1. 先用正常流程建好 DB（寫入當前 fingerprint）
+    var db = AppDatabase(NativeDatabase(dbFile));
+    await db.customSelect('SELECT 1').get();
+    await db.batch((b) {
+      b.insert(
+        db.stockMaster,
+        StockMasterCompanion.insert(
+          symbol: '2330',
+          name: '台積電',
+          market: 'TWSE',
+        ),
+      );
+    });
+    await db.customStatement(
+      "INSERT INTO daily_price (symbol, date) VALUES ('2330', '2026-07-24')",
+    );
+    // 2. 竄改成「舊版」：把 distinct_dates 欄拔掉，模擬既有使用者的 DB
+    await db.customStatement('DROP TABLE rule_accuracy');
+    await db.customStatement(
+      'CREATE TABLE rule_accuracy (rule_id TEXT NOT NULL, period TEXT NOT NULL, '
+      'trigger_count INTEGER NOT NULL DEFAULT 0, '
+      'success_count INTEGER NOT NULL DEFAULT 0, '
+      'avg_return REAL NOT NULL DEFAULT 0.0, '
+      "updated_at TEXT NOT NULL DEFAULT (CURRENT_TIMESTAMP), "
+      'PRIMARY KEY (rule_id, period))',
+    );
+    await db.close();
+
+    // 3. 重開：beforeOpen 應以 idempotent ALTER 補欄，而非觸發 fingerprint reset
+    db = AppDatabase(NativeDatabase(dbFile));
+    final cols = await db
+        .customSelect("PRAGMA table_info('rule_accuracy')")
+        .get();
+    expect(
+      cols.map((r) => r.read<String>('name')).toSet(),
+      contains('distinct_dates'),
+      reason: 'idempotent ALTER 必須補上欄位',
+    );
+
+    final priceCount = await db
+        .customSelect('SELECT COUNT(*) c FROM daily_price')
+        .getSingle();
+    expect(
+      priceCount.read<int>('c'),
+      1,
+      reason: '加欄不得清空 daily_price —— 那是 275 天、56 萬列的回補成本',
+    );
+
+    // 4. 冪等：再開一次不得炸
+    await db.close();
+    db = AppDatabase(NativeDatabase(dbFile));
+    await db.customSelect('SELECT 1').get();
+    await db.close();
+  });
 }
