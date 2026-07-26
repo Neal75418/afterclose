@@ -485,6 +485,8 @@ Map<String, dynamic> _evaluateStocksIsolated(Map<String, dynamic> inputMap) {
   final marketUptrend = PriceCalculator.marketUptrendOrNull(
     input.pricesMap,
     SectorParams.regimeLookbackDays,
+    // 只用當日 bar：半市場日不得把昨日的另一半混進 regime 平均
+    asOf: input.date,
   );
 
   final outputs = <ScoringIsolateOutput>[];

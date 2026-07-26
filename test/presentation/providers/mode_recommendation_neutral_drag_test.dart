@@ -102,9 +102,20 @@ void main() {
     // 三檔測試股全部只在 Mode A（ROE_IMPROVING 是該 mode 的 code）合格，
     // B / C 查詢一律回空 — 確保下方斷言只測 isSignalTier 這一個 gate、
     // 不受其他 mode 的 eligibility 干擾。
+    // 今日頁的日期錨是「最新有分析的日期」而非最新價格日（見
+    // mode_recommendation_provider STEP 1）——價格與分析可能停在不同日，
+    // 以價格日為錨會在分析缺當日時把整頁打成硬空。
+    when(
+      () => mockAnalysisRepo.findLatestAnalysisDate(),
+    ).thenAnswer((_) async => testDate);
     when(() => mockAnalysisRepo.getModeStockScores(any(), any())).thenAnswer((
       invocation,
     ) async {
+      // 日期敏感：只有 testDate 這天有分析。錨錯日期就會拿到空清單——
+      // 這是「錨在分析日」守門測試的必要條件，用 any() 一律回同一份
+      // 會讓該測試變成套套邏輯（實測：mutation 存活）。
+      final date = invocation.positionalArguments[0] as DateTime;
+      if (date != testDate) return const <ModeStockScore>[];
       final codes = invocation.positionalArguments[1] as List<String>;
       if (codes.contains('ROE_IMPROVING')) {
         return const [
@@ -214,4 +225,32 @@ void main() {
       expect(aSymbols, isNot(contains('INFLATE01')));
     },
   );
+  // ====================================================================
+  // 日期錨（P1-8 (B)）
+  //
+  // 價格與分析可能停在不同日：價格寫入發生在任何評分決策之前，
+  // HistoricalPriceSyncer 也會為 priority 股補當日 bar，所以
+  // MAX(daily_price.date) 可能已跳到今日、而當日分析因資料不完整被
+  // scoring_pipeline 的 staleBar 攔下。
+  //
+  // 舊實作以 getLatestDataDate()（價格 MAX）為錨，查無當日分析就直接
+  // 回 emptyResult → 今日頁三個 tab 硬空，把「今天沒算」呈現成
+  // 「今天沒有好股票」。改錨在 findLatestAnalysisDate 後乾淨退回昨日。
+  // ====================================================================
+  test('🚨 價格日已跳今日、分析停昨日時，仍應退回昨日榜單而非硬空', () async {
+    // 分析錨仍在 testDate（= 昨日那份完整的榜），價格 MAX 已跳到隔日
+    when(
+      () => mockDb.getLatestDataDate(),
+    ).thenAnswer((_) async => testDate.add(const Duration(days: 1)));
+
+    final list = await container.read(
+      modeRecommendationsProvider(ScoringMode.momentumEntry).future,
+    );
+
+    expect(
+      list.map((r) => r.symbol),
+      contains('LEAK01'),
+      reason: '以價格日為錨會查無當日分析而整頁打空；必須錨在最新有分析的日期',
+    );
+  });
 }

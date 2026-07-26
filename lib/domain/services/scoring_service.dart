@@ -63,6 +63,8 @@ class ScoringService {
     final marketUptrend = PriceCalculator.marketUptrendOrNull(
       batchData.pricesMap,
       SectorParams.regimeLookbackDays,
+      // 只用當日 bar：半市場日不得把昨日的另一半混進 regime 平均
+      asOf: date,
     );
 
     // 暫存待寫入的分析結果，於迴圈後以單一 transaction 批次寫入

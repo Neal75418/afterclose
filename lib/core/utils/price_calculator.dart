@@ -22,14 +22,32 @@ class PriceCalculator {
   ///
   /// 回檔類規則的 regime gate 用——`AnalysisContext.isMarketUptrend == false`
   /// 才擋，null 視為 permissive，避免 fresh DB / 歷史不足時誤殺訊號。
+  ///
+  /// [asOf] 給定時只計入「最後一根 bar 就是該日」的股票。單一市場資料缺漏
+  /// 時（實測 TWSE 1225 / TPEx 904），有資料那半邊的 `last` 是今日、缺漏
+  /// 那半邊的 `last` 是昨日 —— 不過濾就會把「今日的一半」混「昨日的另一半」
+  /// 平均，是評分裡唯一真正被半市場污染的計算。過濾後半市場仍有千餘檔，
+  /// 遠高於 [SectorParams.regimeMinEligibleStocks]，regime 照常算得出來
+  /// 且變成正確的；真的不足則照既有語意回 null（permissive、不誤殺）。
+  ///
+  /// 與 `classifyCandidate` 的 staleBar 檢查同一套新鮮度概念。
   static bool? marketUptrendOrNull(
     Map<String, List<DailyPriceEntry>> priceHistories,
-    int lookbackDays,
-  ) {
+    int lookbackDays, {
+    DateTime? asOf,
+  }) {
     var sum = 0.0;
     var n = 0;
     for (final history in priceHistories.values) {
       if (history.length < lookbackDays + 1) continue;
+      if (asOf != null) {
+        // 逐欄比 y/m/d：DateTime 的 == 連時分秒一起比，評分日帶了時間
+        // 就會把全部股票濾光、regime 恆為 null。
+        final d = history.last.date;
+        if (d.year != asOf.year || d.month != asOf.month || d.day != asOf.day) {
+          continue;
+        }
+      }
       final latest = history.last.close;
       final old = history[history.length - lookbackDays - 1].close;
       if (latest == null || old == null || old <= 0) continue;

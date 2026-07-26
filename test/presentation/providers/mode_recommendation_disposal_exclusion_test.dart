@@ -100,6 +100,12 @@ void main() {
     // ROE_IMPROVING → momentumEntry（A）；WEEK_52_HIGH → strengthObserve（B）；
     // PULLBACK_TO_MA20 → weaknessObserve（C）。確保每檔測試股都只在單一 mode
     // 合格，讓下方 absence 斷言各自對應到真正被排除的那個 mode。
+    // 今日頁的日期錨是「最新有分析的日期」而非最新價格日（見
+    // mode_recommendation_provider STEP 1）——價格與分析可能停在不同日，
+    // 以價格日為錨會在分析缺當日時把整頁打成硬空。
+    when(
+      () => mockAnalysisRepo.findLatestAnalysisDate(),
+    ).thenAnswer((_) async => testDate);
     when(() => mockAnalysisRepo.getModeStockScores(any(), any())).thenAnswer((
       invocation,
     ) async {

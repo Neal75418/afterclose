@@ -326,16 +326,24 @@ final _modeAssignmentsProvider =
 
       final repo = ref.read(analysisRepositoryProvider);
       final cachedDb = ref.read(cachedDbProvider);
-      final marketRepo = ref.read(marketDataRepositoryProvider);
 
       final emptyResult = <ScoringMode, List<ModeRecommendation>>{
         for (final m in ScoringMode.userFacingModes) m: const [],
       };
 
-      // STEP 1 — 找最新 data date
-      final latestPriceDate = await marketRepo.getLatestDataDate();
-      if (latestPriceDate == null) return emptyResult;
-      final analysisDate = DateContext.normalize(latestPriceDate);
+      // STEP 1 — 錨在「最新有分析的日期」，而非最新價格日
+      //
+      // 價格與分析可能停在不同日：價格寫入（price_repository 的
+      // insertPrices）發生在任何評分決策之前，且 HistoricalPriceSyncer
+      // 也會補當日 bar，所以 MAX(daily_price.date) 可能已跳到今日、而
+      // 當日分析因資料不完整被 staleBar 攔下（見 scoring_pipeline）。
+      // 以價格日為錨時查無分析 → 下方直接 emptyResult → 今日頁三個 tab
+      // 硬空，把「今天沒算」呈現成「今天沒有好股票」。
+      //
+      // findLatestAnalysisDate 內含 3 天窗 + 前一交易日 fallback，
+      // 讓這種降級乾淨地退回最後一份完整的榜。
+      final analysisDate = await repo.findLatestAnalysisDate();
+      if (analysisDate == null) return emptyResult;
 
       // STEP 2 — 平行查 3 個 mode 的 SUM aggregate
       final modeScoresEntries = await Future.wait(

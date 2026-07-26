@@ -384,6 +384,112 @@ void main() {
         };
       }
 
+      // ================================================================
+      // 半市場日的橫斷面污染（P1-8 (A)）
+      //
+      // 本函式以 `history.last` 當「今日」平均全市場 N 日報酬。單一市場
+      // 資料缺漏時（實測 TWSE 1225 / TPEx 904），有資料那半邊的 last 是
+      // 今日、缺漏那半邊的 last 是昨日 —— regime 會變成「今日的一半」
+      // 混「昨日的另一半」的平均，是評分裡唯一真正被半市場污染的計算。
+      //
+      // 修法與 classifyCandidate 的 staleBar 同一套新鮮度概念：只計入
+      // 最後一根 bar 就是評分日的股票。半市場仍有 1225 檔遠高於門檻 50，
+      // regime 照常算得出來，而且變成正確的。
+      // ================================================================
+
+      /// count 檔，最後一根 bar 停在 [endDate]，對 120 根前漲 retPct%
+      Map<String, List<DailyPriceEntry>> universeEndingAt(
+        int count,
+        double retPct,
+        DateTime endDate, {
+        String prefix = 's',
+      }) {
+        const len = 121;
+        return {
+          for (var i = 0; i < count; i++)
+            '$prefix$i': [
+              ...List.generate(
+                len - 1,
+                (d) => createTestPrice(
+                  symbol: '$prefix$i',
+                  close: 100,
+                  date: endDate.subtract(Duration(days: len - 1 - d)),
+                ),
+              ),
+              createTestPrice(
+                symbol: '$prefix$i',
+                close: 100 * (1 + retPct / 100),
+                date: endDate,
+              ),
+            ],
+        };
+      }
+
+      test('🚨 asOf 給定時只計入當日 bar，陳舊的一半不得混入平均', () {
+        final today = DateTime(2026, 7, 24);
+        // 今日這半邊大跌 -10%，昨日那半邊「看起來」大漲 +30%
+        final fresh = universeEndingAt(60, -10, today, prefix: 'fresh');
+        final stale = universeEndingAt(
+          60,
+          30,
+          today.subtract(const Duration(days: 1)),
+          prefix: 'stale',
+        );
+
+        expect(
+          PriceCalculator.marketUptrendOrNull(
+            {...fresh, ...stale},
+            120,
+            asOf: today,
+          ),
+          isFalse,
+          reason: '只有今日 bar 該進平均；混入昨日會把下跌 regime 讀成上漲',
+        );
+      });
+
+      test('過濾後有效股不足 50 → null（維持 permissive，不誤殺訊號）', () {
+        final today = DateTime(2026, 7, 24);
+        final fresh = universeEndingAt(40, 10, today, prefix: 'fresh');
+        final stale = universeEndingAt(
+          60,
+          10,
+          today.subtract(const Duration(days: 1)),
+          prefix: 'stale',
+        );
+
+        expect(
+          PriceCalculator.marketUptrendOrNull(
+            {...fresh, ...stale},
+            120,
+            asOf: today,
+          ),
+          isNull,
+        );
+      });
+
+      test('asOf 帶時分秒仍視為同一天（逐欄比 y/m/d）', () {
+        final today = DateTime(2026, 7, 24);
+        expect(
+          PriceCalculator.marketUptrendOrNull(
+            universeEndingAt(60, 10, today),
+            120,
+            asOf: DateTime(2026, 7, 24, 15, 30),
+          ),
+          isTrue,
+        );
+      });
+
+      test('省略 asOf 時不過濾（向後相容）', () {
+        final today = DateTime(2026, 7, 24);
+        final stale = universeEndingAt(
+          60,
+          10,
+          today.subtract(const Duration(days: 1)),
+        );
+
+        expect(PriceCalculator.marketUptrendOrNull(stale, 120), isTrue);
+      });
+
       test('有效股 < 50 → null（未知、caller 不擋）', () {
         expect(
           PriceCalculator.marketUptrendOrNull(universe(40, 10, 121), 120),
