@@ -1,4 +1,5 @@
 import 'package:afterclose/core/constants/api_config.dart';
+import 'package:flutter/foundation.dart';
 import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
@@ -15,6 +16,46 @@ import 'package:afterclose/data/repositories/warning_repository.dart';
 /// 市場籌碼資料更新器
 ///
 /// 負責同步當沖、融資融券、外資持股、警示、董監持股等資料
+/// 選出本輪要同步外資持股的上櫃候選 —— **最舊優先**。
+///
+/// 兩個規則：
+/// 1. 已新鮮者（持股日期 ≥ [freshnessDate]）一律排除，不佔配額
+/// 2. 其餘依持股日期由舊到新排序，**無資料者視為最舊**；同日期以代號排序
+///    保證決定性
+///
+/// ## 為什麼不能只做過濾
+///
+/// 新鮮度定義是「持股日期 ≥ 最新交易日」，每到新的一天全部股票同時變舊。
+/// 若仍按候選順序取前 N，跨天永遠是同一批（價格走快取路徑時候選順序退化
+/// 為代號升冪）。實測 2026-07-26 正式 DB：上櫃股「最新持股日 = 07-24」的
+/// **恰好 20 檔**，正是 `maxSyncCount`；263 檔候選中 177 檔完全無資料。
+///
+/// 舊實作把 `take(N)` 放在新鮮度檢查**之前**，配額先分配給前 N 名才發現
+/// 他們已新鮮 —— 同日重複跑時整個步驟空轉（日誌「跳過 20 檔」+「持股=0」）。
+///
+/// 最舊優先後模擬顯示 9 個交易日達 100% 涵蓋，現行邏輯恆為 88 檔。
+@visibleForTesting
+List<String> selectOtcShareholdingTargets({
+  required List<String> candidates,
+  required Map<String, DateTime?> latestDates,
+  required DateTime freshnessDate,
+  required int limit,
+}) {
+  // 無資料者用 epoch 當排序鍵 → 自然排在最前
+  final epoch = DateTime.fromMillisecondsSinceEpoch(0);
+  final stale =
+      <String>[
+        for (final s in candidates)
+          if (!(latestDates[s]?.isBefore(freshnessDate) == false)) s,
+      ]..sort((a, b) {
+        final cmp = (latestDates[a] ?? epoch).compareTo(
+          latestDates[b] ?? epoch,
+        );
+        return cmp != 0 ? cmp : a.compareTo(b);
+      });
+  return stale.length > limit ? stale.sublist(0, limit) : stale;
+}
+
 class MarketDataUpdater {
   MarketDataUpdater({
     required AppDatabase database,
@@ -370,23 +411,34 @@ class MarketDataUpdater {
       );
     }
 
-    // 限制上櫃同步數量以避免超過 FinMind API 配額
-    final limitedOtcCandidates = otcCandidates.length > maxSyncCount
-        ? otcCandidates.take(maxSyncCount).toList()
-        : otcCandidates;
-
-    if (otcCandidates.length > maxSyncCount) {
-      AppLogger.info(
-        'MarketDataUpdater',
-        '上櫃候選 ${otcCandidates.length} 檔超過配額限制，僅同步前 $maxSyncCount 檔',
-      );
-    }
-
     // 取得新鮮度檢查基準日期
     final latestDayTradingDate = await _db.getLatestDayTradingDate();
     final normalizedFreshnessDate = latestDayTradingDate != null
         ? DateContext.normalize(latestDayTradingDate)
         : DateContext.normalize(date);
+
+    // 批次預載**全部**候選的最新持股（單次查詢），供最舊優先排序用。
+    // 必須先於配額分配 —— 舊實作把 take(N) 放在新鮮度檢查之前，配額先給
+    // 前 N 名才發現他們已新鮮（見 selectOtcShareholdingTargets 的說明）。
+    final latestShareholdingMap = await _shareholdingRepo
+        .getLatestShareholdingsBatch(otcCandidates);
+
+    final limitedOtcCandidates = selectOtcShareholdingTargets(
+      candidates: otcCandidates,
+      latestDates: {
+        for (final e in latestShareholdingMap.entries) e.key: e.value.date,
+      },
+      freshnessDate: normalizedFreshnessDate,
+      limit: maxSyncCount,
+    );
+
+    if (otcCandidates.length > maxSyncCount) {
+      AppLogger.info(
+        'MarketDataUpdater',
+        '上櫃候選 ${otcCandidates.length} 檔超過配額 $maxSyncCount，'
+            '本輪取最舊 ${limitedOtcCandidates.length} 檔',
+      );
+    }
 
     final marketDataStartDate = date.subtract(
       const Duration(
@@ -402,10 +454,6 @@ class MarketDataUpdater {
     var totalErrorCount = 0;
     const maxTotalErrors = ApiConfig.marketDataMaxTotalErrors;
 
-    // 批次預載所有候選的最新持股，避免 chunk 內 N+1 查詢
-    final latestShareholdingMap = await _shareholdingRepo
-        .getLatestShareholdingsBatch(limitedOtcCandidates);
-
     const chunkSize = ApiConfig.marketDataBatchSize;
     outerLoop:
     for (var i = 0; i < limitedOtcCandidates.length; i += chunkSize) {
@@ -415,6 +463,10 @@ class MarketDataUpdater {
         try {
           // 新鮮度檢查：若已有參考日期的外資持股資料，跳過
           final latestShareholding = latestShareholdingMap[symbol];
+          // 冗餘防線：selectOtcShareholdingTargets 已排除新鮮者，正常路徑
+          // 不會走到這裡。保留是為了「選擇邏輯若有誤仍不會重打 API」；
+          // 下方 skippedCount 的日誌因此**應恆為靜默** —— 它一旦出現，
+          // 代表選擇階段與此處的新鮮度判斷不一致，是需要查的訊號。
           final hasFreshShareholding =
               latestShareholding != null &&
               !latestShareholding.date.isBefore(normalizedFreshnessDate);
@@ -477,7 +529,11 @@ class MarketDataUpdater {
     }
 
     if (skippedCount > 0) {
-      AppLogger.info('MarketDataUpdater', '上櫃外資持股新鮮度檢查: 跳過 $skippedCount 檔');
+      AppLogger.warning(
+        'MarketDataUpdater',
+        '上櫃外資持股：選擇階段與迴圈新鮮度判斷不一致，跳過 $skippedCount 檔'
+            '（正常路徑不應出現）',
+      );
     }
 
     // 上櫃當沖恆為 0：**沒有任何 TPEx 當沖資料來源**。
