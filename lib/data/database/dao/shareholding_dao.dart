@@ -36,21 +36,38 @@ mixin ShareholdingDaoMixin on $AppDatabase {
   ///
   /// 用於 Isolate 評分時傳遞外資持股資料。
   /// 回傳 symbol -> ShareholdingEntry 的對應表。
+  /// [asOf] 給定時只取該日（含）以前的資料
+  ///
+  /// 無上界的全域 `MAX(date)` 在對歷史日重跑時會把**未來**的基本面寫進當日
+  /// 訊號（`daily_reason` → `rule_accuracy` 的輸入）。`tool/replay_calibrator`
+  /// 早已做 point-in-time 過濾，此處補上同一口徑，讓 runtime 與 calibrator
+  /// 結構上一致，也讓「把歷史重放進 daily_reason」成為安全的操作。
+  ///
+  /// 省略時維持原本的全域最新語意（正式路徑的評分日恆為今日，實測四張
+  /// 基本面表無任何超前列，故行為不變）。
   Future<Map<String, ShareholdingEntry>> getLatestShareholdingsBatch(
-    List<String> symbols,
-  ) async {
+    List<String> symbols, {
+    DateTime? asOf,
+  }) async {
     if (symbols.isEmpty) return {};
 
-    final results = await customSelect('''
+    final results = await customSelect(
+      '''
     SELECT s.*
     FROM shareholding s
     INNER JOIN (
       SELECT symbol, MAX(date) as max_date
       FROM shareholding
       WHERE symbol IN (${symbols.map((_) => '?').join(', ')})
+      ${asOf == null ? '' : 'AND date <= ?'}
       GROUP BY symbol
     ) latest ON s.symbol = latest.symbol AND s.date = latest.max_date
-    ''', variables: symbols.map((s) => Variable.withString(s)).toList()).get();
+    ''',
+      variables: [
+        ...symbols.map((s) => Variable.withString(s)),
+        if (asOf != null) Variable.withDateTime(asOf),
+      ],
+    ).get();
 
     final map = <String, ShareholdingEntry>{};
     for (final row in results) {

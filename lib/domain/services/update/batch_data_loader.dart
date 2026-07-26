@@ -90,11 +90,11 @@ class BatchDataLoader {
     );
     final revenueFuture = timed(
       'revenue',
-      _db.getLatestMonthlyRevenuesBatch(candidates),
+      _db.getLatestMonthlyRevenuesBatch(candidates, asOf: date),
     );
     final valuationFuture = timed(
       'valuation',
-      _db.getLatestValuationsBatch(candidates),
+      _db.getLatestValuationsBatch(candidates, asOf: date),
     );
     final revenueHistoryFuture = timed(
       'revenueHistory',
@@ -109,7 +109,7 @@ class BatchDataLoader {
     );
     final shareholdingFuture = timed(
       'shareholding',
-      _db.getLatestShareholdingsBatch(candidates),
+      _db.getLatestShareholdingsBatch(candidates, asOf: date),
     );
     final prevShareholdingFuture = timed(
       'prevShareholding',

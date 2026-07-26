@@ -142,10 +142,11 @@ void main() {
       () => mockNewsRepo.getNewsForStocksBatch(any(), days: any(named: 'days')),
     ).thenAnswer((_) async => {});
     when(
-      () => mockDb.getLatestMonthlyRevenuesBatch(any()),
+      () =>
+          mockDb.getLatestMonthlyRevenuesBatch(any(), asOf: any(named: 'asOf')),
     ).thenAnswer((_) async => {});
     when(
-      () => mockDb.getLatestValuationsBatch(any()),
+      () => mockDb.getLatestValuationsBatch(any(), asOf: any(named: 'asOf')),
     ).thenAnswer((_) async => {});
     when(
       () => mockDb.getRecentMonthlyRevenueBatch(
@@ -157,7 +158,7 @@ void main() {
       () => mockDb.getDayTradingMapForDate(any()),
     ).thenAnswer((_) async => {});
     when(
-      () => mockDb.getLatestShareholdingsBatch(any()),
+      () => mockDb.getLatestShareholdingsBatch(any(), asOf: any(named: 'asOf')),
     ).thenAnswer((_) async => {});
     when(
       () => mockDb.getShareholdingsBeforeDateBatch(

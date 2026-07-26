@@ -35,16 +35,18 @@ void main() {
       () => newsRepo.getNewsForStocksBatch(any(), days: any(named: 'days')),
     ).thenAnswer((_) async => {});
     when(
-      () => db.getLatestMonthlyRevenuesBatch(any()),
+      () => db.getLatestMonthlyRevenuesBatch(any(), asOf: any(named: 'asOf')),
     ).thenAnswer((_) async => {});
-    when(() => db.getLatestValuationsBatch(any())).thenAnswer((_) async => {});
+    when(
+      () => db.getLatestValuationsBatch(any(), asOf: any(named: 'asOf')),
+    ).thenAnswer((_) async => {});
     when(
       () =>
           db.getRecentMonthlyRevenueBatch(any(), months: any(named: 'months')),
     ).thenAnswer((_) async => {});
     when(() => db.getDayTradingMapForDate(any())).thenAnswer((_) async => {});
     when(
-      () => db.getLatestShareholdingsBatch(any()),
+      () => db.getLatestShareholdingsBatch(any(), asOf: any(named: 'asOf')),
     ).thenAnswer((_) async => {});
     when(
       () => db.getShareholdingsBeforeDateBatch(
@@ -196,5 +198,35 @@ void main() {
     expect(aaa.length, 3, reason: '缺列未補 → 規則會把 7/20 與 7/22 接成連續');
     expect(aaa.map((e) => e.date), [d1, d2, d3]);
     expect(aaa[1].foreignNet, 0);
+  });
+  test('基本面「最新值」查詢必須帶評分日為 as-of 上界', () async {
+    // 純函式層的語意由 fundamental_as_of_test.dart 覆蓋；此測試釘住「loader
+    // 真的有把評分日傳下去」—— 少傳就會在歷史重跑時把未來的估值/營收/
+    // 外資持股寫進當日訊號，而那批列正是 rule_accuracy 的輸入。
+    final loader = BatchDataLoader(database: db, newsRepository: newsRepo);
+    final date = DateTime(2026, 7, 9);
+
+    await loader.loadBatchData(date, ['2330']);
+
+    for (final captured in [
+      verify(
+        () =>
+            db.getLatestValuationsBatch(any(), asOf: captureAny(named: 'asOf')),
+      ).captured,
+      verify(
+        () => db.getLatestMonthlyRevenuesBatch(
+          any(),
+          asOf: captureAny(named: 'asOf'),
+        ),
+      ).captured,
+      verify(
+        () => db.getLatestShareholdingsBatch(
+          any(),
+          asOf: captureAny(named: 'asOf'),
+        ),
+      ).captured,
+    ]) {
+      expect(captured.first, date);
+    }
   });
 }

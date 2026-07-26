@@ -24,9 +24,19 @@ mixin ValuationDaoMixin on $AppDatabase {
   }
 
   /// 批次取得多檔股票的最新估值（批次查詢）
+  /// [asOf] 給定時只取該日（含）以前的資料
+  ///
+  /// 無上界的全域 `MAX(date)` 在對歷史日重跑時會把**未來**的基本面寫進當日
+  /// 訊號（`daily_reason` → `rule_accuracy` 的輸入）。`tool/replay_calibrator`
+  /// 早已做 point-in-time 過濾，此處補上同一口徑，讓 runtime 與 calibrator
+  /// 結構上一致，也讓「把歷史重放進 daily_reason」成為安全的操作。
+  ///
+  /// 省略時維持原本的全域最新語意（正式路徑的評分日恆為今日，實測四張
+  /// 基本面表無任何超前列，故行為不變）。
   Future<Map<String, StockValuationEntry>> getLatestValuationsBatch(
-    List<String> symbols,
-  ) async {
+    List<String> symbols, {
+    DateTime? asOf,
+  }) async {
     if (symbols.isEmpty) return {};
 
     // 建立 SQL IN 子句的佔位符
@@ -40,13 +50,17 @@ mixin ValuationDaoMixin on $AppDatabase {
       SELECT symbol, MAX(date) as max_date
       FROM stock_valuation
       WHERE symbol IN ($placeholders)
+      ${asOf == null ? '' : 'AND date <= ?'}
       GROUP BY symbol
     ) latest ON sv.symbol = latest.symbol AND sv.date = latest.max_date
   ''';
 
     final results = await customSelect(
       query,
-      variables: symbols.map((s) => Variable.withString(s)).toList(),
+      variables: [
+        ...symbols.map((s) => Variable.withString(s)),
+        if (asOf != null) Variable.withDateTime(asOf),
+      ],
       readsFrom: {stockValuation},
     ).get();
 

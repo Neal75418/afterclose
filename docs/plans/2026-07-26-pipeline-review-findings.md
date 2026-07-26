@@ -574,7 +574,26 @@
 
 ### 45. 生產評分路徑的基本面批次查詢沒有 as-of 上界（全域 MAX(date)），與 replay_calibrator 的 point-in-time 口徑不一致，重跑歷史日會把未來資料寫進 daily_reason
 
-**狀態**：❓ 未查證
+**狀態**：✅ 已修 — 查證結論：**機制為真、觸發路徑不存在**（latent 而非 live），
+但因其為「歷史重放進 daily_reason」的前置條件而修復。
+
+查證細節：
+- 機制屬實 — `getLatestValuationsBatch` / `getLatestMonthlyRevenuesBatch` /
+  `getLatestShareholdingsBatch` 皆為全域 `MAX(date)` 無上界；同檔的 history
+  變體本就支援 `endDate`，能力在只是沒接。
+- **finding 描述的觸發路徑走不到** — 兩個 production 呼叫端
+  （`today_provider` / `headless_update_runner`，CLI 亦走後者）都不帶
+  `forDate`，`targetDate = forDate ?? _clock.now()`；只有測試傳歷史日。
+- **另一條自行推導的路徑（日期回滾）也不成立** — 回滾發生於步驟 3，基本面
+  同步在步驟 3.8-5 且吃回滾後的 `ctx.normalizedDate`，故基本面寫進回滾後
+  那天、不會超前。
+- **finding 的第二個宣稱不成立** — 「與 replay 口徑不同故不可互相驗證」：
+  as-of = 今日時 point-in-time 等價於全域最新，正常每日路徑兩者一致。
+- 修復為零行為變化：實測四張基本面表**無任何一列**日期超前最新價格日。
+
+修法：三個 DAO 加 nullable `asOf`（`AND date <= ?`，`Variable.withDateTime`
+沿用 day_trading_dao 慣例），由 `BatchDataLoader` 統一傳入評分日。省略時
+維持原語意。測試 +5，DAO 語意與 loader 接線兩層各經 mutation 驗證。
 
 **證據**：lib/domain/services/update/batch_data_loader.dart:71-140：只有 prices（:73）、institutional（:82-86）、dayTrading（:106）、prevShareholding（:114）帶日期；valuation（lib/data/database/dao/valuation_dao.dart:27-45 取全域 MAX(date)）、revenue（lib/data/database/dao/revenue_dao.dart:27-45 同）、shareholding（lib/data/database/dao/shareholding_dao.dart:39-53 同）、insider / eps / roe / dividend / maxRevenue 都不帶 `date`。對照組：tool/replay_calibrator.dart:610-625 明確做點時間過濾（`!revenueVisibleDate(e.date).isAfter(currentDate)`、:891-894 的營收 +1 月可見延遲），證明團隊知道正確做法、但只實作在 tool 端。觸發路徑：UpdateService.runDailyUpdate(forDate:) 與 force 重跑（update_service.dart:166-171、:244-246），ScoringService 對該日 clear-then-write 覆寫 daily_reason，而 RuleAccuracyService 直接讀全表 daily_reason（rule_accuracy_service.dart:142）。
 
