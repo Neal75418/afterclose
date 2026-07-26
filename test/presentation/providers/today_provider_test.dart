@@ -67,6 +67,9 @@ void main() {
     when(() => mockDb.getWatchlist()).thenAnswer((_) async => []);
     when(() => mockDb.getLatestUpdateRun()).thenAnswer((_) async => null);
     when(
+      () => mockDb.getLatestSuccessfulUpdateRun(),
+    ).thenAnswer((_) async => null);
+    when(
       () => mockDb.getLatestDataDate(),
     ).thenAnswer((_) async => DateTime(2026, 2, 13));
     when(
@@ -263,6 +266,88 @@ void main() {
       final state = container.read(todayProvider);
       expect(state.isLoading, isFalse);
       expect(state.dataDate, isNull); // 應優雅處理 null dataDate
+    });
+  });
+  // ====================================================================
+  // 冷啟動自動更新 gate（2026-07-26）
+  //
+  // data_freshness.dart 的 docstring 寫「距上次**成功** update_run」，
+  // 但 getLatestUpdateRun() 完全不過濾 status，today_provider 也無條件
+  // 拿最後一筆的時間 —— 一次 PARTIAL / FAILED 會把冷啟動自動更新擋滿
+  // 6 小時。更新失敗反而讓 app 更不會重試，方向是反的。
+  //
+  // 修法把混在一起的兩件事拆開：
+  //   資料夠不夠新 → 距上次**成功**更新 ≥ coldStartAutoUpdateGateHours
+  //   是不是在狂打 → 距上次**嘗試** ≥ coldStartRetryThrottleMinutes
+  // 兩者皆成立才觸發。這比「依 status 選單一門檻」更準確：後者在
+  // 「上次成功才 3 小時前、但 2 小時前有一筆 PARTIAL」時會多餘重跑。
+  // ====================================================================
+  group('冷啟動自動更新 gate 依 status 分流', () {
+    // 判斷抽成純函式後不需 mock harness，也不看真實時鐘 —— 舊寫法在
+    // 週末跑會因為 isTradingDay(DateTime.now()) 直接早退而假綠/假紅。
+    final tradingDay = DateTime(2026, 7, 22, 9); // 週三
+
+    bool decide({DateTime? success, DateTime? attempt}) =>
+        TodayNotifier.shouldTriggerColdStartUpdate(
+          now: tradingDay,
+          lastSuccessAt: success,
+          lastAttemptAt: attempt,
+        );
+
+    test('🚨 上次成功已久、之後的失敗嘗試也夠久 → 必須重試', () {
+      expect(
+        decide(
+          success: tradingDay.subtract(const Duration(hours: 9)),
+          attempt: tradingDay.subtract(const Duration(hours: 3)),
+        ),
+        isTrue,
+        reason:
+            '舊實作拿不分 status 的最後一筆當新鮮度基準，'
+            '一次 PARTIAL 就把重試擋滿 6 小時 —— 失敗反而更不重試',
+      );
+    });
+
+    test('剛嘗試過就不要連打（attempt throttle）', () {
+      expect(
+        decide(
+          success: tradingDay.subtract(const Duration(hours: 9)),
+          attempt: tradingDay.subtract(const Duration(minutes: 5)),
+        ),
+        isFalse,
+      );
+    });
+
+    test('資料還新就不重試，即使中間有失敗的嘗試', () {
+      expect(
+        decide(
+          success: tradingDay.subtract(const Duration(hours: 3)),
+          attempt: tradingDay.subtract(const Duration(hours: 2)),
+        ),
+        isFalse,
+        reason: '「依 status 選單一門檻」的設計會在此情境多餘重跑',
+      );
+    });
+
+    test('從未成功過 → 只受節流限制', () {
+      expect(decide(success: null, attempt: null), isTrue);
+      expect(
+        decide(
+          success: null,
+          attempt: tradingDay.subtract(const Duration(minutes: 5)),
+        ),
+        isFalse,
+      );
+    });
+
+    test('非交易日一律不觸發', () {
+      expect(
+        TodayNotifier.shouldTriggerColdStartUpdate(
+          now: DateTime(2026, 7, 26), // 週日
+          lastSuccessAt: null,
+          lastAttemptAt: null,
+        ),
+        isFalse,
+      );
     });
   });
 }

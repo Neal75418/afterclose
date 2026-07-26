@@ -5,6 +5,7 @@ import 'package:afterclose/data/database/dao/batch_query_mixin.dart';
 import 'package:afterclose/data/database/tables/user_tables.drift.dart';
 import 'package:afterclose/data/database/tables/market_data_tables.drift.dart';
 import 'package:afterclose/data/database/tables/daily_price.drift.dart';
+import 'package:afterclose/core/constants/rule_enums.dart';
 import 'package:afterclose/core/constants/rule_params_alert.dart';
 import 'package:afterclose/domain/services/alert_evaluation_service.dart';
 
@@ -195,6 +196,18 @@ mixin UserDaoMixin on $AppDatabase {
   /// 取得最新的更新執行記錄
   Future<UpdateRunEntry?> getLatestUpdateRun() {
     return (select(updateRun)
+          ..orderBy([(t) => OrderingTerm.desc(t.id)])
+          ..limit(1))
+        .getSingleOrNull();
+  }
+
+  /// 最後一筆**成功**的 update_run
+  ///
+  /// 冷啟動 gate 判斷「資料夠不夠新」用。[getLatestUpdateRun] 不分 status，
+  /// 拿它當新鮮度基準會讓一次失敗的嘗試看起來像「剛更新過」。
+  Future<UpdateRunEntry?> getLatestSuccessfulUpdateRun() {
+    return (select(updateRun)
+          ..where((t) => t.status.equals(UpdateStatus.success.code))
           ..orderBy([(t) => OrderingTerm.desc(t.id)])
           ..limit(1))
         .getSingleOrNull();
