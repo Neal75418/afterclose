@@ -73,6 +73,72 @@ void main() {
       expect(result.evidence!['streakDays'], equals(5));
     });
 
+    // ======================================================================
+    // 連續天數截斷揭露（P1-6 子問題 C）
+    //
+    // batch_data_loader 用 `institutionalLookbackDays = 10`（日曆天）載入法人
+    // 歷史 → 7/24 往回 10 天只含 9 個交易日。DB 實證 streakDays 分布
+    // 4:82 / 5:58 / 6:49 / 7:41 / 8:39 / 9:17、**10 以上 0 筆**——與窗大小
+    // 完全吻合的硬牆，不是自然分布。
+    //
+    // 同型 bug 已在市場總覽徽章修過（`kStreakLookbackDays = 90` 的 docstring
+    // 自承「dealer 曾連 47 日淨買卻顯示連30日」），但評分規則沒跟上。
+    //
+    // 「連買 9 日」與「連買 25 日」是完全不同等級的籌碼訊號——前者可能只是
+    // 短打、後者是主力鎖碼，決定部位大小與持有期。畫面上長得一樣就是誤導。
+    // ======================================================================
+
+    test('🚨 streak 吃光整個資料窗時必須揭露可能被截斷', () {
+      // 全部 6 天都是買超 → 迴圈從未 break，代表真實連續天數可能更長
+      final institutional = _generateBuyStreak(days: 6);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
+      final data = StockData(
+        symbol: 'TEST',
+        prices: [],
+        institutional: institutional,
+      );
+
+      final result = rule.evaluate(context, data);
+
+      expect(result, isNotNull);
+      expect(
+        result!.evidence!['streakTruncated'],
+        isTrue,
+        reason: '消耗完整個窗代表真實 streak 可能更長，必須標記',
+      );
+      expect(
+        result.description,
+        contains('以上'),
+        reason: '描述必須誠實反映「至少 N 日」而非斷言剛好 N 日',
+      );
+    });
+
+    test('streak 未觸頂時不得誤標截斷', () {
+      // 8 天資料，但只有最後 5 天是買超 → 迴圈在第 6 天 break
+      final institutional = [
+        ..._generateBuyStreak(days: 3, foreignNet: -400000, trustNet: -200000),
+        ..._generateBuyStreak(days: 5),
+      ];
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
+      final data = StockData(
+        symbol: 'TEST',
+        prices: [],
+        institutional: institutional,
+      );
+
+      final result = rule.evaluate(context, data);
+
+      expect(result, isNotNull);
+      expect(result!.evidence!['streakTruncated'], isFalse);
+      expect(result.description, isNot(contains('以上')));
+    });
+
     test('applies trust-dominant bonus when trust > foreign', () {
       // trust 400000 > foreign 200000 → isTrustDominant = true
       final institutional = _generateBuyStreak(
@@ -219,6 +285,49 @@ void main() {
   // ==========================================
   group('InstitutionalSellStreakRule', () {
     const rule = InstitutionalSellStreakRule();
+
+    // 賣超規則與買超規則是同一 bug class（同樣的 `for (i = length-1)` 迴圈
+    // 無視窗邊界），依「修 bug class 要 sweep siblings」原則一併釘住。
+    test('🚨 賣超 streak 吃光整個資料窗時必須揭露可能被截斷', () {
+      final institutional = _generateSellStreak(days: 6);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
+      final data = StockData(
+        symbol: 'TEST',
+        prices: [],
+        institutional: institutional,
+      );
+
+      final result = rule.evaluate(context, data);
+
+      expect(result, isNotNull);
+      expect(result!.evidence!['streakTruncated'], isTrue);
+      expect(result.description, contains('以上'));
+    });
+
+    test('賣超 streak 未觸頂時不得誤標截斷', () {
+      final institutional = [
+        ..._generateSellStreak(days: 3, foreignNet: 400000, trustNet: 200000),
+        ..._generateSellStreak(days: 5),
+      ];
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
+      final data = StockData(
+        symbol: 'TEST',
+        prices: [],
+        institutional: institutional,
+      );
+
+      final result = rule.evaluate(context, data);
+
+      expect(result, isNotNull);
+      expect(result!.evidence!['streakTruncated'], isFalse);
+      expect(result.description, isNot(contains('以上')));
+    });
 
     test('triggers with consecutive sell days meeting all thresholds', () {
       // 5 days, each: foreign -400000 + trust -200000 = -600000 < -50000

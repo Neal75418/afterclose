@@ -51,8 +51,10 @@ class BatchDataLoader {
     final startDate = date.subtract(
       const Duration(days: RuleParams.historyRequiredDays),
     );
+    // 用 streak 專用窗而非顯示窗：連續買賣超規則會掃到窗邊界為止，窗太窄
+    // 會把長 streak 截斷成「剛好等於窗長」（見 institutionalStreakLookbackDays）。
     final instStartDate = date.subtract(
-      const Duration(days: InstitutionalParams.institutionalLookbackDays),
+      const Duration(days: InstitutionalParams.institutionalStreakLookbackDays),
     );
 
     final instRepo = _institutionalRepo;

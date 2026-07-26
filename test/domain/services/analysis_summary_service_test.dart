@@ -987,4 +987,62 @@ void main() {
       );
     });
   });
+
+  group('法人 streak 截斷語意（P1-6）', () {
+    // 規則 description 已會說「連買 9 日以上」，摘要若仍說「連買 9 天」
+    // 就會同一訊號兩處說法矛盾。此測試釘住兩邊同步。
+    SummaryData genStreak(String code, String evidence, double score) =>
+        service.generate(
+          analysis: createTestAnalysis(trendState: 'UP', score: 20),
+          reasons: [
+            createTestReason(
+              reasonType: code,
+              evidenceJson: evidence,
+              ruleScore: score,
+            ),
+          ],
+          latestPrice: null,
+          priceChange: 0.5,
+          institutionalHistory: [],
+          revenueHistory: [],
+          latestPER: null,
+          horizon: Horizon.short,
+        );
+
+    test('🚨 streakTruncated=true 走「N 天以上」文案', () {
+      final result = genStreak(
+        'INSTITUTIONAL_BUY_STREAK',
+        '{"streakDays":9,"streakTruncated":true}',
+        15,
+      );
+      expect(
+        result.keySignals.map((s) => s.key),
+        contains('summary.institutionalBuyStreakDaysTruncated'),
+      );
+    });
+
+    test('streakTruncated=false 走原本確切天數文案', () {
+      final result = genStreak(
+        'INSTITUTIONAL_BUY_STREAK',
+        '{"streakDays":5,"streakTruncated":false}',
+        15,
+      );
+      expect(
+        result.keySignals.map((s) => s.key),
+        contains('summary.institutionalBuyStreakDays'),
+      );
+    });
+
+    test('賣超 streak 截斷同樣揭露', () {
+      final result = genStreak(
+        'INSTITUTIONAL_SELL_STREAK',
+        '{"streakDays":9,"streakTruncated":true}',
+        -15,
+      );
+      expect(
+        result.riskFactors.map((s) => s.key),
+        contains('summary.institutionalSellStreakDaysTruncated'),
+      );
+    });
+  });
 }

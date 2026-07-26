@@ -6,8 +6,22 @@ abstract final class InstitutionalParams {
   // 法人連續買賣超規則
   // ==================================================
 
-  /// 法人資料回溯天數
+  /// 法人資料回溯天數（**顯示用**：個股詳情、比較頁的近期法人動向）
+  ///
+  /// 評分規則請勿使用此值——連續買賣超規則需要 [institutionalStreakLookbackDays]，
+  /// 否則 streak 會被窗口截斷（見該常數註解）。
   static const int institutionalLookbackDays = 10;
+
+  /// 評分用法人回溯天數（連續買賣超規則的取數窗）
+  ///
+  /// 曾與 [institutionalLookbackDays] 共用 10 日曆日 → 從 7/24 往回只含 9 個
+  /// 交易日，DB 實證 streakDays 分布在 9 出現硬牆（4:82 / 5:58 / 6:49 / 7:41
+  /// / 8:39 / 9:17、**10 以上 0 筆**），與窗大小完全吻合，是截斷而非自然分布。
+  ///
+  /// 放寬至 90（與 [kStreakLookbackDays] 同）於真實資料實測：45 檔觸發者
+  /// **觸發結果零變動**（無新增、無消失），僅 8 檔的天數被修正——2357/2884/
+  /// 6414 由 9 日修正為 17 日。查詢成本亦無差異（90 日窗即全表，41ms vs 42ms）。
+  static const int institutionalStreakLookbackDays = kStreakLookbackDays;
 
   /// 法人連續買賣天數門檻
   static const int institutionalStreakDays = 4;

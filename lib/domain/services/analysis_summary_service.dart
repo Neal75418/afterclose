@@ -713,10 +713,15 @@ class AnalysisSummaryService {
   // ==================================================
   static final _institutionalStreakSignals =
       <String, LocalizableString Function(Map<String, dynamic>)>{
+        // streakTruncated：取數窗被吃滿，真實天數可能更長 → 用「N 天以上」，
+        // 與規則 description 保持一致，避免同一訊號兩處說法矛盾。
         SignalName.institutionalBuyStreak: (e) {
           final days = e['streakDays'];
           if (days != null) {
-            return LocalizableString('summary.institutionalBuyStreakDays', {
+            final key = e['streakTruncated'] == true
+                ? 'summary.institutionalBuyStreakDaysTruncated'
+                : 'summary.institutionalBuyStreakDays';
+            return LocalizableString(key, {
               'days': _numStr(days, fractionDigits: 0),
             });
           }
@@ -725,7 +730,10 @@ class AnalysisSummaryService {
         SignalName.institutionalSellStreak: (e) {
           final days = e['streakDays'];
           if (days != null) {
-            return LocalizableString('summary.institutionalSellStreakDays', {
+            final key = e['streakTruncated'] == true
+                ? 'summary.institutionalSellStreakDaysTruncated'
+                : 'summary.institutionalSellStreakDays';
+            return LocalizableString(key, {
               'days': _numStr(days, fractionDigits: 0),
             });
           }

@@ -84,6 +84,11 @@ class InstitutionalBuyStreakRule extends StockRule {
       // 過濾條件 3：至少一半的天數有顯著買超（> 150張/日）
       if (significantDays < streakDays / 2) return null;
 
+      // 連續天數是否吃滿整個資料窗。若迴圈從未 break，代表窗外可能還有
+      // 更早的買超日被截掉——「連買 9 日」與「連買 25 日」是完全不同等級
+      // 的籌碼訊號，不得斷言為剛好 N 日。比照市場總覽徽章的「90+」做法。
+      final streakTruncated = streakDays == history.length;
+
       // 轉換為張顯示（1張 = 1000股，見 RuleParams.sheetToShares）
       final foreignSheets = (totalForeignNet / RuleParams.sheetToShares)
           .round();
@@ -101,9 +106,11 @@ class InstitutionalBuyStreakRule extends StockRule {
         type: ReasonType.institutionalBuyStreak,
         score: score,
         description:
-            '外資+投信連續買超 $streakDays 日 (外資 $foreignSheets 張, 投信 $trustSheets 張)',
+            '外資+投信連續買超 $streakDays 日${streakTruncated ? '以上' : ''} '
+            '(外資 $foreignSheets 張, 投信 $trustSheets 張)',
         evidence: {
           'streakDays': streakDays,
+          'streakTruncated': streakTruncated,
           'foreignNet': totalForeignNet,
           'trustNet': totalTrustNet,
           'totalNet': totalNet,
@@ -197,6 +204,9 @@ class InstitutionalSellStreakRule extends StockRule {
       // 過濾條件 3：至少一半的天數有顯著賣超（< -150張/日）
       if (significantDays < streakDays / 2) return null;
 
+      // 同買超規則：streak 吃滿整個窗代表真實天數可能更長（見上）。
+      final streakTruncated = streakDays == history.length;
+
       // 轉換為張顯示（1張 = 1000股，見 RuleParams.sheetToShares）
       final foreignSheets = (totalForeignNet.abs() / RuleParams.sheetToShares)
           .round();
@@ -215,9 +225,11 @@ class InstitutionalSellStreakRule extends StockRule {
         type: ReasonType.institutionalSellStreak,
         score: score,
         description:
-            '外資+投信連續賣超 $streakDays 日 (外資 $foreignSheets 張, 投信 $trustSheets 張)',
+            '外資+投信連續賣超 $streakDays 日${streakTruncated ? '以上' : ''} '
+            '(外資 $foreignSheets 張, 投信 $trustSheets 張)',
         evidence: {
           'streakDays': streakDays,
+          'streakTruncated': streakTruncated,
           'foreignNet': totalForeignNet,
           'trustNet': totalTrustNet,
           'totalNet': totalNet,

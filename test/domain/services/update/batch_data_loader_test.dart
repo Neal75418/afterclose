@@ -1,6 +1,7 @@
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/repositories/news_repository.dart';
+import 'package:afterclose/data/repositories/institutional_repository.dart';
 import 'package:afterclose/domain/services/update/batch_data_loader.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -8,6 +9,8 @@ import 'package:mocktail/mocktail.dart';
 class _MockDb extends Mock implements AppDatabase {}
 
 class _MockNewsRepo extends Mock implements NewsRepository {}
+
+class _MockInstRepo extends Mock implements InstitutionalRepository {}
 
 void main() {
   late _MockDb db;
@@ -60,6 +63,13 @@ void main() {
     when(() => db.getROEHistoryBatch(any())).thenAnswer((_) async => {});
     when(() => db.getDividendHistoryBatch(any())).thenAnswer((_) async => {});
     when(() => db.getMaxRevenueBatch(any())).thenAnswer((_) async => {});
+    when(
+      () => db.getInstitutionalHistoryBatch(
+        any(),
+        startDate: any(named: 'startDate'),
+        endDate: any(named: 'endDate'),
+      ),
+    ).thenAnswer((_) async => {});
   });
 
   test('價格載入窗口必須與 syncer 充足性判斷窗（historyRequiredDays）同源', () async {
@@ -88,6 +98,41 @@ void main() {
       reason:
           '價格窗口與 historyRequiredDays 不同源，52 週規則會再次陷入'
           '「syncer 判定夠、規則拿不到」的縫隙',
+    );
+  });
+
+  test('法人載入窗口必須用 streak 專用窗，不得用顯示窗', () async {
+    // 回歸背景（P1-6）：loader 原用 institutionalLookbackDays（10 日曆日）
+    // → 從 7/24 往回只含 9 個交易日，而連續買賣超規則掃到窗邊界為止。
+    // DB 實證 streakDays 分布 4:82 / 5:58 / 6:49 / 7:41 / 8:39 / 9:17、
+    // **10 以上 0 筆**——與窗大小完全吻合的硬牆。
+    //
+    // 真實資料實測放寬至 90 後：45 檔觸發者觸發結果零變動，8 檔天數被
+    // 修正（2357/2884/6414 由 9 日 → 17 日）。
+    final loader = BatchDataLoader(
+      database: db,
+      newsRepository: newsRepo,
+      institutionalRepository: _MockInstRepo(),
+    );
+    final date = DateTime(2026, 7, 9);
+
+    await loader.loadBatchData(date, ['2330']);
+
+    final captured = verify(
+      () => db.getInstitutionalHistoryBatch(
+        any(),
+        startDate: captureAny(named: 'startDate'),
+        endDate: any(named: 'endDate'),
+      ),
+    ).captured;
+    final instStart = captured.first as DateTime;
+
+    expect(
+      date.difference(instStart).inDays,
+      InstitutionalParams.institutionalStreakLookbackDays,
+      reason:
+          '用顯示窗（10 日）載入會把長 streak 截斷成「剛好等於窗長」，'
+          '讓「連買 9 日」與「連買 25 日」在畫面上長得一樣',
     );
   });
 }
