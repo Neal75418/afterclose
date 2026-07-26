@@ -358,4 +358,121 @@ void main() {
       expect(got, contains('S6'), reason: '第 6 名就是應該遞補上來的那一檔');
     });
   });
+
+  // 內部人轉讓：每檔只取「最大單筆」而非合計
+  //
+  // `ROW_NUMBER() OVER (PARTITION BY it.symbol ORDER BY it.transfer_shares DESC)`
+  // + `WHERE rn = 1` 等同 per-symbol MAX，其餘申報人整筆消失；外層
+  // `ORDER BY transfer_shares DESC` 也是拿這個 MAX 去跨檔排名。
+  //
+  // 實測正式 DB（全表 9 列 / 6 檔）——多筆的語意是**不同的人**，不是拆單：
+  //   4568 科際精密 07-23 三筆，皆「經理人本人」但三位不同姓名
+  //       柯承恩 100,000 / 林功穎 50,000 / 陳英毅 35,000
+  //       → 顯示 100張，實際合計 185張，低報 45.9%
+  //   2643 捷迅 07-15 兩筆：董事本人 顧城明 39,869、經理人本人 李佳慧 39,869
+  //       → 低報 50.0%
+  //
+  // 排名同樣被扭曲：2643（2 筆合計 79,738）落在 8155 博智（單筆 50,000）
+  // 之後，被 LIMIT 5 截掉而完全不出現。
+  //
+  // 區塊副標是「董監事或大股東申報轉讓股票」——公司層級語意，SUM 才對得上；
+  // docstring（:205）也只寫「有申報轉讓記錄」，沒有任何一處承諾 per-filer。
+  // 5 個既有測試全部只插一列，沒有任何測試把 MAX 釘為預期行為。
+  //
+  // 「三位經理人同日集體申報」與「一人申報」是不同強度的訊號，所以合計後
+  // 附註筆數。版面安全：值旁的股名是 Expanded + ellipsis，值變長只會擠壓
+  // 股名，不會 RenderFlex overflow。
+  group('內部人轉讓須合計而非取最大單筆', () {
+    Future<void> addTransfers(
+      String symbol,
+      List<({String who, int shares})> filings, {
+      int daysAgo = 3,
+    }) => db.insertInsiderTransfers([
+      for (final f in filings)
+        InsiderTransferCompanion.insert(
+          symbol: symbol,
+          reportDate: asOf.subtract(Duration(days: daysAgo)),
+          identity: '經理人本人',
+          name: f.who,
+          transferMethod: '信託',
+          transferShares: f.shares,
+          currentHolding: 1000000,
+        ),
+    ]);
+
+    Future<List<ChipAnomaly>> insiderRows() async {
+      final byMarket = await service.detectAnomaliesByMarket(asOf);
+      return [
+        for (final list in byMarket.values)
+          for (final a in list)
+            if (a.type == ChipAnomalyType.insiderTransfer) a,
+      ];
+    }
+
+    test('🚨 同檔多位內部人申報須合計（實測 4568：100/50/35 → 185張，非 100張）', () async {
+      await addStock('4568', '科際精密', market: 'TPEx');
+      await addTransfers('4568', [
+        (who: '柯承恩', shares: 100000),
+        (who: '林功穎', shares: 50000),
+        (who: '陳英毅', shares: 35000),
+      ]);
+
+      final rows = await insiderRows();
+
+      expect(
+        rows.single.keyValue,
+        contains('185張'),
+        reason: '顯示最大單筆等於低報 45.9%',
+      );
+    });
+
+    test('多筆時標示筆數（集體申報與單人申報是不同強度的訊號）', () async {
+      await addStock('4568', '科際精密', market: 'TPEx');
+      await addTransfers('4568', [
+        (who: '柯承恩', shares: 100000),
+        (who: '林功穎', shares: 50000),
+        (who: '陳英毅', shares: 35000),
+      ]);
+
+      expect((await insiderRows()).single.keyValue, '185張（3 筆）');
+    });
+
+    test('單筆維持原格式（不得因此改動既有 4 個格式化測試的預期）', () async {
+      await addStock('8155', '博智', market: 'TPEx');
+      await addTransfers('8155', [(who: '張義德', shares: 50000)]);
+
+      expect((await insiderRows()).single.keyValue, '50張');
+    });
+
+    test('🚨 跨檔排名依合計值（2 筆中量須勝過 1 筆小量）', () async {
+      await addStock('2643', '捷迅', market: 'TPEx');
+      await addTransfers('2643', [
+        (who: '顧城明', shares: 39869),
+        (who: '李佳慧', shares: 39869),
+      ]);
+      await addStock('8155', '博智', market: 'TPEx');
+      await addTransfers('8155', [(who: '張義德', shares: 50000)]);
+
+      final rows = await insiderRows();
+
+      expect(
+        rows.first.symbol,
+        '2643',
+        reason: '合計 79,738 > 50,000；用 MAX(39,869) 排名會讓它輸給單筆小量的 8155',
+      );
+    });
+
+    test('全部申報皆 0 股時仍走零股哨兵', () async {
+      await addStock('9003', '零股申報', market: 'TPEx');
+      await addTransfers('9003', [
+        (who: '甲', shares: 0),
+        (who: '乙', shares: 0),
+      ]);
+
+      expect(
+        (await insiderRows()).single.keyValue,
+        contains(kZeroInsiderTransfer),
+      );
+    });
+  });
 }

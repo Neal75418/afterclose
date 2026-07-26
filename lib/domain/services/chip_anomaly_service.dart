@@ -204,23 +204,28 @@ class ChipAnomalyService {
   }
 
   /// 內部人轉讓：近 [ChipAnomalyParams.insiderTransferLookbackDays] 天內有申報轉讓記錄
+  ///
+  /// 每檔一列，股數為窗內所有內部人**合計**（多位申報時 keyValue 附註筆數）。
   Future<List<ChipAnomaly>> _detectInsiderTransfers(DateTime date) async {
     try {
       final since = date.subtract(
         const Duration(days: ChipAnomalyParams.insiderTransferLookbackDays),
       );
 
+      // 一列 = 一檔公司，數字＝窗內**所有內部人合計**申報股數。
+      // 原本用 ROW_NUMBER + rn = 1 取每檔最大單筆，其餘申報人整筆消失：
+      // 實測 4568 科際精密 07-23 三位不同經理人（100k/50k/35k）只顯示 100張、
+      // 低報 45.9%；且跨檔排名也用被低估的值，2643 捷迅（2 筆合計 79,738）
+      // 因此輸給 8155 博智（單筆 50,000）而被截掉。
+      // 區塊副標「董監事或大股東申報轉讓股票」與 docstring 皆為公司層級語意。
       const query = '''
-        WITH ranked AS (
-          SELECT it.symbol, it.identity, it.transfer_shares, it.report_date,
-                 s.name, s.market,
-                 ROW_NUMBER() OVER (PARTITION BY it.symbol ORDER BY it.transfer_shares DESC) AS rn
-          FROM insider_transfer it
-          INNER JOIN stock_master s ON it.symbol = s.symbol
-          WHERE it.report_date >= ?
-        )
-        SELECT symbol, identity, transfer_shares, report_date, name, market
-        FROM ranked WHERE rn = 1
+        SELECT it.symbol, s.name, s.market,
+               SUM(it.transfer_shares) AS transfer_shares,
+               COUNT(*)                AS filings
+        FROM insider_transfer it
+        INNER JOIN stock_master s ON it.symbol = s.symbol
+        WHERE it.report_date >= ?
+        GROUP BY it.symbol, s.name, s.market
         ORDER BY transfer_shares DESC
       ''';
 
@@ -230,13 +235,14 @@ class ChipAnomalyService {
 
       return rows.map((row) {
         final shares = row.read<int>('transfer_shares');
+        final filings = row.read<int>('filings');
         return ChipAnomaly(
           type: ChipAnomalyType.insiderTransfer,
           severity: ChipSeverity.medium,
           symbol: row.read<String>('symbol'),
           stockName: row.read<String>('name'),
           market: row.read<String>('market'),
-          keyValue: _formatInsiderShares(shares),
+          keyValue: _formatInsiderShares(shares, filings: filings),
         );
       }).toList();
     } catch (e) {
@@ -493,11 +499,15 @@ String _formatSheets(double value) {
 /// - shares == 0：申報尚未確定股數，使用 [kZeroInsiderTransfer] 哨兵值
 /// - shares 1–999：不足一張，顯示 `<1張`（避免四捨五入誤判為零）
 /// - shares ≥ 1000：正常換算為張數
-String _formatInsiderShares(int shares) {
-  if (shares == 0) return kZeroInsiderTransfer;
-  if (shares < 1000) return '<1張';
-  final lots = shares ~/ 1000;
-  return '$lots張';
+String _formatInsiderShares(int shares, {int filings = 1}) {
+  final base = shares == 0
+      ? kZeroInsiderTransfer
+      : shares < 1000
+      ? '<1張'
+      : '${shares ~/ 1000}張';
+  // 多位內部人同期申報 ≠ 一人申報，筆數本身就是訊號強度的一部分。
+  // 版面安全：同列的股名是 Expanded + ellipsis，值變長只擠壓股名。
+  return filings > 1 ? '$base（$filings 筆）' : base;
 }
 
 /// 內部人轉讓「股數為零」的哨兵值
