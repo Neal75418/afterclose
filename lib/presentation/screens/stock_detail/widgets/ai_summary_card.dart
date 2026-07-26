@@ -518,7 +518,10 @@ class _SignalStrengthBar extends StatelessWidget {
         ),
         const SizedBox(width: DesignTokens.spacing6),
         Text(
-          'summary.signalStrength'.tr(),
+          // 這條進度條量的是佐證強度（_calculateStrength 的輸入全部來自
+          // confidence／匯流／有無資料，不含 daily_analysis.score）。標籤曾寫
+          // 「訊號強度」，與內文由分數推導的「訊號強度偏弱」互撞。
+          'summary.evidenceStrength'.tr(),
           style: theme.textTheme.labelSmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),

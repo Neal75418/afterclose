@@ -94,6 +94,48 @@ void main() {
     }
   });
 
+  // 頁首每個標籤各自代表一個軸，其字面不得漏進內文的分數梯度。
+  //
+  // 這條是上面那條禁詞測試的補強，起因是它沒擋住的一次迴歸：commit 6ee6f29
+  // 把 scoreNeutral 從「訊號中性」改成「訊號強度偏弱」以避開方向詞，結果撞上
+  // 進度條的標籤「訊號強度」——同一張卡上進度條寫「訊號強度 60%」、內文寫
+  // 「訊號強度偏弱」。躲掉一個碰撞換來另一個。
+  //
+  // 手寫禁詞清單擋不住這種事，因為要先想得到才寫得進去。改成**拿實際的標籤
+  // 字串本身**去比對：任何一個頁首標籤的字面出現在分數梯度裡就是撞了，不必
+  // 事先預測會撞哪個詞。
+  const headerLabelKeys = [
+    'evidenceStrength', // 進度條（實際量的是 confidence，見 _calculateStrength）
+    'confidenceHigh', 'confidenceMedium', 'confidenceLow',
+    'sentimentStrongBullish', 'sentimentBullish',
+    'sentimentNeutral', 'sentimentBearish',
+  ];
+
+  group('頁首標籤與內文不得共用字面', () {
+    for (final locale in directionWords.keys) {
+      test('🚨 $locale：分數梯度不得含任何頁首標籤的字面', () {
+        final copy = summaryCopy(locale);
+        final offenders = <String>[
+          for (final labelKey in headerLabelKeys)
+            for (final scoreKey in scoreLadderKeys)
+              if ((copy[scoreKey] as String).toLowerCase().contains(
+                (copy[labelKey] as String).toLowerCase(),
+              ))
+                '$scoreKey 含 $labelKey「${copy[labelKey]}」→ ${copy[scoreKey]}',
+        ];
+
+        expect(
+          offenders,
+          isEmpty,
+          reason:
+              '頁首標籤與內文各自代表不同的軸（方向／佐證／評分）。'
+              '共用字面時，使用者會把兩個獨立的量讀成同一件事的兩種說法，'
+              '而它們的值往往不一致（例如進度條 60% vs 內文「偏弱」）。',
+        );
+      });
+    }
+  });
+
   group('矛盾組合在正式流程中確實可達（不是紙上推導）', () {
     const service = AnalysisSummaryService();
 

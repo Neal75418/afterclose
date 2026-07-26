@@ -45,9 +45,13 @@ class AnalysisSummaryService {
     MarketStage? marketStage,
   }) {
     if (analysis == null && reasons.isEmpty) {
+      // confidence 必須明寫：省略會吃到建構子預設的 medium，讓一檔連一條訊號
+      // 都沒有的股票在畫面上標「佐證中等」。零訊號 = 佐證有限，也與
+      // _calculateConfidence 在 points = 0 時的結果一致。
       return const SummaryData(
         overallParts: [LocalizableString('summary.noSignals')],
         sentiment: SummarySentiment.neutral,
+        confidence: AnalysisConfidence.low,
       );
     }
 
