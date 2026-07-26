@@ -312,8 +312,12 @@ class ChipAnomalyService {
           WHERE mt.date <= ? AND mt.date >= ? AND mt.short_sell IS NOT NULL
         ),
         today AS (
+          -- 與 _detectInstitutionalSurge 同一個 bug class：rn = 1 是「窗內最近
+          -- 一列」，停牌股會拿停牌前最後一天冒充今日。此側目前無症狀
+          -- （2026-07-24 實測 1,993 檔當日、僅 1 檔過期），修的是同型潛伏。
           SELECT symbol, name, market, short_sell
-          FROM recent WHERE rn = 1 AND short_sell >= ${ChipAnomalyParams.shortSurgeMinTodayLots}
+          FROM recent WHERE rn = 1 AND date = ?
+            AND short_sell >= ${ChipAnomalyParams.shortSurgeMinTodayLots}
         ),
         avg5d AS (
           SELECT symbol, AVG(short_sell) AS avg_short
@@ -342,9 +346,10 @@ class ChipAnomalyService {
           .customSelect(
             query,
             variables: [
-              Variable.withDateTime(date),
-              Variable.withDateTime(dateLowerBound),
-              Variable.withDateTime(disposalLookback),
+              Variable.withDateTime(date), // recent: mt.date <= ?
+              Variable.withDateTime(dateLowerBound), // recent: mt.date >= ?
+              Variable.withDateTime(date), // today: date = ?
+              Variable.withDateTime(disposalLookback), // DISPOSAL 排除
             ],
           )
           .get();

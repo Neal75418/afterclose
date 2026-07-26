@@ -201,4 +201,77 @@ void main() {
       );
     });
   });
+
+  // 同型掃描（bug class sweep）：融券暴增用的是同一個 `rn = 1` 取區間內最近列
+  // 的寫法，同樣沒有比對目標日期。
+  //
+  // 五個 detector 掃過：法人集中買賣與融券暴增兩者是 `date DESC` + 區間（同型）；
+  // 內部人轉讓的 rn 依 `transfer_shares DESC`（刻意取窗內最大，非日期語意）；
+  // 高質押率與外資接近上限不收 date 參數（定期揭露非每日事件）。
+  //
+  // 實測 2026-07-24 正式 DB：融券暴增這側目前**只有 1 檔**最新列非當日
+  // （1,993 檔當日），面板上顯示的 5 檔全部是 7/24 —— 也就是說這裡是**同型
+  // 潛伏、目前無症狀**。仍然要修：它與剛在法人集中買賣上實際發作的
+  // （6806 森崴能源落後 32 天卻佔據面板首位）是同一個 bug class。
+  //
+  // 不在此加流動性閘門：融券側已有三道絕對量地板
+  // （shortSurgeMinTodayLots 50 / shortSurgeMinAvgLots 10 / 高量豁免 100），
+  // 實測也沒有雜訊佔位的現象。
+  group('同型：融券暴增', () {
+    Future<void> addMargin(
+      String symbol, {
+      required double baseline,
+      required double todayShort,
+      DateTime? lastDate,
+    }) async {
+      final last = lastDate ?? asOf;
+      await db.insertMarginTradingData([
+        MarginTradingCompanion.insert(
+          symbol: symbol,
+          date: last,
+          shortSell: Value(todayShort),
+        ),
+        for (var i = 1; i <= 6; i++)
+          MarginTradingCompanion.insert(
+            symbol: symbol,
+            date: last.subtract(Duration(days: i)),
+            shortSell: Value(baseline),
+          ),
+      ]);
+    }
+
+    Future<List<String>> shortSurgeSymbols() async {
+      final byMarket = await service.detectAnomaliesByMarket(asOf);
+      return [
+        for (final list in byMarket.values)
+          for (final a in list)
+            if (a.type == ChipAnomalyType.shortSurge) a.symbol,
+      ];
+    }
+
+    test('🚨 最新融券列早於資料日者不列入', () async {
+      await addStock('9001', '停牌股');
+      await addMargin(
+        '9001',
+        baseline: 20,
+        todayShort: 200,
+        // 5 天前：在 shortSurgeLookbackDays(15) 窗內但非當日。
+        // （20 天前會整批落在窗外被區間條件擋掉 → 測試假綠）
+        lastDate: asOf.subtract(const Duration(days: 5)),
+      );
+
+      expect(
+        await shortSurgeSymbols(),
+        isNot(contains('9001')),
+        reason: '與法人集中買賣同一個 bug class：取「最近一筆」而非「當日那筆」',
+      );
+    });
+
+    test('當日有列者照常列入（確認沒把功能關掉）', () async {
+      await addStock('9002', '正常股');
+      await addMargin('9002', baseline: 20, todayShort: 200);
+
+      expect(await shortSurgeSymbols(), contains('9002'));
+    });
+  });
 }
