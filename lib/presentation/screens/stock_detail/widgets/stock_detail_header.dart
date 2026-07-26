@@ -87,7 +87,19 @@ class StockHeaderData {
       if (!isEtf && s.fundamentals.epsHistory.isEmpty) 'stockDetail.domain.eps',
       if (!isEtf && s.fundamentals.latestPER == null)
         'stockDetail.domain.valuation',
-      if (s.chip.holdingDistribution.isEmpty) 'stockDetail.domain.distribution',
+      // 籌碼分佈是**延遲載入**的：loadChipData() 的唯一呼叫點是籌碼分頁，
+      // 使用者沒開過那頁時此清單本來就是空的。上方的 isLoadingChip 守門
+      // 擋不住——「從未開始載入」時該旗標同樣是 false。
+      //
+      // 實機（2026-07-26，2357）：摘要頁常駐「資料缺漏：籌碼分佈」，但 DB
+      // 有 45 列，且全市場 2,129 檔有價格的股票**沒有任何一檔缺這份資料**。
+      // 一個對每檔股票都出現的假警告會訓練使用者忽略警告，真的缺資料時
+      // 反而看不見。
+      //
+      // chipStrength 是 loadChipData 自身的「已載入」哨兵，此處同源使用：
+      // 未載入 = 未知，不是缺漏。
+      if (s.chip.chipStrength != null && s.chip.holdingDistribution.isEmpty)
+        'stockDetail.domain.distribution',
     ];
   }
 
