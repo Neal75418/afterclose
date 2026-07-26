@@ -172,6 +172,111 @@ PK 為 `(symbol, date)` + `insertOrReplace`，快照本來就會累積，只是�
 
 ---
 
+## 規則命中率顯示（同日追加調查）
+
+### 為什麼 `daily_reason` 只有 8 天
+
+不是 app 還年輕。`daily_price` 回溯至 2025-06-10（275 個交易日），但
+`daily_reason` 與 `daily_analysis` 都**恰好**始於 2026-07-15 —— 與 live DB
+指紋字串 `stage5b-news-mention-daily-2026-07-15` 同一天。
+
+該次 fingerprint bump 清掉了它們。價格活下來是因為 `HistoricalPriceSyncer`
+會從 API 回補；**`daily_reason` / `daily_analysis` 沒有任何回補機制**
+（`analysis_dao` 只有 per-date 的 `clearReasonsForDate`，`update/` 下無回補
+路徑），只能往前累積，清掉即永久損失。
+
+**影響**：`rule_accuracy` 的唯一資料來源只有 8 天；5D 前瞻只有最早三天的
+觸發有結果。任何以此為基礎的統計都不可信。
+
+### 已修：信心度判準改看「觸發日數」— `f8de299`
+
+`CalibrationThresholds.minDistinctDates` 的 docstring 早已寫明「pooled n 因
+同日橫斷面相關 + 持有窗重疊是偽重複，有效樣本量級是觸發日數」，但該認知
+只落實在 calibration 決策層的 clustered t-stat，顯示層仍以 pooled
+`triggerCount` 判斷。實測 `CONCENTRATION_HIGH` 的 761 筆觸發全部來自
+**8 個交易日**，遠超門檻 30 → 以「完全有信心」的樣子顯示。
+
+摘要改為一律標示「樣本 N 筆 / D 個觸發日」，信心度註記改看日數。
+
+### 已修：加欄不得 bump fingerprint — `1eebd34`
+
+`f8de299` 為了新增欄位而 bump `appSchemaFingerprint`。該機制 drop 全部
+**非 whitelist** 表重建，而 `daily_price` 不在 whitelist。實測 live DB 儲存
+的指紋仍是舊值 → wipe 已 armed，只差下次啟動。後果不只價格（275 天、
+565,570 列、Phase 0 回補約需 19 次每日更新），還包括**無法回補**的
+`daily_reason`。
+
+改走 `_ensureDealerSelfNetColumn` 式的 idempotent `PRAGMA table_info` +
+`ALTER TABLE ADD COLUMN`，並加守門測試。
+
+### 已修：移除無法佐證的隨機基準 — `ca18a90`
+
+同日稍早的 P1-9（`c0c43a2`）讓摘要顯示「命中率 X%（隨機基準 35%，Ypp）」。
+實測後發現比較的兩端來自完全不同的市場環境：
+
+| | 值 |
+|:---|---:|
+| 寫死基準（另一 dev DB、全期） | 34.61% |
+| 本機全期實測 | 29.23% |
+| **實際量測窗（07-15~17）實測** | **19.04%** |
+| 逐日基準全期範圍 / 標準差 | 5.79%~66.20% / 13.06pp |
+
+量測窗之後緊接 2026-07-17 全市場單日 −3.95%。後果是方向性的：以靜態基準
+計，14 條有樣本的規則中 13 條顯示為負；以同窗基準計 11 條為正 ——
+**10 條正負號翻轉**。顯示方向相反的比較比不顯示更糟，故移除。
+
+`successProbabilityBaselines` / `defaultBaselineProbability` **未刪**：
+`tool/recalibrate.dart` 的 absolute 路徑仍以它們為 H0。
+
+### 未動：超額口徑與資產管線（有證據的待辦）
+
+正解已存在於離線工具，只是沒接到 app：
+
+- `tool/calibration.db`（1.6 GB）：`daily_price` 1,468 天（2017-05-11 起）、
+  `daily_institutional` 1,463 天、`day_trading` 1,531,334 列 / 1,218 檔 /
+  1,531 天
+- 已隨 app 出貨的 `assets/rule_scores_calibrated_short.json` 每條規則帶
+  `hit_rate` / `avg_return` / `samples` / `t_stat`，頂層 `backtest` 帶
+  `return_mode: excess`、`baseline_hit_rate: 0.4235`、
+  `stats_method: date_clustered_t_v1`
+- 出自 2026-07-13 的完整 run：2,583 檔、**2,937,329 firings**、44 條規則、
+  12m59s，log 的 `Universe baseline hit: 5D=0.4235` 與資產內數值吻合
+- Look-ahead 防護齊全（規則輸入 `prices.sublist(0, i+1)`、entry 用隔日
+  open、營收與財報依**公布日**過濾）
+- app 目前只解析其中的 `score` 欄位，其餘全部丟棄
+
+**但涵蓋率有缺口**，且缺的正是籌碼與基本面：
+
+| 規則群 | 條數 | 狀態 |
+|:---|---:|:---|
+| 技術面 + 法人連續 | 41 | 有深度統計 |
+| 當沖 | 2 | 資料在（1,531 天），缺接線 |
+| 籌碼 / 警示 / 董監 | 10 | calibration.db 無資料 |
+| 基本面 + 新聞 | 9 | 同上 |
+
+兩個根因：
+
+1. **`tool/replay_calibrator.dart` 建 context 時 `marketData: null`**，
+   註解寫「4 condition-day-only rules 不會 fire」，**實際是 12 條**
+   （`concentrationHigh`、`dayTradingHigh/Extreme`、
+   `foreignShareholding*`、`foreignExodus`、`foreignConcentrationWarning`、
+   `highPledgeRatio`、`insiderSellingStreak`、`insiderSignificantBuying`、
+   `tradingWarning*`）—— 註解低報 3 倍。
+2. **`calibration.db` 的對應資料未回補**：`shareholding` / `trading_warning` /
+   `insider_holding` / `holding_distribution` 皆 **0 列**；
+   `stock_valuation` 1,452 列但只有 **3 檔**、`financial_data` 343 列 /
+   **3 檔**、`news_item` **0 筆**。
+
+也就是說：即使修好 (1) 的接線，12 條裡也只有當沖那 2 條真的有資料。其餘
+須先做資料回補（API 配額專案）。
+
+**建議順序**：待 `daily_reason` 累積至 ≥ `minDistinctDates`（30）個觸發日後，
+再評估是否把資產統計接進顯示層；接之前須先決定 41 條有深度統計、19 條只有
+淺資料時，同一畫面如何呈現兩種可信度（目前的「樣本 N 筆 / D 個觸發日」
+揭露已可承擔此角色）。
+
+---
+
 ## 方法論註記
 
 本輪所有修復均遵循：
@@ -186,3 +291,13 @@ PK 為 `(symbol, date)` + `insertOrReplace`，快照本來就會累積，只是�
    `isTradingDay(DateTime.now())` 早退而恆為假紅。
 3. **量測本身也要反測**。得到「影響為 0」時，先確認不是機制沒生效造成的
    假零（例：補零實際改動 251 檔 `prevAvg`，證明機制有動、結果才可信）。
+4. **改 schema 前先算 wipe 的代價**。`appSchemaFingerprint` bump 會 drop 全部
+   非 whitelist 表；`daily_price` 不在 whitelist，而 `daily_reason` 連回補
+   路徑都沒有。純附加欄位一律走 `_ensureDealerSelfNetColumn` 式的 idempotent
+   `ALTER TABLE ADD COLUMN`。本輪曾為一個欄位 armed 一次全量 wipe。
+5. **顯示一個方向相反的比較，比不顯示更糟**。基準與量測必須來自同一市場
+   環境；做不到就不要宣稱基準，只給裸數字加樣本標示。
+6. **先查專案既有做法再設計**。本輪三次提案被既有實作取代（matched baseline
+   → 超額模式已存在；自訂最小 universe → `kMinSymbolsForCompleteTradingDay`
+   已存在；自訂日數門檻 → `minDistinctDates` 已存在）。註解與常數 docstring
+   往往已寫著正解。
