@@ -1184,4 +1184,63 @@ void main() {
       expect(overall.namedArgs['change'], startsWith('+'));
     });
   });
+  // ====================================================================
+  // 輔助數據不得與關鍵訊號／風險提示重複同一句（2026-07-26 實機發現）
+  //
+  // 實機（1810 和成）：「本益比僅 7.6 倍，估值偏低。」在關鍵訊號與輔助
+  // 數據各出現一次，一字不差——同一個 i18n key（summary.peUndervalued）
+  // 被 `_buildSupportingData:451` 與規則映射 `:891` 各用一次。
+  //
+  // 與先前修的「連續買超」不同：那是兩個**不同的 key** 講同一件事、且
+  // 數字互相矛盾；這裡是**同一個 key** 出現兩次。前者靠 streakStatedByRule
+  // 個別處理，後者需要通用去重——否則每加一條規則就要再補一次特例。
+  //
+  // 若兩處引數不一致（來源不同：規則 evidence vs latestPER），重複顯示
+  // 會從冗餘升級為矛盾。一律保留關鍵訊號那份（已排序、已計分）。
+  // ====================================================================
+  test('🚨 輔助數據不得重複關鍵訊號已陳述的同一 key', () {
+    final result = service.generate(
+      analysis: createTestAnalysis(trendState: 'UP', score: 20),
+      reasons: [
+        createTestReason(
+          reasonType: 'PE_UNDERVALUED',
+          evidenceJson: '{"pe":7.6}',
+          ruleScore: 15,
+        ),
+      ],
+      latestPrice: null,
+      priceChange: 0.5,
+      institutionalHistory: [],
+      revenueHistory: [],
+      latestPER: createTestPER(per: 7.6),
+      horizon: Horizon.short,
+    );
+
+    final keys = result.keySignals.map((s) => s.key).toSet();
+    expect(keys, contains('summary.peUndervalued'), reason: '關鍵訊號應保留（已排序、已計分）');
+    expect(
+      result.supportingData.map((s) => s.key),
+      isNot(contains('summary.peUndervalued')),
+      reason: '同一句在同一張卡出現兩次是雜訊；引數若不一致更會變成矛盾',
+    );
+  });
+
+  test('關鍵訊號未提及時輔助數據照常陳述', () {
+    final result = service.generate(
+      analysis: createTestAnalysis(trendState: 'UP', score: 20),
+      reasons: [createTestReason(reasonType: 'TECH_BREAKOUT', ruleScore: 15)],
+      latestPrice: null,
+      priceChange: 0.5,
+      institutionalHistory: [],
+      revenueHistory: [],
+      latestPER: createTestPER(per: 7.6),
+      horizon: Horizon.short,
+    );
+
+    expect(
+      result.supportingData.map((s) => s.key),
+      contains('summary.peUndervalued'),
+      reason: '規則沒觸發時，輔助數據仍是這項資訊的唯一來源',
+    );
+  });
 }

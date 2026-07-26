@@ -127,11 +127,31 @@ class AnalysisSummaryService {
       horizon: horizon,
     );
 
+    // 輔助數據去重：同一句已在關鍵訊號／風險提示出現過就不再重複
+    // （2026-07-26 實機發現，1810 和成）。
+    //
+    // 「本益比僅 7.6 倍，估值偏低。」在關鍵訊號與輔助數據各出現一次，
+    // 一字不差——同一個 i18n key 被 `_buildSupportingData` 與規則映射
+    // 各用一次。若兩處引數不一致（來源不同：規則 evidence vs latestPER），
+    // 重複顯示會從冗餘升級為矛盾。一律保留關鍵訊號那份（已排序、已計分）。
+    //
+    // 與 streakStatedByRule 互補而非重疊：那個處理的是**不同 key 講同一
+    // 件事**（institutionalBuyStreakDays vs institutionalBuyTrend），
+    // key 比對抓不到；此處處理的是同一個 key 出現兩次。
+    final statedKeys = {
+      for (final k in keySignals) k.key,
+      for (final r in riskFactors) r.key,
+    };
+    final dedupedSupporting = [
+      for (final d in supporting)
+        if (!statedKeys.contains(d.key)) d,
+    ];
+
     return SummaryData(
       overallParts: overallParts,
       keySignals: keySignals,
       riskFactors: riskFactors,
-      supportingData: supporting,
+      supportingData: dedupedSupporting,
       sentiment: sentiment,
       confidence: confidence,
       hasConflict: hasConflict,
