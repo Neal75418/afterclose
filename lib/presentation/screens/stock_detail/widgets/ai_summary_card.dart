@@ -237,9 +237,6 @@ class _AiSummaryCardState extends ConsumerState<AiSummaryCard> {
                 ),
               ],
             ),
-            // 訊號強度條
-            const SizedBox(height: DesignTokens.spacing8),
-            _SignalStrengthBar(summary: summary),
           ],
         ),
       ),
@@ -490,109 +487,6 @@ class _ActionChip extends StatelessWidget {
       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
       visualDensity: VisualDensity.compact,
     );
-  }
-}
-
-/// 訊號強度條
-///
-/// 根據 confluence count、confidence、有無衝突計算整體訊號強度
-class _SignalStrengthBar extends StatelessWidget {
-  const _SignalStrengthBar({required this.summary});
-
-  final StockSummary summary;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    // 計算訊號強度（0.0 ~ 1.0）
-    final strength = _calculateStrength();
-    final strengthColor = _getStrengthColor(strength, theme.brightness);
-
-    return Row(
-      children: [
-        Icon(
-          Icons.signal_cellular_alt,
-          size: 14,
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
-        const SizedBox(width: DesignTokens.spacing6),
-        Text(
-          // 這條進度條量的是佐證強度（_calculateStrength 的輸入全部來自
-          // confidence／匯流／有無資料，不含 daily_analysis.score）。標籤曾寫
-          // 「訊號強度」，與內文由分數推導的「訊號強度偏弱」互撞。
-          'summary.evidenceStrength'.tr(),
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(width: DesignTokens.spacing8),
-        Expanded(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(2),
-            child: LinearProgressIndicator(
-              value: strength,
-              minHeight: 4,
-              backgroundColor: theme.colorScheme.surfaceContainerHighest,
-              valueColor: AlwaysStoppedAnimation<Color>(strengthColor),
-            ),
-          ),
-        ),
-        const SizedBox(width: DesignTokens.spacing8),
-        Text(
-          '${(strength * 100).toInt()}%',
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: strengthColor,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// 計算訊號強度
-  ///
-  /// 基於以下因素：
-  /// - 信心度（high=40%, medium=25%, low=10%）
-  /// - 匯流數量（每個 +10%，最多 30%）
-  /// - 衝突（-20%）
-  /// - 有訊號或風險（+10%）
-  /// - 有輔助數據（+10%）
-  double _calculateStrength() {
-    var strength = 0.0;
-
-    // 信心度基礎分
-    strength += switch (summary.confidence) {
-      AnalysisConfidence.high => 0.40,
-      AnalysisConfidence.medium => 0.25,
-      AnalysisConfidence.low => 0.10,
-    };
-
-    // 匯流加成（每個 10%，最多 30%）
-    strength += (summary.confluenceCount * 0.10).clamp(0.0, 0.30);
-
-    // 有訊號加成
-    if (summary.hasSignals || summary.hasRisks) {
-      strength += 0.10;
-    }
-
-    // 衝突扣減
-    if (summary.hasConflict) {
-      strength -= 0.20;
-    }
-
-    // 有輔助數據加成
-    if (summary.hasSupportingData) {
-      strength += 0.10;
-    }
-
-    return strength.clamp(0.0, 1.0);
-  }
-
-  Color _getStrengthColor(double strength, Brightness brightness) {
-    if (strength >= 0.7) return AppTheme.upColor;
-    if (strength >= 0.4) return AppTheme.warningColor;
-    return AppTheme.getFlatColor(brightness);
   }
 }
 

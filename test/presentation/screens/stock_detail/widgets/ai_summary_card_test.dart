@@ -172,7 +172,25 @@ void main() {
       expect(find.byIcon(Icons.auto_awesome), findsOneWidget);
     });
 
-    testWidgets('shows signal strength bar', (tester) async {
+    // 訊號強度條已移除（2026-07-26）。四個獨立理由：
+    //
+    // 1. 與 confidence 徽章同軸重複——_calculateStrength 的五個加項中，
+    //    hasSignals／hasSupportingData 幾乎恆真、hasConflict 罕見、
+    //    confluenceCount 在 156 檔中有 149 檔為 0，於是 95.5% 的股票條長
+    //    就是 confBase + 0.20，是三級徽章的算術改寫。
+    // 2. 假精度——實際只有 5 種可達值 {20,30,44,60,70}，90.4% 擠在兩格，
+    //    卻渲染成連續進度條並標出精確百分比。
+    // 3. 九成塗警示色——_getStrengthColor 的 [0.4,0.7) 區間是 warningColor，
+    //    44 與 60 都落在裡面。對每檔股票都出現的警示會訓練使用者忽略警示
+    //    （與 missing_domains_test 記錄的假「資料缺漏」是同一個病）。
+    // 4. 挪用股價專屬色——≥0.7 走 AppTheme.upColor，而台股紅＝漲。一檔
+    //    偏空但佐證充足的股票會拿到紅色條。CLAUDE.md 的「紅綠專屬股價」
+    //    在此被違反，且 semantic_colors_test 守的是色值與對比、不守用途。
+    //
+    // 移除不損失資訊：條長唯一獨立於徽章的輸入是匯流，而有匯流時
+    // summary.confluenceOverall 已經取代整句開場白（analysis_summary_service
+    // :214-227），匯流本來就是內文的頭條。
+    testWidgets('🚨 不再渲染訊號強度條（與 confidence 徽章同軸且色彩誤導）', (tester) async {
       widenViewport(tester);
       final state = const StockDetailState().copyWith(
         aiSummary: bullishSummary,
@@ -180,8 +198,8 @@ void main() {
       await tester.pumpWidget(buildTestWidget(state));
       await tester.pump();
 
-      expect(find.byIcon(Icons.signal_cellular_alt), findsOneWidget);
-      expect(find.byType(LinearProgressIndicator), findsOneWidget);
+      expect(find.byIcon(Icons.signal_cellular_alt), findsNothing);
+      expect(find.byType(LinearProgressIndicator), findsNothing);
     });
 
     testWidgets('shows action chips', (tester) async {

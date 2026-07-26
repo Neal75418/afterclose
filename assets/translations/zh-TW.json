@@ -1179,7 +1179,6 @@
     "confidenceHigh": "佐證充足",
     "confidenceMedium": "佐證中等",
     "confidenceLow": "佐證有限",
-    "evidenceStrength": "佐證強度",
     "ruleAccuracy": "規則準確度",
     "priceVolumeWeakRally": "出現價漲量縮警示，漲勢可能無力。",
     "pullbackToMa20": "強勢股健康回檔至月線附近（距 {distance}%），回檔進場觀察點",

@@ -1179,7 +1179,6 @@
     "confidenceHigh": "Well-supported",
     "confidenceMedium": "Moderate",
     "confidenceLow": "Limited",
-    "evidenceStrength": "Evidence Strength",
     "ruleAccuracy": "Rule Accuracy",
     "priceVolumeWeakRally": "Weak rally signal: price up with declining volume.",
     "pullbackToMa20": "Healthy pullback to MA20 ({distance}% away) — pullback entry watch",

@@ -105,10 +105,13 @@ void main() {
   // 字串本身**去比對：任何一個頁首標籤的字面出現在分數梯度裡就是撞了，不必
   // 事先預測會撞哪個詞。
   const headerLabelKeys = [
-    'evidenceStrength', // 進度條（實際量的是 confidence，見 _calculateStrength）
-    'confidenceHigh', 'confidenceMedium', 'confidenceLow',
-    'sentimentStrongBullish', 'sentimentBullish',
-    'sentimentNeutral', 'sentimentBearish',
+    'confidenceHigh',
+    'confidenceMedium',
+    'confidenceLow',
+    'sentimentStrongBullish',
+    'sentimentBullish',
+    'sentimentNeutral',
+    'sentimentBearish',
   ];
 
   group('頁首標籤與內文不得共用字面', () {
