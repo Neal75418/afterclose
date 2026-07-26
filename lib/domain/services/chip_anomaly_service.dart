@@ -390,8 +390,11 @@ class ChipAnomalyService {
           WHERE di.date <= ? AND di.date >= ?
         ),
         today AS (
+          -- 必須是「當日那筆」而非「最近那筆」：停牌股的 rn = 1 會是停牌前
+          -- 最後一個交易日，被當成今日訊號（實測 6806 森崴能源落後 32 天，
+          -- 卻排在全域第 3、佔據面板首位，而標題寫的是「今日偵測到」）
           SELECT symbol, name, market, total_net
-          FROM recent WHERE rn = 1 AND ABS(total_net) > 0
+          FROM recent WHERE rn = 1 AND ABS(total_net) > 0 AND date = ?
         ),
         avg30d AS (
           SELECT symbol, AVG(ABS(total_net)) AS avg_abs_net
@@ -410,34 +413,60 @@ class ChipAnomalyService {
             WHERE warning_type = 'DISPOSAL' AND date >= ?
           )
         ORDER BY surge_ratio DESC
-        LIMIT ${ChipAnomalyParams.maxResultsPerType}
       ''';
 
       final rows = await _db
           .customSelect(
             query,
             variables: [
-              Variable.withDateTime(date),
-              Variable.withDateTime(dateLowerBound),
-              Variable.withDateTime(disposalLookback),
+              Variable.withDateTime(date), // recent: di.date <= ?
+              Variable.withDateTime(dateLowerBound), // recent: di.date >= ?
+              Variable.withDateTime(date), // today: date = ?
+              Variable.withDateTime(disposalLookback), // DISPOSAL 排除
             ],
           )
           .get();
 
-      return rows.map((row) {
-        final totalNet = row.read<double>('total_net');
-        final isBuy = totalNet > 0;
-        // DB 以「股」為單位，除以 1000 轉換為「張」後格式化
-        final formatted = _formatSheets(totalNet.abs() / 1000);
-        return ChipAnomaly(
-          type: ChipAnomalyType.institutionalSurge,
-          severity: ChipSeverity.high,
-          symbol: row.read<String>('symbol'),
-          stockName: row.read<String>('name'),
-          market: row.read<String>('market'),
-          keyValue: '${isBuy ? '+' : '-'}$formatted',
-        );
-      }).toList();
+      // 流動性閘門——與 CandidateSelector 同一組常數與慣例（3,000 萬 / 20 日
+      // 中位數，2026-07-11 實測校準）。純比值判準的分母對法人幾乎不參與的
+      // 股票趨近於零，任何微小成交都破表：實測 5523 豐謙當日 13 張、均量
+      // 1.6 張 → 8.1 倍過關，而它每天只成交約 130 萬元。
+      //
+      // **必須在取前 N 之前過濾**：maxResultsPerType 是全域上限且依倍數排序，
+      // 若先取前 N 再過濾，名單只會變短、真訊號永遠遞補不上來（實測 8 個顯示
+      // 位置有 6 個不可交易，而中位成交 25.66 億的華星光排第 9）。
+      final medianTurnover = await _db.getMedianTurnoverBatch(
+        endDate: date,
+        windowDays: RuleParams.liquidityMedianWindowDays,
+        minDataDays: RuleParams.liquidityMinDataDays,
+      );
+      final watchlist = (await _db.getWatchlist()).map((w) => w.symbol).toSet();
+      bool isTradeable(String symbol) {
+        if (watchlist.contains(symbol)) return true; // 自選豁免：使用者主動追蹤
+        final median = medianTurnover[symbol];
+        // map 內沒有 = 有效天數不足、無法判定 → permissive 放行
+        return median == null ||
+            median >= RuleParams.liquidityMinMedianTurnoverNtd;
+      }
+
+      return rows
+          .where((row) => isTradeable(row.read<String>('symbol')))
+          .take(ChipAnomalyParams.maxResultsPerType)
+          .map((row) {
+            final totalNet = row.read<double>('total_net');
+            final isBuy = totalNet > 0;
+            // DB 以「股」為單位，除以 1000 轉換為「張」後格式化
+            final formatted = _formatSheets(totalNet.abs() / 1000);
+            return ChipAnomaly(
+              type: ChipAnomalyType.institutionalSurge,
+              severity: ChipSeverity.high,
+              symbol: row.read<String>('symbol'),
+              stockName: row.read<String>('name'),
+              market: row.read<String>('market'),
+              keyValue: '${isBuy ? '+' : '-'}$formatted',
+            );
+          })
+          .toList();
     } catch (e) {
       AppLogger.warning(_tag, '偵測法人集中買賣失敗', e);
       return [];
