@@ -150,6 +150,15 @@ class RuleAccuracy extends Table {
   /// 平均報酬率（%）
   RealColumn get avgReturn => real().withDefault(const Constant(0))();
 
+  /// 觸發「日」數（distinct 觸發日期）
+  ///
+  /// 有效樣本量級是這個值，不是 [triggerCount]。同一天觸發的數十檔股票
+  /// 幾乎共用同一個市場因子（實測 2026-07-17 全市場單日 −3.95%），
+  /// 加上持有窗重疊，pooled 筆數是偽重複。
+  /// 判準與 calibration 決策層的 [CalibrationThresholds.minDistinctDates]
+  /// 同源 —— 該處註解早已寫明此事，只是未擴散到 app 內的顯示層。
+  IntColumn get distinctDates => integer().withDefault(const Constant(0))();
+
   /// 最後更新時間
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 

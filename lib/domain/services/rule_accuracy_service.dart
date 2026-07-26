@@ -335,7 +335,7 @@ class RuleAccuracyService {
         ruleStats
             .putIfAbsent(reason.reasonType, () => <int, _StatsAccumulator>{})
             .putIfAbsent(period, _StatsAccumulator.new)
-            .add(returnRate, isSuccess);
+            .add(returnRate, isSuccess, entryDate);
       }
     }
 
@@ -379,6 +379,7 @@ class RuleAccuracyService {
                   triggerCount: Value(acc.count),
                   successCount: Value(acc.successCount),
                   avgReturn: Value(acc.avgReturnPct),
+                  distinctDates: Value(acc.distinctDates),
                 ),
               );
         }
@@ -419,6 +420,7 @@ class RuleAccuracyService {
       hitRate: hitRate,
       avgReturn: result.avgReturn,
       triggerCount: result.triggerCount,
+      distinctDates: result.distinctDates,
     );
   }
 
@@ -467,12 +469,21 @@ class RuleAccuracyService {
       stats.avgReturn,
       decimals: 1,
     );
+    // 樣本一律標示「筆數 / 觸發日數」。有效樣本量級是觸發日數而非 pooled
+    // 筆數 —— 同日觸發的數十檔幾乎共用同一個市場因子（實測 2026-07-17
+    // 全市場單日 −3.95%），加上持有窗重疊，pooled 筆數是偽重複。
+    // 此認知早已寫在 CalibrationThresholds.minDistinctDates 的註解裡，
+    // 但只落實於 calibration 決策層的 clustered t-stat，顯示層仍以 pooled
+    // 筆數判斷信心度：實測 CONCENTRATION_HIGH 761 筆全來自 8 個交易日，
+    // 遠超門檻 30 卻以「完全有信心」的樣子呈現。
     final summary =
         '命中率 $hitRateStr%（隨機基準 $baselineStr%，${liftStr}pp）'
-        '，平均 $holdingDays 日報酬 $returnStr';
+        '，平均 $holdingDays 日報酬 $returnStr'
+        '（樣本 ${stats.triggerCount} 筆 / ${stats.distinctDates} 個觸發日）';
 
-    if (stats.triggerCount < CalibrationThresholds.sampleSizeCutThreshold) {
-      return '$summary（樣本數 ${stats.triggerCount} 筆，信心度較低）';
+    if (stats.distinctDates < CalibrationThresholds.minDistinctDates ||
+        stats.triggerCount < CalibrationThresholds.sampleSizeCutThreshold) {
+      return '$summary，信心度較低';
     }
 
     return summary;
@@ -490,12 +501,19 @@ class RuleStats {
     required this.hitRate,
     required this.avgReturn,
     required this.triggerCount,
+    this.distinctDates = 0,
   });
 
   final String ruleId;
   final double hitRate;
   final double avgReturn;
+
+  /// pooled 觸發筆數 —— **不是**有效樣本量級，見 [distinctDates]
   final int triggerCount;
+
+  /// 觸發「日」數：有效樣本量級（同日橫斷面相關 + 持有窗重疊使 pooled
+  /// 筆數成為偽重複，見 CalibrationThresholds.minDistinctDates）
+  final int distinctDates;
 }
 
 /// Per-(ruleId, period) 統計累加器
@@ -507,11 +525,18 @@ class _StatsAccumulator {
   int successCount = 0;
   double _sumReturn = 0.0;
 
-  void add(double returnRate, bool success) {
+  /// 觸發日集合 —— 有效樣本量級。同日觸發的數十檔幾乎共用同一個市場
+  /// 因子，pooled [count] 是偽重複（見 CalibrationThresholds.minDistinctDates）。
+  final Set<DateTime> _dates = <DateTime>{};
+
+  void add(double returnRate, bool success, DateTime entryDate) {
     count++;
     if (success) successCount++;
     _sumReturn += returnRate;
+    _dates.add(entryDate);
   }
+
+  int get distinctDates => _dates.length;
 
   double get avgReturnPct => count > 0 ? _sumReturn / count : 0.0;
 }

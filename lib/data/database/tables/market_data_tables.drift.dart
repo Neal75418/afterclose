@@ -5138,14 +5138,10 @@ class DayTradingEntry extends i0.DataClass
   /// 交易日期
   final DateTime date;
 
-  /// 當沖買進量/金額
-  ///
-  /// 註：TWSE API 提供金額（元），FinMind 提供股數
+  /// 當沖買進金額（元，TWSE TWTB4U）
   final double? buyVolume;
 
-  /// 當沖賣出量/金額
-  ///
-  /// 註：TWSE API 提供金額（元），FinMind 提供股數
+  /// 當沖賣出金額（元，TWSE TWTB4U）
   final double? sellVolume;
 
   /// 當沖比例（%）
@@ -5616,7 +5612,7 @@ class FinancialDataEntry extends i0.DataClass
   /// 報表類型：INCOME、BALANCE、CASHFLOW
   final String statementType;
 
-  /// 資料項目（如 Revenue、NetIncome、TotalAssets）
+  /// 資料項目（如 Revenue、IncomeAfterTaxes、TotalAssets——⚠️ NetIncome 是 0 筆的幻影 key，見 financial_data_dao）
   final String dataType;
 
   /// 數值（千元）

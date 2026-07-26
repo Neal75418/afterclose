@@ -991,6 +991,50 @@ void main() {
   // getRuleStats / getRuleSummaryText read-path
   // ========================================================================
 
+  group('觸發日數統計（clustered 有效樣本）', () {
+    // 讀取路徑的測試直接塞 rule_accuracy 列，碰不到累加器 —— mutation 實測：
+    // 把 `_dates.add(entryDate)` 整行刪掉，讀取路徑測試仍全綠。此 group
+    // 走真實計算路徑（seedReason → updateRuleAccuracyStats）補上該缺口。
+    test('🚨 同日多檔觸發只算一個觸發日', () async {
+      final entry = DateTime.utc(2026, 1, 5);
+      for (final symbol in ['2330', '2317', '2454']) {
+        await seedReason(
+          symbol: symbol,
+          entryDate: entry,
+          reasonType: 'TECH_BREAKOUT',
+          rank: 0,
+          periodDays: 5,
+          returnRatePct: 4.0,
+        );
+      }
+
+      await service.updateRuleAccuracyStats();
+      final stats = await service.getRuleStats('TECH_BREAKOUT', period: '5D');
+
+      expect(stats!.triggerCount, 3);
+      expect(stats.distinctDates, 1, reason: '三檔同日觸發共用同一個市場因子，有效樣本是 1 天不是 3 筆');
+    });
+
+    test('不同日觸發各自計入', () async {
+      for (final day in [5, 6, 7]) {
+        await seedReason(
+          symbol: '2330',
+          entryDate: DateTime.utc(2026, 1, day),
+          reasonType: 'TECH_BREAKOUT',
+          rank: 0,
+          periodDays: 5,
+          returnRatePct: 4.0,
+        );
+      }
+
+      await service.updateRuleAccuracyStats();
+      final stats = await service.getRuleStats('TECH_BREAKOUT', period: '5D');
+
+      expect(stats!.triggerCount, 3);
+      expect(stats.distinctDates, 3);
+    });
+  });
+
   group('getRuleStats / getRuleSummaryText', () {
     test('getRuleStats returns null for unknown rule', () async {
       final stats = await service.getRuleStats('NO_SUCH_RULE', period: '5D');
@@ -1015,6 +1059,66 @@ void main() {
       expect(stats!.hitRate, closeTo(60.0, 0.001));
       expect(stats.avgReturn, closeTo(2.3, 0.001));
       expect(stats.triggerCount, 10);
+    });
+
+    // ====================================================================
+    // 有效樣本是「觸發日」數，不是 pooled 觸發筆數
+    //
+    // CalibrationThresholds.minDistinctDates 的 docstring 已寫明：
+    // 「pooled n 因同日橫斷面相關 + 持有窗重疊是偽重複，有效樣本量級是
+    // 觸發日數」。但該認知只落實在 calibration 決策層（clustered t-stat），
+    // app 內的顯示層仍以 pooled triggerCount 對 sampleSizeCutThreshold
+    // 判斷信心度。
+    //
+    // 實測後果（production DB）：CONCENTRATION_HIGH 761 筆觸發全部來自
+    // **8 個交易日**，其中 5D 前瞻報酬只有最早三天的觸發有結果，而那三天
+    // 之後緊接著 7/17 單日 −3.95% 的崩盤。761 遠高於門檻 30 → 以「完全
+    // 有信心」的樣子顯示，底下其實是 8 個高度相關的觀測。
+    // ====================================================================
+
+    test('🚨 觸發日數不足時必須揭露，即使 pooled 筆數很多', () async {
+      await db
+          .into(db.ruleAccuracy)
+          .insert(
+            RuleAccuracyCompanion.insert(
+              ruleId: 'CONCENTRATION_HIGH',
+              period: '5D',
+              triggerCount: const Value(761),
+              successCount: const Value(173),
+              avgReturn: const Value(-1.13),
+              distinctDates: const Value(8),
+            ),
+          );
+
+      final text = await service.getRuleSummaryText('CONCENTRATION_HIGH');
+
+      expect(text, isNotNull);
+      expect(text, contains('8'), reason: '必須讓使用者看到「761 筆只來自 8 天」');
+      expect(
+        text,
+        contains('信心度較低'),
+        reason: 'pooled 761 遠超門檻 30，但有效樣本只有 8 個觸發日',
+      );
+    });
+
+    test('觸發日數足夠時不加註記', () async {
+      await db
+          .into(db.ruleAccuracy)
+          .insert(
+            RuleAccuracyCompanion.insert(
+              ruleId: 'TECH_BREAKOUT',
+              period: '5D',
+              triggerCount: const Value(400),
+              successCount: const Value(200),
+              avgReturn: const Value(1.5),
+              distinctDates: const Value(45),
+            ),
+          );
+
+      final text = await service.getRuleSummaryText('TECH_BREAKOUT');
+
+      expect(text, isNot(contains('信心度較低')));
+      expect(text, contains('45'));
     });
 
     test('getRuleSummaryText returns null below 5-sample minimum', () async {
@@ -1045,11 +1149,17 @@ void main() {
               triggerCount: const Value(35),
               successCount: const Value(25),
               avgReturn: const Value(2.34),
+              // 日數固定在通過值，讓本測試只驗「筆數」門檻這一個維度
+              distinctDates: const Value(40),
             ),
           );
 
       final text = await service.getRuleSummaryText('TECH_BREAKOUT');
-      expect(text, '命中率 71%（隨機基準 35%，+36pp），平均 5 日報酬 +2.3%');
+      expect(
+        text,
+        '命中率 71%（隨機基準 35%，+36pp），平均 5 日報酬 +2.3%'
+        '（樣本 35 筆 / 40 個觸發日）',
+      );
     });
 
     // ======================================================================
@@ -1173,6 +1283,8 @@ void main() {
                 triggerCount: Value(n),
                 successCount: Value(n ~/ 2),
                 avgReturn: const Value(1.0),
+                // 同上：固定日數，隔離出「筆數」這一個維度
+                distinctDates: const Value(40),
               ),
             );
         return service.getRuleSummaryText('BOUNDARY_RULE');

@@ -595,13 +595,13 @@ class DailyInstitutionalEntry extends i0.DataClass
   /// 交易日期
   final DateTime date;
 
-  /// 外資買賣超（張）
+  /// 外資買賣超（股——TWSE/TPEx API 回傳股數直接儲存）
   final double? foreignNet;
 
-  /// 投信買賣超（張）
+  /// 投信買賣超（股）
   final double? investmentTrustNet;
 
-  /// 自營商買賣超（張）— 自行買賣 + 避險合計（對外口徑，媒體/TWSE 報的就是此值）
+  /// 自營商買賣超（股）— 自行買賣 + 避險合計（對外口徑，媒體/TWSE 報的就是此值）
   final double? dealerNet;
 
   /// 自營商「自行買賣」買賣超（張，不含避險）

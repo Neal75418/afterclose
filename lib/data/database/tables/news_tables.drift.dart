@@ -1275,7 +1275,7 @@ class NewsItemEntry extends i0.DataClass
   /// 新聞連結
   final String url;
 
-  /// 分類：EARNINGS、POLICY、INDUSTRY、COMPANY_EVENT、OTHER
+  /// 分類：目前一律 'OTHER'（RSS 來源未實作分類器）
   final String category;
 
   /// 發布時間

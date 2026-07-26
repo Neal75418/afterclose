@@ -3821,7 +3821,7 @@ class PriceAlertEntry extends i0.DataClass
   /// 股票代碼
   final String symbol;
 
-  /// 提醒類型：ABOVE、BELOW、CHANGE_PCT
+  /// 提醒類型（值域見 AlertParams）
   final String alertType;
 
   /// 目標值（價格或百分比）

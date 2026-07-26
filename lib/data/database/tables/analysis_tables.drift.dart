@@ -1226,6 +1226,7 @@ typedef $$RuleAccuracyTableCreateCompanionBuilder =
       i0.Value<int> triggerCount,
       i0.Value<int> successCount,
       i0.Value<double> avgReturn,
+      i0.Value<int> distinctDates,
       i0.Value<DateTime> updatedAt,
       i0.Value<int> rowid,
     });
@@ -1236,6 +1237,7 @@ typedef $$RuleAccuracyTableUpdateCompanionBuilder =
       i0.Value<int> triggerCount,
       i0.Value<int> successCount,
       i0.Value<double> avgReturn,
+      i0.Value<int> distinctDates,
       i0.Value<DateTime> updatedAt,
       i0.Value<int> rowid,
     });
@@ -1271,6 +1273,11 @@ class $$RuleAccuracyTableFilterComposer
 
   i0.ColumnFilters<double> get avgReturn => $composableBuilder(
     column: $table.avgReturn,
+    builder: (column) => i0.ColumnFilters(column),
+  );
+
+  i0.ColumnFilters<int> get distinctDates => $composableBuilder(
+    column: $table.distinctDates,
     builder: (column) => i0.ColumnFilters(column),
   );
 
@@ -1314,6 +1321,11 @@ class $$RuleAccuracyTableOrderingComposer
     builder: (column) => i0.ColumnOrderings(column),
   );
 
+  i0.ColumnOrderings<int> get distinctDates => $composableBuilder(
+    column: $table.distinctDates,
+    builder: (column) => i0.ColumnOrderings(column),
+  );
+
   i0.ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
     builder: (column) => i0.ColumnOrderings(column),
@@ -1347,6 +1359,11 @@ class $$RuleAccuracyTableAnnotationComposer
 
   i0.GeneratedColumn<double> get avgReturn =>
       $composableBuilder(column: $table.avgReturn, builder: (column) => column);
+
+  i0.GeneratedColumn<int> get distinctDates => $composableBuilder(
+    column: $table.distinctDates,
+    builder: (column) => column,
+  );
 
   i0.GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
@@ -1394,6 +1411,7 @@ class $$RuleAccuracyTableTableManager
                 i0.Value<int> triggerCount = const i0.Value.absent(),
                 i0.Value<int> successCount = const i0.Value.absent(),
                 i0.Value<double> avgReturn = const i0.Value.absent(),
+                i0.Value<int> distinctDates = const i0.Value.absent(),
                 i0.Value<DateTime> updatedAt = const i0.Value.absent(),
                 i0.Value<int> rowid = const i0.Value.absent(),
               }) => i1.RuleAccuracyCompanion(
@@ -1402,6 +1420,7 @@ class $$RuleAccuracyTableTableManager
                 triggerCount: triggerCount,
                 successCount: successCount,
                 avgReturn: avgReturn,
+                distinctDates: distinctDates,
                 updatedAt: updatedAt,
                 rowid: rowid,
               ),
@@ -1412,6 +1431,7 @@ class $$RuleAccuracyTableTableManager
                 i0.Value<int> triggerCount = const i0.Value.absent(),
                 i0.Value<int> successCount = const i0.Value.absent(),
                 i0.Value<double> avgReturn = const i0.Value.absent(),
+                i0.Value<int> distinctDates = const i0.Value.absent(),
                 i0.Value<DateTime> updatedAt = const i0.Value.absent(),
                 i0.Value<int> rowid = const i0.Value.absent(),
               }) => i1.RuleAccuracyCompanion.insert(
@@ -1420,6 +1440,7 @@ class $$RuleAccuracyTableTableManager
                 triggerCount: triggerCount,
                 successCount: successCount,
                 avgReturn: avgReturn,
+                distinctDates: distinctDates,
                 updatedAt: updatedAt,
                 rowid: rowid,
               ),
@@ -3372,6 +3393,17 @@ class $RuleAccuracyTable extends i2.RuleAccuracy
     requiredDuringInsert: false,
     defaultValue: const i3.Constant(0),
   );
+  static const i0.VerificationMeta _distinctDatesMeta =
+      const i0.VerificationMeta('distinctDates');
+  @override
+  late final i0.GeneratedColumn<int> distinctDates = i0.GeneratedColumn<int>(
+    'distinct_dates',
+    aliasedName,
+    false,
+    type: i0.DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const i3.Constant(0),
+  );
   static const i0.VerificationMeta _updatedAtMeta = const i0.VerificationMeta(
     'updatedAt',
   );
@@ -3392,6 +3424,7 @@ class $RuleAccuracyTable extends i2.RuleAccuracy
     triggerCount,
     successCount,
     avgReturn,
+    distinctDates,
     updatedAt,
   ];
   @override
@@ -3446,6 +3479,15 @@ class $RuleAccuracyTable extends i2.RuleAccuracy
         avgReturn.isAcceptableOrUnknown(data['avg_return']!, _avgReturnMeta),
       );
     }
+    if (data.containsKey('distinct_dates')) {
+      context.handle(
+        _distinctDatesMeta,
+        distinctDates.isAcceptableOrUnknown(
+          data['distinct_dates']!,
+          _distinctDatesMeta,
+        ),
+      );
+    }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
@@ -3481,6 +3523,10 @@ class $RuleAccuracyTable extends i2.RuleAccuracy
         i0.DriftSqlType.double,
         data['${effectivePrefix}avg_return'],
       )!,
+      distinctDates: attachedDatabase.typeMapping.read(
+        i0.DriftSqlType.int,
+        data['${effectivePrefix}distinct_dates'],
+      )!,
       updatedAt: attachedDatabase.typeMapping.read(
         i0.DriftSqlType.dateTime,
         data['${effectivePrefix}updated_at'],
@@ -3499,7 +3545,7 @@ class RuleAccuracyEntry extends i0.DataClass
   /// 規則 ID（如 reversal_w2s）
   final String ruleId;
 
-  /// 統計週期：DAILY、WEEKLY、MONTHLY
+  /// 統計週期：「N 天 + D」持有天數字串（如 5D、20D、60D）
   final String period;
 
   /// 觸發次數
@@ -3511,6 +3557,15 @@ class RuleAccuracyEntry extends i0.DataClass
   /// 平均報酬率（%）
   final double avgReturn;
 
+  /// 觸發「日」數（distinct 觸發日期）
+  ///
+  /// 有效樣本量級是這個值，不是 [triggerCount]。同一天觸發的數十檔股票
+  /// 幾乎共用同一個市場因子（實測 2026-07-17 全市場單日 −3.95%），
+  /// 加上持有窗重疊，pooled 筆數是偽重複。
+  /// 判準與 calibration 決策層的 [CalibrationThresholds.minDistinctDates]
+  /// 同源 —— 該處註解早已寫明此事，只是未擴散到 app 內的顯示層。
+  final int distinctDates;
+
   /// 最後更新時間
   final DateTime updatedAt;
   const RuleAccuracyEntry({
@@ -3519,6 +3574,7 @@ class RuleAccuracyEntry extends i0.DataClass
     required this.triggerCount,
     required this.successCount,
     required this.avgReturn,
+    required this.distinctDates,
     required this.updatedAt,
   });
   @override
@@ -3529,6 +3585,7 @@ class RuleAccuracyEntry extends i0.DataClass
     map['trigger_count'] = i0.Variable<int>(triggerCount);
     map['success_count'] = i0.Variable<int>(successCount);
     map['avg_return'] = i0.Variable<double>(avgReturn);
+    map['distinct_dates'] = i0.Variable<int>(distinctDates);
     map['updated_at'] = i0.Variable<DateTime>(updatedAt);
     return map;
   }
@@ -3540,6 +3597,7 @@ class RuleAccuracyEntry extends i0.DataClass
       triggerCount: i0.Value(triggerCount),
       successCount: i0.Value(successCount),
       avgReturn: i0.Value(avgReturn),
+      distinctDates: i0.Value(distinctDates),
       updatedAt: i0.Value(updatedAt),
     );
   }
@@ -3555,6 +3613,7 @@ class RuleAccuracyEntry extends i0.DataClass
       triggerCount: serializer.fromJson<int>(json['triggerCount']),
       successCount: serializer.fromJson<int>(json['successCount']),
       avgReturn: serializer.fromJson<double>(json['avgReturn']),
+      distinctDates: serializer.fromJson<int>(json['distinctDates']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
   }
@@ -3567,6 +3626,7 @@ class RuleAccuracyEntry extends i0.DataClass
       'triggerCount': serializer.toJson<int>(triggerCount),
       'successCount': serializer.toJson<int>(successCount),
       'avgReturn': serializer.toJson<double>(avgReturn),
+      'distinctDates': serializer.toJson<int>(distinctDates),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
   }
@@ -3577,6 +3637,7 @@ class RuleAccuracyEntry extends i0.DataClass
     int? triggerCount,
     int? successCount,
     double? avgReturn,
+    int? distinctDates,
     DateTime? updatedAt,
   }) => i1.RuleAccuracyEntry(
     ruleId: ruleId ?? this.ruleId,
@@ -3584,6 +3645,7 @@ class RuleAccuracyEntry extends i0.DataClass
     triggerCount: triggerCount ?? this.triggerCount,
     successCount: successCount ?? this.successCount,
     avgReturn: avgReturn ?? this.avgReturn,
+    distinctDates: distinctDates ?? this.distinctDates,
     updatedAt: updatedAt ?? this.updatedAt,
   );
   RuleAccuracyEntry copyWithCompanion(i1.RuleAccuracyCompanion data) {
@@ -3597,6 +3659,9 @@ class RuleAccuracyEntry extends i0.DataClass
           ? data.successCount.value
           : this.successCount,
       avgReturn: data.avgReturn.present ? data.avgReturn.value : this.avgReturn,
+      distinctDates: data.distinctDates.present
+          ? data.distinctDates.value
+          : this.distinctDates,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
@@ -3609,6 +3674,7 @@ class RuleAccuracyEntry extends i0.DataClass
           ..write('triggerCount: $triggerCount, ')
           ..write('successCount: $successCount, ')
           ..write('avgReturn: $avgReturn, ')
+          ..write('distinctDates: $distinctDates, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
@@ -3621,6 +3687,7 @@ class RuleAccuracyEntry extends i0.DataClass
     triggerCount,
     successCount,
     avgReturn,
+    distinctDates,
     updatedAt,
   );
   @override
@@ -3632,6 +3699,7 @@ class RuleAccuracyEntry extends i0.DataClass
           other.triggerCount == this.triggerCount &&
           other.successCount == this.successCount &&
           other.avgReturn == this.avgReturn &&
+          other.distinctDates == this.distinctDates &&
           other.updatedAt == this.updatedAt);
 }
 
@@ -3641,6 +3709,7 @@ class RuleAccuracyCompanion extends i0.UpdateCompanion<i1.RuleAccuracyEntry> {
   final i0.Value<int> triggerCount;
   final i0.Value<int> successCount;
   final i0.Value<double> avgReturn;
+  final i0.Value<int> distinctDates;
   final i0.Value<DateTime> updatedAt;
   final i0.Value<int> rowid;
   const RuleAccuracyCompanion({
@@ -3649,6 +3718,7 @@ class RuleAccuracyCompanion extends i0.UpdateCompanion<i1.RuleAccuracyEntry> {
     this.triggerCount = const i0.Value.absent(),
     this.successCount = const i0.Value.absent(),
     this.avgReturn = const i0.Value.absent(),
+    this.distinctDates = const i0.Value.absent(),
     this.updatedAt = const i0.Value.absent(),
     this.rowid = const i0.Value.absent(),
   });
@@ -3658,6 +3728,7 @@ class RuleAccuracyCompanion extends i0.UpdateCompanion<i1.RuleAccuracyEntry> {
     this.triggerCount = const i0.Value.absent(),
     this.successCount = const i0.Value.absent(),
     this.avgReturn = const i0.Value.absent(),
+    this.distinctDates = const i0.Value.absent(),
     this.updatedAt = const i0.Value.absent(),
     this.rowid = const i0.Value.absent(),
   }) : ruleId = i0.Value(ruleId),
@@ -3668,6 +3739,7 @@ class RuleAccuracyCompanion extends i0.UpdateCompanion<i1.RuleAccuracyEntry> {
     i0.Expression<int>? triggerCount,
     i0.Expression<int>? successCount,
     i0.Expression<double>? avgReturn,
+    i0.Expression<int>? distinctDates,
     i0.Expression<DateTime>? updatedAt,
     i0.Expression<int>? rowid,
   }) {
@@ -3677,6 +3749,7 @@ class RuleAccuracyCompanion extends i0.UpdateCompanion<i1.RuleAccuracyEntry> {
       if (triggerCount != null) 'trigger_count': triggerCount,
       if (successCount != null) 'success_count': successCount,
       if (avgReturn != null) 'avg_return': avgReturn,
+      if (distinctDates != null) 'distinct_dates': distinctDates,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -3688,6 +3761,7 @@ class RuleAccuracyCompanion extends i0.UpdateCompanion<i1.RuleAccuracyEntry> {
     i0.Value<int>? triggerCount,
     i0.Value<int>? successCount,
     i0.Value<double>? avgReturn,
+    i0.Value<int>? distinctDates,
     i0.Value<DateTime>? updatedAt,
     i0.Value<int>? rowid,
   }) {
@@ -3697,6 +3771,7 @@ class RuleAccuracyCompanion extends i0.UpdateCompanion<i1.RuleAccuracyEntry> {
       triggerCount: triggerCount ?? this.triggerCount,
       successCount: successCount ?? this.successCount,
       avgReturn: avgReturn ?? this.avgReturn,
+      distinctDates: distinctDates ?? this.distinctDates,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
     );
@@ -3720,6 +3795,9 @@ class RuleAccuracyCompanion extends i0.UpdateCompanion<i1.RuleAccuracyEntry> {
     if (avgReturn.present) {
       map['avg_return'] = i0.Variable<double>(avgReturn.value);
     }
+    if (distinctDates.present) {
+      map['distinct_dates'] = i0.Variable<int>(distinctDates.value);
+    }
     if (updatedAt.present) {
       map['updated_at'] = i0.Variable<DateTime>(updatedAt.value);
     }
@@ -3737,6 +3815,7 @@ class RuleAccuracyCompanion extends i0.UpdateCompanion<i1.RuleAccuracyEntry> {
           ..write('triggerCount: $triggerCount, ')
           ..write('successCount: $successCount, ')
           ..write('avgReturn: $avgReturn, ')
+          ..write('distinctDates: $distinctDates, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))

@@ -428,7 +428,8 @@ class AppDatabase extends $AppDatabase
 /// Public（而非 private）是因為 `tool/backfill.dart` 要在**開啟 DB 之前**
 /// 比對它：對 app 而言 reset 只是重抓 derived data，對 `tool/calibration.db`
 /// 卻是九年歷史當場歸零。見該檔的 `_checkSchemaFingerprint`。
-const String appSchemaFingerprint = 'stage5b-news-mention-daily-2026-07-15';
+const String appSchemaFingerprint =
+    'stage5b-rule-accuracy-distinct-dates-2026-07-26';
 
 // 原 `QueryExecutor _openConnection()` 已搬到 `app_database_flutter.dart`
 // 並改為 public `openDriftFlutterConnection()`，避免 `drift_flutter` import

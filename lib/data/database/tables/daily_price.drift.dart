@@ -650,7 +650,7 @@ class DailyPriceEntry extends i0.DataClass
   /// 股票代碼
   final String symbol;
 
-  /// 交易日期（以 UTC 儲存）
+  /// 交易日期（本地午夜、ISO-8601 text 儲存）
   final DateTime date;
 
   /// 開盤價
@@ -665,7 +665,7 @@ class DailyPriceEntry extends i0.DataClass
   /// 收盤價
   final double? close;
 
-  /// 成交量（張）
+  /// 成交量（股）
   final double? volume;
 
   /// 漲跌價差（來自 TWSE/TPEX API，用於計算漲跌幅）
