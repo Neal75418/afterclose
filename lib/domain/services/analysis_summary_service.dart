@@ -257,14 +257,33 @@ class AnalysisSummaryService {
     if (support != null && resistance != null) {
       final closeVal = latestPrice?.close;
       if (closeVal != null && closeVal > 0) {
-        final supportDist = ((closeVal - support) / closeVal * 100).abs();
-        final resistanceDist = ((resistance - closeVal) / closeVal * 100).abs();
+        // **帶號**：負值代表關卡已被跨越。曾用 `.abs()` 剝掉方向，於是
+        // 「已跌破的支撐」被講成「離支撐還有 X% 緩衝」——方向相反，且偏向
+        // 誘導續抱。這與 :196 那條（priceChange 被 .abs() 吃掉方向）是同一個
+        // bug class，2026-07-26 只修了那一處、沒掃到這裡。
+        //
+        // 關卡被跨越不是資料髒，是設計中的一級狀態：analysis_coordinator_service
+        // 刻意把當日排除在支撐壓力計算之外（否則今日永遠無法突破，因為今日
+        // 會成為新的高點）。實測 754 列中 133 列壓力已突破、43 列支撐已跌破。
+        final supportDist = (closeVal - support) / closeVal * 100;
+        final resistanceDist = (resistance - closeVal) / closeVal * 100;
+
+        // 恰好等於關卡（dist == 0）不算跨越，維持正常文案顯示「距 0.0%」。
+        // 兩者同時被跨越需 support > close > resistance（支撐高於壓力），
+        // 實測 0 筆，故不另設文案；真發生時落在支撐已跌破那支。
+        final levelKey = supportDist < 0
+            ? 'summary.supportResistanceBelowSupport'
+            : resistanceDist < 0
+            ? 'summary.supportResistanceAboveResistance'
+            : 'summary.supportResistanceWithDist';
+
         parts.add(
-          LocalizableString('summary.supportResistanceWithDist', {
+          LocalizableString(levelKey, {
             'support': support.toStringAsFixed(1),
             'resistance': resistance.toStringAsFixed(1),
-            'supportDist': supportDist.toStringAsFixed(1),
-            'resistanceDist': resistanceDist.toStringAsFixed(1),
+            // 方向由文案用詞承載，此處一律給幅度
+            'supportDist': supportDist.abs().toStringAsFixed(1),
+            'resistanceDist': resistanceDist.abs().toStringAsFixed(1),
           }),
         );
 

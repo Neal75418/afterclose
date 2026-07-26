@@ -1074,6 +1074,8 @@
     "reversalW2S": "Weak-to-strong reversal signal detected, trend may turn bullish.",
     "reversalS2W": "Strong-to-weak reversal signal detected, trend may turn bearish.",
     "supportResistance": "Support at {support}, resistance at {resistance}.",
+    "supportResistanceAboveResistance": "Broke above prior resistance {resistance} (by {resistanceDist}%), no clear resistance overhead; support {support} ({supportDist}% away).",
+    "supportResistanceBelowSupport": "Broke below support {support} (by {supportDist}%), no clear support underneath; resistance {resistance} ({resistanceDist}% away).",
     "supportResistanceWithDist": "Support {support} ({supportDist}% away), Resistance {resistance} ({resistanceDist}% away).",
     "riskReward": "Estimated risk/reward ~1:{ratio} (target at resistance, stop at support).",
     "riskRewardFavorable": "Upside notably exceeds downside — favorable odds.",

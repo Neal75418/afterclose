@@ -1075,6 +1075,8 @@
     "reversalS2W": "出現強轉弱反轉訊號，趨勢可能由多轉空。",
     "supportResistance": "支撐位 {support}，壓力位 {resistance}。",
     "supportResistanceWithDist": "支撐 {support}（距 {supportDist}%）、壓力 {resistance}（距 {resistanceDist}%）。",
+    "supportResistanceAboveResistance": "已站上前壓力 {resistance}（高出 {resistanceDist}%），上方無明確壓力；支撐 {support}（距 {supportDist}%）。",
+    "supportResistanceBelowSupport": "已跌破支撐 {support}（低於 {supportDist}%），下方無明確支撐；壓力 {resistance}（距 {resistanceDist}%）。",
     "riskReward": "估算風險報酬比約 1:{ratio}（停利至壓力、停損至支撐）。",
     "riskRewardFavorable": "上檔空間明顯大於下檔風險，賠率相對有利。",
     "riskRewardPoor": "下檔風險已大於上檔空間，賠率相對不利。",
