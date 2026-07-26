@@ -89,10 +89,19 @@ class AnalysisSummaryService {
       horizon: horizon,
     );
 
+    // 連買/連賣天數若已由規則陳述（關鍵訊號 / 風險提示），輔助數據不得
+    // 再自行從顯示窗數一次 —— 兩者窗口不同會在同一張卡上自相矛盾。
+    final streakStatedByRule = reasons.any(
+      (r) =>
+          r.reasonType == SignalName.institutionalBuyStreak ||
+          r.reasonType == SignalName.institutionalSellStreak,
+    );
+
     final supporting = _buildSupportingData(
       institutionalHistory,
       revenueHistory,
       latestPER,
+      streakStatedByRule: streakStatedByRule,
     );
 
     // 加權情緒（含基本面修正）
@@ -369,8 +378,9 @@ class AnalysisSummaryService {
   List<LocalizableString> _buildSupportingData(
     List<DailyInstitutionalEntry> institutionalHistory,
     List<FinMindRevenue> revenueHistory,
-    FinMindPER? latestPER,
-  ) {
+    FinMindPER? latestPER, {
+    bool streakStatedByRule = false,
+  }) {
     final data = <LocalizableString>[];
 
     if (institutionalHistory.isNotEmpty) {
@@ -385,8 +395,17 @@ class AnalysisSummaryService {
         }),
       );
 
-      // 多日趨勢：從最新往回算連買/連賣天數
-      if (institutionalHistory.length >= 3) {
+      // 多日趨勢：從最新往回算連買/連賣天數。
+      //
+      // **規則已陳述時跳過**（2026-07-26 實機發現）：關鍵訊號的天數取自規則
+      // evidence（評分路徑，institutionalStreakLookbackDays=90），此處卻是從
+      // 個股詳情的顯示窗（institutionalLookbackDays=10）自行數的。實測同一張
+      // 卡並列「連續買超 17 天以上」與「連續 7 天買超」。
+      //
+      // 不把顯示窗一起放寬：institutionalHistory 也餵籌碼頁的法人表，
+      // 9 列變 60 幾列非所欲。規則在 ≥4 日觸發、此處在 ≥3 日顯示，跳過後
+      // 恰好由此處覆蓋「剛好 3 日、規則還沒觸發」那一格。
+      if (!streakStatedByRule && institutionalHistory.length >= 3) {
         final consecutiveBuyDays = _countConsecutiveDays(
           institutionalHistory.reversed,
           (e) => (e.foreignNet ?? 0) + (e.investmentTrustNet ?? 0) > 0,

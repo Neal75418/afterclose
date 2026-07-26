@@ -1045,4 +1045,78 @@ void main() {
       );
     });
   });
+  // ====================================================================
+  // 輔助數據的連買天數不得與關鍵訊號矛盾（2026-07-26 實機發現）
+  //
+  // 實機截圖：同一張 AI 分析卡上「關鍵訊號」寫「法人連續買超 17 天以上」，
+  // 「輔助數據」卻寫「法人連續 7 天買超」——同一件事兩個數字。
+  //
+  // 根因是兩者用不同窗口：關鍵訊號取自規則 evidence（評分路徑，
+  // institutionalStreakLookbackDays=90），輔助數據自行從
+  // institutionalHistory 數（個股詳情的顯示窗 institutionalLookbackDays=10）。
+  // 放寬評分窗之前兩邊都被截在 ~9 天、看不出來，放寬後就對撞。
+  //
+  // 不把顯示窗一起放寬：institutionalHistory 也餵籌碼頁的法人表，
+  // 9 列變 60 幾列不是想要的。改為讓輔助數據在規則已觸發時不重複陳述——
+  // 規則在 ≥4 日觸發、輔助數據在 ≥3 日顯示，讓後者只負責恰好 3 日那格。
+  // ====================================================================
+  group('輔助數據不得與關鍵訊號的連買天數矛盾', () {
+    List<DailyInstitutionalEntry> buyDays(int n) => List.generate(
+      n,
+      (i) => DailyInstitutionalEntry(
+        symbol: 'TEST',
+        date: DateTime(2026, 7, 1).add(Duration(days: i)),
+        foreignNet: 500000,
+        investmentTrustNet: 100000,
+      ),
+    );
+
+    test('🚨 連續買超規則已觸發時，輔助數據不得再自行陳述天數', () {
+      final result = service.generate(
+        analysis: createTestAnalysis(trendState: 'UP', score: 20),
+        reasons: [
+          createTestReason(
+            reasonType: 'INSTITUTIONAL_BUY_STREAK',
+            evidenceJson: '{"streakDays":17,"streakTruncated":true}',
+            ruleScore: 15,
+          ),
+        ],
+        latestPrice: null,
+        priceChange: 0.5,
+        institutionalHistory: buyDays(7),
+        revenueHistory: [],
+        latestPER: null,
+        horizon: Horizon.short,
+      );
+
+      expect(
+        result.keySignals.map((s) => s.key),
+        contains('summary.institutionalBuyStreakDaysTruncated'),
+        reason: '關鍵訊號仍須陳述 17 天以上',
+      );
+      expect(
+        result.supportingData.map((s) => s.key),
+        isNot(contains('summary.institutionalBuyTrend')),
+        reason: '輔助數據用的是顯示窗（較短），與關鍵訊號並列會自相矛盾',
+      );
+    });
+
+    test('規則未觸發時輔助數據照常陳述（保留其原有價值）', () {
+      final result = service.generate(
+        analysis: createTestAnalysis(trendState: 'UP', score: 20),
+        reasons: [createTestReason(reasonType: 'TECH_BREAKOUT', ruleScore: 15)],
+        latestPrice: null,
+        priceChange: 0.5,
+        institutionalHistory: buyDays(3),
+        revenueHistory: [],
+        latestPER: null,
+        horizon: Horizon.short,
+      );
+
+      expect(
+        result.supportingData.map((s) => s.key),
+        contains('summary.institutionalBuyTrend'),
+      );
+    });
+  });
 }
