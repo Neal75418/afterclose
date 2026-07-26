@@ -13,6 +13,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/data/repositories/institutional_repository.dart';
 import 'package:afterclose/domain/services/update/institutional_syncer.dart';
@@ -237,5 +238,73 @@ void main() {
       syncer.syncInstitutionalData(date: date, force: true, backfillDays: 4),
       throwsA(isA<RateLimitException>()),
     );
+  });
+
+  // 口徑遷移清空後的自我修復
+  //
+  // 實測（2026-07-26 正式 DB）：daily_institutional 全表只有 17 個交易日
+  // （2026-07-01 ~ 07-24，2,100 檔中 1,729 檔恰好都是 17 天——硬牆），
+  // 而 daily_price 有 275 個交易日（2025-06-10 起）。起點 2026-07-01 正好
+  // 是 07-16 往回推 institutionalDailyBackfillDays(15) 個日曆天。
+  //
+  // 成因：ensureDataVersion() 在口徑版本變更時清空全表，清完只靠**當次
+  // 那一輪**的回補窗重建。那一輪若是日常更新就只有 15 個日曆天（≈10 個
+  // 交易日）。ensureDataVersion 回傳「有沒有清空」這個 bool，但呼叫端
+  // 直接 `await ...;` 丟掉——系統剛算出「我需要深回補」就把結論扔了。
+  //
+  // 後果是靜默的：連續買賣超（institutionalStreakLookbackDays 90 日曆天）、
+  // surge baseline（institutionalSurgeLookbackDays 60 日）全部在淺資料上
+  // 運作，畫面不會說。本檔開頭的註解早就寫著「需再一次成功的 force 才能
+  // 復原」，但沒有任何機制促成那次 force。
+  //
+  // 修法：清空當輪自動改用深窗。已完整的天走 per-day 檢查跳過（不睡不打），
+  // 所以穩態下這條路徑不會被觸發，日常更新仍維持淺回補。
+  group('口徑遷移清空後自動深回補', () {
+    /// 全部標記為已完整 → 迴圈只探測不抓取，避免 1s/日的節流拖慢測試。
+    /// 探測到的日期範圍即為實際回補窗。
+    List<DateTime> probedDates() => verify(
+      () => mockRepo.isDayComplete(captureAny()),
+    ).captured.cast<DateTime>();
+
+    setUp(() {
+      when(() => mockRepo.isDayComplete(any())).thenAnswer((_) async => true);
+    });
+
+    test('🚨 清空當輪即使呼叫端傳淺窗，也必須回補到深窗', () async {
+      when(() => mockRepo.ensureDataVersion()).thenAnswer((_) async => true);
+
+      await syncer.syncInstitutionalData(
+        date: date,
+        force: false,
+        backfillDays: ApiConfig.institutionalDailyBackfillDays,
+      );
+
+      final earliest = probedDates().reduce((a, b) => a.isBefore(b) ? a : b);
+      expect(
+        date.difference(earliest).inDays,
+        greaterThanOrEqualTo(ApiConfig.institutionalForceBackfillDays - 7),
+        reason:
+            '剛清空全表就只補 ${ApiConfig.institutionalDailyBackfillDays} 個日曆天，'
+            'streak(90 日曆天) 與 surge baseline(60 日) 會在淺資料上靜默失真；'
+            'ensureDataVersion 已經回報了「清空了」，這個資訊不該被丟掉',
+      );
+    });
+
+    test('沒清空時維持呼叫端指定的淺窗（日常更新不得因此變慢）', () async {
+      when(() => mockRepo.ensureDataVersion()).thenAnswer((_) async => false);
+
+      await syncer.syncInstitutionalData(
+        date: date,
+        force: false,
+        backfillDays: ApiConfig.institutionalDailyBackfillDays,
+      );
+
+      final earliest = probedDates().reduce((a, b) => a.isBefore(b) ? a : b);
+      expect(
+        date.difference(earliest).inDays,
+        lessThan(ApiConfig.institutionalDailyBackfillDays),
+        reason: '穩態下每輪都掃 62 天會讓日常更新無謂變慢',
+      );
+    });
   });
 }

@@ -40,10 +40,27 @@ class InstitutionalSyncer {
 
     // 口徑版本檢核（每次入口，日常更新也會遷移）；失敗不中斷同步，
     // 下次入口重試
+    var migrated = false;
     try {
-      await _institutionalRepo.ensureDataVersion();
+      migrated = await _institutionalRepo.ensureDataVersion();
     } catch (e) {
       AppLogger.warning('InstitutionalSyncer', '法人口徑版本檢核失敗', e);
+    }
+
+    // 遷移剛清空全表，這一輪必須自己補回深度——否則 streak（90 日曆天）與
+    // surge baseline（60 日）會在 ~10 個交易日的資料上靜默失真，而且沒有
+    // 任何機制促成後續那次 force。穩態下 per-day 完整性檢查會跳過已完整的
+    // 天（不睡不打），所以日常更新仍維持淺回補。
+    final effectiveBackfillDays =
+        migrated && backfillDays < ApiConfig.institutionalForceBackfillDays
+        ? ApiConfig.institutionalForceBackfillDays
+        : backfillDays;
+    if (effectiveBackfillDays != backfillDays) {
+      AppLogger.info(
+        'InstitutionalSyncer',
+        '口徑遷移已清空資料，本輪回補窗由 $backfillDays 拉深至 '
+            '$effectiveBackfillDays 個日曆天',
+      );
     }
 
     // 1. 同步當日資料（force 必抓；日常路徑若當日已完整——同晚二次更新——
@@ -66,7 +83,8 @@ class InstitutionalSyncer {
     //    回補窗全完整，原本每輪白睡 ~10 秒、force 深回補 ~62 秒）；
     //    缺漏的天才節流 + 抓取，形成斷點續傳
     final backfillDates = [
-      for (var i = 1; i < backfillDays; i++) date.subtract(Duration(days: i)),
+      for (var i = 1; i < effectiveBackfillDays; i++)
+        date.subtract(Duration(days: i)),
     ].where(TaiwanCalendar.isTradingDay).toList();
 
     var skippedDays = 0;
