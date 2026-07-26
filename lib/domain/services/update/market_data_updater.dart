@@ -480,7 +480,12 @@ class MarketDataUpdater {
       AppLogger.info('MarketDataUpdater', '上櫃外資持股新鮮度檢查: 跳過 $skippedCount 檔');
     }
 
-    // 當沖資料已由批次 TPEX API 同步，此處回傳 0
+    // 上櫃當沖恆為 0：**沒有任何 TPEx 當沖資料來源**。
+    // `dayTrading` 在 lib/data/remote/ 底下只出現於 twse_client.dart，
+    // TPEx 側從未實作過對應端點，day_trading 表全期 0 筆 TPEx 列。
+    // （此處原本註明「已由批次 TPEX API 同步」，與程式碼不符，2026-07-26 更正。）
+    //
+    // 後果見 RuleScores.dayTradingExtreme 的註解：上櫃股結構性吃不到該扣分。
     return OtcMarketDataResult(
       dayTradingCount: 0,
       shareholdingCount: shareholdingCount,

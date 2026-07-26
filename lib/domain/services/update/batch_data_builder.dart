@@ -187,7 +187,12 @@ class BatchDataBuilder {
           hasSellingStreak: status?.hasSellingStreak ?? false,
           sellingStreakMonths: status?.sellingStreakMonths ?? 0,
           hasSignificantBuying: status?.hasSignificantBuying ?? false,
-          buyingChange: status?.buyingChange ?? v.sharesChange,
+          // 單位必須是「百分點」（insiderRatio 的期間差）。曾寫成
+          // `?? v.sharesChange` 回退，但 sharesChange 的單位是「股」——
+          // 借來頂替會讓「增持 5 萬股」被當成「增持 50000 個百分點」，
+          // 輕鬆越過 5.0 門檻並顯示「董監增持 50000.0%」。
+          // 算不出來就誠實留 null，讓規則自然不觸發。
+          buyingChange: status?.buyingChange,
         ),
       );
     });
