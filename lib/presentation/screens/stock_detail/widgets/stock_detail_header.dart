@@ -479,13 +479,18 @@ class StockDetailHeader extends StatelessWidget {
       spacing: DesignTokens.spacing8,
       runSpacing: DesignTokens.spacing8,
       children: [
-        _InfoChip(
-          label: 'trend.${trendState?.trendKey ?? 'sideways'}'.tr(),
-          icon: trendState?.trendIconData ?? Icons.trending_flat,
-          // 擴充定義在 String? 上，trendState 為 null 時即回傳平盤色，
-          // 不需要額外的 ?? 分支。
-          color: trendState.trendColorFor(theme.brightness),
-        ),
+        // 沒有當日分析時**不渲染**，而非退回「盤整」——`?? 'sideways'` 會把
+        // 「這檔今天沒被評分」講成一個明確的趨勢宣稱。
+        // 實測 2026-07-24：有價格 2,127 檔、被評分僅 154 檔，其餘 1,973 檔
+        // （93%）打開都會看到「盤整」；台積電當日 -2.29%、前一個分析日是 DOWN。
+        // 做法與下方支撐/壓力徽章一致（本來就在 null 時不渲染）。
+        // RANGE 是合法分析結果，仍會走到這裡並正確顯示「盤整」。
+        if (trendState != null)
+          _InfoChip(
+            label: 'trend.${trendState.trendKey}'.tr(),
+            icon: trendState.trendIconData,
+            color: trendState.trendColorFor(theme.brightness),
+          ),
         if (data.support case final supportLevel?)
           _LevelChip(
             label: 'stockDetail.support'.tr(),
