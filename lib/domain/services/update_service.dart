@@ -1,5 +1,8 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart' show visibleForTesting;
+
 import 'package:afterclose/core/constants/api_config.dart';
+import 'package:afterclose/core/constants/stock_patterns.dart';
 import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/core/constants/default_stocks.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
@@ -731,16 +734,10 @@ class UpdateService {
     if (fundamentalSyncer == null) return;
 
     try {
-      final prioritySymbols = {...watchlistSymbols, ..._popularStocks};
-      final remainingSlots =
-          ApiConfig.financialSyncMaxCandidates - prioritySymbols.length;
-      final targetSymbols = {
-        ...prioritySymbols,
-        if (remainingSlots > 0)
-          ...ctx.marketCandidates
-              .where((s) => !prioritySymbols.contains(s))
-              .take(remainingSlots),
-      }.toList();
+      final targetSymbols = selectFinancialSyncTargets(
+        prioritySymbols: {...watchlistSymbols, ..._popularStocks},
+        marketCandidates: ctx.marketCandidates,
+      );
       if (targetSymbols.isNotEmpty) {
         // 損益表與資產負債表無相依性，平行執行以縮短等待時間
         final (epsCount, bsCount) = await (
@@ -761,6 +758,41 @@ class UpdateService {
       AppLogger.warning('UpdateService', '財報資料同步失敗', e);
       ctx.result.recordError('財報資料同步失敗: $e', e);
     }
+  }
+
+  /// 挑選財報同步的目標股票（自選＋熱門優先，其餘依候選順序補到上限）。
+  ///
+  /// 抽成純函式以便單獨驗證配額分配——這段的正確性不在於「有沒有呼叫到
+  /// syncer」，而在於**名額有沒有被用滿**，那需要對回傳清單本身斷言。
+  @visibleForTesting
+  static List<String> selectFinancialSyncTargets({
+    required Set<String> prioritySymbols,
+    required List<String> marketCandidates,
+  }) {
+    final remainingSlots =
+        ApiConfig.financialSyncMaxCandidates - prioritySymbols.length;
+    return {
+      ...prioritySymbols,
+      if (remainingSlots > 0)
+        // **ETF 過濾必須早於 take**：ETF 無財報，下游 fundamental_syncer
+        // （:306 INCOME／:409 BALANCE）會濾掉它們，但被丟掉的名額不會由
+        // 第 N+1 名遞補 → 名額空轉。與 3faea63 在 chip_anomaly_service
+        // 立的同一條規則。
+        //
+        // 實測 2026-07-24：價格走快取路徑時候選順序退化為 symbol 升冪
+        // （quickFilterCandidatesFromDb 不排序、DAO 無 ORDER BY），扣掉
+        // 39 檔 priority 後**前 111 檔 100% 是 00 開頭 ETF**，那一輪等於
+        // 沒有任何非自選股拿到新財報；而 update_run 72 次中約 89% 走快取路徑。
+        //
+        // priority（自選＋熱門）不套此過濾：使用者主動追蹤的 ETF 應留在
+        // 清單裡，由下游自然跳過即可。
+        ...marketCandidates
+            .where(
+              (s) =>
+                  !prioritySymbols.contains(s) && !StockPatterns.isEtfCode(s),
+            )
+            .take(remainingSlots),
+    }.toList();
   }
 
   /// 步驟 4.8：Killer Features 資料（警示、董監持股）
