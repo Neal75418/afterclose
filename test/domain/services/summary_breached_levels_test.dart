@@ -27,6 +27,15 @@
 // 不動風險報酬比那段（:274 `if (downside > 0 && upside > 0)`）：它的方向守衛
 // 本來就正確，關卡被突破時 RR 會正確地不輸出。那個守衛也反證了「支撐在下、
 // 壓力在上」才是這段的語意前提。
+//
+// **頁首徽章不在此修法範圍**（stock_detail_header.dart 的 `_LevelChip`）：
+// 它渲染的是 `'$label ${value.toStringAsFixed(1)}'`，即「壓力 69.5」——
+// 只標名價位，**不宣稱距離也不宣稱方向**，而收盤價就並列在同一個 header。
+// 本修法治的是「距 X%」那個暗示「還沒到」的措辭，徽章沒有這個問題。
+//
+// 若日後想把已跨越者標成「前壓力／前支撐」，那是用詞精確度的增強，不是
+// 這個 bug 的殘留；且要考慮價格在關卡上下來回時徽章文字會反覆切換。
+// 實測影響面：754 列中壓力已突破 133、支撐已跌破 43。
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
