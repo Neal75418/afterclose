@@ -24,7 +24,7 @@
 ## 分布
 
 - 嚴重度：high 16 / medium 23 / low 7
-- 處理狀態（2026-07-27 重新計數，前次摘要與內文不符）：❓ 16 / ✅ 17 / 📋 11 / ⚠️ 2
+- 處理狀態（2026-07-27 收盤重新計數）：❓ 14 / ✅ 19 / 📋 11 / ⚠️ 2
 
 ## 值得優先查證的未查證項
 
@@ -466,7 +466,20 @@ UI（目前只寫 AppLogger）。待 `daily_reason` 累積至有意義深度後�
 
 ### 32. 歷史價格的 RateLimitException 不 rethrow、記錄時用 errors.add 而非 recordError，導致既不設 rateLimitedAbort 也不彈限流對話框，下游 FinMind 步驟繼續空打
 
-**狀態**：❓ 未查證
+**狀態**：✅ 已修（2026-07-27 `b225da4`）
+
+查證為真且完整：phase 1 的 per-symbol 迴圈捕捉 RateLimitException 後只設
+**區域變數** `rateLimited` 中止迴圈，既不 rethrow、也不放進
+`HistoricalPriceSyncResult`，故 coordinator 的 `on RateLimitException`
+接不到、失敗只走 `errors.add` 而非 `recordError`。
+
+修法：result 保留原始例外，coordinator 據此設 `rateLimitedAbort` 並走
+`recordError`。**不 rethrow 是對的**（已抓到的歷史資料要保留），缺的只是
+把「為什麼中止」帶出去。只在收到確證的 RateLimitException 時填入——
+NetworkException 與防禦性 circuit breaker 是推測不是確證。
+
+**嚴重度校正**：配額用完後 `checkBudget` 會在發網路請求前擋下，下游不會
+多燒配額；真正的損害是錯誤分類與 UI 限流提示，非資料缺口。屬 medium。
 
 **證據**：lib/domain/services/update/historical_price_syncer.dart:636-642（RateLimitException 只轉成 failedSymbols + rateLimited=true，函式不 rethrow）；lib/domain/services/update_service.dart:495-499 用 ctx.result.errors.add(...) 而非 recordError(...) → UpdateResult.hasRateLimitError 保持 false（定義見 update_service.dart:1000-1003）→ lib/presentation/screens/today/today_screen.dart:820 的 showApiRateLimitDialog 不會觸發；ctx.rateLimitedAbort（update_service.dart:968-972 的設計意圖）也沒被翻起
 
@@ -478,7 +491,22 @@ UI（目前只寫 AppLogger）。待 `daily_reason` 累積至有意義深度後�
 
 ### 33. 歷史價格預算把上櫃股（1 次 FinMind 呼叫/檔）當成上市股（1 次/月）計價，估算灌水最多 14 倍，把每輪可同步檔數壓到 15-28 檔
 
-**狀態**：❓ 未查證
+**狀態**：✅ 已修（2026-07-27 `b225da4`）
+
+查證為真，證據在 `price_repository.dart` 的市場分流：上櫃走
+`_tpexSource.fetchSingleStockPrices(startDate, endDate)` **整段 1 次**，
+上市才是 `_twseSource.fetchMonthlyPrices(months: ...)` 逐月；而
+`_estimateAvgMonthsNeeded` 完全不分市場。
+
+正式日誌實證：8291 尚茂（TPEx）估「8.0 個月」，實際
+`TaiwanStockPrice(8291): 138 筆` **只有 1 次呼叫**。
+
+修法：估算改為分市場計價，**查不到市場者一律按上市（逐月）保守計價**——
+估錯方向不對稱，高估只是回補變慢，低估會讓 maxSyncCount 放大到打爆
+FinMind 的 600/hr，有專門的守門測試釘住這個方向。
+
+**影響面校正**：穩態下節流綁不住（當日只有 1 檔需要、上限 38），只有冷啟動
+或長期未開才會綁。屬回補速度問題，不影響正確性。
 
 **證據**：lib/domain/services/update/historical_price_syncer.dart:417-472 `_estimateAvgMonthsNeeded` 對每檔一律用「視窗內缺口月數」計價，全程沒有查 market；但 lib/data/repositories/price_repository.dart:170-184 顯示上櫃走 `_tpexSource.fetchSingleStockPrices`（tpex_price_source.dart:25-35，FinMind 單次 range 查詢＝1 呼叫），只有上市走 `fetchMonthlyPrices`（twse_price_source.dart:40-81，逐月）。日誌「每檔平均需 11.0 個月 API 呼叫，動態限制為 28 檔（API 預算 300）」；DB 實證 8291 market=TPEx、145 筆，真實成本 1 次呼叫卻被估成 ~8 個月。在市股票 TPEx 1311 / TWSE 1379，上櫃佔 49%。
 
