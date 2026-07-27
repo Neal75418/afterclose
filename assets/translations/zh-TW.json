@@ -1156,7 +1156,7 @@
     "netSell": "賣超 {lots} 張",
     "netNeutral": "持平",
     "netDash": "-",
-    "institutionalFlow": "近期法人動向：外資 {foreign}、投信 {trust}。",
+    "institutionalFlow": "最新交易日法人動向：外資 {foreign}、投信 {trust}。",
     "institutionalBuyTrend": "法人連續 {days} 天買超，籌碼面偏多。",
     "institutionalSellTrend": "法人連續 {days} 天賣超，籌碼面偏空。",
     "limitUp": "今日觸及漲停板（+10%），多頭氣勢極強，追高需留意風險。",

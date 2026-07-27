@@ -1156,7 +1156,7 @@
     "netSell": "net sell {lots} lots",
     "netNeutral": "flat",
     "netDash": "-",
-    "institutionalFlow": "Recent fund flows: Foreign {foreign}, Investment Trust {trust}.",
+    "institutionalFlow": "Latest session fund flows: Foreign {foreign}, Investment Trust {trust}.",
     "institutionalBuyTrend": "Institutional net buy for {days} consecutive days, bullish structure.",
     "institutionalSellTrend": "Institutional net sell for {days} consecutive days, bearish structure.",
     "limitUp": "Hit daily limit up (+10%), extremely strong bullish momentum, be cautious chasing highs.",
