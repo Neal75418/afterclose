@@ -898,10 +898,20 @@ class AnalysisSummaryService {
   // ==================================================
   static final _extendedMarketData =
       <String, LocalizableString Function(Map<String, dynamic>)>{
-        SignalName.foreignShareholdingIncreasing: (_) =>
-            const LocalizableString('summary.foreignIncreasing'),
-        SignalName.foreignShareholdingDecreasing: (_) =>
-            const LocalizableString('summary.foreignDecreasing'),
+        // 帶出實際百分點：規則判的是兩點淨變化過門檻（0.5pp），不是單調
+        // 遞增。原文案寫「持續增加／減少」，而實測 2026-07-24 觸發的 33 檔
+        // 有 11 檔（33%）最新一天其實在反向——3006 晶豪科最後兩天連跌，
+        // 同卡的輔助數據還寫著「外資 賣超 1259 張」。
+        // 規則自己的 description 本來就只說「增加/減少 X%」，不含連續性宣稱。
+        // 方向由用詞承載，代入值取絕對值；小數位與規則 description 一致。
+        SignalName.foreignShareholdingIncreasing: (e) => LocalizableString(
+          'summary.foreignIncreasing',
+          {'change': _absNumStr(e['change'], fractionDigits: 2)},
+        ),
+        SignalName.foreignShareholdingDecreasing: (e) => LocalizableString(
+          'summary.foreignDecreasing',
+          {'change': _absNumStr(e['change'], fractionDigits: 2)},
+        ),
         SignalName.dayTradingHigh: (e) => LocalizableString(
           'summary.dayTradingHigh',
           {'ratio': _numStr(e['dayTradingRatio'] ?? e['ratio'])},
@@ -1060,6 +1070,12 @@ class AnalysisSummaryService {
     ..._epsSignals,
     ..._roeSignals,
   };
+
+  /// 取絕對值後格式化——方向由文案用詞承載，避免出現「減少 -1.89」。
+  static String _absNumStr(dynamic value, {int fractionDigits = 1}) {
+    if (value is num) return value.abs().toStringAsFixed(fractionDigits);
+    return _numStr(value, fractionDigits: fractionDigits);
+  }
 
   static String _numStr(dynamic value, {int fractionDigits = 1}) {
     if (value == null) return '-';
