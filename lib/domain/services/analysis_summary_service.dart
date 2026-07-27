@@ -488,6 +488,20 @@ class AnalysisSummaryService {
       }
     }
 
+    // 這是**純門檻標籤，不含成長性調整**：`pe > peSummaryLowLabelThreshold`
+    // 一律標「估值偏高」。實例（2026-07-24）——同樣 PE 約 17 拿到同一句：
+    //   3231 緯創  PE 17.9，但 EPS 年增 65.4%、營收年增 53.8%（PEG < 0.3）
+    //   3673 TPK-KY PE 17.2，PBR 0.63、空頭排列，是價值陷阱側
+    // 兩者的投資含意完全相反，標籤卻相同。
+    //
+    // **這是已知取捨，不是待修的 bug**：門檻在 AnalysisParams 的 docstring
+    // 明載為 label-only、不影響評分，且與規則側門檻刻意分離（見 5eb1d29）。
+    // 要加成長調整（PEG 之類）等於引入新的評價方法論，須先過回測驗證，
+    // 不能因為「看起來怪」就改。
+    //
+    // 寫在這裡是因為緯創那張卡已被誤判提報過：關鍵訊號滿是高成長、輔助
+    // 數據卻說估值偏高，形狀很像本檔其他真缺陷（同卡兩個相反說法），
+    // 但那些是同一指標互相矛盾，此處是單一指標的機械標籤。
     final pe = latestPER?.per;
     if (pe != null && pe > 0) {
       final key = pe <= AnalysisParams.peSummaryLowLabelThreshold
