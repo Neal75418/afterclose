@@ -331,4 +331,181 @@ void main() {
       expect(by5.last.momentumPct, closeTo(0.0, 1e-6));
     });
   });
+  // 三個指標都是「未正規化」的版本，讀法會被誤導（2026-07-27 實測）
+  //
+  // 【1】絕對報酬 vs 超額報酬
+  //   大盤 20 日 = -2.10%，但榜上 12 個族群顯示的是絕對報酬。
+  //   居家生活類 +0.23% 讀起來像「幾乎沒動」，實際是 **超額 +2.34%**
+  //   ——在一個跌 2.1% 的市場裡屬強勢。輪動要問「誰比大盤強」而非「誰漲了」。
+  //
+  // 【2】法人張數 vs 佔成交量比
+  //   依張數：金融保險 +18.9萬 > 電腦週邊 +16.1萬 > 鋼鐵 +9.8萬
+  //   依佔比：**鋼鐵 32.6% > 水泥 25.7% > 紡織 16.2% > 金融保險 12.4%**
+  //   排序完全不同。張數榜實際在量「哪個族群大」——法人吃掉鋼鐵三日成交量
+  //   的三分之一，才是真正主導的族群。
+  //
+  // 【3】中位數缺廣度
+  //   橡膠 中位+3.5% 上漲佔比 73%（整族在動）
+  //   其他  中位+0.7% 上漲佔比 52%（一半漲一半跌，中位數由少數成員撐）
+  //   同一個中位數排序下，訊號品質天差地遠。
+  group('正規化指標', () {
+    test('🚨 超額報酬＝族群中位數 − 同窗大盤報酬', () {
+      final rankings = service.rank(
+        priceHistories: {
+          for (var i = 0; i < 5; i++)
+            'A$i': historyWithRet20('A$i', 0.2), // 中位數 +0.2%
+        },
+        industries: {for (var i = 0; i < 5; i++) 'A$i': '居家生活類'},
+        names: const {},
+        institutionalHistories: const {},
+        marketReturnPct: -2.10,
+      );
+
+      expect(rankings.single.momentumPct, closeTo(0.2, 0.001));
+      expect(
+        rankings.single.excessPct,
+        closeTo(2.30, 0.001),
+        reason: '大盤 -2.10% 時，+0.2% 是跑贏 2.3pp，不是「幾乎沒動」',
+      );
+    });
+
+    test('對照組：未提供大盤報酬時 excessPct 為 null，不得當成 0', () {
+      final rankings = service.rank(
+        priceHistories: {
+          for (var i = 0; i < 5; i++) 'A$i': historyWithRet20('A$i', 1.0),
+        },
+        industries: {for (var i = 0; i < 5; i++) 'A$i': '居家生活類'},
+        names: const {},
+        institutionalHistories: const {},
+      );
+
+      expect(
+        rankings.single.excessPct,
+        isNull,
+        reason: '當成 0 等於宣稱「大盤沒漲跌」——把缺資料講成一個事實',
+      );
+    });
+
+    test('🚨 法人佔成交量比：小族群大比例不得被大族群的絕對張數蓋過', () {
+      final date = DateTime(2026, 7, 27);
+      final rankings = service.rank(
+        priceHistories: {
+          for (var i = 0; i < 5; i++) 'S$i': historyWithRet20('S$i', 5.0),
+          for (var i = 0; i < 5; i++) 'F$i': historyWithRet20('F$i', 5.0),
+        },
+        industries: {
+          for (var i = 0; i < 5; i++) 'S$i': '鋼鐵工業',
+          for (var i = 0; i < 5; i++) 'F$i': '金融保險',
+        },
+        names: const {},
+        institutionalHistories: {
+          // 鋼鐵：法人 2,000 股／成交 10,000 股 → 20%
+          for (var i = 0; i < 5; i++) 'S$i': [inst('S$i', date, foreign: 2000)],
+          // 金融：法人 10,000 股／成交 1,000,000 股 → 1%
+          for (var i = 0; i < 5; i++)
+            'F$i': [inst('F$i', date, foreign: 10000)],
+        },
+        volumeBySymbol: {
+          for (var i = 0; i < 5; i++) 'S$i': 10000,
+          for (var i = 0; i < 5; i++) 'F$i': 1000000,
+        },
+        marketReturnPct: 0,
+      );
+
+      final steel = rankings.firstWhere((r) => r.industry == '鋼鐵工業');
+      final fin = rankings.firstWhere((r) => r.industry == '金融保險');
+
+      expect(steel.institutionalNetShares, 10000); // 絕對張數：金融較大
+      expect(fin.institutionalNetShares, 50000);
+      expect(
+        steel.institutionalVolumeRatio,
+        closeTo(0.20, 0.001),
+        reason: '法人吃掉鋼鐵兩成成交量',
+      );
+      expect(fin.institutionalVolumeRatio, closeTo(0.01, 0.001));
+      expect(
+        steel.institutionalVolumeRatio! > fin.institutionalVolumeRatio!,
+        isTrue,
+        reason: '絕對張數金融贏 5 倍，但佔比鋼鐵贏 20 倍——後者才是「法人主導」',
+      );
+    });
+
+    test('對照組：成交量缺資料時佔比為 null，不得除以零或當 0', () {
+      final rankings = service.rank(
+        priceHistories: {
+          for (var i = 0; i < 5; i++) 'A$i': historyWithRet20('A$i', 1.0),
+        },
+        industries: {for (var i = 0; i < 5; i++) 'A$i': '鋼鐵工業'},
+        names: const {},
+        institutionalHistories: {
+          for (var i = 0; i < 5; i++)
+            'A$i': [inst('A$i', DateTime(2026, 7, 27), foreign: 100)],
+        },
+      );
+
+      expect(rankings.single.institutionalVolumeRatio, isNull);
+    });
+
+    test('🚨 族群內任一成員缺成交量 → 整組不算比例（分母偏小會讓比例虛高）', () {
+      final date = DateTime(2026, 7, 27);
+      final rankings = service.rank(
+        priceHistories: {
+          for (var i = 0; i < 5; i++) 'A$i': historyWithRet20('A$i', 1.0),
+        },
+        industries: {for (var i = 0; i < 5; i++) 'A$i': '鋼鐵工業'},
+        names: const {},
+        institutionalHistories: {
+          for (var i = 0; i < 5; i++) 'A$i': [inst('A$i', date, foreign: 1000)],
+        },
+        // A4 缺成交量：若仍以 4 檔的量當分母，比例會被高估 25%
+        volumeBySymbol: {for (var i = 0; i < 4; i++) 'A$i': 10000},
+      );
+
+      expect(
+        rankings.single.institutionalVolumeRatio,
+        isNull,
+        reason:
+            '分子含 5 檔法人、分母只有 4 檔成交量 → 比例虛高。'
+            '寧可不顯示也不要給一個系統性偏高的數',
+      );
+    });
+
+    test('🚨 上漲佔比：中位數相同但廣度不同的兩族群要能分辨', () {
+      // 甲：5 檔全漲小幅 → 中位 +1.0%、廣度 100%
+      // 乙：2 檔大漲 + 3 檔下跌，中位數同為 +1.0% 由排序決定 → 廣度 40%
+      final rankings = service.rank(
+        priceHistories: {
+          'X1': historyWithRet20('X1', 1.0),
+          'X2': historyWithRet20('X2', 1.0),
+          'X3': historyWithRet20('X3', 1.0),
+          'X4': historyWithRet20('X4', 1.0),
+          'X5': historyWithRet20('X5', 1.0),
+          'Y1': historyWithRet20('Y1', 20.0),
+          'Y2': historyWithRet20('Y2', 10.0),
+          'Y3': historyWithRet20('Y3', 1.0),
+          'Y4': historyWithRet20('Y4', -5.0),
+          'Y5': historyWithRet20('Y5', -8.0),
+        },
+        industries: {
+          for (var i = 1; i <= 5; i++) 'X$i': '甲族群',
+          for (var i = 1; i <= 5; i++) 'Y$i': '乙族群',
+        },
+        names: const {},
+        institutionalHistories: const {},
+        marketReturnPct: 0,
+      );
+
+      final x = rankings.firstWhere((r) => r.industry == '甲族群');
+      final y = rankings.firstWhere((r) => r.industry == '乙族群');
+
+      expect(x.momentumPct, closeTo(1.0, 0.001));
+      expect(y.momentumPct, closeTo(1.0, 0.001));
+      expect(x.advancingRatio, closeTo(1.0, 0.001), reason: '5/5 上漲');
+      expect(
+        y.advancingRatio,
+        closeTo(0.6, 0.001),
+        reason: '3/5 上漲（Y1/Y2/Y3）——同樣的中位數，訊號品質完全不同',
+      );
+    });
+  });
 }

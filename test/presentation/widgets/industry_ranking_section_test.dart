@@ -36,6 +36,10 @@ void main() {
     momentumPct: 12.3,
     memberCount: 42,
     institutionalNetShares: 5000000, // +5,000 張
+    // 2026-07-27 新增的正規化指標：超額（vs 大盤同窗）、法人佔成交量比、上漲佔比
+    excessPct: 14.4,
+    institutionalVolumeRatio: 0.12,
+    advancingRatio: 0.73,
     topMembers: [
       IndustryMember(symbol: '2330', name: '台積電', retPct: 15.0),
       IndustryMember(symbol: '2454', name: '聯發科', retPct: 10.0),
@@ -46,6 +50,9 @@ void main() {
     momentumPct: -2.5,
     memberCount: 12,
     institutionalNetShares: -800000,
+    excessPct: -0.4,
+    institutionalVolumeRatio: -0.05,
+    advancingRatio: 0.33,
     topMembers: [],
   );
   const financials = IndustryRanking(
@@ -53,6 +60,9 @@ void main() {
     momentumPct: 3.0,
     memberCount: 32,
     institutionalNetShares: 351542596,
+    excessPct: 5.1,
+    institutionalVolumeRatio: 0.124,
+    advancingRatio: 0.69,
     topMembers: [],
   );
 

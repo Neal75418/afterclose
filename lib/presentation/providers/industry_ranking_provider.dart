@@ -1,5 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/core/constants/market_index_names.dart';
+import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/domain/models/industry_ranking.dart';
@@ -44,11 +47,63 @@ final industryRankingProvider =
         endDate: analysisDate,
       );
 
+      // 法人佔比的分母：與法人窗同長（rankingInstitutionalDays 個交易日）的
+      // 成交量。priceHistories 已含 volume，不需另外查。
+      final volumeBySymbol = <String, double>{};
+      for (final e in priceHistories.entries) {
+        final recent = e.value.reversed
+            .take(SectorParams.rankingInstitutionalDays)
+            .toList();
+        if (recent.length < SectorParams.rankingInstitutionalDays) continue;
+        var v = 0.0;
+        var complete = true;
+        for (final p in recent) {
+          final vol = p.volume;
+          if (vol == null) {
+            complete = false;
+            break;
+          }
+          v += vol;
+        }
+        if (complete) volumeBySymbol[e.key] = v;
+      }
+
       return IndustryRankingService().rank(
         priceHistories: priceHistories,
         industries: {for (final s in stocks) s.symbol: s.industry},
         names: {for (final s in stocks) s.symbol: s.name},
         institutionalHistories: institutional,
         window: window,
+        volumeBySymbol: volumeBySymbol,
+        marketReturnPct: await _marketReturnPct(db, window),
       );
     });
+
+/// 大盤（加權指數）在**與族群同一視窗**的報酬（%），供超額報酬使用。
+///
+/// 口徑必須與 `PriceCalculator.ret20d` / `ret5d` 一致：取最新收盤與第
+/// 21／6 筆前收盤相比。差一格會讓超額值系統性偏移。
+///
+/// 查不到足夠指數歷史時回 null——caller 據此不顯示超額，不得當成 0
+/// （0 等於宣稱「大盤沒漲跌」，把缺資料講成事實）。
+Future<double?> _marketReturnPct(AppDatabase db, RankingWindow window) async {
+  final need = switch (window) {
+    RankingWindow.d20 => 21,
+    RankingWindow.d5 => 6,
+  };
+  try {
+    final hist = await db.getIndexHistoryBatch([
+      MarketIndexNames.taiex,
+    ], days: SectorParams.rankingHistoryCalendarDays);
+    final rows = hist[MarketIndexNames.taiex];
+    if (rows == null || rows.length < need) return null;
+    final sorted = rows.toList()..sort((a, b) => a.date.compareTo(b.date));
+    final latest = sorted.last.close;
+    final old = sorted[sorted.length - need].close;
+    if (old == 0) return null;
+    return (latest - old) / old * 100;
+  } catch (e) {
+    AppLogger.warning('IndustryRankingProvider', '載入大盤同窗報酬失敗', e);
+    return null;
+  }
+}

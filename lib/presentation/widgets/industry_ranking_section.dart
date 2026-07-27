@@ -11,7 +11,6 @@ import 'package:afterclose/core/utils/number_formatter.dart';
 import 'package:afterclose/domain/models/industry_ranking.dart';
 import 'package:afterclose/presentation/providers/industry_ranking_provider.dart';
 import 'package:afterclose/presentation/providers/stock_browsing_context_provider.dart';
-import 'package:afterclose/presentation/screens/stock_detail/tabs/chip/chip_helpers.dart';
 import 'package:afterclose/presentation/widgets/section_header.dart';
 
 /// 今日頁族群排行 section（使用者選股法則 L1：族群決定 80%）
@@ -161,29 +160,78 @@ class _IndustryCard extends ConsumerWidget {
                   ),
                 ],
               ),
-              Text(
-                AppNumberFormat.signedPercent(ranking.momentumPct, decimals: 1),
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: momentumColor,
-                ),
+              // 動能（排序鍵）＋ 超額：絕對報酬在多空市場的語意完全不同，
+              // 大盤 -2.10% 時 +0.23% 是跑贏 2.3pp 而非「幾乎沒動」
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Text(
+                    AppNumberFormat.signedPercent(
+                      ranking.momentumPct,
+                      decimals: 1,
+                    ),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: momentumColor,
+                    ),
+                  ),
+                  if (ranking.excessPct != null) ...[
+                    const SizedBox(width: DesignTokens.spacing4),
+                    Text(
+                      'today.industryExcess'.tr(
+                        args: [
+                          AppNumberFormat.signedPercent(
+                            ranking.excessPct!,
+                            decimals: 1,
+                          ),
+                        ],
+                      ),
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: AppTheme.getPriceColor(
+                          ranking.excessPct!,
+                          theme.brightness,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               ),
+              // 廣度＋法人佔比：中位數不揭露「整族在動」還是「少數撐盤」；
+              // 法人絕對張數主要反映族群規模，佔成交量比才是態度
               Row(
                 children: [
                   Text(
-                    'today.industryInstitutional'.tr(),
+                    'today.industryAdvancing'.tr(
+                      args: ['${(ranking.advancingRatio * 100).round()}%'],
+                    ),
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
-                  const SizedBox(width: DesignTokens.spacing4),
-                  Text(
-                    formatNet(ranking.institutionalNetShares),
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: netColor,
+                  const SizedBox(width: DesignTokens.spacing8),
+                  if (ranking.institutionalVolumeRatio != null)
+                    Text(
+                      'today.industryInstitutionalRatio'.tr(
+                        args: [
+                          AppNumberFormat.signedPercent(
+                            ranking.institutionalVolumeRatio! * 100,
+                            decimals: 1,
+                          ),
+                        ],
+                      ),
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: netColor,
+                      ),
+                    )
+                  else
+                    Text(
+                      'today.industryInstitutional'.tr(),
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
-                  ),
                 ],
               ),
             ],

@@ -21,6 +21,8 @@ class IndustryRankingService {
     required Map<String, String> names,
     required Map<String, List<DailyInstitutionalEntry>> institutionalHistories,
     RankingWindow window = RankingWindow.d20,
+    Map<String, double>? volumeBySymbol,
+    double? marketReturnPct,
   }) {
     final retOf = switch (window) {
       RankingWindow.d20 => PriceCalculator.ret20d,
@@ -74,6 +76,25 @@ class IndustryRankingService {
         net += netBySymbol[m.symbol] ?? 0;
       }
 
+      // 法人佔成交量比：族群內任一成員缺量就整組不算——部分成交量會讓分母
+      // 偏小、比例虛高，寧可不顯示也不要給一個偏誤的數
+      double? volRatio;
+      if (volumeBySymbol != null) {
+        var vol = 0.0;
+        var complete = true;
+        for (final m in members) {
+          final v = volumeBySymbol[m.symbol];
+          if (v == null) {
+            complete = false;
+            break;
+          }
+          vol += v;
+        }
+        if (complete && vol > 0) volRatio = net / vol;
+      }
+
+      final advancing = members.where((m) => m.retPct > 0).length;
+
       members.sort((a, b) {
         final byRet = b.retPct.compareTo(a.retPct);
         if (byRet != 0) return byRet;
@@ -86,6 +107,9 @@ class IndustryRankingService {
           momentumPct: median,
           memberCount: members.length,
           institutionalNetShares: net,
+          excessPct: marketReturnPct == null ? null : median - marketReturnPct,
+          institutionalVolumeRatio: volRatio,
+          advancingRatio: advancing / members.length,
           topMembers: members
               .take(SectorParams.rankingTopMembersCount)
               .toList(),
