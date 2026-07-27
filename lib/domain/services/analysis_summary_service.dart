@@ -521,7 +521,13 @@ class AnalysisSummaryService {
     }
 
     if (revenueHistory.isNotEmpty) {
-      final latest = revenueHistory.first;
+      // **`.last` 才是最新月**：revenue_dao.dart:22 是
+      // `OrderingTerm.asc(t.date)`（升冪），而取數窗是兩年
+      // （stock_fundamentals_loader.dart:45），所以 `.first` 取到的是**兩年前**。
+      // 實機 2425 承啟：同卡並列「營收年增率達 375.6%」（規則 evidence，
+      // 2026/6）與「營收年增率為 -40.1%」（此處誤取 2024/7）。
+      // 同檔 :444 的法人那段早有註解點出這個升冪陷阱，此處漏了。
+      final latest = revenueHistory.last;
       final yoy = latest.yoyGrowth;
       if (yoy != null &&
           yoy.abs() >= AnalysisParams.revenueYoySignificantThreshold) {
@@ -569,7 +575,10 @@ class AnalysisSummaryService {
       fundamentalBias += AnalysisParams.fundamentalBiasPoints;
     }
     if (revenueHistory.isNotEmpty) {
-      final yoy = revenueHistory.first.yoyGrowth;
+      // 同上：升冪清單取 `.last`。此處影響的不只顯示——它進 fundamentalBias，
+      // 直接左右情緒標籤（偏多／中性／偏空），取錯等於用兩年前的營收
+      // 決定今天的多空傾向。
+      final yoy = revenueHistory.last.yoyGrowth;
       if (yoy != null && yoy > AnalysisParams.revenueStrongGrowthThreshold) {
         fundamentalBias += AnalysisParams.fundamentalBiasPoints;
       }
