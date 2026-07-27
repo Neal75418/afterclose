@@ -648,6 +648,116 @@ void main() {
     });
   });
 
+  // 步驟 3.5：歷史價格撞限流時，止血旗標與錯誤分類雙雙失效
+  //
+  // syncer 內部捕捉 RateLimitException 後只設區域旗標中止迴圈、不 rethrow
+  // （這是對的——已抓到的歷史資料要保留），但沒把「為什麼中止」帶出去：
+  //   - update_service.dart 的 `on RateLimitException` 接不到 → rateLimitedAbort 恆 false
+  //   - 失敗只走 `ctx.result.errors.add(...)`（不是 recordError）
+  //     → UpdateResult.hasRateLimitError 恆 false
+  //
+  // 與 1bf5040 修掉的 ParallelWaitError 是同一個 bug class 的另一處：
+  // **限流被降級成一般失敗**。
+  group('步驟 3.5：歷史價格限流的分類', () {
+    test('🚨 歷史價格撞限流時 hasRateLimitError 必須為 true', () async {
+      when(
+        () => mockTdcc.getAllHoldingDistribution(),
+      ).thenAnswer((_) async => {});
+      when(() => mockPriceRepo.syncAllPricesForDate(any())).thenAnswer(
+        (_) async => MarketSyncResult(
+          count: 3,
+          candidates: const ['2330'],
+          dataDate: tradingDay,
+        ),
+      );
+      // 讓 2330 被判定為需要歷史資料，然後同步時撞限流
+      when(
+        () => mockDb.getSymbolsWithSufficientData(
+          minDays: any(named: 'minDays'),
+          startDate: any(named: 'startDate'),
+          endDate: any(named: 'endDate'),
+        ),
+      ).thenAnswer((_) async => []);
+      // phase 0（市場日快照回補）的 fresh-DB 防護：股票主檔空 → 直接跳過。
+      // 不 stub 的話 phase 0 會先拋 TypeError，整個 _syncHistoricalData 走
+      // generic catch，根本到不了要測的 phase 1。
+      when(() => mockDb.getStocksByMarket(any())).thenAnswer((_) async => []);
+      when(
+        () => mockDb.getPriceCoverageBatch(
+          any(),
+          startDate: any(named: 'startDate'),
+          endDate: any(named: 'endDate'),
+        ),
+      ).thenAnswer((_) async => const <String, PriceCoverage>{});
+      when(
+        () => mockPriceRepo.syncStockPrices(
+          any(),
+          startDate: any(named: 'startDate'),
+          endDate: any(named: 'endDate'),
+        ),
+      ).thenThrow(const RateLimitException());
+
+      final service = buildService();
+      final result = await service.runDailyUpdate(forDate: tradingDay);
+
+      expect(
+        result.hasRateLimitError,
+        isTrue,
+        reason:
+            'syncer 不 rethrow（正確），但 coordinator 必須從 result.rateLimited '
+            '判讀出來，否則限流被記成一般失敗、UI 的限流提示永遠不亮',
+      );
+      expect(
+        result.errors.any((e) => e.contains('rate limit')),
+        isTrue,
+        reason: '錯誤訊息要標明限流，否則事後追查配額問題時語意消失',
+      );
+    });
+
+    test('對照組：一般失敗不得被誤標成限流', () async {
+      when(
+        () => mockTdcc.getAllHoldingDistribution(),
+      ).thenAnswer((_) async => {});
+      when(() => mockPriceRepo.syncAllPricesForDate(any())).thenAnswer(
+        (_) async => MarketSyncResult(
+          count: 3,
+          candidates: const ['2330'],
+          dataDate: tradingDay,
+        ),
+      );
+      when(
+        () => mockDb.getSymbolsWithSufficientData(
+          minDays: any(named: 'minDays'),
+          startDate: any(named: 'startDate'),
+          endDate: any(named: 'endDate'),
+        ),
+      ).thenAnswer((_) async => []);
+      // phase 0（市場日快照回補）的 fresh-DB 防護：股票主檔空 → 直接跳過。
+      // 不 stub 的話 phase 0 會先拋 TypeError，整個 _syncHistoricalData 走
+      // generic catch，根本到不了要測的 phase 1。
+      when(() => mockDb.getStocksByMarket(any())).thenAnswer((_) async => []);
+      when(
+        () => mockDb.getPriceCoverageBatch(
+          any(),
+          startDate: any(named: 'startDate'),
+          endDate: any(named: 'endDate'),
+        ),
+      ).thenAnswer((_) async => const <String, PriceCoverage>{});
+      when(
+        () => mockPriceRepo.syncStockPrices(
+          any(),
+          startDate: any(named: 'startDate'),
+          endDate: any(named: 'endDate'),
+        ),
+      ).thenThrow(Exception('parser 掛了'));
+
+      final service = buildService();
+      final result = await service.runDailyUpdate(forDate: tradingDay);
+
+      expect(result.hasRateLimitError, isFalse, reason: '個股資料異常不該讓整條更新進入止血模式');
+    });
+  });
+
   // 步驟 4.7 的 rate limit 止血旗標翻不起來 —— record `.wait` 包掉例外型別
   //
   // update_service.dart:756-759 用 Dart record 的 `.wait` 平行跑損益表與資產

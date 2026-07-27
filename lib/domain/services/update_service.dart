@@ -542,7 +542,23 @@ class UpdateService {
       if (historyResult.marketDayRows > 0) {
         ctx.result.pricesUpdated += historyResult.marketDayRows;
       }
-      if (historyResult.hasErrors) {
+      // syncer 撞限流時**不 rethrow**（已抓到的歷史資料要保留），所以下面
+      // 的 `on RateLimitException` 接不到——必須改從 result 判讀。否則
+      // rateLimitedAbort 與 hasRateLimitError 雙雙翻不起來，限流被降級成
+      // 一般失敗，UI 的限流專屬提示永遠不亮。
+      if (historyResult.rateLimited) {
+        ctx.rateLimitedAbort = true;
+        AppLogger.warning(
+          'UpdateService',
+          '歷史資料更新失敗 (rate limit)',
+          historyResult.rateLimitError,
+        );
+        ctx.result.recordError(
+          '歷史資料更新失敗 (rate limit): '
+          '${historyResult.failedSymbols.length} 檔未同步',
+          historyResult.rateLimitError,
+        );
+      } else if (historyResult.hasErrors) {
         ctx.result.errors.add(
           '歷史資料同步失敗 (${historyResult.failedSymbols.length} 檔)',
         );

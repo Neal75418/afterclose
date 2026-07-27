@@ -24,7 +24,7 @@
 ## 分布
 
 - 嚴重度：high 16 / medium 23 / low 7
-- 處理狀態：❓ 25 / ✅ 13 / 📋 7 / ⚠️ 1
+- 處理狀態（2026-07-27 重新計數，前次摘要與內文不符）：❓ 16 / ✅ 17 / 📋 11 / ⚠️ 2
 
 ## 值得優先查證的未查證項
 
@@ -102,7 +102,18 @@
 
 ### 6. 價格走快取路徑時，候選排序從「波動度降冪」退化成「股票代號升冪」，於是當天所有 take(N) 配額都優先發給 ETF
 
-**狀態**：❓ 未查證
+**狀態**：⚠️ 部分已修（2026-07-27）
+
+**ETF 佔位那半已修**：`3faea63`（籌碼異動）、`22bdfd0`（財報配額）、`1de3234`
+（上櫃財報回填）三處都改成「過濾早於取前 N」。
+
+**排序退化本身仍在，刻意未修。** 2026-07-27 實測量化：上市有財報者依代號分段
+1xxx 63% / 2xxx 37% / 3xxx 48% / 5xxx 23% / 9xxx **7%**——確有偏斜。
+
+但同日的對抗式驗證指出一個削弱因素：**每個新交易日 `existingCount=0` 必走 API
+路徑**（`price_repository.dart` 的 `fullMarketThreshold`=1500），而 API 路徑本來
+就依波動度降冪排序。快取路徑只在「同日重跑」時生效。故影響面小於原始描述，
+但「同日重跑時名額固定給同一批」仍為真。未修。
 
 **證據**：API 路徑 lib/data/repositories/price_candidate_filter.dart:47 `candidates.sort((a,b)=>b.score.compareTo(a.score))`（依 |漲跌幅| 排序）；快取路徑同檔 :56-75 `quickFilterCandidatesFromDb` 完全沒有排序，且 lib/data/database/dao/price_dao.dart:92-94 的查詢無 ORDER BY。實測該查詢 `EXPLAIN QUERY PLAN` 走 idx_daily_price_date，前 25 筆為 0050,0051,0052,0053,0055,0056,0057,0061,006203…00668（全是 ETF）。日誌對照：「價格同步: 2129 筆 (2026-07-24, 快取)」→「[FundamentalSyncer] 財報同步: 跳過 111 檔 ETF，實際同步 39 檔」（update_service.dart:692-701 的 150 個財報名額有 111 個給了 ETF 後被丟棄）；DB 實測 7/24 有外資持股的 20 檔上櫃股中 6 檔是 ETF（00877/00887/00888/00928/00955/009815）。
 
@@ -174,7 +185,15 @@
 
 ### 12. 步驟 4.7 的 150 檔財報預算在 ETF 過濾之前就切完，marketCandidates 分到的 111 個名額 100% 被 ETF 吃光 → 897 檔候選中只有 39 檔有 EPS/ROE
 
-**狀態**：❓ 未查證
+**狀態**：✅ 已修（2026-07-27 `22bdfd0`）— **但原始說法有一半是錯的**
+
+機制成立：ETF 過濾晚於 take，111 個名額被 ETF 吃光且不遞補。已把過濾提到
+`UpdateService.selectFinancialSyncTargets` 內（取前 N 之前），並抽成
+`@visibleForTesting` 純函數加守門測試。
+
+**「897 檔候選中只有 39 檔有 EPS/ROE」不成立**：DB 實查有 EPS 的是 **386 檔**
+（TWSE 372 / TPEx 14），故 severity 由 high 降為 medium。真正的結構性缺口是
+上櫃恆為 0 名額，見 #5 與 `afterclose_otc_financial_backfill`（另案已修）。
 
 **證據**：lib/domain/services/update_service.dart:692-701（prioritySymbols = watchlist∪popular；remainingSlots = ApiConfig.financialSyncMaxCandidates(150) − prioritySymbols.length；再從 ctx.marketCandidates.take(remainingSlots)）→ ETF 過濾卻在下游 lib/domain/services/update/fundamental_syncer.dart:305-315 與 407-418。候選來源順序無 ORDER BY：lib/data/repositories/price_candidate_filter.dart:60 呼叫 lib/data/database/dao/price_dao.dart:92-94 `(select(dailyPrice)..where(date))`，回傳順序未定義（實務上為 symbol 索引序，'00xxx' ETF 排最前）。日誌算術可證：`[UpdateService] 步驟 4.7: 損益=0, 資負=已快取 (150 檔)` + `[FundamentalSyncer] 財報同步: 跳過 111 檔 ETF，實際同步 39 檔`，150−111=39，恰等於 `[UpdateService] 步驟 4.5: ... 持股=39`（watchlist∪popular 的規模）→ marketCandidates 貢獻的 111 個名額沒有一檔是可查財報的個股。
 
@@ -569,7 +588,18 @@ UI（目前只寫 AppLogger）。待 `daily_reason` 累積至有意義深度後�
 
 ### 42. 上櫃營收新鮮度檢查拿日曆月比對營收月，命中率恆為 0%，等同無效閘門且讓 API 成本帳目失真
 
-**狀態**：❓ 未查證
+**狀態**：📋 已記錄未修（2026-07-27 查證為真，但無害）
+
+機制成立：新鮮度拿 `targetDate` 的日曆月（如 2026-07）比對營收月，而 7 月營收
+8 月才公布 → 判定恆為 stale。實測日誌每輪都是「100 檔中 100 檔需同步」。
+
+**但成本是 0**：`syncOtcRevenue` 走 TPEx OpenAPI **全市場單次端點**
+（`fundamental_repository.dart` 的「免費無限制」註解），100 檔與 1 檔都是 1 次
+呼叫。閘門失效不會多燒配額，只是日誌數字沒有資訊量。
+
+不修的理由：修它需要引入「營收發布行事曆」語意（財報那條有
+`TaiwanCalendar.expectedLatestReportQuarter`，營收沒有對應物），成本高於收益。
+與 #43 為同一件事。
 
 **證據**：lib/data/repositories/fundamental_repository.dart:384-401：`isCurrentMonth = latest.revenueYear == targetDate.year && latest.revenueMonth == targetDate.month`。但 revenueMonth 是「營收所屬月」（N 月營收於 N+1 月 10 日前公布），targetDate 是交易日，兩者結構上永遠差 1~2 個月，條件恆為 false。日誌實證兩處都是 100% miss：`上櫃營收新鮮度檢查: 4 檔中 4 檔需同步`、`上櫃營收新鮮度檢查: 100 檔中 100 檔需同步 → 同步完成: 94/100 檔`。正確的判準 `TaiwanCalendar.expectedLatestRevenueMonth`（taiwan_calendar.dart:261-264，含 `now.day > 10 ? 1 : 2` 的公布日邏輯）已存在於同一份 codebase，只被 fundamental_syncer.dart:279 用到。連帶效果：`syncOtcRevenue` 回傳 successCount=94，被 update_service.dart:792-799 加總成 `(API ~94 calls)`，但實際 fundamental_repository.dart:418 只打了 1 次 `_tpex.getAllMonthlyRevenue()` 批次。
 
@@ -581,7 +611,7 @@ UI（目前只寫 AppLogger）。待 `daily_reason` 累積至有意義深度後�
 
 ### 43. 上櫃營收的新鮮度檢查用「當月」比對「營收月」，永遠不成立，等於沒有 gate
 
-**狀態**：❓ 未查證
+**狀態**：📋 已記錄未修 — 與 #42 為同一條，處置見 #42
 
 **證據**：lib/data/repositories/fundamental_repository.dart:393-396 `latest.revenueYear == currentYear && latest.revenueMonth == currentMonth`；但 TPEX `資料年月` 是資料所屬月（tpex_client.dart:936-956 解析註解），營收次月 10 日才公布。DB 實證 monthly_revenue 最新為 2026/6（1316 筆），而 targetDate 是 2026/7 → 條件恆為 false。日誌「上櫃營收新鮮度檢查: 100 檔中 100 檔需同步」每輪皆然。專案內已有正確做法：fundamental_syncer.dart:279 用 `TaiwanCalendar.expectedLatestRevenueMonth`。
 

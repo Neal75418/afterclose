@@ -1,3 +1,4 @@
+import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/date_context.dart';
@@ -116,6 +117,11 @@ void main() {
     // 市場日快照回補（phase 0）的良性預設：股票主檔為空 → phase 0
     // 直接跳過（fresh DB 防護），既有 per-symbol 測試行為不變。
     when(() => mockDb.getStocksByMarket(any())).thenAnswer((_) async => []);
+    // 預算估算的市場查詢預設回空：**全部視為市場未知 → 按上市（逐月）計價**，
+    // 與加入分市場計價之前的行為逐字相同，既有測試的期望值因此不變。
+    when(
+      () => mockDb.getMarketsForSymbolsBatch(any()),
+    ).thenAnswer((_) async => <String, String>{});
   });
 
   group('HistoricalPriceSyncer', () {
@@ -946,6 +952,229 @@ void main() {
         ).called(2);
         expect(result.marketDayRows, 700);
       });
+    });
+  });
+
+  // 上櫃股被當成上市股計價，動態上限被高估壓低
+  //
+  // `PriceRepository.syncStockPrices`（price_repository.dart:172-183）依市場
+  // 分流：
+  //   上櫃 → `_tpexSource.fetchSingleStockPrices(startDate, endDate)` 整段 **1 次**
+  //   上市 → `_twseSource.fetchMonthlyPrices(months: monthsToFetch)` **逐月**
+  // 但 `_estimateAvgMonthsNeeded` 完全不分市場，一律以「需要幾個月＝幾次呼叫」
+  // 計價，再用 `maxSyncCount = historicalPriceMaxMonthlyApiCalls / avgMonths`
+  // 壓低每輪可同步檔數。
+  //
+  // 2026-07-27 正式日誌實證：
+  //   [HistoricalPriceSyncer] 需要歷史資料: 8291(138 天,起:6/23)
+  //   [HistoricalPriceSyncer] 每檔平均需 8.0 個月 API 呼叫，動態限制為 38 檔
+  //   [FinMind] TaiwanStockPrice(8291): 138 筆      ← **只有這一行 = 1 次呼叫**
+  // 8291 尚茂為 TPEx（DB 實查）→ 估 8 次、實際 1 次，高估 8 倍。
+  // Fresh DB（avgMonths≈14）時高估可達 14 倍。
+  //
+  // 影響面校正：穩態下節流綁不住（當日只有 1 檔需要、上限 38），只有冷啟動
+  // 或長期未開才會綁。DB 現況 TPEx 57 檔 / TWSE 62 檔不足 250 日。
+  // 故這是**回補速度**問題，不影響正確性。
+  //
+  // **估錯方向不對稱**：高估只是慢，低估會讓上限放大到打爆 FinMind 配額。
+  // 因此市場未知時一律按上市（逐月）計價。
+  group('歷史價格預算：上櫃整段 1 次呼叫，不得按月計價', () {
+    test('🚨 上櫃股每檔只算 1 次呼叫（實測 8291 估 8 次、實際 1 次）', () async {
+      final symbols = [for (var i = 0; i < 60; i++) '5${400 + i}'];
+      setupSufficientDataSymbols([]);
+      setupPriceHistoryBatch({});
+      when(
+        () => mockDb.getMarketsForSymbolsBatch(any()),
+      ).thenAnswer((_) async => {for (final s in symbols) s: MarketCode.tpex});
+      for (final sym in symbols) {
+        setupSyncSuccess(sym);
+      }
+
+      await syncer.syncHistoricalPrices(
+        date: testDate,
+        watchlistSymbols: symbols,
+        popularStocks: [],
+        marketCandidates: [],
+      );
+
+      // 全上櫃 → avgMonths 應為 1 → maxSyncCount = 300 → 10 檔全部同步
+      for (final sym in symbols) {
+        verify(
+          () => mockPriceRepo.syncStockPrices(
+            sym,
+            startDate: any(named: 'startDate'),
+            endDate: any(named: 'endDate'),
+          ),
+        ).called(1);
+      }
+    });
+
+    test('🚨 市場未知時必須按上市（逐月）計價——低估會打爆配額', () async {
+      final symbols = [for (var i = 0; i < 60; i++) '9${100 + i}'];
+      setupSufficientDataSymbols([]);
+      setupPriceHistoryBatch({});
+      // DAO 查不到這些 symbol（主檔尚未同步 / 已下市）
+      when(
+        () => mockDb.getMarketsForSymbolsBatch(any()),
+      ).thenAnswer((_) async => <String, String>{});
+      for (final sym in symbols) {
+        setupSyncSuccess(sym);
+      }
+
+      await syncer.syncHistoricalPrices(
+        date: testDate,
+        watchlistSymbols: symbols,
+        popularStocks: [],
+        marketCandidates: [],
+      );
+
+      final synced = verify(
+        () => mockPriceRepo.syncStockPrices(
+          captureAny(),
+          startDate: any(named: 'startDate'),
+          endDate: any(named: 'endDate'),
+        ),
+      ).captured.length;
+
+      expect(
+        synced,
+        lessThan(symbols.length),
+        reason:
+            '整個視窗（historyRequiredDays）跨約 9 個月，未知市場按逐月計價 → '
+            'maxSyncCount ≈ 300/9 ≈ 33 < 60。若把未知當成上櫃（1 次），'
+            '上限會放大到 300，冷啟動時足以打爆 FinMind 的 600/hr',
+      );
+    });
+
+    test('對照組：上市股維持逐月計價，行為不變', () async {
+      final symbols = [for (var i = 0; i < 60; i++) '2${400 + i}'];
+      setupSufficientDataSymbols([]);
+      setupPriceHistoryBatch({});
+      when(
+        () => mockDb.getMarketsForSymbolsBatch(any()),
+      ).thenAnswer((_) async => {for (final s in symbols) s: MarketCode.twse});
+      for (final sym in symbols) {
+        setupSyncSuccess(sym);
+      }
+
+      await syncer.syncHistoricalPrices(
+        date: testDate,
+        watchlistSymbols: symbols,
+        popularStocks: [],
+        marketCandidates: [],
+      );
+
+      final synced = verify(
+        () => mockPriceRepo.syncStockPrices(
+          captureAny(),
+          startDate: any(named: 'startDate'),
+          endDate: any(named: 'endDate'),
+        ),
+      ).captured.length;
+
+      expect(
+        synced,
+        lessThan(symbols.length),
+        reason: '上市維持逐月計價，60 檔應被節流；不得因本次修法變寬鬆',
+      );
+    });
+  });
+
+  // 撞 FinMind 限流時，coordinator 無從得知 —— 止血旗標翻不起來
+  //
+  // phase 1 的 per-symbol 迴圈在 historical_price_syncer.dart:636-643 捕捉
+  // RateLimitException，設**區域變數** `rateLimited`（:602）中止迴圈，
+  // 但既不 rethrow、也不放進 [HistoricalPriceSyncResult]。
+  //
+  // 於是 update_service.dart 的 `_syncHistoricalData`：
+  //   - :549 的 `on RateLimitException` 永遠不觸發 → ctx.rateLimitedAbort 恆 false
+  //   - 失敗只走 `ctx.result.errors.add(...)`（**不是 recordError**）
+  //     → UpdateResult.hasRateLimitError 也恆 false
+  // 兩者都是「限流被降級成一般失敗」，與 1bf5040 修掉的 ParallelWaitError
+  // 是同一個 bug class 的另一處。
+  //
+  // **不 rethrow 是對的**：整段歷史回補不該因為配額用完就算全失敗，
+  // 已抓到的資料要保留。缺的是把「為什麼中止」帶出去。
+  //
+  // 影響面校正（2026-07-27 一併查證，故非 high）：
+  //   配額用完後 finmind_client 的 checkBudget 會在發網路請求前擋下，
+  //   下游步驟不會真的送出請求、也不會多燒配額；且自 1bf5040 起步驟 4.7
+  //   會自己設起旗標。真正的損害是**歷史價格這一段的失敗被誤分類**，
+  //   日誌只寫「歷史資料同步失敗 (N 檔)」，事後追查配額問題時語意消失。
+  group('限流中止必須讓 caller 分辨得出來', () {
+    test('🚨 撞限流時 result 要帶出原始例外，不能只當成「N 檔失敗」', () async {
+      setupSufficientDataSymbols([]);
+      setupPriceHistoryBatch({'2330': createPrices('2330', 5)});
+      when(
+        () => mockDb.getStocksBatch(any()),
+      ).thenAnswer((_) async => <String, StockMasterEntry>{});
+      when(
+        () => mockPriceRepo.syncStockPrices(
+          any(),
+          startDate: any(named: 'startDate'),
+          endDate: any(named: 'endDate'),
+        ),
+      ).thenThrow(const RateLimitException());
+
+      final result = await syncer.syncHistoricalPrices(
+        date: testDate,
+        watchlistSymbols: ['2330'],
+        popularStocks: [],
+        marketCandidates: [],
+      );
+
+      expect(
+        result.rateLimitError,
+        isA<RateLimitException>(),
+        reason:
+            'coordinator 要靠這個設 rateLimitedAbort 並走 recordError；'
+            '只有 failedSymbols 的話「限流」與「個股資料異常」無法分辨',
+      );
+      expect(result.rateLimited, isTrue);
+      expect(result.failedSymbols, isNotEmpty, reason: '既有語意不變：限流中止的檔仍算失敗');
+    });
+
+    test('對照組：一般失敗不得被誤標成限流', () async {
+      setupSufficientDataSymbols([]);
+      setupPriceHistoryBatch({'2330': createPrices('2330', 5)});
+      when(
+        () => mockDb.getStocksBatch(any()),
+      ).thenAnswer((_) async => <String, StockMasterEntry>{});
+      setupSyncFailure('2330');
+
+      final result = await syncer.syncHistoricalPrices(
+        date: testDate,
+        watchlistSymbols: ['2330'],
+        popularStocks: [],
+        marketCandidates: [],
+      );
+
+      expect(result.failedSymbols, isNotEmpty);
+      expect(
+        result.rateLimited,
+        isFalse,
+        reason: 'DatabaseException / 格式錯誤不該讓整條更新進入止血模式',
+      );
+      expect(result.rateLimitError, isNull);
+    });
+
+    test('對照組：全部成功時不得誤報限流', () async {
+      setupSufficientDataSymbols([]);
+      setupPriceHistoryBatch({'2330': createPrices('2330', 5)});
+      when(
+        () => mockDb.getStocksBatch(any()),
+      ).thenAnswer((_) async => <String, StockMasterEntry>{});
+      setupSyncSuccess('2330');
+
+      final result = await syncer.syncHistoricalPrices(
+        date: testDate,
+        watchlistSymbols: ['2330'],
+        popularStocks: [],
+        marketCandidates: [],
+      );
+
+      expect(result.rateLimited, isFalse);
+      expect(result.rateLimitError, isNull);
     });
   });
 }

@@ -123,12 +123,21 @@ class HistoricalPriceSyncer {
 
     _logSyncDiagnostics(symbolsNeedingData, coverageBatch);
 
-    // 估算每檔平均需要的月度 API 呼叫數
+    // 估算每檔平均需要的 API 呼叫數（上櫃整段 1 次，見方法註解）。
+    // 查不到市場的 symbol 不進這個集合 → 按上市（逐月）保守計價。
+    final marketsBatch = await _db.getMarketsForSymbolsBatch(
+      symbolsNeedingData,
+    );
+    final otcSymbols = <String>{
+      for (final e in marketsBatch.entries)
+        if (e.value == MarketCode.tpex) e.key,
+    };
     final avgMonthsPerSymbol = _estimateAvgMonthsNeeded(
       symbolsNeedingData,
       coverageBatch,
       historyStartDate: historyStartDate,
       endDate: date,
+      otcSymbols: otcSymbols,
     );
 
     final limitedSymbols = await _prioritizeSymbols(
@@ -151,6 +160,7 @@ class HistoricalPriceSyncer {
       totalSymbolsNeeded: batchResult.totalSymbolsNeeded,
       failedSymbols: batchResult.failedSymbols,
       marketDayRows: marketDayRows,
+      rateLimitError: batchResult.rateLimitError,
     );
   }
 
@@ -414,11 +424,23 @@ class HistoricalPriceSyncer {
   /// 天散落在 9 個月，缺口可能是 6 個月而非 4。低估會讓 maxSyncCount 估高，
   /// 超出真實 API budget 觸發限流（2026-06 production 案例：估 75 檔 × 4 月
   /// = 300 calls 預算，實打 75 × ~15 月 = 1125，跑到 16 檔就被擋）。
+  /// 估算每檔平均需要的 API 呼叫數（單位沿用「月」，上市 1 月 = 1 次呼叫）
+  ///
+  /// **上櫃整段只要 1 次呼叫**：`PriceRepository.syncStockPrices` 依市場分流，
+  /// 上櫃走 `_tpexSource.fetchSingleStockPrices(startDate, endDate)` 一次取回
+  /// 整個區間，上市才是 `_twseSource.fetchMonthlyPrices(months: ...)` 逐月。
+  /// 不分市場一律按月計價會把上櫃高估 monthsNeeded 倍——2026-07-27 正式日誌
+  /// 實測 8291 尚茂（TPEx）估 8.0 個月、實際 `TaiwanStockPrice(8291): 138 筆`
+  /// 只有 1 次呼叫；fresh DB（avgMonths≈14）時高估可達 14 倍。
+  ///
+  /// [otcSymbols] 未包含的 symbol **一律按上市（逐月）計價**。估錯方向不對稱：
+  /// 高估只是回補變慢，低估會讓 `maxSyncCount` 放大到打爆 FinMind 的 600/hr。
   double _estimateAvgMonthsNeeded(
     List<String> symbols,
     Map<String, PriceCoverage> coverageBatch, {
     required DateTime historyStartDate,
     required DateTime endDate,
+    required Set<String> otcSymbols,
   }) {
     if (symbols.isEmpty) return 1;
 
@@ -434,6 +456,12 @@ class HistoricalPriceSyncer {
 
     var totalMonthsNeeded = 0;
     for (final symbol in symbols) {
+      // 上櫃：整段 1 次呼叫，與缺多少個月無關
+      if (otcSymbols.contains(symbol)) {
+        totalMonthsNeeded += 1;
+        continue;
+      }
+
       final coverage = coverageBatch[symbol];
       if (coverage == null || coverage.count == 0) {
         // 無資料：整個視窗都需抓取
@@ -600,6 +628,9 @@ class HistoricalPriceSyncer {
     final failedSymbols = <String>[];
 
     var rateLimited = false;
+    // 只在收到「確證的」RateLimitException 時填入 —— NetworkException 與
+    // 防禦性 circuit breaker 同樣會中止迴圈，但那是推測不是確證。
+    Object? rateLimitError;
     var consecutiveFailedBatches = 0;
     var symbolsSucceeded = 0;
 
@@ -635,6 +666,7 @@ class HistoricalPriceSyncer {
       for (final (symbol, count, error) in results) {
         if (error is RateLimitException) {
           rateLimited = true;
+          rateLimitError ??= error;
           failedSymbols.add(symbol);
           AppLogger.warning(
             'HistoricalPriceSyncer',
@@ -687,6 +719,7 @@ class HistoricalPriceSyncer {
       symbolsProcessed: symbolsSucceeded,
       totalSymbolsNeeded: totalNeeded,
       failedSymbols: failedSymbols,
+      rateLimitError: rateLimitError,
     );
   }
 }
@@ -699,6 +732,7 @@ class HistoricalPriceSyncResult {
     this.totalSymbolsNeeded = 0,
     this.failedSymbols = const [],
     this.marketDayRows = 0,
+    this.rateLimitError,
   });
 
   final int syncedCount;
@@ -709,5 +743,19 @@ class HistoricalPriceSyncResult {
   /// Phase 0（市場日快照回補）寫入的價格列數
   final int marketDayRows;
 
+  /// 因 API 限流而提前中止時保留的原始例外，否則為 null。
+  ///
+  /// **不 rethrow 是刻意的**：整段歷史回補不該因為配額用完就算全失敗，
+  /// 已抓到的資料要保留。但 caller 必須分辨得出「限流中止」與「個股資料
+  /// 異常」——前者要設 `rateLimitedAbort` 止血並走
+  /// `UpdateResult.recordError`（才會設 `hasRateLimitError`），後者不用。
+  ///
+  /// 只在真的收到 [RateLimitException] 時填入。`NetworkException` 與
+  /// 「連續整批失敗」的防禦性 circuit breaker 同樣會中止迴圈，但那是推測
+  /// 不是確證，不足以讓整條更新進入止血模式。
+  final Object? rateLimitError;
+
   bool get hasErrors => failedSymbols.isNotEmpty;
+
+  bool get rateLimited => rateLimitError != null;
 }
