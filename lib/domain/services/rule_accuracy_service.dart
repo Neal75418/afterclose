@@ -72,7 +72,11 @@ class RuleAccuracyService {
     await _computeUnbiasedRuleStats();
   }
 
-  /// 從 `daily_reason` + `daily_price` 聚合 unbiased per-rule 統計寫入 `rule_accuracy`。
+  /// 從 `daily_reason` + `daily_price` 聚合 per-rule 統計寫入 `rule_accuracy`。
+  ///
+  /// 方法名的 "Unbiased" 是相對於它取代的舊實作（見下方 Gap 1），**不代表結果
+  /// 無偏**——co-occurrence inflation 仍未修，且 `daily_reason` 只在分數過門檻時
+  /// 才落庫。完整揭露見 class doc 的「誠實揭露」段。
   ///
   /// ## 為什麼這樣做（修 Gap 1 primary_rule_id bias）
   ///
