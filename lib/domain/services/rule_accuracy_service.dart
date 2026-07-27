@@ -442,10 +442,19 @@ class RuleAccuracyService {
 
   /// 取得規則摘要文字（用於 UI 顯示）
   ///
-  /// 例如：「命中率 65%，平均 5 日報酬 +2.3%」。樣本數低於
+  /// 樣本基礎一律隨附，例如
+  /// 「命中率 65%，平均 5 日報酬 +2.3%（樣本 35 筆 / 40 個觸發日）」。
+  ///
+  /// 低信心註記在**兩個條件擇一**成立時附加於括號**之後**：
+  /// `distinctDates < ` [CalibrationThresholds.minDistinctDates]（觸發日太少
+  /// → clustered 觀察數不足）或 `triggerCount < `
   /// [CalibrationThresholds.sampleSizeCutThreshold]（與 calibration cut 共用
-  /// 同一門檻）時附上低信心註記——例如「命中率 70%，平均 5 日報酬 +2.3%
-  /// （樣本數 10 筆，信心度較低）」。
+  /// 同一門檻）——例如「命中率 70%，平均 5 日報酬 +2.3%
+  /// （樣本 10 筆 / 3 個觸發日），信心度較低」。
+  ///
+  /// 觸發日條件由 f8de299（2026-07-26）加入，該 commit 的 docstring 未同步；
+  /// 以現有資料深度所有規則都會落在低信心側，這是預期結果（8 天不足以評估
+  /// 命中率），distinct_dates 上限 = 資料深度 − 持有窗，會隨天數單調成長。
   ///
   /// **為什麼需要（audit finding #7b）**：這是 `rule_accuracy` 唯一的 UI
   /// 消費端——bias telemetry（co-occurrence inflation 等）只寫 AppLogger.info
