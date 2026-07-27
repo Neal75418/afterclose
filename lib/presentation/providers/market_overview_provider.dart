@@ -71,6 +71,7 @@ class MarketOverviewState {
     this.error,
     this.dataDate,
     this.sectionDates = const {},
+    this.marginIndexChangePercent = const {},
     this.advanceDeclineStaleDates = const {},
   });
 
@@ -157,6 +158,19 @@ class MarketOverviewState {
   /// 僅在與 [dataDate] 不同時才有意義，UI 可據此顯示差異標示。
   final Map<String, DateTime> sectionDates;
 
+  /// **融資資料那天**的大盤漲跌幅（%），key 為市場代碼。
+  ///
+  /// 籌碼槓桿判讀（`MarketReadingService.interpretMarginLeverage`）是一句
+  /// 因果陳述——「指數跌、融資減：去槓桿中」——兩邊必須來自同一天。
+  /// 融資融券由 TWSE 約 21:00 發布，傍晚更新時常落後 1~3 天（畫面也標著
+  /// 該日期），若配最新指數會讓結論反轉：2026-07-27 實測櫃買 07-24 為
+  /// **-3.69%**、07-27 為 +0.12%，取後者會把「去槓桿中」講成「籌碼洗清，
+  /// 相對健康」。
+  ///
+  /// **查不到對應日就不放進 map**（caller 據此不顯示判讀），不得回退到
+  /// 最新值——那正是這個 bug 本身。
+  final Map<String, double> marginIndexChangePercent;
+
   /// 是否有任何有效資料
   bool get hasData => indices.isNotEmpty || advanceDecline.total > 0;
 
@@ -182,6 +196,7 @@ class MarketOverviewState {
     Object? error = sentinel,
     DateTime? dataDate,
     Map<String, DateTime>? sectionDates,
+    Map<String, double>? marginIndexChangePercent,
     Map<String, DateTime>? advanceDeclineStaleDates,
   }) {
     return MarketOverviewState(
@@ -213,6 +228,8 @@ class MarketOverviewState {
       error: error == sentinel ? this.error : error as String?,
       dataDate: dataDate ?? this.dataDate,
       sectionDates: sectionDates ?? this.sectionDates,
+      marginIndexChangePercent:
+          marginIndexChangePercent ?? this.marginIndexChangePercent,
       advanceDeclineStaleDates:
           advanceDeclineStaleDates ?? this.advanceDeclineStaleDates,
     );
@@ -353,9 +370,10 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
         // 背景繼續等待 API 回應，完成後靜默更新
         unawaited(
           allTasks
-              .then((r) {
+              .then((r) async {
                 if (_active && _loadGeneration == myGen) {
-                  state = _buildState(r, dataDate);
+                  final next = await _buildState(r, dataDate);
+                  if (_active && _loadGeneration == myGen) state = next;
                 }
               })
               .catchError((Object e) {
@@ -371,7 +389,7 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
 
       if (!_active || _loadGeneration != myGen) return;
 
-      state = _buildState(results, dataDate);
+      state = await _buildState(results, dataDate);
     } catch (e, s) {
       // getLatestDataDate() 可能拋出例外
       AppLogger.warning('MarketOverviewNotifier', '載入大盤總覽失敗', e, s);
@@ -385,10 +403,12 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
   }
 
   /// 從載入結果建構 state
-  MarketOverviewState _buildState(
+  /// 非同步：需查融資資料當天的指數漲跌幅（見 [_loadIndexChangeOn]），
+  /// 該日期要等 marginResult 回來才知道，無法併進上游的平行載入。
+  Future<MarketOverviewState> _buildState(
     _OverviewSnapshot results,
     DateTime dataDate,
-  ) {
+  ) async {
     // typed record pattern destructuring——順序/型別對不上會直接編譯錯誤
     final (
       (
@@ -476,11 +496,16 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
       sectionDates[MarketOverviewState.kSectionMargin] = marginDate;
     }
 
+    // 籌碼槓桿判讀必須拿**融資那天**的指數，不能拿最新的（見
+    // [MarketOverviewState.marginIndexChangePercent] 的說明）。
+    final marginIndexChange = await _loadIndexChangeOn(marginDate);
+
     return MarketOverviewState(
       indices: indices,
       advanceDecline: advanceDecline,
       indexHistory: indexHistory,
       indexStageHistory: indexStageHistory,
+      marginIndexChangePercent: marginIndexChange,
       advanceDeclineByMarket: advDecByMarket,
       advanceDeclineStaleDates: advDecResult.staleDates,
       institutionalByMarket: instByMarket,
@@ -613,6 +638,41 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
     } catch (e) {
       AppLogger.warning('MarketOverviewNotifier', '載入大盤指數失敗', e);
       return _loadIndicesFromDb();
+    }
+  }
+
+  /// 取 [date] 當天各市場大盤的漲跌幅（%），供籌碼槓桿判讀使用。
+  ///
+  /// **查不到該日就不放進回傳 map**——caller 會因此不顯示判讀行。刻意不回退
+  /// 到最新值：融資融券常落後 1~3 天，用最新指數配舊融資會讓因果陳述反轉
+  /// （2026-07-27 實測櫃買 07-24 為 -3.69%、07-27 為 +0.12%，取後者會把
+  /// 「去槓桿中」講成「籌碼洗清，相對健康」）。
+  Future<Map<String, double>> _loadIndexChangeOn(DateTime? date) async {
+    if (date == null) return const {};
+    try {
+      final byMarket = <String, String>{
+        MarketCode.twse: MarketIndexNames.taiex,
+        MarketCode.tpex: MarketIndexNames.tpexIndex,
+      };
+      final history = await _db.getIndexHistoryBatch(
+        byMarket.values.toList(),
+        days: 30,
+      );
+      final result = <String, double>{};
+      for (final entry in byMarket.entries) {
+        final rows = history[entry.value];
+        if (rows == null) continue;
+        for (final row in rows) {
+          if (!_isDifferentDay(row.date, date)) {
+            result[entry.key] = row.changePercent;
+            break;
+          }
+        }
+      }
+      return result;
+    } catch (e) {
+      AppLogger.warning('MarketOverviewNotifier', '載入融資日指數漲跌失敗', e);
+      return const {};
     }
   }
 

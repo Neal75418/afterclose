@@ -237,6 +237,16 @@ class _MarketDashboardState extends State<MarketDashboard> {
   ///
   /// 供量價 / 籌碼槓桿判讀使用（TWSE→加權指數、TPEx→櫃買指數）。
   /// 找不到對應指數時回傳 null，判讀行不顯示。
+  /// 籌碼槓桿判讀專用：取**融資資料那天**的指數漲跌幅。
+  ///
+  /// 不可改用 [_indexChangePercent]（最新值）——融資融券由 TWSE 約 21:00
+  /// 發布，傍晚更新時常落後 1~3 天，兩者相配會讓因果陳述反轉：2026-07-27
+  /// 實測櫃買 07-24 為 -3.69%、07-27 為 +0.12%，取後者會把「去槓桿中」
+  /// 講成「籌碼洗清，相對健康」（方向相反且更樂觀）。
+  /// 查不到對應日時回 null，判讀行不顯示。
+  double? _marginIndexChangePercent(String marketKey) =>
+      widget.state.marginIndexChangePercent[marketKey];
+
   double? _indexChangePercent(String marketKey) {
     final heroName = marketKey == MarketCode.twse
         ? MarketIndexNames.taiex
@@ -473,7 +483,7 @@ class _MarketDashboardState extends State<MarketDashboard> {
             data: marginData,
             marginBalanceHistory: marginHist,
             shortBalanceHistory: shortHist,
-            indexChangePercent: _indexChangePercent(marketKey),
+            indexChangePercent: _marginIndexChangePercent(marketKey),
           ),
         ),
       );
@@ -841,7 +851,7 @@ class _MarketDashboardState extends State<MarketDashboard> {
           widget.state.historyTrends.marginBalance[market],
         ),
         shortBalanceHistory: widget.state.historyTrends.shortBalance[market],
-        indexChangePercent: _indexChangePercent(market),
+        indexChangePercent: _marginIndexChangePercent(market),
       ),
     );
   }

@@ -2,6 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'package:afterclose/core/constants/market_codes.dart';
+import 'package:afterclose/core/constants/market_index_names.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
@@ -941,6 +943,122 @@ void main() {
 
     test('empty input returns empty list', () {
       expect(cumulativeAdLine([]), isEmpty);
+    });
+  });
+
+  // 籌碼槓桿判讀拿「最新指數」配「較舊的融資資料」，結論可能整個反過來
+  //
+  // market_dashboard.dart 的 `_indexChangePercent` 掃 `state.indices` 取
+  // **最新**漲跌幅，但融資融券區塊自帶較舊的 sectionDate（TWSE 約 21:00 才
+  // 發布，傍晚更新時常落後 1~3 天，畫面也確實標著該日期）。兩者被組成一句
+  // 因果陳述送進 `MarketReadingService.interpretMarginLeverage`。
+  //
+  // 2026-07-27 20:39 實機（融資資料日 07-24）：
+  //   櫃買指數 07-24 = **-3.69%**（融資那天，大跌）
+  //   櫃買指數 07-27 = +0.12%（畫面取的）
+  //   → 顯示「指數漲、融資減：籌碼洗清，相對健康」（positive）
+  //   → 正確應為「指數跌、融資減：去槓桿中」（neutral）
+  // **結論相反且更樂觀**：使用者會以為籌碼在轉好，實際上那天櫃買跌 3.69%，
+  // 是恐慌性去槓桿。上市側 07-24 與 07-27 同為下跌，故結論碰巧一致、看不出來。
+  //
+  // 與本日修掉的「近期法人動向其實是單日」「營收年增取到兩年前那月」同型：
+  // **用不同時間基準的兩個事實組成一句因果陳述**。
+  group('融資判讀必須用融資資料當天的指數', () {
+    test('🚨 融資日與最新日不同時，state 要帶出融資日的指數漲跌幅', () async {
+      setupEmptyDefaults();
+      final marginDay = DateTime(2026, 7, 24);
+      final latestDay = DateTime(2026, 7, 27);
+
+      when(() => mockDb.getLatestMarginTradingTotalsByMarket()).thenAnswer(
+        (_) async => {
+          MarketCode.tpex: (
+            marginBalance: 2220000.0,
+            marginChange: -12000.0,
+            shortBalance: 36000.0,
+            shortChange: 6915.0,
+            dataDate: marginDay,
+          ),
+        },
+      );
+      when(
+        () => mockDb.getIndexHistoryBatch(any(), days: any(named: 'days')),
+      ).thenAnswer(
+        (_) async => {
+          MarketIndexNames.tpexIndex: [
+            MarketIndexEntry(
+              id: 1,
+              date: marginDay,
+              name: MarketIndexNames.tpexIndex,
+              close: 377.63,
+              change: -14.48,
+              changePercent: -3.69,
+              createdAt: marginDay,
+            ),
+            MarketIndexEntry(
+              id: 2,
+              date: latestDay,
+              name: MarketIndexNames.tpexIndex,
+              close: 378.09,
+              change: 0.46,
+              changePercent: 0.12,
+              createdAt: latestDay,
+            ),
+          ],
+        },
+      );
+
+      await container.read(marketOverviewProvider.notifier).loadData();
+      final state = container.read(marketOverviewProvider);
+
+      expect(
+        state.marginIndexChangePercent[MarketCode.tpex],
+        -3.69,
+        reason:
+            '判讀句要用融資那天的指數。取最新的 +0.12% 會把「去槓桿中」講成'
+            '「籌碼洗清，相對健康」——方向相反且更樂觀',
+      );
+    });
+
+    test('對照組：查不到融資日的指數時回 null，寧可不顯示也不要用錯的', () async {
+      setupEmptyDefaults();
+      when(() => mockDb.getLatestMarginTradingTotalsByMarket()).thenAnswer(
+        (_) async => {
+          MarketCode.tpex: (
+            marginBalance: 2220000.0,
+            marginChange: -12000.0,
+            shortBalance: 36000.0,
+            shortChange: 6915.0,
+            dataDate: DateTime(2026, 7, 24),
+          ),
+        },
+      );
+      // 指數歷史沒有 07-24 那天
+      when(
+        () => mockDb.getIndexHistoryBatch(any(), days: any(named: 'days')),
+      ).thenAnswer(
+        (_) async => {
+          MarketIndexNames.tpexIndex: [
+            MarketIndexEntry(
+              id: 1,
+              date: DateTime(2026, 7, 27),
+              name: MarketIndexNames.tpexIndex,
+              close: 378.09,
+              change: 0.46,
+              changePercent: 0.12,
+              createdAt: DateTime(2026, 7, 27),
+            ),
+          ],
+        },
+      );
+
+      await container.read(marketOverviewProvider.notifier).loadData();
+      final state = container.read(marketOverviewProvider);
+
+      expect(
+        state.marginIndexChangePercent[MarketCode.tpex],
+        isNull,
+        reason: '缺對應日資料時不得回退到最新值——那正是這個 bug 本身',
+      );
     });
   });
 }

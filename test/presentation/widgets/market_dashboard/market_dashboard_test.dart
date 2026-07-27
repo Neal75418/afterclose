@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:afterclose/core/constants/market_codes.dart';
+import 'package:afterclose/core/constants/market_index_names.dart';
 import 'package:afterclose/data/models/twse/twse_market_index.dart';
 import 'package:afterclose/presentation/providers/market_overview_provider.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/market_dashboard.dart';
@@ -293,5 +294,50 @@ void main() {
 
       expect(find.byType(SentimentGaugeSection), findsOneWidget);
     });
+  });
+  // 籌碼槓桿判讀必須用融資那天的指數，不能用最新的
+  //
+  // 融資融券由 TWSE 約 21:00 發布，傍晚更新時常落後 1~3 天（區塊也標著該
+  // 日期），配最新指數會讓因果陳述反轉。2026-07-27 20:39 實機：櫃買
+  // 07-24 = -3.69%（融資日）、07-27 = +0.12%（畫面取的）→ 顯示「指數漲、
+  // 融資減：籌碼洗清，相對健康」，正確應為「指數跌、融資減：去槓桿中」。
+  //
+  // 這條守的是**接線**：provider 算好了 marginIndexChangePercent，但
+  // dashboard 若仍呼叫 _indexChangePercent（最新值）就是白算。
+  testWidgets('🚨 融資判讀用融資日指數，不得用最新指數', (tester) async {
+    widenViewport(tester);
+
+    final state = MarketOverviewState(
+      // 最新指數為「漲」——若接線錯誤會據此講成「籌碼洗清，相對健康」
+      indices: [createIndex(MarketIndexNames.tpexIndex, 378.09, 0.46)],
+      marginByMarket: const {
+        MarketCode.tpex: MarginTradingTotals(
+          marginBalance: 2220000,
+          marginChange: -12000,
+          shortBalance: 36000,
+          shortChange: 6915,
+        ),
+      },
+      // 融資那天（07-24）大盤是跌的
+      marginIndexChangePercent: const {MarketCode.tpex: -3.69},
+    );
+
+    await tester.pumpWidget(
+      buildTestApp(MarketDashboard(state: state), brightness: Brightness.dark),
+    );
+    await tester.pump(const Duration(seconds: 1));
+
+    // 斷言 i18n key 而非譯文：不依賴 harness 是否載入翻譯，且直接對應
+    // MarketReadingService 的分支，改文案不會讓這條假性轉紅
+    expect(
+      find.textContaining('marginLeverage.deleveraging'),
+      findsWidgets,
+      reason: '融資日指數為 -3.69%（跌）→ 應判「去槓桿中」',
+    );
+    expect(
+      find.textContaining('marginLeverage.healthyWashout'),
+      findsNothing,
+      reason: '用最新的 +0.12% 會誤判成「籌碼洗清，相對健康」——方向相反且更樂觀',
+    );
   });
 }
