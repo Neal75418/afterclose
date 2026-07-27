@@ -1,7 +1,10 @@
 import 'package:afterclose/core/constants/api_config.dart';
+import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/tdcc_client.dart';
+import 'package:afterclose/data/remote/api_budget_tracker.dart';
+import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
 import 'package:afterclose/data/repositories/analysis_repository.dart';
 import 'package:afterclose/data/repositories/fundamental_repository.dart';
@@ -211,6 +214,7 @@ void main() {
   /// 各測試可額外注入 tpex / fundamental 以啟用對應 syncer。
   UpdateService buildService({
     TpexClient? tpex,
+    FinMindClient? finMind,
     FundamentalRepository? fundamental,
     NewsMentionSnapshotService? newsMentionSnapshot,
     TradingRepository? trading,
@@ -232,7 +236,7 @@ void main() {
         warning: warning,
         insider: insider,
       ),
-      clients: UpdateClients(tdcc: mockTdcc, tpex: tpex),
+      clients: UpdateClients(tdcc: mockTdcc, tpex: tpex, finMind: finMind),
       services: UpdateServices(
         scoring: mockScoring,
         newsMentionSnapshot: newsMentionSnapshot,
@@ -644,6 +648,88 @@ void main() {
     });
   });
 
+  // 步驟 4.7 的 rate limit 止血旗標翻不起來 —— record `.wait` 包掉例外型別
+  //
+  // update_service.dart:756-759 用 Dart record 的 `.wait` 平行跑損益表與資產
+  // 負債表。record `.wait` 在任一支失敗時拋的是 **ParallelWaitError**，不是
+  // 底層例外，於是 :767 的 `on RateLimitException` 永遠不會觸發。
+  //
+  // 2026-07-27 實跑驗證（非推理）：
+  //   A record.wait  → 落 generic，型別 ParallelWaitError<(int?, int?), ...>
+  //   B Future.wait  → 分型 catch 命中
+  //   C 兩者皆錯     → Future.wait 拋清單中第一個
+  //   D             → Future.wait 仍等所有 future 結束，不留 unhandled error
+  //
+  // 影響：`UpdateResult.recordError` 的 `if (exception is RateLimitException)`
+  // （update_service.dart:1140）判不到 → `hasRateLimitError` 恆為 false →
+  // today_screen.dart:820 的限流專屬提示永遠不亮，使用者只看到一般警告數。
+  //
+  // 步驟 4.7 是全流程 FinMind 用量最大的一步（2026-07-27 實測 338/384 = 88%），
+  // 止血旗標偏偏死在這裡。
+  //
+  // **嚴重度校正**：一併查過的兩項後果不成立，故非 high——
+  //   步驟 4.8 的 warning/insider repo 一行 FinMind 都沒有（只有 TWSE/TPEx，
+  //   額度 10000），不存在「繼續打爆掉的 API」；且額度用完後
+  //   finmind_client 的 checkBudget 在發網路請求前就擋下。
+  //   真正的損害只有錯誤分類與 UI 提示。
+  //
+  // 掃過全部 16 處 record `.wait`：只有 update_service.dart:759 落在有
+  // `on RateLimitException` 的 try 裡。:287 那處包的四個 helper 各自有內部
+  // try/catch 並自行設 rateLimitedAbort，例外不會逸出——**不是同型，別順手改**。
+  group('步驟 4.7：rate limit 例外分型', () {
+    test('🚨 財報同步撞限流時 hasRateLimitError 必須為 true', () async {
+      when(
+        () => mockTdcc.getAllHoldingDistribution(),
+      ).thenAnswer((_) async => {});
+      when(() => mockPriceRepo.syncAllPricesForDate(any())).thenAnswer(
+        (_) async => MarketSyncResult(
+          count: 3,
+          candidates: const ['2330', '2317', '2454'],
+          dataDate: tradingDay,
+        ),
+      );
+      when(() => mockDb.getStocksByMarket(any())).thenAnswer((_) async => []);
+
+      final mockFundamental = MockFundamentalRepository();
+      when(
+        () => mockFundamental.syncAllMarketValuation(
+          any(),
+          force: any(named: 'force'),
+        ),
+      ).thenAnswer((_) async => 0);
+      when(
+        () => mockFundamental.syncAllMarketRevenue(
+          any(),
+          force: any(named: 'force'),
+        ),
+      ).thenAnswer((_) async => 0);
+      // 損益表那支撞限流；資產負債表正常 —— 正是 record `.wait` 會包掉的情境
+      when(
+        () => mockFundamental.syncFinancialStatements(
+          symbol: any(named: 'symbol'),
+          startDate: any(named: 'startDate'),
+          endDate: any(named: 'endDate'),
+        ),
+      ).thenThrow(const RateLimitException());
+
+      final service = buildService(fundamental: mockFundamental);
+      final result = await service.runDailyUpdate(forDate: tradingDay);
+
+      expect(
+        result.hasRateLimitError,
+        isTrue,
+        reason:
+            'record `.wait` 把 RateLimitException 包成 ParallelWaitError，'
+            '`on RateLimitException` 接不到 → 旗標死在 FinMind 用量最大的那一步',
+      );
+      expect(
+        result.errors.any((e) => e.contains('rate limit')),
+        isTrue,
+        reason: '錯誤訊息要保留 rate limit 分類，否則事後追查配額問題語意消失',
+      );
+    });
+  });
+
   // 步驟 4.7 的目標清單由兩條佇列組成：上市走
   // `selectFinancialSyncTargets`（取 `[...twse, ...tpex]` 的前 150 名），
   // 上櫃走 `FundamentalSyncer.selectOtcFinancialBacklog`（獨立配額、最舊優先）。
@@ -730,6 +816,62 @@ void main() {
           endDate: any(named: 'endDate'),
         ),
       ).called(1);
+    });
+
+    test('🚨 額度吃緊時上櫃回填必須縮量（守接線：算出的上限要真的傳下去）', () async {
+      stubCandidates([
+        ...twseCandidates,
+        for (var i = 0; i < 60; i++) '${5400 + i}',
+      ]);
+      when(() => mockDb.getStocksByMarket(any())).thenAnswer(
+        (_) async => [
+          for (var i = 0; i < 60; i++)
+            StockMasterEntry(
+              symbol: '${5400 + i}',
+              name: 'OTC$i',
+              market: MarketCode.tpex,
+              industry: '半導體',
+              isActive: true,
+              updatedAt: tradingDay,
+            ),
+        ],
+      );
+      when(
+        () => mockDb.getLatestFinancialDataDatesBatch(any(), any()),
+      ).thenAnswer((_) async => const {});
+
+      // 模擬同一小時的第二輪：tracker 已記 520 次
+      // → 剩 600-520-40(reserve) = 40 → 40 ~/ 2 = 20 檔
+      final tracker = ApiBudgetTracker();
+      for (var i = 0; i < 520; i++) {
+        tracker.recordCall(ApiVendor.finMind);
+      }
+      final finMind = FinMindClient(budgetTracker: tracker);
+      addTearDown(finMind.close);
+
+      final mockFundamental = buildFundamentalMock();
+      final service = buildService(
+        fundamental: mockFundamental,
+        finMind: finMind,
+      );
+      await service.runDailyUpdate(forDate: tradingDay);
+
+      final synced = verify(
+        () => mockFundamental.syncFinancialStatements(
+          symbol: captureAny(named: 'symbol'),
+          startDate: any(named: 'startDate'),
+          endDate: any(named: 'endDate'),
+        ),
+      ).captured.cast<String>();
+      final otcSynced = synced.where((s) => s.startsWith('54')).length;
+
+      expect(
+        otcSynced,
+        20,
+        reason:
+            '剩餘額度只夠 20 檔（(600-520-40)/2）。若接線漏掉、仍傳固定 100，'
+            '這裡會是 60（候選全數）—— 那就是同一小時第二輪撞爆 600 的路徑',
+      );
     });
 
     test('對照組：上市配額不得被上櫃佇列排擠', () async {

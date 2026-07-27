@@ -747,16 +747,35 @@ class UpdateService {
       // 候選恆為 500~800 檔以上（2026-07-27 日誌：候選 1372）→ 上櫃永遠是餘數
       // 而餘數是 0，實測財報覆蓋率上市 32.9% vs 上櫃 1.5%。給獨立佇列而非調整
       // 上面的排序，才不會把名額從上市搬走。
+      final usage = _finMindClient?.hourlyUsage;
+      final otcLimit = otcFinancialLimitForBudget(usage: usage);
+      if (usage != null && otcLimit < ApiConfig.otcFinancialSyncMaxCount) {
+        AppLogger.info(
+          'UpdateService',
+          '上櫃財報回填縮量: ${ApiConfig.otcFinancialSyncMaxCount} → $otcLimit 檔 '
+              '(FinMind 已用 ${usage.used}/${usage.budget})',
+        );
+      }
       final otcBacklog = await fundamentalSyncer.selectOtcFinancialBacklog(
         candidates: ctx.marketCandidates,
+        limit: otcLimit,
       );
       final allTargets = {...targetSymbols, ...otcBacklog}.toList();
       if (allTargets.isNotEmpty) {
-        // 損益表與資產負債表無相依性，平行執行以縮短等待時間
-        final (epsCount, bsCount) = await (
+        // 損益表與資產負債表無相依性，平行執行以縮短等待時間。
+        //
+        // **必須用 `Future.wait` 而非 record 的 `.wait`**：後者在任一支失敗時
+        // 拋 `ParallelWaitError` 包住底層例外，下面的 `on RateLimitException`
+        // 就永遠接不到 —— 而這是全流程 FinMind 用量最大的一步（2026-07-27
+        // 實測 338/384 = 88%），止血旗標死在這裡最不能接受。
+        // 實跑驗證：record `.wait` → ParallelWaitError<(int?, int?), ...>；
+        // `Future.wait` → 原型 RateLimitException，且同樣等所有 future 結束。
+        final counts = await Future.wait<int?>([
           fundamentalSyncer.syncFinancialStatements(symbols: allTargets),
           fundamentalSyncer.syncBalanceSheets(symbols: allTargets),
-        ).wait;
+        ]);
+        final epsCount = counts[0];
+        final bsCount = counts[1];
         final bsLabel = bsCount == null ? '已快取' : '$bsCount';
         AppLogger.info(
           'UpdateService',
@@ -778,6 +797,38 @@ class UpdateService {
   ///
   /// 抽成純函式以便單獨驗證配額分配——這段的正確性不在於「有沒有呼叫到
   /// syncer」，而在於**名額有沒有被用滿**，那需要對回傳清單本身斷言。
+  /// 依剩餘 FinMind 額度決定本輪上櫃財報回填量（上限
+  /// [ApiConfig.otcFinancialSyncMaxCount]）。
+  ///
+  /// 為什麼固定 100 不夠安全：回填佇列是最舊優先，**設計上保證每輪都選得出
+  /// 100 檔完全無資料的上櫃股**（補完 1~100 名，下輪就換 101~200 名），
+  /// 所以重跑不會變便宜 —— 這與上市那條（`_filterNeedingStatementSync` 讓
+  /// 重跑時 needy 為空、零呼叫）性質相反。而 [ApiBudgetTracker] 是 app
+  /// session 級單一實例 + sliding 1 小時，跨輪會累加。
+  ///
+  /// 2026-07-27 實測同一小時內兩輪：113 + 384 = 497/600，第三輪要再約 200
+  /// → 約 700，破表。同檔 api_budget_tracker.dart:17 記著這事發生過
+  /// （「加總打了 1125 calls，撞 hourly cap 整套 abort」）。
+  ///
+  /// [usage] 為 null（未掛 tracker）時回上限：**「量不到」不等於「沒額度」**，
+  /// 當成 0 會讓沒有 tracker 的環境完全停掉回填。這與
+  /// `FinMindClient.hourlyUsage` 刻意回 null 而非 0 是同一條原則。
+  ///
+  /// 只約束上櫃這條自己的用量。上市那條的
+  /// [ApiConfig.financialSyncMaxCandidates] 維持不動——它先於本功能存在，
+  /// 且重跑時 needy 為空，不是壓力來源。
+  @visibleForTesting
+  static int otcFinancialLimitForBudget({
+    required ({int used, int budget})? usage,
+    int maxLimit = ApiConfig.otcFinancialSyncMaxCount,
+    int reserve = ApiConfig.otcFinancialBackfillReserve,
+  }) {
+    if (usage == null) return maxLimit;
+    // 每檔要打損益表 + 資產負債表兩次
+    final affordable = (usage.budget - usage.used - reserve) ~/ 2;
+    return affordable.clamp(0, maxLimit);
+  }
+
   @visibleForTesting
   static List<String> selectFinancialSyncTargets({
     required Set<String> prioritySymbols,

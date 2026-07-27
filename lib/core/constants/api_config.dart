@@ -75,10 +75,23 @@ abstract final class ApiConfig {
   /// **上櫃永遠是餘數而餘數是 0** —— 實測財報覆蓋率上市 32.9%、上櫃 1.5%。
   /// 故另給上櫃一條專屬配額，上市那條完全不動。
   ///
-  /// 定為 100 的依據（2026-07-27 實測，非估算）：整輪 FinMind 用量約
-  /// 113/600，餘裕 487 次；100 檔 × 2 表 = 200 次為上限，加總 313/600。
+  /// 定為 100 的依據（2026-07-27 實測，非估算）：上線首輪整輪 FinMind 用量
+  /// 384/600（3 + 外資持股 39 + 169 檔 × 2 + 4），其中回填佔 200。
   /// 待回填 890 檔，最舊優先下約 10 個交易日收斂，之後穩態趨近 0。
+  ///
+  /// 這是**上限**，實際每輪由 [UpdateService.otcFinancialLimitForBudget]
+  /// 依剩餘額度下修——見 [otcFinancialBackfillReserve]。
   static const int otcFinancialSyncMaxCount = 100;
+
+  /// 上櫃財報回填時保留給後續步驟的 FinMind 額度
+  ///
+  /// 回填佇列是最舊優先，設計上保證每輪都選得出 100 檔全新的 stale 股，
+  /// 所以**重跑不會變便宜**（與上市那條 needy 為空的性質相反）。
+  /// 2026-07-27 實測同一 sliding 1hr 窗內兩輪合計 497/600，第三輪會破表。
+  ///
+  /// 40 = 步驟 6.5 上櫃外資持股配額 20（market_data_updater.dart 的
+  /// `maxSyncCount` 預設值）+ 20 緩衝。
+  static const int otcFinancialBackfillReserve = 40;
 
   /// Syncer 批次大小（每批並行處理的股票數）
   static const int syncerBatchSize = 10;
