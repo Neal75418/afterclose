@@ -65,7 +65,18 @@ void main() async {
   // checkBudget 都是同步的，fire-and-forget 會讓早期呼叫看到空狀態。
   // 不做的話重啟即歸零，而 FinMind 伺服器端的 hourly 額度不會忘記——
   // 2026-07-27 實測重啟後本地計數 42/600、伺服器直接回 402。
-  await container.read(apiBudgetTrackerProvider).restore();
+  final budgetRestore = await container
+      .read(apiBudgetTrackerProvider)
+      .restore();
+  if (budgetRestore.restoredCalls > 0 ||
+      budgetRestore.cooldownVendors.isNotEmpty) {
+    AppLogger.info(
+      'ApiBudgetTracker',
+      '配額狀態已還原: ${budgetRestore.restoredCalls} 次呼叫在窗內'
+          '${budgetRestore.cooldownVendors.isEmpty ? "" : "，cooldown 中: "
+                    '${budgetRestore.cooldownVendors.map((v) => v.name).join(",")}'}',
+    );
+  }
 
   // 檢查是否已完成引導流程
   await initOnboardingStatus();

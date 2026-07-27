@@ -248,6 +248,37 @@ void main() {
       );
     });
 
+    test('🚨 restore 必須回報載入了什麼——否則無法從日誌驗證它有生效', () async {
+      // 2026-07-27 實測教訓：持久化寫進 plist 了（290 筆實證），但日誌上
+      // 看不出 restore 有沒有讀回來——「同一 session 累積」與「重啟後成功
+      // 還原」在磁碟狀態上完全相同，無法區分。沒有量測點就沒有驗證。
+      final clock = _FakeClock(t0);
+      final store = _FakeBudgetStore();
+
+      final first = ApiBudgetTracker(clock: clock, store: store);
+      await first.restore();
+      for (var i = 0; i < 25; i++) {
+        first.recordCall(ApiVendor.finMind);
+      }
+      first.markRateLimited(ApiVendor.finMind);
+      await first.flush();
+
+      clock.advance(const Duration(minutes: 3));
+      final second = ApiBudgetTracker(clock: clock, store: store);
+      final summary = await second.restore();
+
+      expect(summary.restoredCalls, 25);
+      expect(summary.cooldownVendors, contains(ApiVendor.finMind));
+    });
+
+    test('對照組：沒有 store 時 restore 回報零，不得謊報', () async {
+      final tracker = ApiBudgetTracker(clock: _FakeClock(t0));
+      final summary = await tracker.restore();
+
+      expect(summary.restoredCalls, 0);
+      expect(summary.cooldownVendors, isEmpty);
+    });
+
     test('對照組：沒有 store 時行為與現況完全相同', () async {
       final tracker = ApiBudgetTracker(clock: _FakeClock(t0));
 

@@ -81,7 +81,16 @@ Future<UpdateResult> runHeadlessUpdate({
     // 跨 process 延續配額計數。若此環境讀不到 SharedPreferences（launchd
     // CLI 的 defaults domain 可能與 app bundle 不同），restore 會 fail-open
     // 回到「無歷史」——與加入持久化之前的行為相同，不會更糟。
-    await budgetTracker.restore();
+    final budgetRestore = await budgetTracker.restore();
+    if (budgetRestore.restoredCalls > 0 ||
+        budgetRestore.cooldownVendors.isNotEmpty) {
+      AppLogger.info(
+        'ApiBudgetTracker',
+        '配額狀態已還原: ${budgetRestore.restoredCalls} 次呼叫在窗內'
+            '${budgetRestore.cooldownVendors.isEmpty ? "" : "，cooldown 中: "
+                      '${budgetRestore.cooldownVendors.map((v) => v.name).join(",")}'}',
+      );
+    }
     final finMindClient = FinMindClient(budgetTracker: budgetTracker);
     final twseClient = TwseClient();
     final tpexClient = TpexClient();

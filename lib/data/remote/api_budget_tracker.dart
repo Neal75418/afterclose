@@ -166,12 +166,23 @@ class ApiBudgetTracker {
   ///
   /// **fail-open**：讀不到就當作沒有歷史（＝現況行為）。儲存故障不該讓
   /// 整個 app 打不了 API。
-  Future<void> restore() async {
+  ///
+  /// 回傳實際載入了什麼，讓呼叫端能記到日誌。**沒有這個回報就無法驗證
+  /// restore 有沒有生效**——「同一 session 累積」與「重啟後成功還原」在
+  /// 磁碟狀態上完全相同（2026-07-27 實測 290 筆，兩種解釋都成立）。
+  Future<({int restoredCalls, Set<ApiVendor> cooldownVendors})>
+  restore() async {
+    var restoredCalls = 0;
+    final cooldownVendors = <ApiVendor>{};
     final store = _store;
-    if (store == null) return;
+    if (store == null) {
+      return (restoredCalls: 0, cooldownVendors: cooldownVendors);
+    }
     try {
       final raw = await store.load();
-      if (raw == null || raw.isEmpty) return;
+      if (raw == null || raw.isEmpty) {
+        return (restoredCalls: 0, cooldownVendors: cooldownVendors);
+      }
       final decoded = jsonDecode(raw) as Map<String, dynamic>;
       final now = _clock.now();
 
@@ -190,6 +201,8 @@ class ApiBudgetTracker {
               ..sort();
         if (stamps.isEmpty) continue;
         _callTimestamps[vendor] = Queue<DateTime>.from(stamps);
+        _expireOldEntries(vendor);
+        restoredCalls += _callTimestamps[vendor]?.length ?? 0;
       }
 
       final limited = decoded['rateLimitedAt'] as Map<String, dynamic>? ?? {};
@@ -199,10 +212,12 @@ class ApiBudgetTracker {
         final at = DateTime.fromMillisecondsSinceEpoch(entry.value as int);
         if (now.difference(at) >= const Duration(hours: 1)) continue;
         _rateLimitedAt[vendor] = at;
+        cooldownVendors.add(vendor);
       }
     } catch (e) {
       AppLogger.warning('ApiBudgetTracker', '配額狀態載入失敗，本次視為無歷史', e);
     }
+    return (restoredCalls: restoredCalls, cooldownVendors: cooldownVendors);
   }
 
   /// 把目前狀態寫回 [ApiBudgetStore]。失敗只記 warning（fail-open）。
