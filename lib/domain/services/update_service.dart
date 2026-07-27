@@ -12,6 +12,7 @@ import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/taiwan_calendar.dart';
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/domain/repositories/analysis_repository.dart';
 import 'package:afterclose/domain/repositories/price_repository.dart';
 import 'package:afterclose/domain/services/analysis_service.dart';
@@ -97,6 +98,7 @@ class UpdateService {
                marketDataRepository: repositories.marketData,
              )
            : null,
+       _finMindClient = clients.finMind,
        _marketIndexSyncer = clients.twse != null
            ? MarketIndexSyncer(
                database: database,
@@ -124,6 +126,9 @@ class UpdateService {
 
   final AppDatabase _db;
   final AppClock _clock;
+
+  /// 只為了在完成日誌印真實 FinMind 用量（hourlyUsage）；null 時該段省略。
+  final FinMindClient? _finMindClient;
   final IPriceRepository _priceRepo;
   final IAnalysisRepository _analysisRepo;
   final AnalysisService _analysisService;
@@ -895,9 +900,9 @@ class UpdateService {
       // 涵蓋率上不去的瓶頸（估值 249/904、外資持股全市場僅 147 檔）。
       //
       // 真實用量在 `ApiBudgetTracker`（per-vendor、sliding 1hr、只掛
-      // FinMindClient）。但它目前**沒有公開讀取點**，內部算出的 used 只在
-      // 配額用完時出現在例外訊息裡——等看到已經來不及；且 tracker 未注入
-      // UpdateService。待接出來後改印真值。
+      // FinMindClient）。**已於 2026-07-27 接出來**：FinMindClient.hourlyUsage
+      // → `_finishUpdate` 的「完成」行會印 `FinMind=used/budget (近 1hr)`。
+      // 下方這些 count 仍是寫入筆數（非 API 呼叫數），兩者不可混看。
       final syncedRows = fundResult.total + marketResult.total;
       if (syncedRows > 0) {
         AppLogger.info(
@@ -942,9 +947,19 @@ class UpdateService {
 
   Future<void> _finishUpdate(_UpdateContext ctx, UpdateResult result) async {
     final dateStr = '${ctx.normalizedDate.month}/${ctx.normalizedDate.day}';
+    // FinMind 是唯一有硬額度的 vendor（free tier 600/hr），也是唯一被
+    // per-symbol 消耗的來源（getFinancialStatements）。印**真實**用量而非
+    // 估算：2026-07-26 日誌曾報 94 calls、真實約 2 次（高報 47 倍），
+    // 2026-07-27 靜態讀 code 追查上櫃財報覆蓋率時又連續三次估錯誰在吃額度。
+    // 高報會讓人以為配額已緊而不敢調高上櫃相關上限，方向特別有害。
+    final usage = _finMindClient?.hourlyUsage;
+    final usageStr = usage == null
+        ? ''
+        : ', FinMind=${usage.used}/${usage.budget} (近 1hr)';
     AppLogger.info(
       'UpdateService',
-      '完成 ($dateStr): 價格=${result.pricesUpdated}, 分析=${result.stocksAnalyzed}',
+      '完成 ($dateStr): 價格=${result.pricesUpdated}, '
+          '分析=${result.stocksAnalyzed}$usageStr',
     );
 
     final status = result.errors.isEmpty

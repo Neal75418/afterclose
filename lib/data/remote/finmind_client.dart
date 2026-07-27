@@ -40,6 +40,25 @@ class FinMindClient {
   /// 或 ad-hoc 使用），略過 budget check（保留舊行為相容性）。
   final ApiBudgetTracker? _budgetTracker;
 
+  /// 過去 1 小時的實際 FinMind 呼叫數與該 vendor 的額度。
+  ///
+  /// 未注入 tracker 時回 **null 而非 0**：0 會被讀成「這輪沒打 API」，
+  /// 那是把預設值當成量測結果。
+  ///
+  /// 存在的理由：各 syncer 過去自行「估算」呼叫數，而估算會錯得很離譜——
+  /// 2026-07-26 實測一次更新報 94 calls、真實約 2 次（高報 47 倍）；
+  /// 2026-07-27 追查上櫃財報覆蓋率時，靜態讀 code 又連續三次估錯誰在吃額度。
+  /// 高報的方向特別有害：會讓人以為配額已緊而不敢調高上櫃相關的上限，
+  /// 而那正是上櫃資料涵蓋率上不去的懷疑對象。
+  ({int used, int budget})? get hourlyUsage {
+    final tracker = _budgetTracker;
+    if (tracker == null) return null;
+    return (
+      used: tracker.callsInLastHourFor(ApiVendor.finMind),
+      budget: tracker.budgetFor(ApiVendor.finMind),
+    );
+  }
+
   static const String baseUrl = ApiEndpoints.finmindBaseUrl;
 
   /// Token 最小有效長度
