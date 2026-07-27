@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:afterclose/core/constants/stock_patterns.dart';
@@ -10,6 +12,46 @@ import 'package:afterclose/data/models/finmind/revenue.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/repositories/fundamental_repository.dart';
 import 'package:afterclose/data/repositories/market_data_repository.dart';
+
+/// 選出本輪要同步財報的上櫃候選 —— **最舊優先**。
+///
+/// 兩個規則：
+/// 1. ETF（代碼 00 開頭）在取前 N 之**前**排除
+/// 2. 其餘依最新財報日由舊到新排序，**無資料者視為最舊**；同日期以代號排序
+///    保證決定性
+///
+/// ## 為什麼不能沿用 take(N)
+///
+/// 上市那條路徑（[UpdateService.selectFinancialSyncTargets]）依候選順序取前 N，
+/// 搬到上櫃會立刻復發兩個已修過的同型病：
+///
+/// - **ETF 佔位**：上櫃今日有價格的 904 檔中 15 檔是 ETF 且全部 0 筆財報
+///   （2026-07-27 正式 DB 實查）。ETF 永遠不會變新鮮，排序鍵恆為「最舊」，
+///   不先排除就是每輪固定霸佔 15 個名額、且永遠排在最前面。
+/// - **前綴永不輪替**：價格走快取路徑時候選順序退化為代號升冪，take 前 N
+///   每天都是同一批；補完後他們變新鮮、同步 0 筆，後面的 790 檔永遠輪不到。
+///
+/// 最舊優先讓補完者自然沉到隊尾，890 檔待回填約 10 個交易日收斂。
+///
+/// 已知殘留：FinMind 對少數股票恆回 0 筆（2026-07-27 實測上市 33 檔中 7835、
+/// 9136 兩檔如此），這類永遠停在「無資料」→ 永久排在隊首佔名額。實測比例約
+/// 6%，回填完成後預估固定佔用 ~50 個名額。因無「已嘗試」時戳可依據，此處
+/// 不另處理，改由同步日誌印出「目標 N 檔／實際寫入 M 檔」讓停滯可被觀察。
+@visibleForTesting
+List<String> selectOtcFinancialTargets({
+  required List<String> candidates,
+  required Map<String, DateTime?> latestDates,
+  required int limit,
+}) {
+  // 無資料者用 epoch 當排序鍵 → 自然排在最前
+  final epoch = DateTime.fromMillisecondsSinceEpoch(0);
+  final ordered = candidates.where((s) => !StockPatterns.isEtfCode(s)).toList()
+    ..sort((a, b) {
+      final cmp = (latestDates[a] ?? epoch).compareTo(latestDates[b] ?? epoch);
+      return cmp != 0 ? cmp : a.compareTo(b);
+    });
+  return ordered.length > limit ? ordered.sublist(0, limit) : ordered;
+}
 
 /// 基本面資料同步器
 ///
@@ -134,6 +176,42 @@ class FundamentalSyncer {
       revenueCount: revenueCount,
       errors: errors,
     );
+  }
+
+  /// 挑出本輪要回填財報的上櫃候選（最舊優先、已排除 ETF）
+  ///
+  /// 上市那條路徑（[UpdateService.selectFinancialSyncTargets]）取
+  /// `[...twse, ...tpex]` 的前 [ApiConfig.financialSyncMaxCandidates] 名，
+  /// 上市候選恆遠超過上限 → 上櫃永遠分不到名額。本方法給上櫃一條獨立佇列，
+  /// 上市那條不受影響。挑選規則見 [selectOtcFinancialTargets]。
+  ///
+  /// 失敗時 **fail-closed 回空清單**：拿不到最新財報日就無從排序，若退回
+  /// 全清單會讓整包上櫃候選逐檔打 FinMind。這條路徑的價值是慢速回填，
+  /// 少跑一輪無害，配額爆掉才會傷到當日主要資料。
+  Future<List<String>> selectOtcFinancialBacklog({
+    required List<String> candidates,
+    int limit = ApiConfig.otcFinancialSyncMaxCount,
+  }) async {
+    if (candidates.isEmpty || limit <= 0) return const [];
+    try {
+      final otcStocks = await _db.getStocksByMarket(MarketCode.tpex);
+      final otcSymbols = otcStocks.map((s) => s.symbol).toSet();
+      final otcCandidates = candidates.where(otcSymbols.contains).toList();
+      if (otcCandidates.isEmpty) return const [];
+
+      final latestDates = await _db.getLatestFinancialDataDatesBatch(
+        otcCandidates,
+        'INCOME',
+      );
+      return selectOtcFinancialTargets(
+        candidates: otcCandidates,
+        latestDates: latestDates,
+        limit: limit,
+      );
+    } catch (e) {
+      AppLogger.warning('FundamentalSyncer', '上櫃財報候選挑選失敗，本輪略過回填', e);
+      return const [];
+    }
   }
 
   /// 補充上櫃候選股票的基本面資料

@@ -743,16 +743,25 @@ class UpdateService {
         prioritySymbols: {...watchlistSymbols, ..._popularStocks},
         marketCandidates: ctx.marketCandidates,
       );
-      if (targetSymbols.isNotEmpty) {
+      // 上櫃專屬回填佇列。上面那條吃 `[...twse, ...tpex]` 的前 150 名，而上市
+      // 候選恆為 500~800 檔以上（2026-07-27 日誌：候選 1372）→ 上櫃永遠是餘數
+      // 而餘數是 0，實測財報覆蓋率上市 32.9% vs 上櫃 1.5%。給獨立佇列而非調整
+      // 上面的排序，才不會把名額從上市搬走。
+      final otcBacklog = await fundamentalSyncer.selectOtcFinancialBacklog(
+        candidates: ctx.marketCandidates,
+      );
+      final allTargets = {...targetSymbols, ...otcBacklog}.toList();
+      if (allTargets.isNotEmpty) {
         // 損益表與資產負債表無相依性，平行執行以縮短等待時間
         final (epsCount, bsCount) = await (
-          fundamentalSyncer.syncFinancialStatements(symbols: targetSymbols),
-          fundamentalSyncer.syncBalanceSheets(symbols: targetSymbols),
+          fundamentalSyncer.syncFinancialStatements(symbols: allTargets),
+          fundamentalSyncer.syncBalanceSheets(symbols: allTargets),
         ).wait;
         final bsLabel = bsCount == null ? '已快取' : '$bsCount';
         AppLogger.info(
           'UpdateService',
-          '步驟 4.7: 損益=$epsCount, 資負=$bsLabel (${targetSymbols.length} 檔)',
+          '步驟 4.7: 損益=$epsCount, 資負=$bsLabel '
+              '(${allTargets.length} 檔，其中上櫃回填 ${otcBacklog.length})',
         );
       }
     } on RateLimitException catch (e) {

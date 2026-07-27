@@ -1,3 +1,5 @@
+import 'package:afterclose/core/constants/api_config.dart';
+import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/tdcc_client.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
@@ -639,6 +641,132 @@ void main() {
 
       expect(result.success, isTrue);
       expect(result.errors, anyElement(contains('釘選論點')));
+    });
+  });
+
+  // 步驟 4.7 的目標清單由兩條佇列組成：上市走
+  // `selectFinancialSyncTargets`（取 `[...twse, ...tpex]` 的前 150 名），
+  // 上櫃走 `FundamentalSyncer.selectOtcFinancialBacklog`（獨立配額、最舊優先）。
+  //
+  // 這組測試守的是**接線**：backlog 算出來卻沒接進同步呼叫會是靜默 no-op，
+  // 日誌照印、測試照綠，而上櫃覆蓋率原地不動——正是本輪要修的病本身。
+  group('步驟 4.7：上櫃財報回填佇列', () {
+    /// 上市候選遠多於 `financialSyncMaxCandidates`，模擬正式環境
+    /// （2026-07-27 日誌：上市候選 1372 檔 vs 上限 150）
+    final twseCandidates = [for (var i = 0; i < 400; i++) '${2000 + i}'];
+    const otcSymbol = '5471'; // 松翰，上櫃、無財報
+
+    MockFundamentalRepository buildFundamentalMock() {
+      final mock = MockFundamentalRepository();
+      when(
+        () => mock.syncAllMarketValuation(any(), force: any(named: 'force')),
+      ).thenAnswer((_) async => 0);
+      when(
+        () => mock.syncAllMarketRevenue(any(), force: any(named: 'force')),
+      ).thenAnswer((_) async => 0);
+      when(
+        () => mock.syncFinancialStatements(
+          symbol: any(named: 'symbol'),
+          startDate: any(named: 'startDate'),
+          endDate: any(named: 'endDate'),
+        ),
+      ).thenAnswer((_) async => 0);
+      when(
+        () => mock.syncOtcValuation(
+          any(),
+          date: any(named: 'date'),
+          force: any(named: 'force'),
+        ),
+      ).thenAnswer((_) async => 0);
+      when(
+        () => mock.syncOtcRevenue(
+          any(),
+          date: any(named: 'date'),
+          force: any(named: 'force'),
+        ),
+      ).thenAnswer((_) async => 0);
+      return mock;
+    }
+
+    void stubCandidates(List<String> candidates) {
+      when(() => mockPriceRepo.syncAllPricesForDate(any())).thenAnswer(
+        (_) async => MarketSyncResult(
+          count: candidates.length,
+          candidates: candidates,
+          dataDate: tradingDay,
+        ),
+      );
+      when(
+        () => mockTdcc.getAllHoldingDistribution(),
+      ).thenAnswer((_) async => {});
+    }
+
+    test('🚨 上櫃候選排在上市之後，仍須拿到財報同步（現行串接下永遠是 0）', () async {
+      stubCandidates([...twseCandidates, otcSymbol]);
+      when(() => mockDb.getStocksByMarket(any())).thenAnswer(
+        (_) async => [
+          StockMasterEntry(
+            symbol: otcSymbol,
+            name: '松翰',
+            market: MarketCode.tpex,
+            industry: '半導體',
+            isActive: true,
+            updatedAt: tradingDay,
+          ),
+        ],
+      );
+      when(
+        () => mockDb.getLatestFinancialDataDatesBatch(any(), any()),
+      ).thenAnswer((_) async => const {});
+
+      final mockFundamental = buildFundamentalMock();
+      final service = buildService(fundamental: mockFundamental);
+      await service.runDailyUpdate(forDate: tradingDay);
+
+      verify(
+        () => mockFundamental.syncFinancialStatements(
+          symbol: otcSymbol,
+          startDate: any(named: 'startDate'),
+          endDate: any(named: 'endDate'),
+        ),
+      ).called(1);
+    });
+
+    test('對照組：上市配額不得被上櫃佇列排擠', () async {
+      stubCandidates([...twseCandidates, otcSymbol]);
+      when(() => mockDb.getStocksByMarket(any())).thenAnswer(
+        (_) async => [
+          StockMasterEntry(
+            symbol: otcSymbol,
+            name: '松翰',
+            market: MarketCode.tpex,
+            industry: '半導體',
+            isActive: true,
+            updatedAt: tradingDay,
+          ),
+        ],
+      );
+      when(
+        () => mockDb.getLatestFinancialDataDatesBatch(any(), any()),
+      ).thenAnswer((_) async => const {});
+
+      final mockFundamental = buildFundamentalMock();
+      final service = buildService(fundamental: mockFundamental);
+      await service.runDailyUpdate(forDate: tradingDay);
+
+      final synced = verify(
+        () => mockFundamental.syncFinancialStatements(
+          symbol: captureAny(named: 'symbol'),
+          startDate: any(named: 'startDate'),
+          endDate: any(named: 'endDate'),
+        ),
+      ).captured.cast<String>();
+
+      expect(
+        synced.where((s) => s != otcSymbol).length,
+        ApiConfig.financialSyncMaxCandidates,
+        reason: '上櫃走獨立配額，上市那 150 個名額必須原封不動',
+      );
     });
   });
 }
