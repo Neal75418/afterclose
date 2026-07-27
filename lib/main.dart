@@ -61,6 +61,12 @@ void main() async {
   // 從安全儲存載入 FinMind API Token
   await _initializeFinMindToken(container);
 
+  // 讀回上一輪的 API 配額計數與 cooldown。**必須 await**：tracker 建構與
+  // checkBudget 都是同步的，fire-and-forget 會讓早期呼叫看到空狀態。
+  // 不做的話重啟即歸零，而 FinMind 伺服器端的 hourly 額度不會忘記——
+  // 2026-07-27 實測重啟後本地計數 42/600、伺服器直接回 402。
+  await container.read(apiBudgetTrackerProvider).restore();
+
   // 檢查是否已完成引導流程
   await initOnboardingStatus();
 

@@ -121,4 +121,164 @@ void main() {
       expect(() => t.checkBudget(ApiVendor.twse), returnsNormally);
     });
   });
+
+  // 重啟後計數歸零，但 FinMind 伺服器端的額度不會忘記
+  //
+  // 2026-07-27 19:20 正式日誌：
+  //   [FinMind] TaiwanStockShareholding(2886): 402 API 額度耗盡
+  //   [ApiBudgetTracker] finMind 撞 rate limit，1hr cooldown 開始 (已用 42/600)
+  // **本地計數 42、伺服器說已耗盡**。成因是 app 於 19:09 重啟：
+  // `_callTimestamps` / `_rateLimitedAt` 都是純記憶體（且 provider 是 plain
+  // Provider，隨 process 消滅），而 18:31~18:37 三輪約 560 次呼叫仍在
+  // FinMind 伺服器端的窗內 → 560 + 42 ≈ 602 越線。
+  //
+  // 誤差方向不對稱：**帶過去只會高估**（高估＝少補一點，安全）；
+  // **歸零是低估**（低估＝撞 402，就是今天）。故即使 FinMind 伺服器端的
+  // 窗語意與本地不完全一致，延續計數仍嚴格優於歸零。
+  group('跨重啟延續（restore / persist）', () {
+    final t0 = DateTime(2026, 7, 27, 19, 20);
+
+    test('🚨 restore 後窗內呼叫數要延續，不得歸零', () async {
+      final clock = _FakeClock(t0);
+      final store = _FakeBudgetStore();
+
+      final first = ApiBudgetTracker(clock: clock, store: store);
+      await first.restore();
+      for (var i = 0; i < 40; i++) {
+        first.recordCall(ApiVendor.finMind);
+      }
+      await first.flush();
+
+      // 模擬 app 重啟：全新 tracker，同一份儲存
+      clock.advance(const Duration(minutes: 5));
+      final second = ApiBudgetTracker(clock: clock, store: store);
+      await second.restore();
+
+      expect(
+        second.callsInLastHourFor(ApiVendor.finMind),
+        40,
+        reason: '歸零會讓下一輪以為還有滿額，然後撞 FinMind 伺服器端的 402',
+      );
+    });
+
+    test('🚨 超過 1 小時的舊紀錄不得被 restore 回來', () async {
+      final clock = _FakeClock(t0);
+      final store = _FakeBudgetStore();
+
+      final first = ApiBudgetTracker(clock: clock, store: store);
+      await first.restore();
+      for (var i = 0; i < 30; i++) {
+        first.recordCall(ApiVendor.finMind);
+      }
+      await first.flush();
+
+      clock.advance(const Duration(hours: 1, minutes: 1));
+      final second = ApiBudgetTracker(clock: clock, store: store);
+      await second.restore();
+
+      expect(
+        second.callsInLastHourFor(ApiVendor.finMind),
+        0,
+        reason: '過期紀錄若復活，會永久壓低可用額度——那是另一個方向的錯',
+      );
+    });
+
+    test('🚨 cooldown 要跨重啟存活（撞過 402 就別再打）', () async {
+      final clock = _FakeClock(t0);
+      final store = _FakeBudgetStore();
+
+      final first = ApiBudgetTracker(clock: clock, store: store);
+      await first.restore();
+      first.markRateLimited(ApiVendor.finMind);
+      await first.flush();
+
+      clock.advance(const Duration(minutes: 10));
+      final second = ApiBudgetTracker(clock: clock, store: store);
+      await second.restore();
+
+      expect(second.isRateLimited(ApiVendor.finMind), isTrue);
+      expect(
+        () => second.checkBudget(ApiVendor.finMind),
+        throwsA(isA<RateLimitException>()),
+      );
+    });
+
+    test('對照組：cooldown 滿 1 小時後不得復活', () async {
+      final clock = _FakeClock(t0);
+      final store = _FakeBudgetStore();
+
+      final first = ApiBudgetTracker(clock: clock, store: store);
+      await first.restore();
+      first.markRateLimited(ApiVendor.finMind);
+      await first.flush();
+
+      clock.advance(const Duration(hours: 1, minutes: 1));
+      final second = ApiBudgetTracker(clock: clock, store: store);
+      await second.restore();
+
+      expect(second.isRateLimited(ApiVendor.finMind), isFalse);
+    });
+
+    test('🚨 儲存讀取失敗必須 fail-open，不得讓整個 app 打不了 API', () async {
+      final tracker = ApiBudgetTracker(
+        clock: _FakeClock(t0),
+        store: _ThrowingBudgetStore(),
+      );
+
+      await expectLater(tracker.restore(), completes);
+      expect(tracker.callsInLastHourFor(ApiVendor.finMind), 0);
+      expect(() => tracker.checkBudget(ApiVendor.finMind), returnsNormally);
+    });
+
+    test('🚨 熱路徑不得每次呼叫都寫入儲存', () async {
+      final store = _FakeBudgetStore();
+      final tracker = ApiBudgetTracker(clock: _FakeClock(t0), store: store);
+      await tracker.restore();
+
+      for (var i = 0; i < 100; i++) {
+        tracker.recordCall(ApiVendor.finMind);
+      }
+      // 讓可能的非同步寫入有機會跑完
+      await Future<void>.delayed(Duration.zero);
+
+      expect(
+        store.writeCount,
+        lessThan(100),
+        reason: 'recordCall 每小時最多 600 次；每次都寫 SharedPreferences 是浪費',
+      );
+    });
+
+    test('對照組：沒有 store 時行為與現況完全相同', () async {
+      final tracker = ApiBudgetTracker(clock: _FakeClock(t0));
+
+      await expectLater(tracker.restore(), completes);
+      tracker.recordCall(ApiVendor.finMind);
+      expect(tracker.callsInLastHourFor(ApiVendor.finMind), 1);
+      await expectLater(tracker.flush(), completes);
+    });
+  });
+}
+
+/// 記憶體版 store，模擬跨 process 的持久層
+class _FakeBudgetStore implements ApiBudgetStore {
+  String? _data;
+  int writeCount = 0;
+
+  @override
+  Future<String?> load() async => _data;
+
+  @override
+  Future<void> save(String json) async {
+    writeCount++;
+    _data = json;
+  }
+}
+
+class _ThrowingBudgetStore implements ApiBudgetStore {
+  @override
+  Future<String?> load() async => throw Exception('storage unavailable');
+
+  @override
+  Future<void> save(String json) async =>
+      throw Exception('storage unavailable');
 }

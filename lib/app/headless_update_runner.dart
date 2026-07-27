@@ -4,6 +4,7 @@ import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/taiwan_calendar.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/api_budget_tracker.dart';
+import 'package:afterclose/data/remote/shared_prefs_api_budget_store.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/data/remote/rss_parser.dart';
 import 'package:afterclose/data/remote/tdcc_client.dart';
@@ -74,7 +75,13 @@ Future<UpdateResult> runHeadlessUpdate({
 
     // 初始化 API 客戶端（hoist 到 try 外讓 finally 可見）。
     // process-local ApiBudgetTracker，跨 isolate 不共享是有意設計。
-    final budgetTracker = ApiBudgetTracker();
+    final budgetTracker = ApiBudgetTracker(
+      store: const SharedPrefsApiBudgetStore(),
+    );
+    // 跨 process 延續配額計數。若此環境讀不到 SharedPreferences（launchd
+    // CLI 的 defaults domain 可能與 app bundle 不同），restore 會 fail-open
+    // 回到「無歷史」——與加入持久化之前的行為相同，不會更糟。
+    await budgetTracker.restore();
     final finMindClient = FinMindClient(budgetTracker: budgetTracker);
     final twseClient = TwseClient();
     final tpexClient = TpexClient();

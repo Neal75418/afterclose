@@ -9,6 +9,7 @@ import 'package:dio/dio.dart';
 
 import 'package:afterclose/data/network/calibration_updater.dart';
 import 'package:afterclose/data/remote/api_budget_tracker.dart';
+import 'package:afterclose/data/remote/shared_prefs_api_budget_store.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/presentation/providers/settings_provider.dart';
 import 'package:afterclose/data/remote/rss_parser.dart';
@@ -71,7 +72,13 @@ final cachedDbProvider = Provider<CachedDatabaseAccessor>((ref) {
 /// sliding 1hr）。目前僅 FinMindClient 整合（free-tier 600/hr 是實際
 /// bottleneck），其他 vendor 後續視 PR 推進。
 final apiBudgetTrackerProvider = Provider<ApiBudgetTracker>((ref) {
-  return ApiBudgetTracker(clock: ref.watch(appClockProvider));
+  // store 讓計數跨 app 重啟延續。**呼叫端必須在第一次 API 呼叫之前
+  // `await restore()`**（見 main.dart）——建構與 checkBudget 都是同步的，
+  // fire-and-forget 會讓早期呼叫看到空狀態，那正是本功能要修的 bug。
+  return ApiBudgetTracker(
+    clock: ref.watch(appClockProvider),
+    store: const SharedPrefsApiBudgetStore(),
+  );
 });
 
 /// FinMind API 客戶端（用於取得歷史資料）

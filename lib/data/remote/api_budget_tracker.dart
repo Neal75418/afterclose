@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:collection';
+import 'dart:convert';
 
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/clock.dart';
@@ -6,6 +8,19 @@ import 'package:afterclose/core/utils/logger.dart';
 
 /// API 供應商列舉（per-vendor budget）。
 enum ApiVendor { finMind, twse, tpex, tdcc }
+
+/// [ApiBudgetTracker] 的持久層抽象（實作見 `SharedPreferencesApiBudgetStore`）。
+///
+/// 存在的理由：tracker 原本是純 process-local，**app 重啟即歸零**，但
+/// FinMind 伺服器端的 hourly 額度不會忘記。2026-07-27 19:20 實測，重啟後
+/// 本地計數 42/600、伺服器直接回 402——前一小時的約 560 次仍在它的窗內。
+abstract class ApiBudgetStore {
+  /// 讀回上次的狀態；無資料回 null。失敗請拋出，由 tracker fail-open 處理。
+  Future<String?> load();
+
+  /// 覆寫儲存的狀態。
+  Future<void> save(String json);
+}
 
 /// 跨 syncer 共享的 API 配額追蹤器，process-local + sliding 1hr 視窗。
 ///
@@ -38,11 +53,20 @@ class ApiBudgetTracker {
   ApiBudgetTracker({
     Map<ApiVendor, int>? hourlyBudget,
     AppClock clock = const SystemClock(),
+    ApiBudgetStore? store,
   }) : _budget = hourlyBudget ?? _defaultBudget,
-       _clock = clock;
+       _clock = clock,
+       _store = store;
 
   final Map<ApiVendor, int> _budget;
   final AppClock _clock;
+  final ApiBudgetStore? _store;
+
+  /// 距上次落盤累積的 [recordCall] 次數。熱路徑每小時最多 600 次，
+  /// 每次都寫 SharedPreferences 是浪費，故每 [_persistEveryNCalls] 次才寫。
+  /// 崩潰最多漏記 N 次——這本來就是近似值，方向仍偏保守。
+  int _callsSincePersist = 0;
+  static const int _persistEveryNCalls = 10;
 
   /// 每個 vendor 的呼叫時間戳記隊列（FIFO，舊的會被踢出）
   final Map<ApiVendor, Queue<DateTime>> _callTimestamps = {};
@@ -104,11 +128,16 @@ class ApiBudgetTracker {
   void recordCall(ApiVendor vendor) {
     final queue = _callTimestamps.putIfAbsent(vendor, () => Queue<DateTime>());
     queue.addLast(_clock.now());
+    if (++_callsSincePersist >= _persistEveryNCalls) {
+      unawaited(flush());
+    }
   }
 
   /// 在收到 429 / 配額拒絕時呼叫，翻 cooldown 旗標、warning log。
   void markRateLimited(ApiVendor vendor) {
     _rateLimitedAt[vendor] = _clock.now();
+    // 撞牆是關鍵事件：立即落盤，不等湊滿 N 次。否則重啟後會再打一輪才發現。
+    unawaited(flush());
     AppLogger.warning(
       'ApiBudgetTracker',
       '${vendor.name} 撞 rate limit，1hr cooldown 開始 '
@@ -124,5 +153,89 @@ class ApiBudgetTracker {
     while (queue.isNotEmpty && queue.first.isBefore(cutoff)) {
       queue.removeFirst();
     }
+  }
+
+  /// 從 [ApiBudgetStore] 讀回上次的呼叫紀錄與 cooldown。
+  ///
+  /// **必須在第一次 API 呼叫之前 await**（不可 fire-and-forget）：
+  /// 建構是同步的、`checkBudget` 也是同步的，若讓載入與呼叫賽跑，
+  /// 早期呼叫會看到空狀態——那正是本功能要修的 bug。
+  ///
+  /// 載入時一併丟掉超過 1 小時的紀錄：舊紀錄復活會永久壓低可用額度，
+  /// 那是另一個方向的錯。
+  ///
+  /// **fail-open**：讀不到就當作沒有歷史（＝現況行為）。儲存故障不該讓
+  /// 整個 app 打不了 API。
+  Future<void> restore() async {
+    final store = _store;
+    if (store == null) return;
+    try {
+      final raw = await store.load();
+      if (raw == null || raw.isEmpty) return;
+      final decoded = jsonDecode(raw) as Map<String, dynamic>;
+      final now = _clock.now();
+
+      final calls = decoded['calls'] as Map<String, dynamic>? ?? const {};
+      for (final entry in calls.entries) {
+        final vendor = _vendorByName(entry.key);
+        if (vendor == null) continue;
+        // 過期判定只由 [_expireOldEntries] 一處負責——在此再濾一次是語意
+        // 冗餘（2026-07-27 mutation 實測：拿掉這層過濾 17 條測試全綠，
+        // 因為 callsInLastHourFor / checkBudget 都會先 expire）。留著會變成
+        // 無人能區分的假保護。
+        final stamps =
+            (entry.value as List<dynamic>)
+                .map((e) => DateTime.fromMillisecondsSinceEpoch(e as int))
+                .toList()
+              ..sort();
+        if (stamps.isEmpty) continue;
+        _callTimestamps[vendor] = Queue<DateTime>.from(stamps);
+      }
+
+      final limited = decoded['rateLimitedAt'] as Map<String, dynamic>? ?? {};
+      for (final entry in limited.entries) {
+        final vendor = _vendorByName(entry.key);
+        if (vendor == null) continue;
+        final at = DateTime.fromMillisecondsSinceEpoch(entry.value as int);
+        if (now.difference(at) >= const Duration(hours: 1)) continue;
+        _rateLimitedAt[vendor] = at;
+      }
+    } catch (e) {
+      AppLogger.warning('ApiBudgetTracker', '配額狀態載入失敗，本次視為無歷史', e);
+    }
+  }
+
+  /// 把目前狀態寫回 [ApiBudgetStore]。失敗只記 warning（fail-open）。
+  Future<void> flush() async {
+    final store = _store;
+    if (store == null) return;
+    _callsSincePersist = 0;
+    try {
+      final cutoff = _clock.now().subtract(const Duration(hours: 1));
+      await store.save(
+        jsonEncode({
+          'calls': {
+            for (final e in _callTimestamps.entries)
+              e.key.name: [
+                for (final d in e.value)
+                  if (!d.isBefore(cutoff)) d.millisecondsSinceEpoch,
+              ],
+          },
+          'rateLimitedAt': {
+            for (final e in _rateLimitedAt.entries)
+              if (e.value != null) e.key.name: e.value!.millisecondsSinceEpoch,
+          },
+        }),
+      );
+    } catch (e) {
+      AppLogger.warning('ApiBudgetTracker', '配額狀態寫入失敗', e);
+    }
+  }
+
+  static ApiVendor? _vendorByName(String name) {
+    for (final v in ApiVendor.values) {
+      if (v.name == name) return v;
+    }
+    return null;
   }
 }
