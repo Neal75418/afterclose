@@ -122,21 +122,15 @@ class InstitutionalRepository implements IInstitutionalRepository {
 
       // 並行取得上市與上櫃法人資料（錯誤隔離，允許部分成功）
       // safeAwait 立即包裹原始 Future，避免 unhandled async error
-      final twseFuture = safeAwait(
+      final (twseData, tpexData) = await safeAwaitPair(
         _twseClient.getAllInstitutionalData(date: date),
-        <TwseInstitutional>[],
-        tag: 'InstitutionalRepo',
-        description: '上市法人資料取得失敗，繼續處理上櫃',
-      );
-      final tpexFuture = safeAwait(
         _tpexClient.getAllInstitutionalData(date: date),
-        <TpexInstitutional>[],
+        firstDefault: <TwseInstitutional>[],
+        secondDefault: <TpexInstitutional>[],
         tag: 'InstitutionalRepo',
-        description: '上櫃法人資料取得失敗，繼續處理上市',
+        firstDescription: '上市法人資料取得失敗，繼續處理上櫃',
+        secondDescription: '上櫃法人資料取得失敗，繼續處理上市',
       );
-
-      final twseData = await twseFuture;
-      final tpexData = await tpexFuture;
 
       if (twseData.isEmpty && tpexData.isEmpty) return 0;
 
@@ -224,21 +218,17 @@ class InstitutionalRepository implements IInstitutionalRepository {
   }) async {
     try {
       // 並行抓 TWSE + TPEx 法人資料。任一失敗回空 list 不阻斷另一個。
-      final twseFuture = safeAwait(
+      final (twseData, tpexData) = await safeAwaitPair(
         _twseClient.getAllInstitutionalData(date: date),
-        <TwseInstitutional>[],
-        tag: 'InstitutionalRepo',
-        description: '上市法人 backfill 失敗 (${DateContext.formatYmd(date)})，繼續處理上櫃',
-      );
-      final tpexFuture = safeAwait(
         _tpexClient.getAllInstitutionalData(date: date),
-        <TpexInstitutional>[],
+        firstDefault: <TwseInstitutional>[],
+        secondDefault: <TpexInstitutional>[],
         tag: 'InstitutionalRepo',
-        description: '上櫃法人 backfill 失敗 (${DateContext.formatYmd(date)})，繼續處理上市',
+        firstDescription:
+            '上市法人 backfill 失敗 (${DateContext.formatYmd(date)})，繼續處理上櫃',
+        secondDescription:
+            '上櫃法人 backfill 失敗 (${DateContext.formatYmd(date)})，繼續處理上市',
       );
-
-      final twseData = await twseFuture;
-      final tpexData = await tpexFuture;
 
       if (twseData.isEmpty && tpexData.isEmpty) return 0;
 

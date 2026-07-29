@@ -254,6 +254,11 @@ class WatchlistState {
 class WatchlistNotifier extends Notifier<WatchlistState> {
   var _active = true;
 
+  /// load generation guard(2026-07-30 審查):dataUpdateEpoch listener 與
+  /// pull-to-refresh 可並發觸發 loadData,先發慢完成者會以舊資料覆蓋新
+  /// state——today/marketOverview 已修過同型 race,此為漏網 sibling。
+  var _loadGeneration = 0;
+
   @override
   WatchlistState build() {
     _active = true;
@@ -283,6 +288,7 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
 
   /// 載入自選股資料
   Future<void> loadData() async {
+    final generation = ++_loadGeneration;
     state = state.copyWith(isLoading: true, error: null);
 
     try {
@@ -295,7 +301,7 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
         _db.getWatchlistGroups(),
         analysisRepo.findLatestAnalysisDate(),
       ).wait;
-      if (!_active) return;
+      if (!_active || _loadGeneration != generation) return;
 
       if (watchlist.isEmpty) {
         state = state.copyWith(items: [], groups: groups, isLoading: false);
@@ -326,7 +332,7 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
           threshold: FundamentalParams.highPledgeRatioThreshold,
         ),
       ).wait;
-      if (!_active) return;
+      if (!_active || _loadGeneration != generation) return;
 
       // 解構 Record 欄位
       final stocksMap = data.stocks;
@@ -403,6 +409,7 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
       );
     } catch (e) {
       AppLogger.warning('WatchlistNotifier', '載入自選股資料失敗', e);
+      if (!_active || _loadGeneration != generation) return;
       state = state.copyWith(isLoading: false, error: ErrorDisplay.message(e));
     }
   }

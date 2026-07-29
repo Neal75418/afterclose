@@ -266,25 +266,52 @@ class TodayNotifier extends Notifier<TodayState> {
     );
 
     try {
-      final result = await _updateService
-          .runDailyUpdate(
-            force: force,
-            onProgress: (current, total, message) {
-              state = state.copyWith(
-                updateProgress: UpdateProgress(
-                  currentStep: current,
-                  totalSteps: total,
-                  message: message,
-                ),
-              );
-            },
-          )
-          .timeout(
-            _updateTimeout,
-            onTimeout: () {
-              throw TimeoutException('更新作業超時，請檢查網路連線後重試', _updateTimeout);
-            },
+      final pending = _updateService.runDailyUpdate(
+        force: force,
+        onProgress: (current, total, message) {
+          state = state.copyWith(
+            updateProgress: UpdateProgress(
+              currentStep: current,
+              totalSteps: total,
+              message: message,
+            ),
           );
+        },
+      );
+      // 手動 race 取代 Future.timeout:SDK 的 timeout 內部 handler 在嚴格
+      // custom zone(如 fakeAsync)會觸發「error handler must return a value
+      // of the returned future's type」;Future.any + 可取消 Timer 語意相同
+      // 且 zone-safe。
+      final timeoutSignal = Completer<UpdateResult?>();
+      final timeoutTimer = Timer(_updateTimeout, () {
+        if (!timeoutSignal.isCompleted) timeoutSignal.complete(null);
+      });
+      final UpdateResult result;
+      try {
+        final winner = await Future.any<UpdateResult?>([
+          pending,
+          timeoutSignal.future,
+        ]);
+        if (winner == null) {
+          // 逾時只放棄等待,底層 runDailyUpdate 不可取消、仍在跑
+          // (2026-07-30 審查):它日後成功時必須補跑快取失效 + epoch
+          // bump,否則各 provider 永遠不知道 DB 已有新一輪資料、UI 停在
+          // 逾時錯誤。失敗則靜默(比照 market_overview 的背景收尾模式)。
+          unawaited(() async {
+            try {
+              await pending;
+              _cachedDb.invalidateCache();
+              ref.read(dataUpdateEpochProvider.notifier).bump();
+            } catch (_) {
+              // 底層更新最終失敗:逾時錯誤已呈現給使用者,這裡靜默
+            }
+          }());
+          throw TimeoutException('更新作業超時，請檢查網路連線後重試', _updateTimeout);
+        }
+        result = winner;
+      } finally {
+        timeoutTimer.cancel();
+      }
 
       state = state.copyWith(isUpdating: false, updateProgress: null);
 

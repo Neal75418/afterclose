@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mocktail/mocktail.dart';
@@ -6,6 +8,7 @@ import 'package:afterclose/core/constants/pagination.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/database/cached_accessor.dart';
 import 'package:afterclose/data/repositories/warning_repository.dart';
+import 'package:afterclose/data/repositories/analysis_repository.dart';
 import 'package:afterclose/data/repositories/insider_repository.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:afterclose/presentation/providers/watchlist_provider.dart';
@@ -20,6 +23,8 @@ class MockCachedDatabaseAccessor extends Mock
     implements CachedDatabaseAccessor {}
 
 class MockWarningRepository extends Mock implements WarningRepository {}
+
+class MockAnalysisRepository extends Mock implements AnalysisRepository {}
 
 class MockInsiderRepository extends Mock implements InsiderRepository {}
 
@@ -271,6 +276,111 @@ void main() {
       final state = container.read(watchlistProvider);
       expect(state.isLoading, isFalse);
       expect(state.error, isNotNull);
+    });
+
+    test('並發 loadData:先發慢完成者不得覆蓋後發結果(2026-07-30 審查)', () async {
+      // dataUpdateEpoch listener 與 pull-to-refresh 可同時觸發 loadData。
+      // 模擬:第一次呼叫讀 DB 很慢(groupA)、第二次很快(groupB)。
+      // 慢的完成後不得把 state 蓋回 groupA —— today/marketOverview 已修過
+      // 同型 race,此測試鎖住 watchlist 的 generation guard。
+      final groupA = WatchlistGroupEntry(
+        id: 1,
+        name: 'A(舊)',
+        sortOrder: 0,
+        createdAt: DateTime(2026, 7, 30),
+      );
+      final groupB = WatchlistGroupEntry(
+        id: 2,
+        name: 'B(新)',
+        sortOrder: 0,
+        createdAt: DateTime(2026, 7, 30),
+      );
+      final mockAnalysisRepo = MockAnalysisRepository();
+      when(
+        () => mockAnalysisRepo.findLatestAnalysisDate(),
+      ).thenAnswer((_) async => DateTime(2026, 7, 30));
+      final raceContainer = ProviderContainer(
+        overrides: [
+          databaseProvider.overrideWithValue(mockDb),
+          cachedDbProvider.overrideWithValue(mockCachedDb),
+          warningRepositoryProvider.overrideWithValue(mockWarningRepo),
+          insiderRepositoryProvider.overrideWithValue(mockInsiderRepo),
+          analysisRepositoryProvider.overrideWithValue(mockAnalysisRepo),
+        ],
+      );
+      addTearDown(raceContainer.dispose);
+
+      final slowGate = Completer<void>();
+      var call = 0;
+      when(() => mockDb.getWatchlistWithGroups()).thenAnswer((_) async {
+        call++;
+        if (call == 1) await slowGate.future; // 第一次呼叫卡住
+        return [];
+      });
+      var groupCall = 0;
+      when(() => mockDb.getWatchlistGroups()).thenAnswer((_) async {
+        groupCall++;
+        return [groupCall == 1 ? groupA : groupB];
+      });
+
+      final notifier = raceContainer.read(watchlistProvider.notifier);
+      final first = notifier.loadData(); // 先發(慢)
+      final second = notifier.loadData(); // 後發(快)
+      await second;
+      expect(
+        raceContainer.read(watchlistProvider).groups.single.name,
+        'B(新)',
+        reason: '後發完成後 state 應為 B',
+      );
+
+      slowGate.complete(); // 放行先發
+      await first;
+      expect(
+        raceContainer.read(watchlistProvider).groups.single.name,
+        'B(新)',
+        reason: '先發慢完成者不得以舊資料(A)覆蓋',
+      );
+    });
+
+    test('並發 loadData:先發慢「失敗」者不得把 error 蓋到後發成功結果', () async {
+      final mockAnalysisRepo = MockAnalysisRepository();
+      when(
+        () => mockAnalysisRepo.findLatestAnalysisDate(),
+      ).thenAnswer((_) async => DateTime(2026, 7, 30));
+      final raceContainer = ProviderContainer(
+        overrides: [
+          databaseProvider.overrideWithValue(mockDb),
+          cachedDbProvider.overrideWithValue(mockCachedDb),
+          warningRepositoryProvider.overrideWithValue(mockWarningRepo),
+          insiderRepositoryProvider.overrideWithValue(mockInsiderRepo),
+          analysisRepositoryProvider.overrideWithValue(mockAnalysisRepo),
+        ],
+      );
+      addTearDown(raceContainer.dispose);
+
+      final slowGate = Completer<void>();
+      var call = 0;
+      when(() => mockDb.getWatchlistWithGroups()).thenAnswer((_) async {
+        call++;
+        if (call == 1) {
+          await slowGate.future;
+          throw Exception('先發的 DB 讀取炸了');
+        }
+        return [];
+      });
+      when(() => mockDb.getWatchlistGroups()).thenAnswer((_) async => []);
+
+      final notifier = raceContainer.read(watchlistProvider.notifier);
+      final first = notifier.loadData(); // 先發(慢,終將失敗)
+      final second = notifier.loadData(); // 後發(快,成功)
+      await second;
+      expect(raceContainer.read(watchlistProvider).error, isNull);
+
+      slowGate.complete();
+      await first;
+      final state = raceContainer.read(watchlistProvider);
+      expect(state.error, isNull, reason: '過期的失敗不得覆蓋成功結果');
+      expect(state.isLoading, isFalse);
     });
   });
 

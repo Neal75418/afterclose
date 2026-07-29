@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'package:afterclose/presentation/providers/data_update_epoch_provider.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mocktail/mocktail.dart';
@@ -348,6 +351,71 @@ void main() {
         ),
         isFalse,
       );
+    });
+  });
+
+  group('runUpdate 逾時後的背景收尾(2026-07-30 審查)', () {
+    test('逾時後底層更新終於成功:補跑 invalidateCache + epoch bump', () {
+      fakeAsync((async) {
+        final pending = Completer<UpdateResult>();
+        when(
+          () => mockUpdateService.runDailyUpdate(
+            force: any(named: 'force'),
+            onProgress: any(named: 'onProgress'),
+          ),
+        ).thenAnswer((_) => pending.future);
+
+        final epochBefore = container.read(dataUpdateEpochProvider);
+        final notifier = container.read(todayProvider.notifier);
+
+        Object? thrown;
+        notifier.runUpdate().then<void>(
+          (_) {},
+          onError: (Object e) {
+            thrown = e;
+          },
+        );
+        async.elapse(const Duration(minutes: 61));
+        expect(thrown, isA<TimeoutException>(), reason: '逾時本身照舊拋出');
+
+        // 底層更新其後成功——.timeout 不取消底層 future
+        pending.complete(
+          UpdateResult(date: DateTime(2026, 7, 6))..success = true,
+        );
+        async.flushMicrotasks();
+
+        verify(() => mockCachedDb.invalidateCache()).called(1);
+        expect(
+          container.read(dataUpdateEpochProvider),
+          greaterThan(epochBefore),
+          reason:
+              '逾時被放棄的更新成功後,若不補 bump epoch,'
+              '所有 provider 永遠不知道 DB 已有新一輪資料',
+        );
+      });
+    });
+
+    test('逾時後底層更新失敗:靜默,零 unhandled async error', () {
+      final unhandled = <Object>[];
+      runZonedGuarded(() {
+        fakeAsync((async) {
+          final pending = Completer<UpdateResult>();
+          when(
+            () => mockUpdateService.runDailyUpdate(
+              force: any(named: 'force'),
+              onProgress: any(named: 'onProgress'),
+            ),
+          ).thenAnswer((_) => pending.future);
+
+          final notifier = container.read(todayProvider.notifier);
+          notifier.runUpdate().then<void>((_) {}, onError: (Object e) {});
+          async.elapse(const Duration(minutes: 61));
+
+          pending.completeError(StateError('底層更新最終失敗'));
+          async.flushMicrotasks();
+        });
+      }, (e, st) => unhandled.add(e));
+      expect(unhandled, isEmpty);
     });
   });
 }

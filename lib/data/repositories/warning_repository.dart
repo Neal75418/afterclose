@@ -4,6 +4,7 @@ import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/clock.dart';
+import 'package:afterclose/core/utils/safe_execution.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
@@ -101,31 +102,35 @@ class WarningRepository {
       var twseAttentionSynced = false;
       var tpexAttentionSynced = false;
 
-      // TWSE 請求（僅交易日，兩個 TWSE 請求可並行——TWSE 伺服器穩定）
+      // TWSE 請求（僅交易日，兩個 TWSE 請求可並行——TWSE 伺服器穩定）。
+      // awaitPairSettled(2026-07-30 審查):舊寫法先啟動兩個 future 再逐一
+      // await——第一個 rethrow(限流/斷網)時第二個 future 的 rejection 無人
+      // 監聽 → zone unhandled(雙來源同時失敗是高相關性情境)。settled 版
+      // 啟動當下掛好兩邊 listener;rethrow 優先語意不變、per-source
+      // 成敗旗標(failCount/attentionSynced)保留。
       if (isTradingDay) {
-        final twseWarningFuture = _twseClient.getTradingWarnings(date: today);
-        final twseDisposalFuture = _twseClient.getDisposalInfo(date: today);
-
-        try {
-          twseWarnings = await twseWarningFuture;
-          twseAttentionSynced = true;
-        } on RateLimitException {
-          rethrow;
-        } on NetworkException {
-          rethrow;
-        } catch (e) {
-          failCount++;
-          AppLogger.warning('WarningRepo', '上市注意股票取得失敗', e);
+        final (wRes, dRes) = await awaitPairSettled(
+          _twseClient.getTradingWarnings(date: today),
+          _twseClient.getDisposalInfo(date: today),
+        );
+        for (final e in [wRes.error, dRes.error]) {
+          if (e is RateLimitException) throw e;
         }
-        try {
-          twseDisposals = await twseDisposalFuture;
-        } on RateLimitException {
-          rethrow;
-        } on NetworkException {
-          rethrow;
-        } catch (e) {
+        for (final e in [wRes.error, dRes.error]) {
+          if (e is NetworkException) throw e;
+        }
+        if (wRes.error == null) {
+          twseWarnings = wRes.value!;
+          twseAttentionSynced = true;
+        } else {
           failCount++;
-          AppLogger.warning('WarningRepo', '上市處置股票取得失敗', e);
+          AppLogger.warning('WarningRepo', '上市注意股票取得失敗', wRes.error);
+        }
+        if (dRes.error == null) {
+          twseDisposals = dRes.value!;
+        } else {
+          failCount++;
+          AppLogger.warning('WarningRepo', '上市處置股票取得失敗', dRes.error);
         }
       } else {
         AppLogger.debug('WarningRepo', '非交易日，跳過 TWSE 注意/處置股票 API');

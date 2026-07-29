@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
 import 'package:afterclose/core/constants/market_codes.dart';
+import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/data/repositories/warning_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -286,6 +288,53 @@ void main() {
       await repo.syncAllMarketWarnings();
 
       expect(capturedSyncedMarkets(), {MarketCode.twse, MarketCode.tpex});
+    });
+  });
+
+  group('syncAllMarketWarnings 雙來源同時斷網(2026-07-30 async 衛生)', () {
+    setUpAll(() => registerFallbackValue(DateTime(2026)));
+
+    test('TWSE 注意+處置同時 NetworkException:rethrow 且零 unhandled error', () async {
+      // 固定交易日,確保 TWSE 平行分支被執行
+      final repo = WarningRepository(
+        database: mockDb,
+        tpexClient: mockTpexClient,
+        twseClient: mockTwseClient,
+        clock: _FixedClock(DateTime(2026, 7, 29, 18)),
+      );
+      when(
+        () => mockDb.getLatestWarningSyncTime(),
+      ).thenAnswer((_) async => null); // 無同步紀錄 → 走完整同步路徑
+      when(
+        () => mockTwseClient.getTradingWarnings(date: any(named: 'date')),
+      ).thenAnswer((_) async => throw const NetworkException('斷網', null));
+      when(
+        () => mockTwseClient.getDisposalInfo(date: any(named: 'date')),
+      ).thenAnswer((_) async => throw const NetworkException('斷網', null));
+
+      final unhandled = <Object>[];
+      Object? thrown;
+      // 注意:不可在 runZonedGuarded 內用 expectLater——assertion 失敗的
+      // TestFailure 會被 zone handler 攔走,外層 await 永遠不完成(卡 30s
+      // timeout)。錯誤不能跨 zone 邊界,zone 內用 try/catch 手動捕捉。
+      await runZonedGuarded(() async {
+        try {
+          await repo.syncAllMarketWarnings();
+        } catch (e) {
+          thrown = e;
+        }
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+      }, (e, st) => unhandled.add(e));
+      expect(thrown, isA<NetworkException>());
+
+      expect(
+        unhandled,
+        isEmpty,
+        reason:
+            '第一個 await rethrow 後,第二個 future 的 rejection 不得'
+            '成為 zone 層 unhandled async error(舊「先啟動再逐一 await」的病)',
+      );
     });
   });
 }

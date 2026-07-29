@@ -256,23 +256,17 @@ class TradingRepository implements ITradingRepository {
 
       // 並行取得上市與上櫃融資融券資料（錯誤隔離，允許部分成功）
       // safeAwait 立即包裹原始 Future，避免 unhandled async error
-      final twseFuture = safeAwait(
-        _twseClient.getAllMarginTradingData(),
-        <TwseMarginTrading>[],
-        tag: 'TradingRepo',
-        description: '上市融資融券取得失敗，繼續處理上櫃',
-      );
       // TPEx 融資融券 API 有 T+1 延遲：傳入今日日期會回傳空資料。
       // 省略 d 參數時 API 自動回傳最新可用資料（與 TWSE 行為一致）。
-      final tpexFuture = safeAwait(
+      final (twseData, tpexData) = await safeAwaitPair(
+        _twseClient.getAllMarginTradingData(),
         _tpexClient.getAllMarginTradingData(),
-        <TpexMarginTrading>[],
+        firstDefault: <TwseMarginTrading>[],
+        secondDefault: <TpexMarginTrading>[],
         tag: 'TradingRepo',
-        description: '上櫃融資融券取得失敗，繼續處理上市',
+        firstDescription: '上市融資融券取得失敗，繼續處理上櫃',
+        secondDescription: '上櫃融資融券取得失敗，繼續處理上市',
       );
-
-      final twseData = await twseFuture;
-      final tpexData = await tpexFuture;
 
       if (twseData.isEmpty && tpexData.isEmpty) return 0;
 

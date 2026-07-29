@@ -335,21 +335,18 @@ class PriceRepository implements IPriceRepository {
       // TWSE 端點自動回傳最新交易日資料（不接受日期參數）
       // TPEX 端點需要明確傳入日期，否則 fallback 到 DateTime.now()
       // 在非交易日（週末/假日）會導致 TPEX 回傳空資料
-      final twseFuture = safeAwait(
+      // safeAwaitPair(2026-07-30):雙來源同時 rethrow 型失敗(斷網/同時
+      // 限流)在舊「先啟動再逐一 await」寫法下,第二個 future 的 rejection
+      // 無人監聽 → zone unhandled;pair 版啟動當下就掛好兩邊 listener
+      final (twsePrices, tpexPrices) = await safeAwaitPair(
         _twseSource.fetchAllDailyPrices(),
-        <TwseDailyPrice>[],
-        tag: 'PriceRepo',
-        description: '上市價格取得失敗，繼續處理上櫃',
-      );
-      final tpexFuture = safeAwait(
         _tpexSource.fetchAllDailyPrices(date: normalizedDate),
-        <TpexDailyPrice>[],
+        firstDefault: <TwseDailyPrice>[],
+        secondDefault: <TpexDailyPrice>[],
         tag: 'PriceRepo',
-        description: '上櫃價格取得失敗，繼續處理上市',
+        firstDescription: '上市價格取得失敗，繼續處理上櫃',
+        secondDescription: '上櫃價格取得失敗，繼續處理上市',
       );
-      // 等待兩者完成（已平行啟動，TWSE 慢時不阻擋 TPEX）
-      final twsePrices = await twseFuture;
-      final tpexPrices = await tpexFuture;
 
       if (twsePrices.isEmpty && tpexPrices.isEmpty) {
         AppLogger.warning('PriceRepo', '價格同步: 無資料');
