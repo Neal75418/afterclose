@@ -349,9 +349,16 @@ class CalibratedScoresTable {
       // 被證實**——校準管線把所有規則當多方評是已知侷限,對它們歸零等於
       // 拔掉實證有效的防護,且 mutex 排序下 0 會擊敗活著的負分。
       // hardcodedScores 未提供時保守不歸零(方向不明)。
+      //
+      // **顯式排除集(2026-07-30)**:hardcoded>0 判多方在「空方訊號用正
+      // 顯示分」的規則(如 WEEK_52_LOW +8)上漏接——它們 avg<0 是預測
+      // 正確。見 [CalibrationThresholds.zeroingBearishDisplayExclusions]。
       if (applyNegativeEvidenceZeroing &&
           score == 0 &&
           !structuralExemptions.contains(ruleId) &&
+          !CalibrationThresholds.zeroingBearishDisplayExclusions.contains(
+            ruleId,
+          ) &&
           (hardcodedScores?[ruleId] ?? 0) > 0) {
         final avg = ruleValue['avg_return'];
         final t = ruleValue['t_stat'];

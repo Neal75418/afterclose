@@ -138,6 +138,23 @@ abstract final class CalibrationThresholds {
   /// 支持歸零方向。門檻本身沿用 clustered 校準的顯著性慣例，非最佳化參數。
   static const double negativeEvidenceTStatMax = -1.5;
 
+  /// 負證據歸零的方向 gate 顯式排除集（2026-07-30）。
+  ///
+  /// 方向 gate 用「hardcoded > 0 = 多方宣稱」判定可歸零性，但個別規則的
+  /// 正分是**空方訊號的顯示強度**而非多方宣稱——校準管線把所有規則當
+  /// 多方評（success = 觸發後上漲），對它們 avg<0 是**預測正確**，
+  /// 不是負證據。落進這個縫隙的規則在此顯式排除（不歸零 → lookup 回
+  /// null → fallback hardcoded 顯示分）。
+  ///
+  /// **收錄判準**：hardcoded 為正、語意為空方/警示（觸發後預期下跌）、
+  /// 且不參與多方 mode routing（neutral）。目前唯一命中：
+  /// - `WEEK_52_LOW`（52 週新低，neutral 顯示分 +8；asset avg=-0.54
+  ///   t=-5.5 正是弱勢股續弱的實證）
+  ///
+  /// 未來校準重跑若有新規則落縫隙，比照收錄並在
+  /// calibrated_scores_test 的 e2e 斷言補上。
+  static const Set<String> zeroingBearishDisplayExclusions = {'WEEK_52_LOW'};
+
   /// 超額模式 hit-rate cut：`hitRate ≥ 實證 universe baseline + 此 lift`。
   ///
   /// 取代絕對 0.55 門檻（上方 [hitRateCutThreshold] docstring 標註的

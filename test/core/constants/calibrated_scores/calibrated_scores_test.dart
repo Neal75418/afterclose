@@ -1223,6 +1223,37 @@ void main() {
       );
       expect(table.lookup('UNKNOWN_DIR'), isNull);
     });
+
+    test('空方訊號的正「顯示分」不歸零(2026-07-30 WEEK_52_LOW 修正)', () {
+      // WEEK_52_LOW 是 neutral 空方訊號,hardcoded +8 是顯示強度分而非
+      // 多方宣稱——「hardcoded>0=多方」的判準在它身上漏接:觸發後
+      // avg=-0.54(下跌)是預測正確,不是負證據。顯式排除集補上語意。
+      final json = _buildJson(
+        rules: {
+          'WEEK_52_LOW': {
+            'score': 0,
+            'hit_rate': 0.30,
+            'samples': 40000,
+            'avg_return': -0.5433,
+            't_stat': -5.524,
+            'active': false,
+            'cut_reason': 't_stat_below_threshold',
+          },
+        },
+      );
+      final (:table, warnings: _) = CalibratedScoresTable.parseJson(
+        json,
+        horizon: Horizon.short,
+        hardcodedScores: const {'WEEK_52_LOW': 8},
+        applyNegativeEvidenceZeroing: true,
+      );
+      expect(
+        table.lookup('WEEK_52_LOW'),
+        isNull,
+        reason: '空方訊號觸發後下跌=預測正確,應 fallback 顯示 hardcoded 而非 0',
+      );
+      expect(table.zeroedSnapshot(), isEmpty);
+    });
   });
 
   group('三態 lookup × isolate 傳輸線(2026-07-29 審查 B1/B3)', () {
@@ -1302,6 +1333,9 @@ void main() {
       expect(zeroed, isNot(contains('KD_DEATH_CROSS')));
       expect(zeroed, isNot(contains('TECH_BREAKDOWN')));
       expect(zeroed, isNot(contains('REVENUE_YOY_DECLINE')));
+      // 空方訊號的正「顯示分」也不歸零(2026-07-30):WEEK_52_LOW 的 +8 是
+      // neutral 顯示強度,avg<0 是預測正確——顯式排除集承接
+      expect(zeroed, isNot(contains('WEEK_52_LOW')));
       // 量級 sanity(2026-07-13 資產:28 負證據 −3 C gate −13 空方 ≈ 12;
       // 重校準後允許漂移但不該歸零全部)
       expect(zeroed.length, inInclusiveRange(6, 25));
