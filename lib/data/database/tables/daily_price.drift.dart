@@ -416,9 +416,9 @@ typedef $$DailyPriceTableProcessedTableManager =
       i1.DailyPriceEntry,
       i0.PrefetchHooks Function({bool symbol})
     >;
-i0.Index get idxDailyPriceSymbol => i0.Index(
-  'idx_daily_price_symbol',
-  'CREATE INDEX idx_daily_price_symbol ON daily_price (symbol)',
+i0.Index get idxDailyPriceDate => i0.Index(
+  'idx_daily_price_date',
+  'CREATE INDEX idx_daily_price_date ON daily_price (date)',
 );
 
 class $DailyPriceTable extends i2.DailyPrice
@@ -958,12 +958,3 @@ class DailyPriceCompanion extends i0.UpdateCompanion<i1.DailyPriceEntry> {
         .toString();
   }
 }
-
-i0.Index get idxDailyPriceDate => i0.Index(
-  'idx_daily_price_date',
-  'CREATE INDEX idx_daily_price_date ON daily_price (date)',
-);
-i0.Index get idxDailyPriceSymbolDate => i0.Index(
-  'idx_daily_price_symbol_date',
-  'CREATE INDEX idx_daily_price_symbol_date ON daily_price (symbol, date)',
-);

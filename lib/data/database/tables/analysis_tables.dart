@@ -11,7 +11,6 @@ import 'package:afterclose/data/database/tables/stock_master.dart';
 @TableIndex(name: 'idx_daily_analysis_date', columns: {#date})
 @TableIndex(name: 'idx_daily_analysis_score_short', columns: {#scoreShort})
 @TableIndex(name: 'idx_daily_analysis_score_long', columns: {#scoreLong})
-@TableIndex(name: 'idx_daily_analysis_symbol_date', columns: {#symbol, #date})
 @TableIndex(
   name: 'idx_daily_analysis_date_score_short',
   columns: {#date, #scoreShort},
@@ -59,7 +58,7 @@ class DailyAnalysis extends Table {
 /// `ruleScoreLong`，同一條 rule 在兩個 horizon 下的分數貢獻可能不同
 /// （calibrated JSON 為空時兩者相等，走 hardcoded fallback）。
 @DataClassName('DailyReasonEntry')
-@TableIndex(name: 'idx_daily_reason_symbol_date', columns: {#symbol, #date})
+@TableIndex(name: 'idx_daily_reason_date', columns: {#date})
 class DailyReason extends Table {
   /// 股票代碼
   TextColumn get symbol =>
@@ -93,16 +92,11 @@ class DailyReason extends Table {
 /// `(date, horizon, rank)`，每天最多 40 rows（20 短 + 20 長）。
 /// 同一檔股票若在兩個 horizon 都上榜會有兩 rows，各自帶 per-horizon
 /// 的 rank 與 score。
+// 2026-07-29 索引衛生:移除兩條冗餘宣告——date_horizon 是 PK (date,horizon,
+// rank) 左前綴;date_horizon_symbol 與下方 uniqueKeys {date,horizon,symbol}
+// 生成的 UNIQUE autoindex 完全重複。既有 DB 由 _ensureIndexHygiene 清除。
 @DataClassName('DailyRecommendationEntry')
-@TableIndex(
-  name: 'idx_daily_recommendation_date_horizon',
-  columns: {#date, #horizon},
-)
 @TableIndex(name: 'idx_daily_recommendation_symbol', columns: {#symbol})
-@TableIndex(
-  name: 'idx_daily_recommendation_date_horizon_symbol',
-  columns: {#date, #horizon, #symbol},
-)
 class DailyRecommendation extends Table {
   /// 推薦日期
   DateTimeColumn get date => dateTime()();
@@ -133,7 +127,6 @@ class DailyRecommendation extends Table {
 ///
 /// 記錄每條規則的歷史表現，用於計算命中率和平均報酬率。
 @DataClassName('RuleAccuracyEntry')
-@TableIndex(name: 'idx_rule_accuracy_rule', columns: {#ruleId})
 class RuleAccuracy extends Table {
   /// 規則 ID（如 reversal_w2s）
   TextColumn get ruleId => text()();

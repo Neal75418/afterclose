@@ -4,9 +4,7 @@ import 'package:afterclose/data/database/tables/stock_master.dart';
 
 /// 每日 OHLCV 價格資料 Table
 @DataClassName('DailyPriceEntry')
-@TableIndex(name: 'idx_daily_price_symbol', columns: {#symbol})
 @TableIndex(name: 'idx_daily_price_date', columns: {#date})
-@TableIndex(name: 'idx_daily_price_symbol_date', columns: {#symbol, #date})
 class DailyPrice extends Table {
   /// 股票代碼
   TextColumn get symbol =>

@@ -395,9 +395,9 @@ typedef $$DailyInstitutionalTableProcessedTableManager =
       i1.DailyInstitutionalEntry,
       i0.PrefetchHooks Function({bool symbol})
     >;
-i0.Index get idxDailyInstitutionalSymbol => i0.Index(
-  'idx_daily_institutional_symbol',
-  'CREATE INDEX idx_daily_institutional_symbol ON daily_institutional (symbol)',
+i0.Index get idxDailyInstitutionalDate => i0.Index(
+  'idx_daily_institutional_date',
+  'CREATE INDEX idx_daily_institutional_date ON daily_institutional (date)',
 );
 
 class $DailyInstitutionalTable extends i2.DailyInstitutional
@@ -874,12 +874,3 @@ class DailyInstitutionalCompanion
         .toString();
   }
 }
-
-i0.Index get idxDailyInstitutionalDate => i0.Index(
-  'idx_daily_institutional_date',
-  'CREATE INDEX idx_daily_institutional_date ON daily_institutional (date)',
-);
-i0.Index get idxDailyInstitutionalSymbolDate => i0.Index(
-  'idx_daily_institutional_symbol_date',
-  'CREATE INDEX idx_daily_institutional_symbol_date ON daily_institutional (symbol, date)',
-);

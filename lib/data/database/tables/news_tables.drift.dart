@@ -1801,15 +1801,6 @@ class NewsStockMapCompanion extends i0.UpdateCompanion<i1.NewsStockMapEntry> {
   }
 }
 
-i0.Index get idxNewsStockMapNewsId => i0.Index(
-  'idx_news_stock_map_news_id',
-  'CREATE INDEX idx_news_stock_map_news_id ON news_stock_map (news_id)',
-);
-i0.Index get idxNewsMentionDailyDate => i0.Index(
-  'idx_news_mention_daily_date',
-  'CREATE INDEX idx_news_mention_daily_date ON news_mention_daily (date)',
-);
-
 class $NewsMentionDailyTable extends i2.NewsMentionDaily
     with i0.TableInfo<$NewsMentionDailyTable, i1.NewsMentionDailyEntry> {
   @override

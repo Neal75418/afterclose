@@ -38,7 +38,6 @@ class NewsItem extends Table {
 /// 新聞與股票關聯 Table
 @DataClassName('NewsStockMapEntry')
 @TableIndex(name: 'idx_news_stock_map_symbol', columns: {#symbol})
-@TableIndex(name: 'idx_news_stock_map_news_id', columns: {#newsId})
 class NewsStockMap extends Table {
   /// 新聞 ID
   TextColumn get newsId =>
@@ -59,7 +58,6 @@ class NewsStockMap extends Table {
 /// 1. 必須列入 app_database 的 `_userInputTableNames`（fingerprint reset 不得 wipe）
 /// 2. 帶 dictionaryVersion 供回測取同版本區段（字典演化防假爆量）
 @DataClassName('NewsMentionDailyEntry')
-@TableIndex(name: 'idx_news_mention_daily_date', columns: {#date})
 class NewsMentionDaily extends Table {
   /// 本地日曆日（新聞 publishedAt 的 local 日）
   DateTimeColumn get date => dateTime()();

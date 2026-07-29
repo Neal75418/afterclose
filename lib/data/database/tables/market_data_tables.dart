@@ -4,9 +4,7 @@ import 'package:afterclose/data/database/tables/stock_master.dart';
 
 /// 外資持股資料 Table
 @DataClassName('ShareholdingEntry')
-@TableIndex(name: 'idx_shareholding_symbol', columns: {#symbol})
 @TableIndex(name: 'idx_shareholding_date', columns: {#date})
-@TableIndex(name: 'idx_shareholding_symbol_date', columns: {#symbol, #date})
 class Shareholding extends Table {
   /// 股票代碼
   TextColumn get symbol =>
@@ -39,7 +37,6 @@ class Shareholding extends Table {
 /// [dayTradingRatio] 為交易訊號使用的主要指標，
 /// 由每日價量資料另行計算。
 @DataClassName('DayTradingEntry')
-@TableIndex(name: 'idx_day_trading_symbol', columns: {#symbol})
 @TableIndex(name: 'idx_day_trading_date', columns: {#date})
 class DayTrading extends Table {
   /// 股票代碼
@@ -71,7 +68,6 @@ class DayTrading extends Table {
 ///
 /// 儲存損益表、資產負債表、現金流量表的 Key-Value 資料
 @DataClassName('FinancialDataEntry')
-@TableIndex(name: 'idx_financial_data_symbol', columns: {#symbol})
 @TableIndex(name: 'idx_financial_data_date', columns: {#date})
 @TableIndex(name: 'idx_financial_data_type', columns: {#dataType})
 class FinancialData extends Table {
@@ -102,7 +98,6 @@ class FinancialData extends Table {
 ///
 /// 每個持股級距一筆資料（非正規化設計）
 @DataClassName('HoldingDistributionEntry')
-@TableIndex(name: 'idx_holding_dist_symbol', columns: {#symbol})
 @TableIndex(name: 'idx_holding_dist_date', columns: {#date})
 class HoldingDistribution extends Table {
   /// 股票代碼
@@ -132,7 +127,6 @@ class HoldingDistribution extends Table {
 ///
 /// 儲存歷年現金股利、股票股利、除權息日期
 @DataClassName('DividendHistoryEntry')
-@TableIndex(name: 'idx_dividend_history_symbol', columns: {#symbol})
 class DividendHistory extends Table {
   /// 股票代碼
   TextColumn get symbol =>
@@ -161,9 +155,7 @@ class DividendHistory extends Table {
 ///
 /// 用於基本面分析訊號
 @DataClassName('MonthlyRevenueEntry')
-@TableIndex(name: 'idx_monthly_revenue_symbol', columns: {#symbol})
 @TableIndex(name: 'idx_monthly_revenue_date', columns: {#date})
-@TableIndex(name: 'idx_monthly_revenue_symbol_date', columns: {#symbol, #date})
 class MonthlyRevenue extends Table {
   /// 股票代碼
   TextColumn get symbol =>
@@ -195,7 +187,6 @@ class MonthlyRevenue extends Table {
 ///
 /// 用於基本面分析訊號
 @DataClassName('StockValuationEntry')
-@TableIndex(name: 'idx_stock_valuation_symbol', columns: {#symbol})
 @TableIndex(name: 'idx_stock_valuation_date', columns: {#date})
 class StockValuation extends Table {
   /// 股票代碼
@@ -222,9 +213,7 @@ class StockValuation extends Table {
 ///
 /// 用於籌碼分析訊號
 @DataClassName('MarginTradingEntry')
-@TableIndex(name: 'idx_margin_trading_symbol', columns: {#symbol})
 @TableIndex(name: 'idx_margin_trading_date', columns: {#date})
-@TableIndex(name: 'idx_margin_trading_symbol_date', columns: {#symbol, #date})
 class MarginTrading extends Table {
   /// 股票代碼
   TextColumn get symbol =>
@@ -261,10 +250,8 @@ class MarginTrading extends Table {
 /// - 注意股票 (ATTENTION): 交易量異常、價格異常波動
 /// - 處置股票 (DISPOSAL): 嚴重異常，交易受限制
 @DataClassName('TradingWarningEntry')
-@TableIndex(name: 'idx_trading_warning_symbol', columns: {#symbol})
 @TableIndex(name: 'idx_trading_warning_date', columns: {#date})
 @TableIndex(name: 'idx_trading_warning_type', columns: {#warningType})
-@TableIndex(name: 'idx_trading_warning_symbol_date', columns: {#symbol, #date})
 class TradingWarning extends Table {
   /// 股票代碼
   TextColumn get symbol =>
@@ -305,9 +292,7 @@ class TradingWarning extends Table {
 /// - 大量增持為買進訊號
 /// - 高質押率為風險警示
 @DataClassName('InsiderHoldingEntry')
-@TableIndex(name: 'idx_insider_holding_symbol', columns: {#symbol})
 @TableIndex(name: 'idx_insider_holding_date', columns: {#date})
-@TableIndex(name: 'idx_insider_holding_symbol_date', columns: {#symbol, #date})
 class InsiderHolding extends Table {
   /// 股票代碼
   TextColumn get symbol =>
@@ -346,7 +331,6 @@ class InsiderHolding extends Table {
 /// 儲存董監事、經理人、大股東的股權轉讓申報記錄。
 /// 資料來源：TPEX ap12_O API。
 @DataClassName('InsiderTransferEntry')
-@TableIndex(name: 'idx_insider_transfer_symbol', columns: {#symbol})
 @TableIndex(name: 'idx_insider_transfer_date', columns: {#reportDate})
 class InsiderTransfer extends Table {
   /// 股票代碼

@@ -99,14 +99,24 @@ void main() {
         .customSelect('SELECT COUNT(*) AS c FROM stock_master')
         .getSingle();
     expect(stocks.read<int>('c'), 0);
-    // 白名單表的索引在 reset 後仍存在（被重建）
+    // 白名單表的(現行 schema 宣告的)索引在 reset 後仍存在（被重建）
     final idx = await db2
+        .customSelect(
+          "SELECT COUNT(*) AS c FROM sqlite_master WHERE type='index' "
+          "AND name='idx_news_item_published_at'",
+        )
+        .getSingle();
+    expect(idx.read<int>('c'), 1);
+    // idx_news_mention_daily_date 為 PK (date,kind,itemKey) 左前綴冗餘,
+    // 2026-07-29 起由 _ensureIndexHygiene 清除、annotation 已移除——reset 後
+    // 必須不存在(舊斷言的相反;索引處理不炸的原始回歸意圖由上一條承接)
+    final legacy = await db2
         .customSelect(
           "SELECT COUNT(*) AS c FROM sqlite_master WHERE type='index' "
           "AND name='idx_news_mention_daily_date'",
         )
         .getSingle();
-    expect(idx.read<int>('c'), 1);
+    expect(legacy.read<int>('c'), 0);
     await db2.close();
   });
 

@@ -4,12 +4,10 @@ import 'package:afterclose/data/database/tables/stock_master.dart';
 
 /// 三大法人每日買賣超 Table
 @DataClassName('DailyInstitutionalEntry')
-@TableIndex(name: 'idx_daily_institutional_symbol', columns: {#symbol})
+// 2026-07-29 索引衛生:移除 idx_daily_institutional_symbol_date 宣告——
+// 與複合 PK (symbol,date) 的 autoindex 完全重複。既有 DB 由
+// _ensureIndexHygiene 清除。
 @TableIndex(name: 'idx_daily_institutional_date', columns: {#date})
-@TableIndex(
-  name: 'idx_daily_institutional_symbol_date',
-  columns: {#symbol, #date},
-)
 class DailyInstitutional extends Table {
   /// 股票代碼
   TextColumn get symbol =>

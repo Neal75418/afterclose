@@ -4436,9 +4436,9 @@ typedef $$InsiderTransferTableProcessedTableManager =
       i1.InsiderTransferEntry,
       i0.PrefetchHooks Function({bool symbol})
     >;
-i0.Index get idxShareholdingSymbol => i0.Index(
-  'idx_shareholding_symbol',
-  'CREATE INDEX idx_shareholding_symbol ON shareholding (symbol)',
+i0.Index get idxShareholdingDate => i0.Index(
+  'idx_shareholding_date',
+  'CREATE INDEX idx_shareholding_date ON shareholding (date)',
 );
 
 class $ShareholdingTable extends i2.Shareholding
@@ -4932,17 +4932,9 @@ class ShareholdingCompanion extends i0.UpdateCompanion<i1.ShareholdingEntry> {
   }
 }
 
-i0.Index get idxShareholdingDate => i0.Index(
-  'idx_shareholding_date',
-  'CREATE INDEX idx_shareholding_date ON shareholding (date)',
-);
-i0.Index get idxShareholdingSymbolDate => i0.Index(
-  'idx_shareholding_symbol_date',
-  'CREATE INDEX idx_shareholding_symbol_date ON shareholding (symbol, date)',
-);
-i0.Index get idxDayTradingSymbol => i0.Index(
-  'idx_day_trading_symbol',
-  'CREATE INDEX idx_day_trading_symbol ON day_trading (symbol)',
+i0.Index get idxDayTradingDate => i0.Index(
+  'idx_day_trading_date',
+  'CREATE INDEX idx_day_trading_date ON day_trading (date)',
 );
 
 class $DayTradingTable extends i2.DayTrading
@@ -5402,13 +5394,9 @@ class DayTradingCompanion extends i0.UpdateCompanion<i1.DayTradingEntry> {
   }
 }
 
-i0.Index get idxDayTradingDate => i0.Index(
-  'idx_day_trading_date',
-  'CREATE INDEX idx_day_trading_date ON day_trading (date)',
-);
-i0.Index get idxFinancialDataSymbol => i0.Index(
-  'idx_financial_data_symbol',
-  'CREATE INDEX idx_financial_data_symbol ON financial_data (symbol)',
+i0.Index get idxFinancialDataDate => i0.Index(
+  'idx_financial_data_date',
+  'CREATE INDEX idx_financial_data_date ON financial_data (date)',
 );
 
 class $FinancialDataTable extends i2.FinancialData
@@ -5855,17 +5843,13 @@ class FinancialDataCompanion extends i0.UpdateCompanion<i1.FinancialDataEntry> {
   }
 }
 
-i0.Index get idxFinancialDataDate => i0.Index(
-  'idx_financial_data_date',
-  'CREATE INDEX idx_financial_data_date ON financial_data (date)',
-);
 i0.Index get idxFinancialDataType => i0.Index(
   'idx_financial_data_type',
   'CREATE INDEX idx_financial_data_type ON financial_data (data_type)',
 );
-i0.Index get idxHoldingDistSymbol => i0.Index(
-  'idx_holding_dist_symbol',
-  'CREATE INDEX idx_holding_dist_symbol ON holding_distribution (symbol)',
+i0.Index get idxHoldingDistDate => i0.Index(
+  'idx_holding_dist_date',
+  'CREATE INDEX idx_holding_dist_date ON holding_distribution (date)',
 );
 
 class $HoldingDistributionTable extends i2.HoldingDistribution
@@ -6310,15 +6294,6 @@ class HoldingDistributionCompanion
         .toString();
   }
 }
-
-i0.Index get idxHoldingDistDate => i0.Index(
-  'idx_holding_dist_date',
-  'CREATE INDEX idx_holding_dist_date ON holding_distribution (date)',
-);
-i0.Index get idxDividendHistorySymbol => i0.Index(
-  'idx_dividend_history_symbol',
-  'CREATE INDEX idx_dividend_history_symbol ON dividend_history (symbol)',
-);
 
 class $DividendHistoryTable extends i2.DividendHistory
     with i0.TableInfo<$DividendHistoryTable, i1.DividendHistoryEntry> {
@@ -6780,9 +6755,9 @@ class DividendHistoryCompanion
   }
 }
 
-i0.Index get idxMonthlyRevenueSymbol => i0.Index(
-  'idx_monthly_revenue_symbol',
-  'CREATE INDEX idx_monthly_revenue_symbol ON monthly_revenue (symbol)',
+i0.Index get idxMonthlyRevenueDate => i0.Index(
+  'idx_monthly_revenue_date',
+  'CREATE INDEX idx_monthly_revenue_date ON monthly_revenue (date)',
 );
 
 class $MonthlyRevenueTable extends i2.MonthlyRevenue
@@ -7283,17 +7258,9 @@ class MonthlyRevenueCompanion
   }
 }
 
-i0.Index get idxMonthlyRevenueDate => i0.Index(
-  'idx_monthly_revenue_date',
-  'CREATE INDEX idx_monthly_revenue_date ON monthly_revenue (date)',
-);
-i0.Index get idxMonthlyRevenueSymbolDate => i0.Index(
-  'idx_monthly_revenue_symbol_date',
-  'CREATE INDEX idx_monthly_revenue_symbol_date ON monthly_revenue (symbol, date)',
-);
-i0.Index get idxStockValuationSymbol => i0.Index(
-  'idx_stock_valuation_symbol',
-  'CREATE INDEX idx_stock_valuation_symbol ON stock_valuation (symbol)',
+i0.Index get idxStockValuationDate => i0.Index(
+  'idx_stock_valuation_date',
+  'CREATE INDEX idx_stock_valuation_date ON stock_valuation (date)',
 );
 
 class $StockValuationTable extends i2.StockValuation
@@ -7683,13 +7650,9 @@ class StockValuationCompanion
   }
 }
 
-i0.Index get idxStockValuationDate => i0.Index(
-  'idx_stock_valuation_date',
-  'CREATE INDEX idx_stock_valuation_date ON stock_valuation (date)',
-);
-i0.Index get idxMarginTradingSymbol => i0.Index(
-  'idx_margin_trading_symbol',
-  'CREATE INDEX idx_margin_trading_symbol ON margin_trading (symbol)',
+i0.Index get idxMarginTradingDate => i0.Index(
+  'idx_margin_trading_date',
+  'CREATE INDEX idx_margin_trading_date ON margin_trading (date)',
 );
 
 class $MarginTradingTable extends i2.MarginTrading
@@ -8248,17 +8211,9 @@ class MarginTradingCompanion extends i0.UpdateCompanion<i1.MarginTradingEntry> {
   }
 }
 
-i0.Index get idxMarginTradingDate => i0.Index(
-  'idx_margin_trading_date',
-  'CREATE INDEX idx_margin_trading_date ON margin_trading (date)',
-);
-i0.Index get idxMarginTradingSymbolDate => i0.Index(
-  'idx_margin_trading_symbol_date',
-  'CREATE INDEX idx_margin_trading_symbol_date ON margin_trading (symbol, date)',
-);
-i0.Index get idxTradingWarningSymbol => i0.Index(
-  'idx_trading_warning_symbol',
-  'CREATE INDEX idx_trading_warning_symbol ON trading_warning (symbol)',
+i0.Index get idxTradingWarningDate => i0.Index(
+  'idx_trading_warning_date',
+  'CREATE INDEX idx_trading_warning_date ON trading_warning (date)',
 );
 
 class $TradingWarningTable extends i2.TradingWarning
@@ -8896,21 +8851,13 @@ class TradingWarningCompanion
   }
 }
 
-i0.Index get idxTradingWarningDate => i0.Index(
-  'idx_trading_warning_date',
-  'CREATE INDEX idx_trading_warning_date ON trading_warning (date)',
-);
 i0.Index get idxTradingWarningType => i0.Index(
   'idx_trading_warning_type',
   'CREATE INDEX idx_trading_warning_type ON trading_warning (warning_type)',
 );
-i0.Index get idxTradingWarningSymbolDate => i0.Index(
-  'idx_trading_warning_symbol_date',
-  'CREATE INDEX idx_trading_warning_symbol_date ON trading_warning (symbol, date)',
-);
-i0.Index get idxInsiderHoldingSymbol => i0.Index(
-  'idx_insider_holding_symbol',
-  'CREATE INDEX idx_insider_holding_symbol ON insider_holding (symbol)',
+i0.Index get idxInsiderHoldingDate => i0.Index(
+  'idx_insider_holding_date',
+  'CREATE INDEX idx_insider_holding_date ON insider_holding (date)',
 );
 
 class $InsiderHoldingTable extends i2.InsiderHolding
@@ -9549,17 +9496,9 @@ class InsiderHoldingCompanion
   }
 }
 
-i0.Index get idxInsiderHoldingDate => i0.Index(
-  'idx_insider_holding_date',
-  'CREATE INDEX idx_insider_holding_date ON insider_holding (date)',
-);
-i0.Index get idxInsiderHoldingSymbolDate => i0.Index(
-  'idx_insider_holding_symbol_date',
-  'CREATE INDEX idx_insider_holding_symbol_date ON insider_holding (symbol, date)',
-);
-i0.Index get idxInsiderTransferSymbol => i0.Index(
-  'idx_insider_transfer_symbol',
-  'CREATE INDEX idx_insider_transfer_symbol ON insider_transfer (symbol)',
+i0.Index get idxInsiderTransferDate => i0.Index(
+  'idx_insider_transfer_date',
+  'CREATE INDEX idx_insider_transfer_date ON insider_transfer (report_date)',
 );
 
 class $InsiderTransferTable extends i2.InsiderTransfer
@@ -10190,8 +10129,3 @@ class InsiderTransferCompanion
         .toString();
   }
 }
-
-i0.Index get idxInsiderTransferDate => i0.Index(
-  'idx_insider_transfer_date',
-  'CREATE INDEX idx_insider_transfer_date ON insider_transfer (report_date)',
-);

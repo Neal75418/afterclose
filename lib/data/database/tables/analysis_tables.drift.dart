@@ -2413,10 +2413,6 @@ i0.Index get idxDailyAnalysisScoreLong => i0.Index(
   'idx_daily_analysis_score_long',
   'CREATE INDEX idx_daily_analysis_score_long ON daily_analysis (score_long)',
 );
-i0.Index get idxDailyAnalysisSymbolDate => i0.Index(
-  'idx_daily_analysis_symbol_date',
-  'CREATE INDEX idx_daily_analysis_symbol_date ON daily_analysis (symbol, date)',
-);
 i0.Index get idxDailyAnalysisDateScoreShort => i0.Index(
   'idx_daily_analysis_date_score_short',
   'CREATE INDEX idx_daily_analysis_date_score_short ON daily_analysis (date, score_short)',
@@ -2425,9 +2421,9 @@ i0.Index get idxDailyAnalysisDateScoreLong => i0.Index(
   'idx_daily_analysis_date_score_long',
   'CREATE INDEX idx_daily_analysis_date_score_long ON daily_analysis (date, score_long)',
 );
-i0.Index get idxDailyReasonSymbolDate => i0.Index(
-  'idx_daily_reason_symbol_date',
-  'CREATE INDEX idx_daily_reason_symbol_date ON daily_reason (symbol, date)',
+i0.Index get idxDailyReasonDate => i0.Index(
+  'idx_daily_reason_date',
+  'CREATE INDEX idx_daily_reason_date ON daily_reason (date)',
 );
 
 class $DailyReasonTable extends i2.DailyReason
@@ -2929,9 +2925,9 @@ class DailyReasonCompanion extends i0.UpdateCompanion<i1.DailyReasonEntry> {
   }
 }
 
-i0.Index get idxDailyRecommendationDateHorizon => i0.Index(
-  'idx_daily_recommendation_date_horizon',
-  'CREATE INDEX idx_daily_recommendation_date_horizon ON daily_recommendation (date, horizon)',
+i0.Index get idxDailyRecommendationSymbol => i0.Index(
+  'idx_daily_recommendation_symbol',
+  'CREATE INDEX idx_daily_recommendation_symbol ON daily_recommendation (symbol)',
 );
 
 class $DailyRecommendationTable extends i2.DailyRecommendation
@@ -3317,19 +3313,6 @@ class DailyRecommendationCompanion
         .toString();
   }
 }
-
-i0.Index get idxDailyRecommendationSymbol => i0.Index(
-  'idx_daily_recommendation_symbol',
-  'CREATE INDEX idx_daily_recommendation_symbol ON daily_recommendation (symbol)',
-);
-i0.Index get idxDailyRecommendationDateHorizonSymbol => i0.Index(
-  'idx_daily_recommendation_date_horizon_symbol',
-  'CREATE INDEX idx_daily_recommendation_date_horizon_symbol ON daily_recommendation (date, horizon, symbol)',
-);
-i0.Index get idxRuleAccuracyRule => i0.Index(
-  'idx_rule_accuracy_rule',
-  'CREATE INDEX idx_rule_accuracy_rule ON rule_accuracy (rule_id)',
-);
 
 class $RuleAccuracyTable extends i2.RuleAccuracy
     with i0.TableInfo<$RuleAccuracyTable, i1.RuleAccuracyEntry> {

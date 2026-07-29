@@ -2,6 +2,9 @@ import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
+// meta 而非 flutter/foundation:本檔需維持純 Dart 可用(forToolFile 走
+// `dart run`,不可引入 dart:ui 依賴鏈,見 forToolFile doc)
+import 'package:meta/meta.dart' show visibleForTesting;
 
 import 'package:afterclose/core/utils/logger.dart';
 
@@ -192,6 +195,7 @@ class AppDatabase extends $AppDatabase
       await _ensureRuleAccuracyDistinctDatesColumn();
       await _ensureWatchlistGroupsSchema();
       await _ensurePinnedThesisSchema();
+      await _ensureIndexHygiene();
       await customStatement('PRAGMA foreign_keys = ON');
     },
   );
@@ -203,6 +207,70 @@ class AppDatabase extends $AppDatabase
   Future<void> _ensurePinnedThesisSchema() async {
     await Migrator(this).createTable(pinnedThesis);
   }
+
+  /// 2026-07-29 索引衛生（多角色審查 Fix 1）：清除與複合 PK autoindex 完全
+  /// 重複或為其左前綴的 24 條顯式索引，並為 `daily_reason` 補 date-leading
+  /// 索引（mode tab 三個消費者按日查詢，PK (symbol,date,rank) 幫不上）。
+  ///
+  /// **不 bump [appSchemaFingerprint]**：指紋 bump 會 wipe 非白名單表，
+  /// 價格深度重建約需 19 次每日更新，為索引整理付這代價不成比例。沿用
+  /// [_ensureDealerSelfNetColumn] 先例：DROP/CREATE 皆冪等、只動索引
+  /// metadata、資料零損失、每次開啟安全重跑（新裝機為 no-op——createAll
+  /// 已不再建這些索引）。
+  ///
+  /// 判定依據：Drift 複合 primaryKey 會生成 sqlite_autoindex UNIQUE 索引，
+  /// 任何等於它或為其左前綴的顯式索引都是純寫入稅（daily_price 3.1M 列
+  /// 實測索引空間 ~2 倍膨脹）。date-leading 與非前綴索引全數保留
+  /// （含 idx_daily_analysis_date_score_short/long——(date, score) 複合
+  /// 服務 getAnalysisForDate 的 WHERE date= ORDER BY score DESC，非冗餘，
+  /// 2026-07-29 對抗審查曾抓到誤列 drop 清單，已移除並以不變量測試守住：
+  /// drop 清單 ∩ 現行宣告索引 = ∅，見 index_hygiene_test）。
+  Future<void> _ensureIndexHygiene() async {
+    for (final name in legacyRedundantIndexes) {
+      await customStatement('DROP INDEX IF EXISTS "$name"');
+    }
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_daily_reason_date '
+      'ON daily_reason (date)',
+    );
+  }
+
+  /// [_ensureIndexHygiene] 的清除名單。@visibleForTesting 供不變量測試
+  /// 斷言「與現行宣告索引零交集」。
+  @visibleForTesting
+  static const List<String> legacyRedundantIndexes = [
+    // = PK
+    'idx_daily_analysis_symbol_date',
+    'idx_daily_price_symbol_date',
+    'idx_shareholding_symbol_date',
+    'idx_monthly_revenue_symbol_date',
+    'idx_margin_trading_symbol_date',
+    'idx_insider_holding_symbol_date',
+    // PK 左前綴
+    'idx_daily_reason_symbol_date',
+    'idx_rule_accuracy_rule',
+    'idx_daily_institutional_symbol',
+    'idx_daily_price_symbol',
+    'idx_shareholding_symbol',
+    'idx_day_trading_symbol',
+    'idx_financial_data_symbol',
+    'idx_holding_dist_symbol',
+    'idx_dividend_history_symbol',
+    'idx_monthly_revenue_symbol',
+    'idx_stock_valuation_symbol',
+    'idx_margin_trading_symbol',
+    'idx_trading_warning_symbol',
+    'idx_trading_warning_symbol_date',
+    'idx_insider_holding_symbol',
+    'idx_insider_transfer_symbol',
+    'idx_news_stock_map_news_id',
+    'idx_news_mention_daily_date',
+    // 2026-07-29 審查後自 schema 宣告除役的三條(annotation 已移除,
+    // 既有 DB 由此清除;誤殺教訓見 _ensureIndexHygiene doc)
+    'idx_daily_institutional_symbol_date', // = PK,雙重冗餘
+    'idx_daily_recommendation_date_horizon', // PK 左前綴,且表已退役停寫
+    'idx_daily_recommendation_date_horizon_symbol', // = uniqueKeys autoindex,表已退役
+  ];
 
   /// Pre-launch idempotent 加欄：在「不」bump schema fingerprint（不 wipe 既有
   /// derived 資料）的前提下，為既有 DB 補上 `daily_institutional.dealer_self_net`。
