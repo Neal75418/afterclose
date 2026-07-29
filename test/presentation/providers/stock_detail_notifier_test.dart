@@ -728,4 +728,54 @@ void main() {
       expect(result, equals('量能突破摘要'));
     });
   });
+
+  group('finMindClientProvider 失效重建', () {
+    test('invalidate 後 notifier 重建,不得沿用已 dispose 的舊 client', () async {
+      // 2026-07-29 審查發現:build() 用 ref.read 快照 client,使用者更新
+      // token → finMindClientProvider invalidate → 舊 client 的 Dio 已被
+      // close,存活頁面的 API fallback 全打在死連線上被 catch-all 吞掉,
+      // 症狀恰為「設了 token 還是沒資料」。watch 語意下 invalidate 應
+      // 重建 notifier(state 歸零、重新持有新 client)。
+      //
+      // override 用 factory 而非 value:每次 invalidate 產生新 instance,
+      // 才會通知 dependents(same-value 不通知,測不出 read/watch 差異)。
+      setupLoadDataMocks();
+      final localContainer = ProviderContainer(
+        overrides: [
+          databaseProvider.overrideWithValue(mockDb),
+          finMindClientProvider.overrideWith((ref) => MockFinMindClient()),
+          insiderRepositoryProvider.overrideWithValue(mockInsiderRepo),
+          dataSyncServiceProvider.overrideWithValue(mockDataSyncService),
+          ruleAccuracyServiceProvider.overrideWithValue(mockRuleAccuracy),
+          appClockProvider.overrideWithValue(mockClock),
+          watchlistProvider.overrideWith(() => MockWatchlistNotifier()),
+        ],
+      );
+      addTearDown(localContainer.dispose);
+
+      final sub = localContainer.listen(
+        stockDetailProvider(_testSymbol),
+        (_, _) {},
+      );
+      addTearDown(sub.close);
+
+      await localContainer
+          .read(stockDetailProvider(_testSymbol).notifier)
+          .loadData();
+      expect(
+        localContainer.read(stockDetailProvider(_testSymbol)).price.stock,
+        isNotNull,
+        reason: '前置:資料已載入',
+      );
+
+      localContainer.invalidate(finMindClientProvider);
+      await localContainer.pump();
+
+      expect(
+        localContainer.read(stockDetailProvider(_testSymbol)).price.stock,
+        isNull,
+        reason: 'client 換新後 notifier 應重建(state 歸零),否則舊 client 被永久快照',
+      );
+    });
+  });
 }

@@ -36,22 +36,32 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
   StockDetailNotifier(this._symbol);
 
   final String _symbol;
-  late final StockFundamentalsLoader _fundamentalsLoader;
-  late final StockChipLoader _chipLoader;
+  // late(非 final):build() 會因 finMindClientProvider invalidate 重跑,
+  // late final 會在第二次 build 拋 LateInitializationError(測試實證)
+  late StockFundamentalsLoader _fundamentalsLoader;
+  late StockChipLoader _chipLoader;
   var _active = true;
 
   @override
   StockDetailState build() {
     _active = true;
     ref.onDispose(() => _active = false);
+    // finMindClientProvider 用 watch 而非 read(2026-07-29 審查修正):
+    // 使用者更新 token 會 invalidate 該 provider,舊 client 的 Dio 隨即被
+    // close;read 快照會讓存活頁面(含 3 分鐘 keepAlive 窗)的 API fallback
+    // 全打在死連線上、被 loader 的 catch 吞掉,症狀恰為「設了 token 還是
+    // 沒資料」。watch 讓 notifier 隨 client 重建,與 repository providers
+    // 的訂閱語意一致。databaseProvider/appClockProvider 從不 invalidate,
+    // 維持 read。
+    final finMind = ref.watch(finMindClientProvider);
     _fundamentalsLoader = StockFundamentalsLoader(
       db: ref.read(databaseProvider),
-      finMind: ref.read(finMindClientProvider),
+      finMind: finMind,
       clock: ref.read(appClockProvider),
     );
     _chipLoader = StockChipLoader(
       db: ref.read(databaseProvider),
-      finMind: ref.read(finMindClientProvider),
+      finMind: finMind,
       insiderRepo: ref.read(insiderRepositoryProvider),
       clock: ref.read(appClockProvider),
     );
