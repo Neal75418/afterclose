@@ -158,4 +158,65 @@ void main() {
       expect(snapshot['REVERSAL_W2S'], 28);
     });
   });
+
+  group('三態 lookup:zeroedShortRules(2026-07-29)', () {
+    test('歸零集內規則 short lookup 回 0,long 不受影響', () {
+      const ctx = CalibratedScoreContext(
+        shortScores: {'WEEK_52_HIGH': 35},
+        longScores: {'KD_GOLDEN_CROSS': 18},
+        zeroedShortRules: {'KD_GOLDEN_CROSS'},
+      );
+      expect(
+        ctx.lookup(Horizon.short, 'KD_GOLDEN_CROSS'),
+        0,
+        reason: '負證據歸零:short 回 0,caller 的 ?? hardcoded 不觸發',
+      );
+      expect(
+        ctx.lookup(Horizon.long, 'KD_GOLDEN_CROSS'),
+        18,
+        reason: '長線校準待重校準,歸零僅套用 short',
+      );
+      expect(ctx.lookup(Horizon.short, 'WEEK_52_HIGH'), 35);
+    });
+
+    test('isCalibrationBacked:歸零規則不得標為校準背書', () {
+      const ctx = CalibratedScoreContext(
+        shortScores: {'WEEK_52_HIGH': 35},
+        longScores: {},
+        zeroedShortRules: {'KD_GOLDEN_CROSS'},
+      );
+      expect(ctx.isCalibrationBacked('WEEK_52_HIGH'), isTrue);
+      expect(
+        ctx.isCalibrationBacked('KD_GOLDEN_CROSS'),
+        isFalse,
+        reason: '歸零=校準判死,UI 不得掛「回測驗證過 edge」徽章',
+      );
+    });
+
+    test('toMap/fromMap roundtrip 保留 zeroedShortRules', () {
+      const ctx = CalibratedScoreContext(
+        shortScores: {'A': 10},
+        longScores: {'B': 20},
+        zeroedShortRules: {'C', 'D'},
+      );
+      final rebuilt = CalibratedScoreContext.fromMap(ctx.toMap());
+      expect(rebuilt.lookup(Horizon.short, 'C'), 0);
+      expect(rebuilt.lookup(Horizon.short, 'D'), 0);
+      expect(rebuilt.lookup(Horizon.short, 'A'), 10);
+      expect(rebuilt.lookup(Horizon.long, 'B'), 20);
+    });
+
+    test('fromMap 缺 zeroedShortRules 欄位(舊格式)容錯為空集', () {
+      final rebuilt = CalibratedScoreContext.fromMap({
+        'shortScores': {'A': 10},
+        'longScores': <String, int>{},
+      });
+      expect(rebuilt.lookup(Horizon.short, 'A'), 10);
+      expect(rebuilt.lookup(Horizon.short, 'ZEROED_ELSEWHERE'), isNull);
+    });
+
+    test('empty context 的歸零集為空,行為與 2026-06-19 契約一致', () {
+      expect(CalibratedScoreContext.empty.lookup(Horizon.short, 'ANY'), isNull);
+    });
+  });
 }

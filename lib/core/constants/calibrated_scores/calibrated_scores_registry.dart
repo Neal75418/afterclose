@@ -3,6 +3,7 @@ import 'package:meta/meta.dart';
 import 'package:afterclose/core/constants/calibrated_scores/calibrated_score_context.dart';
 import 'package:afterclose/core/constants/calibrated_scores/calibrated_scores_table.dart';
 import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
+import 'package:afterclose/core/constants/scoring_mode.dart';
 import 'package:afterclose/core/utils/logger.dart';
 
 /// Asset 載入 delegate — 不直接依賴 `package:flutter/services.dart` 讓
@@ -134,6 +135,8 @@ class CalibratedScoresRegistry {
       horizon: Horizon.short,
       knownRuleIds: knownRuleIds,
       hardcodedScores: hardcodedScores,
+      applyNegativeEvidenceZeroing: true,
+      structuralExemptions: ModeFilters.modeCRequiredAnyOf,
     );
     final longResult = CalibratedScoresTable.parseJson(
       longJsonOverride,
@@ -214,9 +217,12 @@ class CalibratedScoresRegistry {
   ///
   /// 主 isolate 供 UI（reason chip 標記）同步查詢；registry 未載入時
   /// 兩個 lookup 皆 null → 回 false（保守不標記，寧可少標不誤標）。
+  /// 2026-07-29 三態 lookup:歸零規則 lookup 回 0(非 null)但那是校準
+  /// 判死、不是背書——與 [CalibratedScoreContext.isCalibrationBacked]
+  /// 同步改判「任一 horizon 非零」(兩個雙生類的 fallback 邏輯必須同修)。
   bool isCalibrationBacked(String ruleId) =>
-      lookup(Horizon.short, ruleId) != null ||
-      lookup(Horizon.long, ruleId) != null;
+      (lookup(Horizon.short, ruleId) ?? 0) != 0 ||
+      (lookup(Horizon.long, ruleId) ?? 0) != 0;
 
   /// 打包兩個 horizon 的 calibrated score maps 為 isolate-safe DTO
   ///
@@ -230,10 +236,14 @@ class CalibratedScoresRegistry {
   ///
   /// **僅供主 isolate 呼叫**。scoring isolate 內已有 `CalibratedScoreContext`，
   /// 不需要再次存取 registry。
+  /// 主 isolate 供觀測統計用:目前生效的 short 負證據歸零集
+  Set<String> zeroedShortSnapshot() => _short?.zeroedSnapshot() ?? const {};
+
   CalibratedScoreContext snapshotForIsolate() {
     return CalibratedScoreContext(
       shortScores: _short?.scoresSnapshot() ?? const {},
       longScores: _long?.scoresSnapshot() ?? const {},
+      zeroedShortRules: _short?.zeroedSnapshot() ?? const {},
     );
   }
 
@@ -283,6 +293,10 @@ class CalibratedScoresRegistry {
         horizon: horizon,
         knownRuleIds: knownRuleIds,
         hardcodedScores: hardcodedScores,
+        // 三態 lookup:負證據歸零僅套用 short(long 校準待重校準);
+        // Mode C 結構 gate 豁免(tab 的定義,非證據宣稱)
+        applyNegativeEvidenceZeroing: horizon == Horizon.short,
+        structuralExemptions: ModeFilters.modeCRequiredAnyOf,
       );
       _logCappedWarnings(horizon, warnings);
       return table;

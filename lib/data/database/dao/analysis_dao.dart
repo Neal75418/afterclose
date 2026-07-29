@@ -83,6 +83,12 @@ mixin AnalysisDaoMixin on $AppDatabase {
   // 每日原因操作
   // ==================================================
 
+  /// 取得指定日期的全部推薦理由(不分股票)——負證據歸零觀測統計用。
+  /// 吃 idx_daily_reason_date(2026-07-29 新增)。
+  Future<List<DailyReasonEntry>> getAllReasonsForDate(DateTime date) {
+    return (select(dailyReason)..where((t) => t.date.equals(date))).get();
+  }
+
   /// 取得股票在指定日期的觸發原因
   Future<List<DailyReasonEntry>> getReasons(String symbol, DateTime date) {
     return (select(dailyReason)

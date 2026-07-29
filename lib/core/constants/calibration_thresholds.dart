@@ -126,6 +126,18 @@ abstract final class CalibrationThresholds {
   /// 不得各自寫死。
   static const double excessSuccessThreshold = 0.0;
 
+  /// 負證據歸零的 t-statistic 門檻（2026-07-29 三態 lookup）。
+  ///
+  /// 校準 cut 到 0 的規則中，`avg_return < 0 且 t_stat <= 此值` 者視為
+  /// 「有決定性負面證據」——lookup 回 0（歸零生效），不再 fallback 到
+  /// hardcoded 正分。其餘 cut（hit_rate 不足但 t 為正、樣本不足、缺
+  /// metadata）維持 fallback：它們是「證據不足」不是「證據為負」。
+  ///
+  /// -1.5 與離線重放（2026-07-29，10 交易日）採用的判準一致：該重放實測
+  /// 被歸零除名的股票 5 日超額報酬 -1.68%（vs 兩版皆留 -0.10%），
+  /// 支持歸零方向。門檻本身沿用 clustered 校準的顯著性慣例，非最佳化參數。
+  static const double negativeEvidenceTStatMax = -1.5;
+
   /// 超額模式 hit-rate cut：`hitRate ≥ 實證 universe baseline + 此 lift`。
   ///
   /// 取代絕對 0.55 門檻（上方 [hitRateCutThreshold] docstring 標註的

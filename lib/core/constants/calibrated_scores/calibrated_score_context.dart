@@ -35,6 +35,7 @@ class CalibratedScoreContext {
   const CalibratedScoreContext({
     required this.shortScores,
     required this.longScores,
+    this.zeroedShortRules = const {},
   });
 
   /// 短線 horizon 的 rule_id → calibrated score 查找表
@@ -42,6 +43,11 @@ class CalibratedScoreContext {
 
   /// 長線 horizon 的 rule_id → calibrated score 查找表
   final Map<String, int> longScores;
+
+  /// 負證據歸零集(僅 short;2026-07-29 三態 lookup)。
+  /// 在集內的規則 [lookup] short 回 0——歸零生效、不 fallback。
+  /// 長線不套用:其校準仍是舊 absolute+pooled 產物,待重校準。
+  final Set<String> zeroedShortRules;
 
   /// 空 context — 用於 registry 未載入、placeholder 為空、測試或 default param。
   ///
@@ -67,6 +73,9 @@ class CalibratedScoreContext {
   /// 這個 context 跟 [CalibratedScoresTable] 是兩個獨立 class（前者是 isolate
   /// DTO、後者是主 isolate 的 lookup table），fallback 邏輯必須兩邊同時修。
   int? lookup(Horizon horizon, String ruleId) {
+    if (horizon == Horizon.short && zeroedShortRules.contains(ruleId)) {
+      return 0; // 三態第二態:負證據歸零(caller 的 ?? hardcoded 不觸發)
+    }
     final v = switch (horizon) {
       Horizon.short => shortScores[ruleId],
       Horizon.long => longScores[ruleId],
@@ -80,9 +89,11 @@ class CalibratedScoreContext {
   ///
   /// 目前僅 WEEK_52_HIGH（short）與 EPS_CONSECUTIVE_GROWTH（short+long）
   /// 為 true；其餘 ~40 條被校準砍到 0、走 hardcoded fallback → false。
+  /// 2026-07-29:歸零規則 lookup 回 0(非 null),但「歸零」是校準判死、
+  /// 不是背書——判斷改為「任一 horizon 有**非零**校準分」。
   bool isCalibrationBacked(String ruleId) =>
-      lookup(Horizon.short, ruleId) != null ||
-      lookup(Horizon.long, ruleId) != null;
+      (lookup(Horizon.short, ruleId) ?? 0) != 0 ||
+      (lookup(Horizon.long, ruleId) ?? 0) != 0;
 
   /// 序列化為 `Map<String, dynamic>` 供 isolate 邊界傳輸
   ///
@@ -91,6 +102,7 @@ class CalibratedScoreContext {
   Map<String, dynamic> toMap() => {
     'shortScores': shortScores,
     'longScores': longScores,
+    'zeroedShortRules': zeroedShortRules.toList(),
   };
 
   /// 從 isolate 邊界反序列化 Map
@@ -104,6 +116,9 @@ class CalibratedScoreContext {
         ),
         longScores: Map<String, int>.from(
           (map['longScores'] ?? <String, int>{}) as Map,
+        ),
+        zeroedShortRules: Set<String>.from(
+          (map['zeroedShortRules'] ?? const <String>[]) as List,
         ),
       );
 }

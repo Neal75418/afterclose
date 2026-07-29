@@ -38,7 +38,9 @@ class CalibratedScoresTable {
     required this.schemaVersion,
     required this.generatedAt,
     required Map<String, int> scores,
-  }) : _scores = scores;
+    Set<String> zeroedRules = const {},
+  }) : _scores = scores,
+       _zeroedRules = zeroedRules;
 
   /// 此 table 對應的 horizon
   final Horizon horizon;
@@ -52,28 +54,36 @@ class CalibratedScoresTable {
   /// rule_id → calibrated score 的不可變查找表
   final Map<String, int> _scores;
 
-  /// 查詢單一規則的 calibrated score
+  /// 負證據歸零集（2026-07-29 三態 lookup）——lookup 對這些規則回 0。
+  final Set<String> _zeroedRules;
+
+  /// 查詢單一規則的 calibrated score——**三態語意（2026-07-29）**：
   ///
-  /// 若 [ruleId] 不在 table 中**或被 calibrated 砍到 0**，回傳 null。呼叫端
-  /// 應 fallback 到 `RuleScores` hardcoded 值。
+  /// 1. 在 [_zeroedRules] 中 → 回 **0**（負證據歸零生效，呼叫端的
+  ///    `?? hardcoded` 不會觸發）
+  /// 2. 有非零 calibrated 值 → 回該值
+  /// 3. 不在 table / score=0 但無負證據 → 回 **null**（fallback hardcoded）
   ///
-  /// **2026-06-19：0 視為 null（fallback 到 hardcoded）**
+  /// ## 演進史
   ///
-  /// 原本 `_scores[ruleId]` 對 score=0 視為「有值」，導致 calibrated 把規則
-  /// cut 到 0 後呼叫端的 `calibrated ?? hardcoded` fallback 失效、
-  /// 把 hardcoded +22 一路覆蓋成 0。實質結果：38 條規則在 daily_reason 寫
-  /// score=0，3-tab Mode UI 大部分 stocks 顯示 0/0、aggregator 無法排序。
+  /// **2026-06-19：0 一律視為 null**——當時 calibrated 0 與「未校準」共用
+  /// 同一訊號，直接尊重 0 導致 38 條 cut 規則覆蓋 hardcoded、3-tab 失去
+  /// ranking 訊號，故一律 fallback。
   ///
-  /// 修法：把 0 視為「沒有可信 calibrated 值」、fallback 到 hardcoded。
-  /// 0 跟「未校準」用同一個訊號表達是設計失誤；對 schema 升級之前先這樣補。
-  ///
-  /// 副作用：被 calibration 砍到 0 的 rule（5D backtest avg_return 確實負）
-  /// 會重新貢獻 hardcoded 分數 — pre-launch 階段「3 tab 名實相符」比
-  /// 「calibration 精確但 0 訊號」對 user 體感更好。
+  /// **2026-07-29：拆成三態**——「一律 fallback」讓 avg<0 且 t≤−1.5 的
+  /// 28 條負證據規則持續以 hardcoded 正分驅動 Mode A 排名。504 天 clustered
+  /// 校準（統計面）＋ 10 日離線重放（產品面：A 縮編但零空日、被除名股
+  /// 5 日超額 −1.68%）支持歸零。Mode C 的 4 條結構 gate 豁免（見
+  /// [parseJson] 的 structuralExemptions），長線 horizon 不套用（其校準
+  /// 仍是舊 absolute+pooled 產物，待重校準）。
   int? lookup(String ruleId) {
+    if (_zeroedRules.contains(ruleId)) return 0;
     final v = _scores[ruleId];
     return (v == null || v == 0) ? null : v;
   }
+
+  /// 取得負證據歸零集的 unmodifiable view（isolate DTO 打包用）
+  Set<String> zeroedSnapshot() => Set.unmodifiable(_zeroedRules);
 
   /// 已載入的規則數量，供診斷與 smoke test 使用
   int get ruleCount => _scores.length;
@@ -134,11 +144,21 @@ class CalibratedScoresTable {
   ///
   /// Parser 不修改分數，只產生 warning。依賴 DAG 的拆解方式與
   /// [knownRuleIds] 一致：caller 從 `ReasonType` 構造 map 傳入。
+  /// ## [applyNegativeEvidenceZeroing] 與 [structuralExemptions]（三態 lookup）
+  ///
+  /// 開啟時，score=0 且帶決定性負面證據（`avg_return < 0` 且
+  /// `t_stat <= CalibrationThresholds.negativeEvidenceTStatMax`）的規則
+  /// 進入歸零集——[lookup] 對其回 0 而非 null。[structuralExemptions]
+  /// 中的規則一律不歸零（Mode C 結構 gate：規則是 tab 的定義而非證據
+  /// 宣稱，且校準測的是無條件母體、測不到條件化用法）。缺 metadata 的
+  /// cut 保守不歸零。預設關閉 = 完整保留 2026-06-19 的 fallback 契約。
   static CalibratedScoresParseResult parseJson(
     String jsonStr, {
     required Horizon horizon,
     Set<String>? knownRuleIds,
     Map<String, int>? hardcodedScores,
+    bool applyNegativeEvidenceZeroing = false,
+    Set<String> structuralExemptions = const {},
   }) {
     final warnings = <String>[];
 
@@ -227,6 +247,7 @@ class CalibratedScoresTable {
     }
 
     final scores = <String, int>{};
+    final zeroedRules = <String>{};
     for (final entry in rulesRaw.entries) {
       final ruleId = entry.key.toString();
       final ruleValue = entry.value;
@@ -319,6 +340,28 @@ class CalibratedScoresTable {
       }
 
       scores[ruleId] = score;
+
+      // 三態 lookup:負證據歸零集判定(僅對 score=0 的 cut 條目)
+      //
+      // **方向 gate(2026-07-29 審查 B2)**:只有 hardcoded **正分**(多方
+      // 宣稱)的規則可被「觸發後下跌」判死。空方/防護規則(hardcoded 負分,
+      // 如 TECH_BREAKDOWN -20、KD_DEATH_CROSS -12)觸發後 avg<0 是**命題
+      // 被證實**——校準管線把所有規則當多方評是已知侷限,對它們歸零等於
+      // 拔掉實證有效的防護,且 mutex 排序下 0 會擊敗活著的負分。
+      // hardcodedScores 未提供時保守不歸零(方向不明)。
+      if (applyNegativeEvidenceZeroing &&
+          score == 0 &&
+          !structuralExemptions.contains(ruleId) &&
+          (hardcodedScores?[ruleId] ?? 0) > 0) {
+        final avg = ruleValue['avg_return'];
+        final t = ruleValue['t_stat'];
+        if (avg is num &&
+            t is num &&
+            avg < 0 &&
+            t <= CalibrationThresholds.negativeEvidenceTStatMax) {
+          zeroedRules.add(ruleId);
+        }
+      }
     }
 
     return (
@@ -327,6 +370,7 @@ class CalibratedScoresTable {
         schemaVersion: schemaVersion,
         generatedAt: generatedAt,
         scores: scores,
+        zeroedRules: zeroedRules,
       ),
       warnings: warnings,
     );

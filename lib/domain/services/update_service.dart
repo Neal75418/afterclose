@@ -5,6 +5,7 @@ import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/constants/stock_patterns.dart';
 import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/core/constants/default_stocks.dart';
+import 'package:afterclose/core/constants/calibrated_scores/calibrated_scores_registry.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/clock.dart';
@@ -22,6 +23,7 @@ import 'package:afterclose/domain/services/rule_engine.dart';
 import 'package:afterclose/domain/services/scoring_service.dart';
 import 'package:afterclose/domain/services/update/news_mention_snapshot_service.dart';
 import 'package:afterclose/domain/services/update/update.dart';
+import 'package:afterclose/domain/services/update/zeroing_impact_reporter.dart';
 import 'package:afterclose/domain/services/update_service_deps.dart';
 
 /// 每日市場資料更新協調服務
@@ -323,6 +325,7 @@ class UpdateService {
       await _updateRuleAccuracyStatsFailSafe(ctx);
       await _snapshotNewsMentionsFailSafe(ctx);
       await _checkPinnedThesesFailSafe(ctx);
+      await _reportZeroingImpactFailSafe(ctx);
 
       await _finishUpdate(ctx, result);
 
@@ -340,6 +343,38 @@ class UpdateService {
         message: result.message,
       );
       return result;
+    }
+  }
+
+  /// 負證據歸零的每日觀測(2026-07-29 三態 lookup 配套,fail-safe)。
+  ///
+  /// 「如果它沒生效,我怎麼知道?」——每日更新 log 歸零列數/檔數/因歸零
+  /// 跌出訊號層的檔數,對照離線重放的預期量級(日均 ~29 檔)。registry
+  /// 未載入或歸零集為空時靜默跳過(機制未啟用,無可觀測)。
+  Future<void> _reportZeroingImpactFailSafe(_UpdateContext ctx) async {
+    try {
+      final zeroed = CalibratedScoresRegistry.instance.zeroedShortSnapshot();
+      if (zeroed.isEmpty) return;
+      final rows = await _db.getAllReasonsForDate(ctx.normalizedDate);
+      final impact = computeZeroingImpact(
+        rows: rows,
+        zeroedRules: zeroed,
+        hardcodedScores: {for (final r in ReasonType.values) r.code: r.score},
+      );
+      AppLogger.info(
+        'UpdateService',
+        '負證據歸零: ${impact.zeroedRows} 列/${impact.zeroedStocks} 檔歸零 '
+            '→ ${impact.droppedStocks} 檔跌出訊號層',
+      );
+      if (impact.addedStocks > 0) {
+        // 方向 gate 下結構上不可能——非零代表歸零集混入負分規則
+        AppLogger.warning(
+          'UpdateService',
+          '歸零 invariant 破壞: ${impact.addedStocks} 檔因歸零「新進」訊號層',
+        );
+      }
+    } catch (e) {
+      AppLogger.warning('UpdateService', '歸零影響統計失敗(fail-safe)', e);
     }
   }
 

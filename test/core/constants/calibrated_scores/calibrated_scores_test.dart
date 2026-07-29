@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_test/flutter_test.dart';
 
@@ -1026,6 +1028,290 @@ void main() {
         25,
         reason: 'idempotent — second load must not overwrite',
       );
+    });
+  });
+
+  group('負證據歸零 [2026-07-29 三態 lookup]', () {
+    // 校準 JSON 的負證據 cut 條目(仿 production 格式)
+    Map<String, Object?> negRule({
+      double avg = -1.2,
+      double t = -8.0,
+      String cutReason = 't_stat_below_threshold',
+    }) => {
+      'score': 0,
+      'hit_rate': 0.42,
+      'samples': 50000,
+      'avg_return': avg,
+      't_stat': t,
+      'active': false,
+      'cut_reason': cutReason,
+    };
+
+    test('負證據 cut(avg<0 且 t≤門檻)在 zeroing 開啟時 lookup 回 0', () {
+      final json = _buildJson(rules: {'KD_GOLDEN_CROSS': negRule()});
+      final (:table, :warnings) = CalibratedScoresTable.parseJson(
+        json,
+        horizon: Horizon.short,
+        hardcodedScores: const {'KD_GOLDEN_CROSS': 15},
+        applyNegativeEvidenceZeroing: true,
+      );
+      expect(warnings, isEmpty);
+      expect(
+        table.lookup('KD_GOLDEN_CROSS'),
+        0,
+        reason: '三態語意:負證據歸零必須生效,不得 fallback 回 hardcoded 正分',
+      );
+    });
+
+    test('預設(zeroing 關閉)維持 2026-06-19 契約:cut → null fallback', () {
+      final json = _buildJson(rules: {'KD_GOLDEN_CROSS': negRule()});
+      final (:table, warnings: _) = CalibratedScoresTable.parseJson(
+        json,
+        horizon: Horizon.short,
+      );
+      expect(table.lookup('KD_GOLDEN_CROSS'), isNull);
+    });
+
+    test('結構 gate 豁免集內的負證據規則 → null fallback(保留 hardcoded)', () {
+      final json = _buildJson(rules: {'PULLBACK_TO_MA20': negRule()});
+      final (:table, warnings: _) = CalibratedScoresTable.parseJson(
+        json,
+        horizon: Horizon.short,
+        hardcodedScores: const {'PULLBACK_TO_MA20': 15},
+        applyNegativeEvidenceZeroing: true,
+        structuralExemptions: const {'PULLBACK_TO_MA20'},
+      );
+      expect(
+        table.lookup('PULLBACK_TO_MA20'),
+        isNull,
+        reason: 'Mode C 的結構定義規則豁免歸零,否則整個回檔觀察 tab 死亡',
+      );
+    });
+
+    test('hit_rate cut 但 t 為正 → 不歸零(證據偏正,fallback)', () {
+      final json = _buildJson(
+        rules: {
+          'PRICE_SPIKE': negRule(
+            avg: 0.22,
+            t: 3.5,
+            cutReason: 'hit_rate_below_threshold',
+          ),
+        },
+      );
+      final (:table, warnings: _) = CalibratedScoresTable.parseJson(
+        json,
+        horizon: Horizon.short,
+        applyNegativeEvidenceZeroing: true,
+      );
+      expect(table.lookup('PRICE_SPIKE'), isNull);
+    });
+
+    test('缺 avg_return/t_stat metadata 的 cut → 保守不歸零', () {
+      final json = _buildJson(rules: {'CUT_NO_META': _rule(0)});
+      final (:table, warnings: _) = CalibratedScoresTable.parseJson(
+        json,
+        horizon: Horizon.short,
+        applyNegativeEvidenceZeroing: true,
+      );
+      expect(table.lookup('CUT_NO_META'), isNull);
+    });
+
+    test('邊界:t 恰等於門檻歸零;avg 恰為 0 不歸零', () {
+      final json = _buildJson(
+        rules: {
+          'AT_T_BOUNDARY': negRule(
+            t: CalibrationThresholds.negativeEvidenceTStatMax,
+          ),
+          'AT_AVG_BOUNDARY': negRule(avg: 0.0, t: -8.0),
+        },
+      );
+      final (:table, warnings: _) = CalibratedScoresTable.parseJson(
+        json,
+        horizon: Horizon.short,
+        hardcodedScores: const {'AT_T_BOUNDARY': 15, 'AT_AVG_BOUNDARY': 15},
+        applyNegativeEvidenceZeroing: true,
+      );
+      expect(table.lookup('AT_T_BOUNDARY'), 0);
+      expect(table.lookup('AT_AVG_BOUNDARY'), isNull);
+    });
+
+    test('active 規則(score>0)不受 zeroing 影響', () {
+      final json = _buildJson(
+        rules: {
+          'WEEK_52_HIGH': {
+            'score': 35,
+            'hit_rate': 0.4969,
+            'samples': 32241,
+            'avg_return': 0.6318,
+            't_stat': 6.3424,
+            'active': true,
+          },
+        },
+      );
+      final (:table, warnings: _) = CalibratedScoresTable.parseJson(
+        json,
+        horizon: Horizon.short,
+        applyNegativeEvidenceZeroing: true,
+      );
+      expect(table.lookup('WEEK_52_HIGH'), 35);
+    });
+
+    test('zeroedRules snapshot 暴露完整歸零集;empty() 為空集', () {
+      final json = _buildJson(
+        rules: {'A_NEG': negRule(), 'B_POS_T': negRule(avg: 0.2, t: 3.0)},
+      );
+      final (:table, warnings: _) = CalibratedScoresTable.parseJson(
+        json,
+        horizon: Horizon.short,
+        hardcodedScores: const {'A_NEG': 15, 'B_POS_T': 15},
+        applyNegativeEvidenceZeroing: true,
+      );
+      expect(table.zeroedSnapshot(), {'A_NEG'});
+      expect(
+        CalibratedScoresTable.empty(Horizon.short).zeroedSnapshot(),
+        isEmpty,
+      );
+    });
+  });
+
+  group('負證據歸零 × 方向 gate(2026-07-29 審查 B2)', () {
+    test('空方規則(hardcoded 負分)不歸零——觸發後下跌是命題被證實', () {
+      final json = _buildJson(
+        rules: {
+          'KD_DEATH_CROSS': {
+            'score': 0,
+            'hit_rate': 0.4453,
+            'samples': 18444,
+            'avg_return': -0.9724,
+            't_stat': -7.8424,
+            'active': false,
+            'cut_reason': 't_stat_below_threshold',
+          },
+        },
+      );
+      final (:table, warnings: _) = CalibratedScoresTable.parseJson(
+        json,
+        horizon: Horizon.short,
+        hardcodedScores: const {'KD_DEATH_CROSS': -12},
+        applyNegativeEvidenceZeroing: true,
+      );
+      expect(
+        table.lookup('KD_DEATH_CROSS'),
+        isNull,
+        reason: '空方規則的 avg<0 是正證據,歸零等於拔掉實證有效的防護',
+      );
+      expect(table.zeroedSnapshot(), isEmpty);
+    });
+
+    test('未提供 hardcodedScores → 方向不明,保守不歸零', () {
+      final json = _buildJson(
+        rules: {
+          'UNKNOWN_DIR': {
+            'score': 0,
+            'hit_rate': 0.4,
+            'samples': 50000,
+            'avg_return': -1.2,
+            't_stat': -8.0,
+            'active': false,
+          },
+        },
+      );
+      final (:table, warnings: _) = CalibratedScoresTable.parseJson(
+        json,
+        horizon: Horizon.short,
+        applyNegativeEvidenceZeroing: true,
+      );
+      expect(table.lookup('UNKNOWN_DIR'), isNull);
+    });
+  });
+
+  group('三態 lookup × isolate 傳輸線(2026-07-29 審查 B1/B3)', () {
+    setUp(() => CalibratedScoresRegistry.instance.resetForTesting());
+    tearDown(() => CalibratedScoresRegistry.instance.resetForTesting());
+
+    test('snapshotForIsolate 必須攜帶歸零集(斷線=歸零在 production 靜默失效)', () {
+      final registry = CalibratedScoresRegistry.instance;
+      registry.bindForTesting(
+        short: const CalibratedScoresTable(
+          horizon: Horizon.short,
+          schemaVersion: 1,
+          generatedAt: null,
+          scores: {'WEEK_52_HIGH': 35},
+          zeroedRules: {'KD_GOLDEN_CROSS'},
+        ),
+      );
+      final ctx = registry.snapshotForIsolate();
+      expect(
+        ctx.lookup(Horizon.short, 'KD_GOLDEN_CROSS'),
+        0,
+        reason:
+            'isolate DTO 沒帶 zeroedShortRules 時,scoring 端會 fallback '
+            '回 hardcoded——歸零在 production 完全不生效而測試全綠',
+      );
+      expect(ctx.lookup(Horizon.short, 'WEEK_52_HIGH'), 35);
+    });
+
+    test('registry.isCalibrationBacked:歸零規則不得標校準背書(UI 消費 registry 版)', () {
+      final registry = CalibratedScoresRegistry.instance;
+      registry.bindForTesting(
+        short: const CalibratedScoresTable(
+          horizon: Horizon.short,
+          schemaVersion: 1,
+          generatedAt: null,
+          scores: {'WEEK_52_HIGH': 35},
+          zeroedRules: {'KD_GOLDEN_CROSS'},
+        ),
+      );
+      expect(registry.isCalibrationBacked('WEEK_52_HIGH'), isTrue);
+      expect(
+        registry.isCalibrationBacked('KD_GOLDEN_CROSS'),
+        isFalse,
+        reason: '歸零=校準判死;lookup 回 0(非 null),舊的 != null 判式會誤標背書',
+      );
+    });
+  });
+
+  group('負證據歸零 × 正式資產 [end-to-end]', () {
+    setUp(() => CalibratedScoresRegistry.instance.resetForTesting());
+    tearDown(() => CalibratedScoresRegistry.instance.resetForTesting());
+
+    test('production short JSON 的歸零集組成符合政策', () async {
+      final registry = CalibratedScoresRegistry.instance;
+      // File I/O 而非 rootBundle:免 binding、與 CLI loader 同形態
+      registry.assetLoaderOverride = (path) => File(path).readAsString();
+      await registry.loadFromAssets(
+        knownRuleIds: ReasonType.values.map((r) => r.code).toSet(),
+        hardcodedScores: {for (final r in ReasonType.values) r.code: r.score},
+      );
+
+      final zeroed = registry.zeroedShortSnapshot();
+      // 決定性負證據的代表(avg<0、|t| 大)必須在集內
+      expect(zeroed, contains('KD_GOLDEN_CROSS'));
+      expect(zeroed, contains('LOW_VOLUME_ACCUMULATION'));
+      expect(zeroed, contains('PATTERN_GAP_UP'));
+      // Mode C 結構 gate 豁免——負證據也不歸零
+      expect(zeroed, isNot(contains('PULLBACK_TO_MA20')));
+      expect(zeroed, isNot(contains('PULLBACK_TO_MA10')));
+      expect(zeroed, isNot(contains('HAMMER_AT_SUPPORT')));
+      // 正 t 的 hit_rate cut 不歸零(證據偏正)
+      expect(zeroed, isNot(contains('PRICE_SPIKE')));
+      expect(zeroed, isNot(contains('TECH_BREAKOUT')));
+      // active 規則不歸零
+      expect(zeroed, isNot(contains('WEEK_52_HIGH')));
+      // 空方/防護規則(hardcoded 負分)不歸零——avg<0 是命題被證實(審查 B2)
+      expect(zeroed, isNot(contains('KD_DEATH_CROSS')));
+      expect(zeroed, isNot(contains('TECH_BREAKDOWN')));
+      expect(zeroed, isNot(contains('REVENUE_YOY_DECLINE')));
+      // 量級 sanity(2026-07-13 資產:28 負證據 −3 C gate −13 空方 ≈ 12;
+      // 重校準後允許漂移但不該歸零全部)
+      expect(zeroed.length, inInclusiveRange(6, 25));
+
+      // 三態實效:歸零規則 lookup 回 0、active 回校準值、C gate fallback null
+      expect(registry.lookup(Horizon.short, 'KD_GOLDEN_CROSS'), 0);
+      expect(registry.lookup(Horizon.short, 'WEEK_52_HIGH'), 35);
+      expect(registry.lookup(Horizon.short, 'PULLBACK_TO_MA20'), isNull);
+      // long 不套用歸零
+      expect(registry.lookup(Horizon.long, 'KD_GOLDEN_CROSS'), isNull);
     });
   });
 
