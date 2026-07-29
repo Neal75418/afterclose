@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>台股財經新聞</title>
+    <link>https://news.example.tw</link>
+    <description>盤後測試 fixture(仿台灣財經媒體 RSS 2.0 形狀)</description>
+    <item>
+      <title>台積電(2330)法說會釋樂觀展望 盤後大漲</title>
+      <link>https://news.example.tw/a/1001</link>
+      <guid isPermaLink="false">news-1001</guid>
+      <pubDate>Tue, 29 Jul 2026 18:30:00 +0800</pubDate>
+      <description><![CDATA[<p>台積電今日舉行法說會&nbsp;&amp;&nbsp;釋出<strong>樂觀</strong>展望。</p>]]></description>
+    </item>
+    <item>
+      <title>航運股齊揚 長榮(2603)漲停鎖死</title>
+      <link>https://news.example.tw/a/1002</link>
+      <guid isPermaLink="false">news-1002</guid>
+      <pubDate>Tue, 29 Jul 2026 06:00:00 GMT</pubDate>
+      <content:encoded><![CDATA[貨櫃三雄放量,長榮亮燈漲停。]]></content:encoded>
+      <description>不該被選到:content:encoded 優先於 description</description>
+    </item>
+    <item>
+      <title>爛日期新聞:pubDate 無法解析</title>
+      <link>https://news.example.tw/a/1003</link>
+      <pubDate>不是日期</pubDate>
+    </item>
+    <item>
+      <title>缺連結的項目應被跳過</title>
+      <pubDate>Tue, 29 Jul 2026 10:00:00 +0800</pubDate>
+    </item>
+    <item>
+      <title>兩位數年份與具名時區 EST</title>
+      <link>https://news.example.tw/a/1005</link>
+      <guid/>
+      <pubDate>29 Jul 26 08:15:30 EST</pubDate>
+    </item>
+  </channel>
+</rss>

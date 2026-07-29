@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>財經 Atom 測試 feed</title>
+  <id>urn:uuid:feed-1</id>
+  <updated>2026-07-29T20:00:00+08:00</updated>
+  <entry>
+    <title>聯發科(2454)發表新晶片</title>
+    <id>urn:uuid:entry-2001</id>
+    <link rel="alternate" href="https://atom.example.tw/e/2001"/>
+    <published>2026-07-29T15:45:00+08:00</published>
+    <updated>2026-07-29T16:00:00+08:00</updated>
+    <content type="html">&lt;p&gt;聯發科發表新一代旗艦晶片。&lt;/p&gt;</content>
+  </entry>
+  <entry>
+    <title>缺 published 只有 updated 的項目</title>
+    <id>urn:uuid:entry-2002</id>
+    <link rel="alternate" href="https://atom.example.tw/e/2002"/>
+    <updated>2026-07-28T09:30:00Z</updated>
+    <summary>fallback 用 updated 當發布時間</summary>
+  </entry>
+</feed>
