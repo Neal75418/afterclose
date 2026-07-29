@@ -58,15 +58,10 @@ abstract final class ApiConfig {
   /// 財報同步最大市場候選數（避免 FinMind 免費額度耗盡）
   static const int financialSyncMaxCandidates = 150;
 
-  /// 上櫃候選股基本面同步最大數量
-  ///
-  /// 上櫃候選清單通常較小，以 100 為上限避免 API 額度過度消耗。
-  ///
-  /// 注意：此處指估值／營收，走 **TPEx OpenAPI 全市場端點**，100 檔僅耗
-  /// 1 次呼叫（2026-07-27 日誌實證「上櫃估值同步完成: 96/96 檔 (API calls: 1)」）。
-  /// 財報是逐檔打 FinMind、成本差兩個數量級，故另立
-  /// [otcFinancialSyncMaxCount]，不得合用同一個常數。
-  static const int otcFundamentalsSyncMaxCount = 100;
+  // 上櫃候選估值／營收「不設」候選上限（2026-07-29 移除 otcFundamentalsSyncMaxCount）：
+  // 兩者走 TPEx OpenAPI 全市場端點、各 1 次呼叫與檔數無關,cap 省不到配額,
+  // 只會讓 repo 僅 persist 前綴候選、餓死其餘覆蓋。財報是逐檔打 FinMind、
+  // 成本差兩個數量級,才需要 [otcFinancialSyncMaxCount] 專屬配額。
 
   /// 上櫃財報（損益表＋資產負債表）每輪回填上限
   ///

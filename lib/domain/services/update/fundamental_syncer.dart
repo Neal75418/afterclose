@@ -216,11 +216,15 @@ class FundamentalSyncer {
 
   /// 補充上櫃候選股票的基本面資料
   ///
-  /// 用於分析前補充候選清單中上櫃股票的基本面
+  /// 用於分析前補充候選清單中上櫃股票的基本面。
+  ///
+  /// **不設候選上限**(2026-07-29):估值/營收各走 TPEx OpenAPI 全市場
+  /// 批次端點(1 次呼叫,與檔數無關),舊 take(100) cap 省不到配額,
+  /// 卻讓 repo 只 persist 前綴 100 檔(fetch 889 筆→寫 56 檔的生產實測),
+  /// cap 外候選的價值面規則永遠 fire 不了。新鮮度過濾由 repo 內部負責。
   Future<FundamentalSyncResult> syncOtcCandidatesFundamentals({
     required List<String> candidates,
     required DateTime date,
-    int maxSyncCount = ApiConfig.otcFundamentalsSyncMaxCount,
   }) async {
     if (candidates.isEmpty) {
       return const FundamentalSyncResult(valuationCount: 0, revenueCount: 0);
@@ -239,11 +243,6 @@ class FundamentalSyncer {
       return const FundamentalSyncResult(valuationCount: 0, revenueCount: 0);
     }
 
-    // 限制同步數量以避免超過 API 配額
-    final limitedOtcCandidates = otcCandidates.length > maxSyncCount
-        ? otcCandidates.take(maxSyncCount).toList()
-        : otcCandidates;
-
     var valuationCount = 0;
     var revenueCount = 0;
     final errors = <String>[];
@@ -255,7 +254,7 @@ class FundamentalSyncer {
       errors: errors,
       errorLabel: '上櫃候選估值',
       action: () =>
-          _fundamentalRepo.syncOtcValuation(limitedOtcCandidates, date: date),
+          _fundamentalRepo.syncOtcValuation(otcCandidates, date: date),
     );
 
     revenueCount = await guardSync(
@@ -264,8 +263,7 @@ class FundamentalSyncer {
       fallback: revenueCount,
       errors: errors,
       errorLabel: '上櫃候選營收',
-      action: () =>
-          _fundamentalRepo.syncOtcRevenue(limitedOtcCandidates, date: date),
+      action: () => _fundamentalRepo.syncOtcRevenue(otcCandidates, date: date),
     );
 
     return FundamentalSyncResult(
