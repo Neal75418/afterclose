@@ -1,4 +1,5 @@
 import 'package:afterclose/core/constants/api_config.dart';
+import 'package:afterclose/core/constants/rule_enums.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:afterclose/data/database/app_database.dart';
@@ -264,6 +265,59 @@ void main() {
         reason: 'TDCC generic 失敗被靜默吞掉，使用者無從得知資料 stale',
       );
       expect(result.hasWarnings, isTrue);
+    });
+
+    test('🚨 PARTIAL run 的 message 必須含錯誤細節（事後可重建故障現場）', () async {
+      // 2026-07-29 審查:PARTIAL 只寫死「部分更新成功」,update_run 表事後
+      // 看不出哪一步敗——7/28「誤判更新掛死」事件的直接成因之一。
+      when(
+        () => mockTdcc.getAllHoldingDistribution(),
+      ).thenThrow(Exception('unexpected payload'));
+
+      final service = buildService();
+      await service.runDailyUpdate(forDate: tradingDay);
+
+      final captured =
+          verify(
+                () => mockDb.finishUpdateRun(
+                  any(),
+                  UpdateStatus.partial.code,
+                  message: captureAny(named: 'message'),
+                ),
+              ).captured.single
+              as String?;
+      expect(
+        captured,
+        contains('TDCC'),
+        reason: 'message 不含失敗步驟細節,故障現場無法從 update_run 重建',
+      );
+    });
+
+    test('PARTIAL message 超長錯誤必須截斷至 500 字(含省略號)', () async {
+      when(
+        () => mockTdcc.getAllHoldingDistribution(),
+      ).thenThrow(Exception('boom ${'x' * 700}'));
+
+      final service = buildService();
+      await service.runDailyUpdate(forDate: tradingDay);
+
+      final captured =
+          verify(
+                () => mockDb.finishUpdateRun(
+                  any(),
+                  UpdateStatus.partial.code,
+                  message: captureAny(named: 'message'),
+                ),
+              ).captured.single
+              as String?;
+      expect(captured, isNotNull);
+      expect(
+        captured!.length,
+        lessThanOrEqualTo(500),
+        reason: 'update_run.message 不設限會無界成長',
+      );
+      expect(captured, endsWith('…'));
+      expect(captured, startsWith('部分更新成功'));
     });
 
     test('半個市場價格取得失敗必須可見（TWSE 空、TPEx 有資料）', () async {

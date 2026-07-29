@@ -327,7 +327,10 @@ class UpdateService {
       await _finishUpdate(ctx, result);
 
       return result;
-    } catch (e) {
+    } catch (e, st) {
+      // 頂層 catch 必記 stack trace(2026-07-29 審查):這是最嚴重的失敗
+      // 類別(整輪中止),卻曾是唯一不落 log 的路徑——事後只剩 e.toString()
+      AppLogger.error('UpdateService', '更新失敗(未捕捉例外)', e, st);
       result.success = false;
       result.message = '更新失敗: $e';
       result.recordError(e.toString(), e);
@@ -338,6 +341,15 @@ class UpdateService {
       );
       return result;
     }
+  }
+
+  /// PARTIAL run 的持久化訊息:含失敗步驟細節,截斷至 500 字。
+  ///
+  /// 2026-07-29 審查:僅寫死「部分更新成功」時,update_run 表事後無法
+  /// 重建故障現場(7/28「誤判更新掛死」事件中 message 空白即為此病)。
+  static String _partialRunMessage(List<String> errors) {
+    final joined = '部分更新成功(${errors.length} 項失敗): ${errors.join('; ')}';
+    return joined.length <= 500 ? joined : '${joined.substring(0, 497)}…';
   }
 
   // ==================================================
@@ -1044,7 +1056,9 @@ class UpdateService {
     await _db.finishUpdateRun(
       ctx.runId,
       status,
-      message: result.errors.isEmpty ? '更新完成' : '部分更新成功',
+      message: result.errors.isEmpty
+          ? '更新完成'
+          : _partialRunMessage(result.errors),
     );
 
     result.success = true;
