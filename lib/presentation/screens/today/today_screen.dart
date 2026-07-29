@@ -681,10 +681,19 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                 hasScrollBody: false,
                 child: Center(child: CircularProgressIndicator()),
               ),
-              error: (e, _) => SliverFillRemaining(
-                hasScrollBody: false,
-                child: Center(child: Text('Error: $e')),
-              ),
+              // 2026-07-30 審查:裸 Text('Error: ...') 升級成與畫面頂層一致
+              // 的可重試錯誤狀態——mode 推薦掛掉時 user 原本只能重開 app。
+              error: (e, _) {
+                void onRetry() =>
+                    ref.invalidate(modeRecommendationsProvider(mode));
+                final msg = ErrorDisplay.message(e);
+                return SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: ErrorDisplay.isNetworkError(msg)
+                      ? EmptyStates.networkError(onRetry: onRetry)
+                      : EmptyStates.error(message: msg, onRetry: onRetry),
+                );
+              },
             );
           },
         ),

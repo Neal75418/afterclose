@@ -1,6 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'package:afterclose/core/constants/scoring_mode.dart';
+import 'package:afterclose/core/l10n/app_strings.dart';
 
 import 'package:afterclose/presentation/providers/market_overview_provider.dart';
 import 'package:afterclose/presentation/providers/mode_recommendation_provider.dart';
@@ -121,6 +125,8 @@ void main() {
     MarketOverviewState? marketState,
     SettingsState? settingsState,
     Brightness brightness = Brightness.light,
+    Future<List<ModeRecommendation>> Function(Ref, ScoringMode)?
+    modeRecommendations,
   }) {
     final today = todayState ?? const TodayState();
     final watchlist = watchlistState ?? WatchlistState();
@@ -153,7 +159,7 @@ void main() {
         // 用 SynchronousFuture 同步 resolve、跳過 loading state、避開
         // CircularProgressIndicator 的 ticker 留下 pending timer 的 test infra bug。
         modeRecommendationsProvider.overrideWith(
-          (ref, mode) => SynchronousFuture(const []),
+          modeRecommendations ?? (ref, mode) => SynchronousFuture(const []),
         ),
       ],
       brightness: brightness,
@@ -179,6 +185,34 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
 
       expect(find.byType(EmptyState), findsOneWidget);
+    });
+
+    testWidgets('mode 推薦載入失敗:可重試的錯誤狀態,tap 後重新載入(2026-07-30 審查)', (
+      tester,
+    ) async {
+      widenViewport(tester);
+      var calls = 0;
+      await tester.pumpWidget(
+        buildTestWidget(
+          modeRecommendations: (ref, mode) {
+            calls++;
+            if (calls == 1) throw StateError('mode 資料炸了');
+            return SynchronousFuture(const []);
+          },
+        ),
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      // 裸 Text('Error: ...') 升級成 EmptyStates.error(帶重試)
+      expect(find.byType(EmptyState), findsOneWidget);
+      expect(find.text(S.retry), findsOneWidget);
+      expect(find.textContaining('Error:'), findsNothing);
+
+      // tap 重試 → provider invalidate → 第二次成功(空清單空狀態)
+      await tester.tap(find.text(S.retry));
+      await tester.pump(const Duration(seconds: 1));
+      expect(calls, 2, reason: '重試必須真的 invalidate 重新載入');
+      expect(find.text(S.emptyError), findsNothing);
     });
 
     testWidgets('shows refresh icon when not updating', (tester) async {
