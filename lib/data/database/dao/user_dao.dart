@@ -5,6 +5,7 @@ import 'package:afterclose/data/database/dao/batch_query_mixin.dart';
 import 'package:afterclose/data/database/tables/user_tables.drift.dart';
 import 'package:afterclose/data/database/tables/market_data_tables.drift.dart';
 import 'package:afterclose/data/database/tables/daily_price.drift.dart';
+import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/core/constants/rule_enums.dart';
 import 'package:afterclose/core/constants/rule_params_alert.dart';
 import 'package:afterclose/domain/services/alert_evaluation_service.dart';
@@ -182,6 +183,31 @@ mixin UserDaoMixin on $AppDatabase {
         message: Value(message),
       ),
     );
+  }
+
+  /// 收斂孤兒 RUNNING run(2026-07-30 審查)
+  ///
+  /// app 中途被殺(手機殺後台、崩潰)時,起手寫入的 RUNNING row 永遠不會
+  /// 被 finish,歷史列表會顯示一筆永遠進行中的紀錄。DB beforeOpen 呼叫此
+  /// 方法把「started_at 超過 [DataFreshness.orphanRunningCutoff]」的標成
+  /// FAILED。**必須有 age cutoff**:macOS CLI(tool/daily_update.dart)與
+  /// GUI 共用同一份 DB 各開獨立連線,無條件清會誤殺對方進行中的 run。
+  /// 回傳收斂筆數。
+  Future<int> failOrphanRunningRuns({DateTime? now}) {
+    final effectiveNow = now ?? DateTime.now();
+    final cutoff = effectiveNow.subtract(DataFreshness.orphanRunningCutoff);
+    return (update(updateRun)..where(
+          (t) =>
+              t.status.equals(UpdateStatus.running.code) &
+              t.startedAt.isSmallerThanValue(cutoff),
+        ))
+        .write(
+          UpdateRunCompanion(
+            status: Value(UpdateStatus.failed.code),
+            message: const Value('更新中斷(app 終止或崩潰)'),
+            finishedAt: Value(effectiveNow),
+          ),
+        );
   }
 
   /// 更新執行記錄的資料日期

@@ -196,6 +196,11 @@ class AppDatabase extends $AppDatabase
       await _ensureWatchlistGroupsSchema();
       await _ensurePinnedThesisSchema();
       await _ensureIndexHygiene();
+      // 過期的 RUNNING run 收斂成 FAILED(app 被殺/崩潰後遺留)。
+      // age cutoff 防跨 process 誤殺:macOS CLI(tool/daily_update.dart,
+      // launchd 排程)與 GUI 共用同一份 DB、各開獨立連線,CLI 的 beforeOpen
+      // 若無條件清 RUNNING 會誤殺 GUI 正在進行的 run。
+      await failOrphanRunningRuns();
       await customStatement('PRAGMA foreign_keys = ON');
     },
   );

@@ -204,6 +204,11 @@ class UpdateService {
 
     final completer = Completer<UpdateResult>();
     _activeUpdate = completer;
+    // ignore(2026-07-30 審查):無併發等待者時 completer.future 沒有
+    // listener;_executeUpdate 在 try 之前就可能拋(createUpdateRun DB
+    // I/O),completeError 會讓同一個錯誤除了 rethrow 給 caller 外,再以
+    // unhandled async error 打進 zone handler(重複且無 context)。
+    completer.future.ignore();
 
     try {
       final result = await _executeUpdate(
@@ -240,9 +245,12 @@ class UpdateService {
     }
 
     final normalizedDate = DateContext.normalize(targetDate);
+    // 起手 RUNNING(2026-07-30):app 中途被殺時遺留的 row 由 DB beforeOpen
+    // 的 failOrphanRunningRuns 收斂成 FAILED,與「完成但部分失敗」的
+    // PARTIAL 得以區分。
     final runId = await _db.createUpdateRun(
       normalizedDate,
-      UpdateStatus.partial.code,
+      UpdateStatus.running.code,
     );
 
     final result = UpdateResult(date: normalizedDate);
@@ -653,8 +661,19 @@ class UpdateService {
     DateTime normalizedDate,
   ) async {
     if (ctx.rateLimitedAbort) return;
-    // 方法內共享自選清單，避免重複查詢
-    final watchlist = await _db.getWatchlist();
+    // 方法內共享自選清單，避免重複查詢。
+    // 包 try(2026-07-30 審查):此行在步驟 4 的 record .wait 分支內,
+    // 若裸拋 DatabaseException 會被包成 ParallelWaitError 直穿頂層 catch,
+    // message 不可讀且 RateLimitException 型別判定失效。讀不到自選就退化
+    // 為空優先集,其餘同步照跑。
+    List<WatchlistEntry> watchlist;
+    try {
+      watchlist = await _db.getWatchlist();
+    } catch (e) {
+      AppLogger.warning('UpdateService', '自選清單讀取失敗,以空集合續跑', e);
+      ctx.result.recordError('自選清單讀取失敗: $e', e);
+      watchlist = const [];
+    }
     final watchlistSymbols = watchlist.map((w) => w.symbol).toSet();
 
     await _syncDayTradingAndMarginData(ctx, normalizedDate, watchlistSymbols);

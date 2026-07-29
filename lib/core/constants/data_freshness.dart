@@ -112,6 +112,15 @@ abstract final class DataFreshness {
   /// 反過來只看成功、不節流，則會在資料久未成功時每開一次 app 就打一次 API。
   static const int coldStartRetryThrottleMinutes = 60;
 
+  /// 孤兒 RUNNING run 的收斂門檻:`started_at` 超過此時長的 RUNNING 才視為
+  /// 孤兒(app 被殺/崩潰遺留),由 DB beforeOpen 收斂成 FAILED。單輪更新
+  /// 正常 2-5 分鐘、極端回補 <30 分鐘,2 小時保守涵蓋。**必須有 age
+  /// cutoff**:macOS CLI(tool/daily_update.dart,launchd 排程)與 GUI 共用
+  /// 同一份 DB 各開獨立連線,CLI 的 beforeOpen 無條件清 RUNNING 會誤殺
+  /// GUI 正在進行的 run;真孤兒通常隔數小時至數天才被下次開啟收斂,
+  /// 門檻不影響收斂效果。
+  static const orphanRunningCutoff = Duration(hours: 2);
+
   /// 股票清單初始化最低股票數
   ///
   /// 低於此數量表示股票清單尚未完整初始化，需要從 TWSE/TPEx 同步。

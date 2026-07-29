@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/constants/rule_enums.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
@@ -245,6 +246,70 @@ void main() {
       ),
     );
   }
+
+  group('async 錯誤衛生(2026-07-30 審查)', () {
+    test('run 起手狀態是 RUNNING(孤兒 sweep 才能區分中斷 vs 部分失敗)', () async {
+      final service = buildService();
+      await service.runDailyUpdate(forDate: DateTime(2026, 7, 28));
+      verify(
+        () => mockDb.createUpdateRun(any(), UpdateStatus.running.code),
+      ).called(1);
+    });
+
+    test(
+      'createUpdateRun 拋錯:rethrow 給 caller 且零 unhandled(孤兒 Completer)',
+      () async {
+        when(
+          () => mockDb.createUpdateRun(any(), any()),
+        ).thenAnswer((_) async => throw StateError('disk full'));
+
+        final unhandled = <Object>[];
+        Object? thrown;
+        await runZonedGuarded(() async {
+          try {
+            await buildService().runDailyUpdate(forDate: tradingDay);
+          } catch (e) {
+            thrown = e;
+          }
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+        }, (e, st) => unhandled.add(e));
+
+        expect(thrown, isA<StateError>());
+        expect(
+          unhandled,
+          isEmpty,
+          reason:
+              '無併發等待者時 completer.future 沒有 listener,completeError '
+              '會讓同一錯誤再以 unhandled async error 打進 zone(需 .ignore())',
+        );
+      },
+    );
+
+    test('getWatchlist 拋錯:降級續跑,不得以 ParallelWaitError 收場', () async {
+      when(
+        () => mockDb.getWatchlist(),
+      ).thenAnswer((_) async => throw StateError('db corrupt'));
+
+      final result = await buildService().runDailyUpdate(forDate: tradingDay);
+
+      // 步驟 4(record .wait 分支)的 getWatchlist 必須降級記錄而非裸拋;
+      // 全域 stub 也會讓步驟 6(candidate_selector,順序路徑)拋錯終止 run,
+      // 那是頂層 catch 的正常職責——重點是訊息必須可讀、不得是
+      // ParallelWaitError 包裝(修復前步驟 4 會先以 ParallelWaitError 收場)
+      expect(result.errors, anyElement(contains('自選清單讀取失敗')));
+      expect(
+        result.message ?? '',
+        isNot(contains('ParallelWaitError')),
+        reason: '裸拋穿進步驟 4 的 record .wait 會被包成不可讀的 ParallelWaitError',
+      );
+      expect(
+        result.message ?? '',
+        contains('db corrupt'),
+        reason: '終止訊息應保留原始例外內容(可讀的故障現場)',
+      );
+    });
+  });
 
   group('UpdateService 輔助資料同步失敗的可見性', () {
     test('TDCC generic 同步失敗應記錄到 result.errors（partial 警告可見）', () async {

@@ -32,7 +32,11 @@ enum ReversalState {
 enum UpdateStatus {
   success('SUCCESS'),
   failed('FAILED'),
-  partial('PARTIAL');
+  partial('PARTIAL'),
+
+  /// 進行中(run 起手值)。app 中途被殺會遺留此狀態,由 DB beforeOpen 的
+  /// `failOrphanRunningRuns` 收斂成 FAILED——見 UserDao 同名方法。
+  running('RUNNING');
 
   const UpdateStatus(this.code);
 
