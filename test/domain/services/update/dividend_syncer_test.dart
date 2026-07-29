@@ -129,5 +129,42 @@ void main() {
       verify(() => db.insertStockEvent(any())).called(2);
       expect(result.meetingEventsCreated, 2);
     });
+
+    test('同 symbol 不同日期不得因去重 key 未補零互撞被丟(1/12 vs 11/2)', () async {
+      // 2026-07-29 審查發現:key 用 '${year}${month}${day}' 無補零,
+      // 2026-1-12 與 2026-11-2 都是 '2026112' → 後者被當重複靜默丟棄。
+      // 常會+臨時會同 symbol 兩筆是真實情境。
+      when(
+        () => twse.getDeclaredDividends(),
+      ).thenAnswer((_) async => <TwseDeclaredDividend>[]);
+      when(
+        () => tpex.getDeclaredDividends(),
+      ).thenAnswer((_) async => <TpexDeclaredDividend>[]);
+      when(() => tpex.getShareholderMeetings()).thenAnswer(
+        (_) async => [
+          TpexShareholderMeeting(
+            symbol: '5483',
+            companyName: '中美晶',
+            meetingType: '股東常會',
+            meetingDate: DateTime(2026, 1, 12),
+            hasBoardElection: false,
+            hasEVoting: true,
+          ),
+          TpexShareholderMeeting(
+            symbol: '5483',
+            companyName: '中美晶',
+            meetingType: '股東臨時會',
+            meetingDate: DateTime(2026, 11, 2),
+            hasBoardElection: true,
+            hasEVoting: true,
+          ),
+        ],
+      );
+
+      final result = await syncer.sync();
+
+      verify(() => db.insertStockEvent(any())).called(2);
+      expect(result.meetingEventsCreated, 2);
+    });
   });
 }

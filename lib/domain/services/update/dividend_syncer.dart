@@ -261,7 +261,11 @@ class DividendSyncer {
       final sym = c.symbol.value ?? '';
       final date = c.eventDate.value;
       final type = c.eventType.value;
-      final key = '${sym}_${date.year}${date.month}${date.day}_$type';
+      // 月/日補零(2026-07-29 fix):未補零時 2026-1-12 與 2026-11-2 同為
+      // '2026112',不同日期的常會/臨時會互撞、後者被靜默丟棄
+      final mm = date.month.toString().padLeft(2, '0');
+      final dd = date.day.toString().padLeft(2, '0');
+      final key = '${sym}_${date.year}$mm${dd}_$type';
       if (seen.add(key)) {
         result.add(c);
       }
