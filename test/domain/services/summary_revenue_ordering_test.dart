@@ -10,7 +10,7 @@
 // 同一個檔案、同一個陷阱，一個踩了一個沒踩。
 //
 // 來源確認：revenue_dao.dart:22 `query.orderBy([(t) => OrderingTerm.asc(t.date)])`
-// —— 升冪，最舊在前。取數窗是 stock_fundamentals_loader.dart:45
+// —— 升冪，最舊在前。取數窗是 data/loaders/stock_fundamentals_loader.dart:45
 // `DateTime(today.year - 2, today.month, 1)`，也就是 **.first 取到的是兩年前**。
 //
 // 實機 2026-07-27（資料日 07-24）2425 承啟，同一張卡：

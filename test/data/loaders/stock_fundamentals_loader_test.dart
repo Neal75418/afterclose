@@ -1,10 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
-import 'package:afterclose/presentation/providers/stock_fundamentals_loader.dart';
+import 'package:afterclose/data/loaders/stock_fundamentals_loader.dart';
 
 // ==========================================
 // Mocks
@@ -410,6 +411,95 @@ void main() {
 
       expect(result.epsData, isEmpty);
       expect(result.quarterMetrics, isEmpty);
+    });
+  });
+
+  // ==========================================
+  // RateLimit rethrow 契約(2026-07-30 審查)
+  // ==========================================
+  //
+  // 編碼標準:RateLimitException 必須 rethrow。限流是全域狀態——營收限流
+  // 了,後面股利/估值的 API call 也會限流,繼續 fallback 只是燒重試;吞掉
+  // 則 UI 顯示「部分基本面資料暫無法取得」的誤導文案。rethrow 後 caller
+  // (stock_detail_provider)既有 catch 會把真實限流文案寫進
+  // fundamentalsError,不影響整頁其他區塊。
+  group('RateLimit rethrow 契約', () {
+    setUp(() {
+      when(
+        () => mockDb.getValuationHistory(
+          any(),
+          startDate: any(named: 'startDate'),
+        ),
+      ).thenAnswer((_) async => [createValuation()]);
+      when(
+        () => mockDb.getDividendHistory(any()),
+      ).thenAnswer((_) async => <DividendHistoryEntry>[]);
+      when(
+        () => mockDb.getEPSHistory(any()),
+      ).thenAnswer((_) async => <FinancialDataEntry>[]);
+      when(
+        () => mockFinMind.getDividends(stockId: any(named: 'stockId')),
+      ).thenAnswer((_) async => <FinMindDividend>[]);
+    });
+
+    test('營收 API 限流:rethrow 而非 fallback 吞掉', () async {
+      when(
+        () => mockDb.getMonthlyRevenueHistory(
+          any(),
+          startDate: any(named: 'startDate'),
+        ),
+      ).thenAnswer((_) async => [createRevenue()]); // <6 筆 → 走 API
+      when(
+        () => mockFinMind.getMonthlyRevenue(
+          stockId: any(named: 'stockId'),
+          startDate: any(named: 'startDate'),
+          endDate: any(named: 'endDate'),
+        ),
+      ).thenThrow(const RateLimitException());
+
+      await expectLater(
+        loader.loadAll('2330'),
+        throwsA(isA<RateLimitException>()),
+      );
+    });
+
+    test('股利 API 限流:rethrow', () async {
+      when(
+        () => mockDb.getMonthlyRevenueHistory(
+          any(),
+          startDate: any(named: 'startDate'),
+        ),
+      ).thenAnswer(
+        (_) async =>
+            List.generate(6, (i) => createRevenue(revenueMonth: i + 1)),
+      );
+      when(
+        () => mockFinMind.getDividends(stockId: any(named: 'stockId')),
+      ).thenThrow(const RateLimitException());
+
+      await expectLater(
+        loader.loadAll('2330'),
+        throwsA(isA<RateLimitException>()),
+      );
+    });
+
+    test('非限流的 API 錯誤:維持 fallback 行為(回部分資料,不 throw)', () async {
+      when(
+        () => mockDb.getMonthlyRevenueHistory(
+          any(),
+          startDate: any(named: 'startDate'),
+        ),
+      ).thenAnswer((_) async => [createRevenue()]);
+      when(
+        () => mockFinMind.getMonthlyRevenue(
+          stockId: any(named: 'stockId'),
+          startDate: any(named: 'startDate'),
+          endDate: any(named: 'endDate'),
+        ),
+      ).thenThrow(Exception('server 500'));
+
+      final result = await loader.loadAll('2330');
+      expect(result.revenueData, hasLength(1), reason: 'fallback 用 DB 部分資料');
     });
   });
 }

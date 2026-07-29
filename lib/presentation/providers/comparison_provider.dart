@@ -12,7 +12,7 @@ import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/database/cached_accessor.dart';
 import 'package:afterclose/domain/models/stock_summary.dart';
 import 'package:afterclose/domain/services/analysis_summary_service.dart';
-import 'package:afterclose/presentation/mappers/finmind_model_mapper.dart';
+import 'package:afterclose/data/mappers/finmind_model_mapper.dart';
 import 'package:afterclose/presentation/mappers/summary_localizer.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 

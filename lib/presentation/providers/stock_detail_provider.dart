@@ -22,8 +22,8 @@ import 'package:afterclose/presentation/providers/watchlist_provider.dart';
 import 'package:afterclose/presentation/providers/data_update_epoch_provider.dart';
 import 'package:afterclose/presentation/providers/market_overview_provider.dart';
 import 'package:afterclose/presentation/providers/stock_detail_state.dart';
-import 'package:afterclose/presentation/providers/stock_fundamentals_loader.dart';
-import 'package:afterclose/presentation/providers/stock_chip_loader.dart';
+import 'package:afterclose/data/loaders/stock_fundamentals_loader.dart';
+import 'package:afterclose/data/loaders/stock_chip_loader.dart';
 
 // Re-export 狀態類別供外部使用
 export 'package:afterclose/presentation/providers/stock_detail_state.dart';

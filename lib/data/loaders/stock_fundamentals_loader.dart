@@ -3,12 +3,13 @@ import 'dart:async';
 import 'package:drift/drift.dart';
 
 import 'package:afterclose/core/constants/data_freshness.dart';
+import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
-import 'package:afterclose/presentation/mappers/finmind_model_mapper.dart';
+import 'package:afterclose/data/mappers/finmind_model_mapper.dart';
 
 /// 基本面資料的載入結果
 typedef FundamentalsResult = ({
@@ -23,6 +24,11 @@ typedef FundamentalsResult = ({
 ///
 /// 負責從 DB 和 FinMind API 載入營收、股利、估值、EPS 等基本面資料。
 /// 純資料取得邏輯，不管理 UI 狀態。
+///
+/// **錯誤契約**:[RateLimitException] 一律 rethrow(限流是全域狀態,
+/// fallback 只會燒重試、吞掉會讓 UI 顯示誤導文案);其餘 API 錯誤走
+/// per-source fallback(DB 部分資料或空集合)。DB 讀取錯誤同樣吞掉——
+/// 單一資料源壞不應讓整個基本面區塊消失。
 class StockFundamentalsLoader {
   StockFundamentalsLoader({
     required AppDatabase db,
@@ -142,6 +148,10 @@ class StockFundamentalsLoader {
           '$symbol: 使用 FinMind 營收 (${revenueData.length} 筆，DB 僅 ${dbRevenues.length} 筆)',
         );
         return revenueData;
+      } on RateLimitException {
+        // 限流是全域狀態:後續股利/估值的 API call 也會限流,fallback 只是
+        // 燒重試、吞掉則 UI 顯誤導文案。rethrow 讓 caller 顯示真實原因。
+        rethrow;
       } catch (apiError) {
         // API 失敗時，若 DB 有部分資料則使用之
         if (dbRevenues.isNotEmpty) {
@@ -158,6 +168,8 @@ class StockFundamentalsLoader {
           apiError,
         );
       }
+    } on RateLimitException {
+      rethrow;
     } catch (e) {
       AppLogger.warning('StockFundamentalsLoader', '$symbol: 載入營收資料失敗', e);
     }
@@ -223,6 +235,8 @@ class StockFundamentalsLoader {
         );
         return apiData;
       }
+    } on RateLimitException {
+      rethrow;
     } catch (e) {
       AppLogger.warning('StockFundamentalsLoader', '$symbol: 取得股利歷史失敗', e);
     }
@@ -295,6 +309,8 @@ class StockFundamentalsLoader {
         );
         return per;
       }
+    } on RateLimitException {
+      rethrow;
     } catch (e) {
       AppLogger.warning('StockFundamentalsLoader', '$symbol: 取得估值資料失敗', e);
     }
