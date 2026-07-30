@@ -7,7 +7,7 @@ import 'package:afterclose/core/constants/app_routes.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/utils/error_display.dart';
-import 'package:afterclose/core/utils/number_formatter.dart';
+import 'package:afterclose/core/utils/localized_number_format.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
 import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
 import 'package:afterclose/data/models/tpex/tpex_industry_eps.dart';
@@ -325,7 +325,7 @@ class _IndustryEpsScreenState extends ConsumerState<IndustryEpsScreen> {
             Expanded(
               flex: 2,
               child: Text(
-                AppNumberFormat.compact(item.netIncome / 1000), // 千元→百萬
+                LocalizedNumberFormat.compact(item.netIncome / 1000), // 千元→百萬
                 textAlign: TextAlign.end,
                 style: theme.textTheme.bodySmall?.copyWith(
                   fontWeight: FontWeight.w500,

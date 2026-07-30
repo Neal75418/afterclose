@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/utils/localized_number_format.dart';
 import 'package:afterclose/core/utils/number_formatter.dart';
 import 'package:afterclose/domain/services/dividend_intelligence_service.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
@@ -70,7 +71,7 @@ class DividendAnalysisCard extends StatelessWidget {
                 child: _SummaryItem(
                   label: 'portfolio.expectedDividend'.tr(),
                   value:
-                      'NT\$${AppNumberFormat.compact(analysis.totalExpectedDividend)}',
+                      'NT\$${LocalizedNumberFormat.compact(analysis.totalExpectedDividend)}',
                   subValue: 'portfolio.yearly'.tr(),
                   theme: theme,
                 ),
@@ -242,7 +243,7 @@ class _StockDividendRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  'NT\$${AppNumberFormat.compact(info.expectedYearlyAmount)}',
+                  'NT\$${LocalizedNumberFormat.compact(info.expectedYearlyAmount)}',
                   style: theme.textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.w600,
                     color: AppTheme.upColor,

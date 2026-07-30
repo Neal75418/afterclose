@@ -4,7 +4,6 @@ import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/taiwan_calendar.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/api_budget_tracker.dart';
-import 'package:afterclose/data/remote/shared_prefs_api_budget_store.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/data/remote/rss_parser.dart';
 import 'package:afterclose/data/remote/tdcc_client.dart';
@@ -47,6 +46,7 @@ const _tag = 'HeadlessUpdateRunner';
 ///   syncer 會在內部 skip
 Future<UpdateResult> runHeadlessUpdate({
   required AppDatabase database,
+  required ApiBudgetStore budgetStore,
   String? finMindToken,
 }) async {
   final now = DateTime.now();
@@ -75,12 +75,12 @@ Future<UpdateResult> runHeadlessUpdate({
 
     // 初始化 API 客戶端（hoist 到 try 外讓 finally 可見）。
     // process-local ApiBudgetTracker，跨 isolate 不共享是有意設計。
-    final budgetTracker = ApiBudgetTracker(
-      store: const SharedPrefsApiBudgetStore(),
-    );
-    // 跨 process 延續配額計數。若此環境讀不到 SharedPreferences（launchd
-    // CLI 的 defaults domain 可能與 app bundle 不同），restore 會 fail-open
-    // 回到「無歷史」——與加入持久化之前的行為相同，不會更糟。
+    // store 由 caller 注入：flutter 環境給 SharedPreferences 版、launchd
+    // CLI 給 FileApiBudgetStore——shared_preferences 是 flutter plugin，
+    // import 進本檔會把 dart:ui 拉進 tool 純 Dart 鏈（2026-07-27 事故）。
+    final budgetTracker = ApiBudgetTracker(store: budgetStore);
+    // 跨 process 延續配額計數。讀取失敗 restore 會 fail-open 回「無歷史」
+    // ——與加入持久化之前的行為相同，不會更糟。
     final budgetRestore = await budgetTracker.restore();
     if (budgetRestore.restoredCalls > 0 ||
         budgetRestore.cooldownVendors.isNotEmpty) {

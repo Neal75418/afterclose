@@ -41,6 +41,7 @@
 import 'dart:io';
 
 import 'package:afterclose/app/headless_update_runner.dart';
+import 'package:afterclose/data/remote/file_api_budget_store.dart';
 import 'package:afterclose/core/constants/calibrated_scores/calibrated_scores_registry.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
@@ -83,6 +84,11 @@ Future<void> main(List<String> args) async {
     database = AppDatabase.forToolFile(dbPath);
     final result = await runHeadlessUpdate(
       database: database,
+      // 純 Dart 檔案版(DB 同目錄):shared_preferences 是 flutter plugin,
+      // 不可進本 CLI 的編譯鏈(守門測試把關)
+      budgetStore: FileApiBudgetStore(
+        '${File(dbPath).parent.path}/api_budget_cli.json',
+      ),
       finMindToken: finMindToken,
     );
     final elapsed = DateTime.now().difference(start);

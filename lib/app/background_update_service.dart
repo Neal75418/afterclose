@@ -5,6 +5,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:workmanager/workmanager.dart';
 
 import 'package:afterclose/app/headless_update_runner.dart';
+import 'package:afterclose/data/remote/shared_prefs_api_budget_store.dart';
 import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/constants/calibrated_scores/calibrated_scores_registry.dart';
 import 'package:afterclose/core/services/notification_service.dart';
@@ -147,6 +148,7 @@ void _callbackDispatcher() {
       }
       final result = await runHeadlessUpdate(
         database: database,
+        budgetStore: const SharedPrefsApiBudgetStore(),
         finMindToken: finMindToken,
       );
 

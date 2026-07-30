@@ -1,8 +1,13 @@
-import 'package:easy_localization/easy_localization.dart';
+import 'package:intl/intl.dart';
 
-/// 統一數字格式化工具
+/// 統一數字格式化工具（純 Dart）
 ///
-/// 提供千分位、本地化單位（億/B、萬/K）等常用數字格式化方法。
+/// 提供千分位、正負號、貨幣等格式化方法。**必須維持純 Dart**（只 import
+/// intl，不可 easy_localization/flutter）：rule_accuracy_service 等
+/// domain 消費者在 tool/daily_update.dart 的 launchd 鏈上，混入 dart:ui
+/// 依賴會讓自動更新編譯失敗且靜默斷更（2026-07-18 事故，斷 13 天）。
+/// 需要 `.tr()` 本地化單位的 [LocalizedNumberFormat.compact] 已拆至
+/// presentation 專用檔。守門測試：test/tool/daily_update_pure_dart_test.dart。
 class AppNumberFormat {
   AppNumberFormat._();
 
@@ -12,19 +17,6 @@ class AppNumberFormat {
 
   /// 整數千分位格式（如 1,234,567）
   static String integer(double value) => _intFormat.format(value);
-
-  /// 自動選擇本地化單位：億/B、萬/K、千分位
-  ///
-  /// 用於成交量、金額等大數值的友善顯示。
-  static String compact(double value) {
-    if (value.abs() >= 1e8) {
-      return '${(value / 1e8).toStringAsFixed(1)}${'unit.billion'.tr()}';
-    }
-    if (value.abs() >= 1e4) {
-      return '${(value / 1e4).toStringAsFixed(1)}${'unit.tenThousand'.tr()}';
-    }
-    return _intFormat.format(value);
-  }
 
   /// 帶正負號的千分位整數（如 +1,234 / -567）
   static String signedInteger(double value) {

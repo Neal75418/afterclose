@@ -10,7 +10,7 @@ import 'package:afterclose/presentation/widgets/empty_state.dart';
 import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
 import 'package:afterclose/presentation/widgets/themed_refresh_indicator.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
-import 'package:afterclose/core/utils/number_formatter.dart';
+import 'package:afterclose/core/utils/localized_number_format.dart';
 import 'package:afterclose/data/models/tpex/tpex_short_sell_ranking.dart';
 import 'package:afterclose/presentation/providers/short_sell_ranking_provider.dart';
 import 'package:afterclose/presentation/providers/stock_browsing_context_provider.dart';
@@ -278,7 +278,7 @@ class _ShortSellRankingScreenState
             Expanded(
               flex: 2,
               child: Text(
-                AppNumberFormat.compact(item.currentBalance.toDouble()),
+                LocalizedNumberFormat.compact(item.currentBalance.toDouble()),
                 textAlign: TextAlign.end,
                 style: theme.textTheme.bodySmall?.copyWith(
                   fontWeight: FontWeight.w500,
@@ -289,7 +289,7 @@ class _ShortSellRankingScreenState
             Expanded(
               flex: 2,
               child: Text(
-                '${change > 0 ? '+' : ''}${AppNumberFormat.compact(change.toDouble())}',
+                '${change > 0 ? '+' : ''}${LocalizedNumberFormat.compact(change.toDouble())}',
                 textAlign: TextAlign.end,
                 style: theme.textTheme.bodySmall?.copyWith(
                   fontWeight: FontWeight.bold,

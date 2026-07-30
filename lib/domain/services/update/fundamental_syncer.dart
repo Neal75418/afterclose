@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:meta/meta.dart' show visibleForTesting;
 
 import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/constants/market_codes.dart';

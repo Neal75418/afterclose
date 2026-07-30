@@ -6,7 +6,7 @@ import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/theme/semantic_colors.dart';
-import 'package:afterclose/core/utils/number_formatter.dart';
+import 'package:afterclose/core/utils/localized_number_format.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
 import 'package:afterclose/presentation/widgets/metric_card.dart';
@@ -506,7 +506,7 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
                         Text(
                           'stockDetail.transferSharesLabel'.tr(
                             args: [
-                              AppNumberFormat.compact(
+                              LocalizedNumberFormat.compact(
                                 t.transferShares.toDouble(),
                               ),
                             ],

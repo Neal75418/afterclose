@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/utils/localized_number_format.dart';
 import 'package:afterclose/core/utils/number_formatter.dart';
 import 'package:afterclose/presentation/providers/portfolio_provider.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
@@ -104,7 +105,7 @@ class PortfolioSummaryCard extends StatelessWidget {
     );
   }
 
-  String _formatNumber(double value) => AppNumberFormat.compact(value);
+  String _formatNumber(double value) => LocalizedNumberFormat.compact(value);
 }
 
 class _PnlItem extends StatelessWidget {

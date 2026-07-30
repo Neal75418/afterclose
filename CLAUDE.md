@@ -144,6 +144,7 @@ void main() {
 | **路由**                    | 使用 `AppRoutes` 常數，禁止硬編碼路由字串                                                                             |
 | **Isolate 通訊**            | 使用 typed DTO (`ShareholdingData`, `WarningDataContext`, `InsiderDataContext`)，避免 `Map<String, dynamic>`。已知例外：`scoring_isolate.dart` 內部仍走 Map 序列化 roundtrip（`isolate_map_extensions.dart`），typed 物件實際已直接跨界、Map 層疑似冗餘——待實機驗證後移除 |
 | **OHLCV 提取**              | 使用 `prices.extractOhlcv()` extension，避免重複迴圈                                                             |
+| **tool 鏈純 Dart**          | `tool/daily_update.dart`（launchd `dart run`）的 import 閉包**不得**含 flutter／easy_localization／flutter plugins（shared_preferences 等）——混入即編譯失敗且**靜默斷自動更新**（2026-07 斷 13 天才發現）。守門：`test/tool/daily_update_pure_dart_test.dart`；改動 update 鏈後跑 `dart compile kernel tool/daily_update.dart` 終驗。`@visibleForTesting` 用 `package:meta`，i18n 格式化用 presentation 專用 `LocalizedNumberFormat` |
 | **Dart 3**                | Records, Pattern Matching, Sealed Classes                                                               |
 
 ---

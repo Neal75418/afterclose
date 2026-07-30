@@ -1,5 +1,8 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart' show visibleForTesting;
+// meta 而非 flutter/foundation:本檔在 tool/daily_update.dart 的 launchd
+// 純 Dart 鏈上,flutter/foundation 經 binding.dart 依賴 dart:ui,dart run
+// 之下編譯直接炸(守門:test/tool/daily_update_pure_dart_test.dart)。
+import 'package:meta/meta.dart' show visibleForTesting;
 
 import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/constants/stock_patterns.dart';
