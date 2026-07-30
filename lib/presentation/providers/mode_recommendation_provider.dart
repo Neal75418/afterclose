@@ -6,7 +6,7 @@ import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/constants/scoring_mode.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/core/utils/price_calculator.dart';
+import 'package:afterclose/domain/services/price_calculator.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/database/dao/analysis_dao.dart';
 import 'package:afterclose/domain/services/analysis/sector_strength_service.dart';

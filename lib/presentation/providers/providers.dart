@@ -28,7 +28,7 @@ import 'package:afterclose/data/repositories/insider_repository.dart';
 import 'package:afterclose/data/repositories/event_repository.dart';
 import 'package:afterclose/data/repositories/portfolio_repository.dart';
 import 'package:afterclose/core/utils/clock.dart';
-import 'package:afterclose/core/services/cache_warmup_service.dart';
+import 'package:afterclose/data/database/cache_warmup_service.dart';
 import 'package:afterclose/domain/services/api_connection_service.dart';
 import 'package:afterclose/domain/services/data_sync_service.dart';
 import 'package:afterclose/domain/services/rule_accuracy_service.dart';

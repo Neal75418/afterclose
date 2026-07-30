@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/constants/news_heat_params.dart';
 import 'package:afterclose/core/constants/scoring_mode.dart';
-import 'package:afterclose/core/utils/price_calculator.dart';
+import 'package:afterclose/domain/services/price_calculator.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/services/news/heat_calculator.dart';
 import 'package:afterclose/domain/services/news/stock_name_matcher.dart';

@@ -1,6 +1,6 @@
 import 'package:afterclose/core/constants/chip_scoring_params.dart';
 import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/domain/models/chip_strength.dart';
+import 'package:afterclose/core/constants/chip_strength.dart';
 
 /// 籌碼強度計算服務
 ///

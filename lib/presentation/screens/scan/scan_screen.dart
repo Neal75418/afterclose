@@ -9,7 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:afterclose/core/constants/animations.dart';
 import 'package:afterclose/core/constants/app_routes.dart';
 import 'package:afterclose/core/utils/error_display.dart';
-import 'package:afterclose/core/constants/filter_metadata.dart';
+import 'package:afterclose/presentation/screens/scan/filter_metadata.dart';
 import 'package:afterclose/core/constants/ui_constants.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';

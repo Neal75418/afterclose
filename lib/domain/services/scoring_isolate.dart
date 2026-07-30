@@ -4,7 +4,7 @@ import 'dart:isolate';
 import 'package:afterclose/core/constants/calibrated_scores/calibrated_score_context.dart';
 import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 import 'package:afterclose/core/constants/rule_params_sector.dart';
-import 'package:afterclose/core/utils/price_calculator.dart';
+import 'package:afterclose/domain/services/price_calculator.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/models/models.dart';
 import 'package:afterclose/domain/services/analysis_service.dart';

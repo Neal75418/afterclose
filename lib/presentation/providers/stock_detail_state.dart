@@ -1,8 +1,8 @@
-import 'package:afterclose/core/utils/price_calculator.dart';
+import 'package:afterclose/domain/services/price_calculator.dart';
 import 'package:afterclose/core/utils/sentinel.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
-import 'package:afterclose/domain/models/chip_strength.dart';
+import 'package:afterclose/core/constants/chip_strength.dart';
 import 'package:afterclose/domain/models/stock_summary.dart';
 
 // ==================================================

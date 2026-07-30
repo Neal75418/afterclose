@@ -1,6 +1,6 @@
 import 'dart:ui';
 
-import 'package:afterclose/domain/models/chip_strength.dart';
+import 'package:afterclose/core/constants/chip_strength.dart';
 
 /// 色彩語意類別的單一真相來源。
 ///

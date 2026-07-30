@@ -10,7 +10,7 @@
 import 'package:afterclose/core/constants/calibrated_scores/calibrated_score_context.dart';
 import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
-import 'package:afterclose/core/utils/liquidity_checker.dart';
+import 'package:afterclose/domain/services/liquidity_checker.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/models/models.dart';
 import 'package:afterclose/domain/services/rule_engine.dart';

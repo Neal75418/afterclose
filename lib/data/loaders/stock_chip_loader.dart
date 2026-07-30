@@ -5,7 +5,7 @@ import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/data/repositories/insider_repository.dart';
-import 'package:afterclose/domain/models/chip_strength.dart';
+import 'package:afterclose/core/constants/chip_strength.dart';
 import 'package:afterclose/domain/services/chip_analysis_service.dart';
 
 /// 完整籌碼資料載入結果

@@ -1,5 +1,5 @@
 import 'package:afterclose/core/constants/rule_params.dart';
-import 'package:afterclose/core/utils/liquidity_checker.dart';
+import 'package:afterclose/domain/services/liquidity_checker.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:flutter_test/flutter_test.dart';
 

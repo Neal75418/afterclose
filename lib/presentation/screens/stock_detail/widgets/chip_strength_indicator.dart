@@ -2,7 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/semantic_colors.dart';
-import 'package:afterclose/domain/models/chip_strength.dart';
+import 'package:afterclose/core/constants/chip_strength.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// 頂部橫幅卡片，顯示籌碼強度分數（0-100）、進度條與法人態度標籤。

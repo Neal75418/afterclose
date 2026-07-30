@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:afterclose/core/theme/semantic_colors.dart';
-import 'package:afterclose/domain/models/chip_strength.dart';
+import 'package:afterclose/core/constants/chip_strength.dart';
 import 'package:afterclose/presentation/screens/stock_detail/widgets/chip_strength_indicator.dart';
 
 import '../../../../helpers/widget_test_helpers.dart';
