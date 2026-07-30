@@ -7,12 +7,11 @@ import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
-import 'package:afterclose/domain/repositories/shareholding_repository.dart';
 
 /// 持股相關 Repository
 ///
 /// 處理：外資持股、股權分散表
-class ShareholdingRepository implements IShareholdingRepository {
+class ShareholdingRepository {
   ShareholdingRepository({
     required AppDatabase database,
     required FinMindClient finMindClient,
@@ -30,7 +29,6 @@ class ShareholdingRepository implements IShareholdingRepository {
   // ==================================================
 
   /// 取得外資持股歷史資料
-  @override
   Future<List<ShareholdingEntry>> getShareholdingHistory(
     String symbol, {
     int days = 60,
@@ -40,7 +38,6 @@ class ShareholdingRepository implements IShareholdingRepository {
   }
 
   /// 取得股票最新外資持股資料
-  @override
   Future<ShareholdingEntry?> getLatestShareholding(String symbol) {
     return _db.getLatestShareholding(symbol);
   }
@@ -49,7 +46,6 @@ class ShareholdingRepository implements IShareholdingRepository {
   ///
   /// 包含新鮮度檢查以避免不必要的 API 呼叫。
   /// 若 [endDate]（或今日）的資料已存在則跳過。
-  @override
   Future<int> syncShareholding(
     String symbol, {
     required DateTime startDate,
@@ -97,7 +93,6 @@ class ShareholdingRepository implements IShareholdingRepository {
   // ==================================================
 
   /// 批次取得多檔股票的最新持股資料
-  @override
   Future<Map<String, ShareholdingEntry>> getLatestShareholdingsBatch(
     List<String> symbols,
   ) {
@@ -105,7 +100,6 @@ class ShareholdingRepository implements IShareholdingRepository {
   }
 
   /// 取得最新股權分散表
-  @override
   Future<List<HoldingDistributionEntry>> getLatestHoldingDistribution(
     String symbol,
   ) {
@@ -116,7 +110,6 @@ class ShareholdingRepository implements IShareholdingRepository {
   ///
   /// 回傳 symbol -> 大戶持股比例(%) 的 Map。
   /// 無資料的股票不會出現在結果中。
-  @override
   Future<Map<String, double>> getConcentrationRatioBatch(
     List<String> symbols, {
     int thresholdLevel = ChipScoringParams.largeHolderMinLot,

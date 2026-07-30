@@ -6,7 +6,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/domain/repositories/settings_repository.dart';
 
 /// Secure Storage Key 常數
 class _SecureKeys {
@@ -35,7 +34,7 @@ class _SecureKeys {
 /// 重新輸入 token。開發者只要 `export FINMIND_TOKEN=...` 一次，後續每次
 /// `flutter run` 都自動載入。env var 是 process-scoped memory，不違反
 /// 「不寫入未加密儲存」的安全原則。
-class SettingsRepository implements ISettingsRepository {
+class SettingsRepository {
   SettingsRepository({required AppDatabase database, SharedPreferences? prefs})
     : _db = database,
       _prefs = prefs;
@@ -125,7 +124,6 @@ class SettingsRepository implements ISettingsRepository {
   /// 取得 FinMind Token
   ///
   /// Fallback chain: SecureStorage → env var → 記憶體暫存。詳見 class-level doc。
-  @override
   Future<String?> getFinMindToken() async {
     // Priority 1: SecureStorage（正式路徑）
     if (await _isSecureStorageAvailable()) {
@@ -166,7 +164,6 @@ class SettingsRepository implements ISettingsRepository {
   }
 
   /// 儲存 FinMind Token
-  @override
   Future<void> setFinMindToken(String token) async {
     if (await _isSecureStorageAvailable()) {
       try {
@@ -187,7 +184,6 @@ class SettingsRepository implements ISettingsRepository {
   }
 
   /// 清除 FinMind Token（所有儲存位置）
-  @override
   Future<void> clearFinMindToken() async {
     _inMemoryToken = null;
     try {
@@ -201,7 +197,6 @@ class SettingsRepository implements ISettingsRepository {
   }
 
   /// 檢查是否已設定 Token
-  @override
   Future<bool> hasFinMindToken() async {
     final token = await getFinMindToken();
     return token != null && token.isNotEmpty;
@@ -212,19 +207,16 @@ class SettingsRepository implements ISettingsRepository {
   // ==================================================
 
   /// 依 Key 取得設定值
-  @override
   Future<String?> getSetting(String key) {
     return _db.getSetting(key);
   }
 
   /// 設定值
-  @override
   Future<void> setSetting(String key, String value) {
     return _db.setSetting(key, value);
   }
 
   /// 刪除設定
-  @override
   Future<void> deleteSetting(String key) {
     return _db.deleteSetting(key);
   }

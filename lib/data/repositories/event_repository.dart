@@ -4,12 +4,11 @@ import 'package:intl/intl.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
-import 'package:afterclose/domain/repositories/event_repository.dart';
 
 /// 事件日曆 Repository
 ///
 /// 管理行事曆事件，包括使用者自訂事件與系統自動產生的除權息事件。
-class EventRepository implements IEventRepository {
+class EventRepository {
   EventRepository({required AppDatabase database, TwseClient? twseClient})
     : _db = database,
       _twseClient = twseClient;
@@ -26,7 +25,6 @@ class EventRepository implements IEventRepository {
   // ==================================================
 
   /// 取得指定日期範圍內的事件
-  @override
   Future<List<StockEventEntry>> getEventsInRange(
     DateTime start,
     DateTime end, {
@@ -40,7 +38,6 @@ class EventRepository implements IEventRepository {
   // ==================================================
 
   /// 新增自訂事件
-  @override
   Future<int> addCustomEvent({
     String? symbol,
     required DateTime eventDate,
@@ -59,7 +56,6 @@ class EventRepository implements IEventRepository {
   }
 
   /// 更新自訂事件
-  @override
   Future<void> updateCustomEvent({
     required int id,
     String? symbol,
@@ -79,7 +75,6 @@ class EventRepository implements IEventRepository {
   }
 
   /// 刪除事件
-  @override
   Future<void> deleteEvent(int id) {
     return _db.deleteStockEvent(id);
   }
@@ -94,7 +89,6 @@ class EventRepository implements IEventRepository {
   /// 1. 取得自選股 + 持倉股的 symbol
   /// 2. 從 DividendHistory 取得有除權息日期的紀錄，收集所有待插入事件
   /// 3. 在單一交易中：刪除舊的自動事件 → 批次插入新事件
-  @override
   Future<({int exDividend, int exRights, int total})>
   syncDividendEvents() async {
     // 1. 取得所有相關 symbol（自選股 + 持倉股）
@@ -193,7 +187,6 @@ class EventRepository implements IEventRepository {
   /// v3 交易系統把處置股踢出可交易宇宙，出關日＝重新可交易的日子；
   /// 事件日取 `disposal_end_date`（處置最後一日），標題註明次日恢復。
   /// 與除權息同步同模式：delete-by-type 後重建，冪等。
-  @override
   Future<int> syncDisposalEndEvents() async {
     final disposals = await _db.getActiveWarningsByType('DISPOSAL');
     final companions = <StockEventCompanion>[];
@@ -229,7 +222,6 @@ class EventRepository implements IEventRepository {
   ///
   /// 停券起日前的回補賣壓與軋空是短線催化劑；事件日取停券起日，
   /// 描述帶原因與迄日。與其他自動事件同模式：delete-by-type 後重建。
-  @override
   Future<int> syncShortSuspensionEvents() async {
     final client = _twseClient;
     if (client == null) return 0;
@@ -287,7 +279,6 @@ class EventRepository implements IEventRepository {
   /// ⚠️ 若未來新增「財報公布」等第二個 EARNINGS producer：本方法的
   /// (symbol, 日) 去重會讀到**兩個 producer 的事件互相壓制**——屆時需以
   /// title/來源子欄位區分，並考慮 prune 已過期的 auto EARNINGS。
-  @override
   Future<int> syncInvestorConferenceEvents() async {
     final watchlistEntries = await _db.getWatchlist();
     final portfolioPositions = await _db.getPortfolioPositions();

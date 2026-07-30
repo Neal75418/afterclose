@@ -7,12 +7,11 @@ import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
-import 'package:afterclose/domain/repositories/market_data_repository.dart';
 
 /// 市場資料 Repository
 ///
 /// 處理：財報同步
-class MarketDataRepository implements IMarketDataRepository {
+class MarketDataRepository {
   MarketDataRepository({
     required AppDatabase database,
     required FinMindClient finMindClient,
@@ -44,7 +43,6 @@ class MarketDataRepository implements IMarketDataRepository {
   // ==================================================
 
   /// 同步資產負債表資料
-  @override
   Future<int> syncBalanceSheet(
     String symbol, {
     required DateTime startDate,
@@ -132,21 +130,16 @@ class MarketDataRepository implements IMarketDataRepository {
   // 市場 / 同步狀態查詢
   // ==================================================
 
-  @override
   Future<DateTime?> getLatestDataDate() => _db.getLatestDataDate();
 
-  @override
   Future<DateTime?> getLatestInstitutionalDate() =>
       _db.getLatestInstitutionalDate();
 
-  @override
   Future<UpdateRunEntry?> getLatestUpdateRun() => _db.getLatestUpdateRun();
 
-  @override
   Future<UpdateRunEntry?> getLatestSuccessfulUpdateRun() =>
       _db.getLatestSuccessfulUpdateRun();
 
-  @override
   Future<List<UpdateRunEntry>> getRecentUpdateRuns({int limit = 30}) =>
       _db.getRecentUpdateRuns(limit: limit);
 }

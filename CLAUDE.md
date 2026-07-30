@@ -135,7 +135,7 @@ void main() {
 
 | 原則                        | 說明                                                                                                      |
 |:--------------------------|:--------------------------------------------------------------------------------------------------------|
-| **Repository Pattern**    | Domain 透過介面存取資料，Data 層提供實作                                                                              |
+| **Repository Pattern**    | Data 層提供實作；`domain/repositories/` 介面**僅保留有真消費者的 7 條**（3 條 lib 內以介面型別使用、4 條供 `tool/backfill` 測試注入）——新增介面前先確認有第二個實作或注入需求，單實作勿加儀式介面（2026-07-30 清除 5 條）|
 | **錯誤處理**                  | `RateLimitException` / `NetworkException` 必須 rethrow，其餘包裝為 `DatabaseException`。例外：`UpdateService`（頂層 orchestrator）改以 `rateLimitedAbort` 旗標 + `recordError` 終止流程，不再往上拋 |
 | **Request Deduplication** | Repository 層使用 `RequestDeduplicator` 避免重複 API 呼叫                                                        |
 | **狀態管理**                  | `AsyncNotifier` / `StateNotifier`，避免 `StateProvider`                                                    |
