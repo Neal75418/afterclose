@@ -26,24 +26,29 @@ class FinMindDailyPrice {
       throw FormatException('Missing required field: date', json);
     }
 
-    // 解析收盤價 - 分析的關鍵欄位
+    // 解析收盤價 - 分析的關鍵欄位。0 視同無效(台股價格下限 0.01,
+    // 0=停牌/無成交 sentinel;tryFromJson 會把此筆跳過不落庫,
+    // 與 TWSE/TPEx parser 的 parsePrice 語意一致,2026-07-30)
     final close = JsonParsers.parseDouble(json['close']);
-    if (close == null) {
+    if (close == null || close == 0) {
       throw FormatException('Missing or invalid close price', json);
     }
 
     return FinMindDailyPrice(
       stockId: stockId.toString(),
       date: date.toString(),
-      open: JsonParsers.parseDouble(json['open']),
-      high: JsonParsers.parseDouble(json['max']),
-      low: JsonParsers.parseDouble(json['min']),
+      open: _priceOrNull(JsonParsers.parseDouble(json['open'])),
+      high: _priceOrNull(JsonParsers.parseDouble(json['max'])),
+      low: _priceOrNull(JsonParsers.parseDouble(json['min'])),
       close: close,
       volume: JsonParsers.parseDouble(json['Trading_Volume']),
     );
   }
 
   /// 嘗試從 JSON 解析，失敗時回傳 null 並記錄日誌
+  /// 價格欄 0 → null(無成交 sentinel,同 close 的處理)
+  static double? _priceOrNull(double? v) => (v == null || v == 0) ? null : v;
+
   static FinMindDailyPrice? tryFromJson(Map<String, dynamic> json) =>
       JsonParsers.tryParse(
         json,

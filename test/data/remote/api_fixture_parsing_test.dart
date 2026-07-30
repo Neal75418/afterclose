@@ -52,6 +52,83 @@ void main() {
   }
 
   group('TwseClient 真實 fixture 解析', () {
+    test('零價 sentinel:無成交股(OHLC 0.00)的價格解析為 null(2026-07-30)', () async {
+      // 1472 於 2026-07-30 全日僅零股成交 17 股,STOCK_DAY_ALL 對無成交
+      // 用 '0.00' 表達(MI_INDEX 用 '--')。存 0 會污染 52 週窗與漲跌
+      // 計算(顯示 -100%),價格欄一律 0→null;volume 照實(17 合法)。
+      const csv =
+          '日期,證券代號,證券名稱,成交股數,成交金額,開盤價,最高價,最低價,收盤價,漲跌價差,成交筆數\n'
+          '"1150730","1472","三洋實業","17","1511","0.00","0.00","0.00","0.00","0.0000","7"\n'
+          '"1150730","2330","台積電","51372177","114098819878","2205.00","2260.00","2190.00","2205.00","5.0000","177492"\n';
+      stubGet(csv);
+      final client = TwseClient(dio: mockDio);
+
+      final prices = await client.getAllDailyPrices();
+      final p1472 = prices.firstWhere((p) => p.code == '1472');
+      expect(p1472.close, isNull);
+      expect(p1472.open, isNull);
+      expect(p1472.volume, 17.0, reason: '量欄照實,0→null 僅限價格欄');
+      final p2330 = prices.firstWhere((p) => p.code == '2330');
+      expect(p2330.close, 2205.0);
+    });
+
+    test('MI_INDEX 零價 sentinel 同語意(歷史回補路徑)', () {
+      final json = {
+        'date': '20260730',
+        'tables': [
+          {
+            'fields': [
+              '證券代號',
+              '證券名稱',
+              '成交股數',
+              '成交筆數',
+              '成交金額',
+              '開盤價',
+              '最高價',
+              '最低價',
+              '收盤價',
+              '漲跌(+/-)',
+              '漲跌價差',
+            ],
+            'data': [
+              [
+                '1472',
+                '三洋實業',
+                '17',
+                '7',
+                '1,511',
+                '0.00',
+                '0.00',
+                '0.00',
+                '0.00',
+                '<p> </p>',
+                '0.00',
+              ],
+              [
+                '2330',
+                '台積電',
+                '51,372,177',
+                '177,492',
+                '114,098,819,878',
+                '2,205.00',
+                '2,260.00',
+                '2,190.00',
+                '2,205.00',
+                '<p style= color:red>+</p>',
+                '5.00',
+              ],
+            ],
+          },
+        ],
+      };
+      final prices = TwseClient.parseMiIndexDailyPrices(
+        json,
+        DateTime(2026, 7, 30),
+      );
+      expect(prices.firstWhere((p) => p.code == '1472').close, isNull);
+      expect(prices.firstWhere((p) => p.code == '2330').close, 2205.0);
+    });
+
     test('STOCK_DAY_ALL CSV 格式（2026-06 起）解析為每日價格', () async {
       stubGet(_fixture('twse_stock_day_all.csv'));
       final client = TwseClient(dio: mockDio);

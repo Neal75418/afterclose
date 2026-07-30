@@ -58,6 +58,31 @@ void main() {
       });
     });
 
+    group('parsePrice(2026-07-30 零價 sentinel)', () {
+      // TWSE 端點對「無成交」的表達不一致:MI_INDEX 用 '--'、
+      // STOCK_DAY_ALL(CSV/JSON)用 '0.00'。台股價格下限 0.01,0 不可能
+      // 是真值——一律視為無價(null),否則 0 會污染 52 週窗與漲跌計算
+      // (實例:1472 於 2026-07-30 全日僅零股成交,close 0 → 顯示 -100%)。
+      test('正常價格照常解析', () {
+        expect(TwParseUtils.parsePrice('89.00'), 89.0);
+        expect(TwParseUtils.parsePrice('2,205.00'), 2205.0);
+      });
+
+      test('0 與 0.00 視為無價 → null', () {
+        expect(TwParseUtils.parsePrice('0.00'), isNull);
+        expect(TwParseUtils.parsePrice('0'), isNull);
+        expect(TwParseUtils.parsePrice(0), isNull);
+        expect(TwParseUtils.parsePrice(0.0), isNull);
+      });
+
+      test('沿用 parseFormattedDouble 的無值記號', () {
+        expect(TwParseUtils.parsePrice('--'), isNull);
+        expect(TwParseUtils.parsePrice('X'), isNull);
+        expect(TwParseUtils.parsePrice(null), isNull);
+        expect(TwParseUtils.parsePrice(''), isNull);
+      });
+    });
+
     group('parseAdDate', () {
       test('parses valid YYYYMMDD date', () {
         final result = TwParseUtils.parseAdDate('20260121');

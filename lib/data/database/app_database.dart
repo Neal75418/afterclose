@@ -196,6 +196,11 @@ class AppDatabase extends $AppDatabase
       await _ensureWatchlistGroupsSchema();
       await _ensurePinnedThesisSchema();
       await _ensureIndexHygiene();
+      // 歷史零價列收斂(2026-07-30):TWSE STOCK_DAY_ALL 對「無成交」
+      // 用 0.00 表達,parser 修正(TwParseUtils.parsePrice)前已有 41 列
+      // close=0 落庫。0 污染 52 週窗(min 永遠 0)與漲跌顯示(-100%),
+      // 冪等 NULL 化;volume 不動(0 量合法)。
+      await _ensureZeroPriceSanitized();
       // 過期的 RUNNING run 收斂成 FAILED(app 被殺/崩潰後遺留)。
       // age cutoff 防跨 process 誤殺:macOS CLI(tool/daily_update.dart,
       // launchd 排程)與 GUI 共用同一份 DB、各開獨立連線,CLI 的 beforeOpen
@@ -204,6 +209,18 @@ class AppDatabase extends $AppDatabase
       await customStatement('PRAGMA foreign_keys = ON');
     },
   );
+
+  /// 歷史零價列 NULL 化(2026-07-30,冪等)。
+  ///
+  /// 只動 close=0 的列(實測 41 列全為此型、無部分欄位 0),四個價格欄
+  /// 一律 NULL;volume 保留(0=無量、17=零股 皆合法)。新資料由
+  /// [TwParseUtils.parsePrice] 在解析層擋,此步收斂存量+兜底。
+  Future<void> _ensureZeroPriceSanitized() async {
+    await customStatement(
+      'UPDATE daily_price SET open = NULL, high = NULL, low = NULL, '
+      'close = NULL WHERE close = 0',
+    );
+  }
 
   /// Pre-launch idempotent 建表：為既有 DB 補上 `pinned_thesis`（出場層
   /// Phase 2），零資料損失、可安全重跑——沿用 [_ensureWatchlistGroupsSchema]

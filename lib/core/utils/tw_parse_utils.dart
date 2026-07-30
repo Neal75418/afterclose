@@ -19,6 +19,20 @@ abstract final class TwParseUtils {
     return double.tryParse(str);
   }
 
+  /// 解析**價格欄位**（開高低收）：在 [parseFormattedDouble] 之上把 0 也
+  /// 視為無價 → null。
+  ///
+  /// TWSE 端點對「無成交」的表達不一致：MI_INDEX 用 `--`、STOCK_DAY_ALL
+  /// （CSV/JSON）用 `0.00`。台股價格下限 0.01，0 不可能是真值——存 0 會
+  /// 污染 52 週窗（min 永遠 0）與漲跌計算（顯示 -100%）。
+  /// **僅限價格欄**：volume=0（無量）與 change=0（平盤）是合法值，
+  /// 維持 [parseFormattedDouble]。
+  static double? parsePrice(dynamic value) {
+    final parsed = parseFormattedDouble(value);
+    if (parsed == null || parsed == 0) return null;
+    return parsed;
+  }
+
   /// 解析 YYYYMMDD 格式的西元日期（例如 "20260121"）
   ///
   /// 回傳本地時間午夜以匹配資料庫儲存格式。
