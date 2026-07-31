@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/constants/calibrated_scores/calibrated_scores_registry.dart';
+import 'package:afterclose/domain/models/signal_names.dart';
 import 'package:afterclose/core/constants/reason_type.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
@@ -75,6 +76,7 @@ class ReasonTags extends StatelessWidget {
               ].join('\n\n')
             : baseTooltip;
         return _ReasonTag(
+          isRisk: translateCodes && SignalName.maStageBreak.contains(reason),
           label: label,
           tooltip: tooltip,
           isCompact: isCompact,
@@ -111,6 +113,7 @@ class ReasonTags extends StatelessWidget {
 
 class _ReasonTag extends StatelessWidget {
   const _ReasonTag({
+    this.isRisk = false,
     required this.label,
     this.tooltip,
     required this.isCompact,
@@ -128,6 +131,10 @@ class _ReasonTag extends StatelessWidget {
   /// 經回測校準背書（有真 edge）→ 加 verified 標記
   final bool isBacked;
 
+  /// 風控警示 tag(跌破月線/季線,2026-07-31):error 語意色——沿用
+  /// 更新失敗 badge 的先例;紅綠專屬股價漲跌的紀律不涵蓋 error 語意。
+  final bool isRisk;
+
   @override
   Widget build(BuildContext context) {
     final tag = Container(
@@ -136,7 +143,11 @@ class _ReasonTag extends StatelessWidget {
         vertical: isCompact ? DesignTokens.spacing4 : DesignTokens.spacing6,
       ),
       decoration: BoxDecoration(
-        color: isDark
+        color: isRisk
+            ? theme.colorScheme.error.withValues(
+                alpha: isDark ? DesignTokens.opacity25 : DesignTokens.opacity10,
+              )
+            : isDark
             ? AppTheme.brandDecorative.withValues(alpha: DesignTokens.opacity25)
             : AppTheme.primaryColor.withValues(alpha: DesignTokens.opacity10),
         borderRadius: BorderRadius.circular(
@@ -167,7 +178,9 @@ class _ReasonTag extends StatelessWidget {
                     // test/core/theme/semantic_colors_test.dart 疊色守門測試）。
                     // 淺色主題底色是 primaryColor 10% 疊白，colorScheme.primary
                     // （解析為 brandOnLight）仍合格，維持不變。
-                    color: isDark
+                    color: isRisk
+                        ? theme.colorScheme.error
+                        : isDark
                         ? AppTheme.brandOnDecorative
                         : theme.colorScheme.primary,
                     fontWeight: FontWeight.w500,

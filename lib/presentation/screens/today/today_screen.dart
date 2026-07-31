@@ -10,6 +10,7 @@ import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/constants/app_routes.dart';
 import 'package:afterclose/core/constants/scoring_mode.dart';
 import 'package:afterclose/core/utils/error_display.dart';
+import 'package:afterclose/domain/models/signal_names.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
@@ -497,6 +498,68 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
               ),
             );
           },
+        ),
+
+        // 自選跌破警示條(2026-07-31 四階段風控):自選股當日觸發跌破
+        // 月線/季線時,開 app 第一屏直接撞見——風控不能靠記得去掃描頁看。
+        // 無跌破時完全不渲染,零噪音。
+        SliverToBoxAdapter(
+          child: Consumer(
+            builder: (context, ref, _) {
+              final items = ref.watch(watchlistProvider).items;
+              final broken = items
+                  .where((i) => i.reasons.any(SignalName.maStageBreak.contains))
+                  .toList();
+              if (broken.isEmpty) return const SizedBox.shrink();
+              final names = broken
+                  .map((i) => i.stockName ?? i.symbol)
+                  .join('、');
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  DesignTokens.spacing16,
+                  DesignTokens.spacing4,
+                  DesignTokens.spacing16,
+                  DesignTokens.spacing4,
+                ),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: DesignTokens.spacing12,
+                    vertical: DesignTokens.spacing8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.error.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.trending_down,
+                        size: 16,
+                        color: theme.colorScheme.error,
+                      ),
+                      const SizedBox(width: DesignTokens.spacing8),
+                      Expanded(
+                        child: Text(
+                          'today.watchlistMaBreak'.tr(
+                            namedArgs: {
+                              'count': '${broken.length}',
+                              'names': names,
+                            },
+                          ),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.error,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
         ),
 
         // 大盤總覽卡片（獨立 Consumer 隔離 market data rebuild）

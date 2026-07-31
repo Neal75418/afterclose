@@ -215,6 +215,42 @@ void main() {
       expect(find.text(S.emptyError), findsNothing);
     });
 
+    testWidgets('自選跌破警示條:有跌破顯示紅條、無跌破不渲染(2026-07-31)', (tester) async {
+      widenViewport(tester);
+      await tester.pumpWidget(
+        buildTestWidget(
+          watchlistState: WatchlistState(
+            items: [
+              const WatchlistItemData(symbol: '2330', stockName: '台積電'),
+              const WatchlistItemData(
+                symbol: '6414',
+                stockName: '樺漢',
+                reasons: ['BREAK_MA60', 'RSI_EXTREME_OVERSOLD'],
+              ),
+            ],
+          ),
+        ),
+      );
+      await tester.pump(const Duration(seconds: 1));
+      // 測試 localization 是 key-passthrough(namedArgs 不代入),驗 key+icon
+      expect(find.text('today.watchlistMaBreak'), findsOneWidget);
+      expect(find.byIcon(Icons.trending_down), findsOneWidget);
+    });
+
+    testWidgets('自選無跌破:警示條不渲染(零噪音)', (tester) async {
+      widenViewport(tester);
+      await tester.pumpWidget(
+        buildTestWidget(
+          watchlistState: WatchlistState(
+            items: [const WatchlistItemData(symbol: '2330', stockName: '台積電')],
+          ),
+        ),
+      );
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.text('today.watchlistMaBreak'), findsNothing);
+      expect(find.byIcon(Icons.trending_down), findsNothing);
+    });
+
     testWidgets('shows refresh icon when not updating', (tester) async {
       widenViewport(tester);
       await tester.pumpWidget(buildTestWidget());

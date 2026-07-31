@@ -76,6 +76,23 @@ abstract final class SignalName {
   static const coilingBelowMa20 = 'COILING_BELOW_MA20';
   static const coilingBelowMa60 = 'COILING_BELOW_MA60';
 
+  /// MA 四階段生命週期訊號(2026-07-31):蓄勢→站回→回踩→跌破。
+  /// 自選頁 tags 前置排序與今日頁跌破警示條共用此分類。
+  static const maStageBreak = {breakMa20, breakMa60};
+  static const maStageReclaim = {reclaimMa20, reclaimMa60};
+  static const maStageCoiling = {coilingBelowMa20, coilingBelowMa60};
+  static const maStagePullback = {pullbackToMa10, pullbackToMa20};
+
+  /// tags 顯示優先序:跌破(風控)最前,其餘階段次之。
+  /// 回傳值越小越前面;非階段訊號回 9(維持原相對順序)。
+  static int maStagePriority(String code) {
+    if (maStageBreak.contains(code)) return 0;
+    if (maStageReclaim.contains(code)) return 1;
+    if (maStagePullback.contains(code)) return 2;
+    if (maStageCoiling.contains(code)) return 3;
+    return 9;
+  }
+
   // ==================================================
   // Candlestick Patterns
   // ==================================================

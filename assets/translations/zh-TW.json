@@ -76,7 +76,8 @@
     "industryInstitutionalRatio": "法人 {}",
     "industryTopMembers": "{} 領漲成員（{}）",
     "industryWindow20d": "20日",
-    "industryWindow5d": "5日"
+    "industryWindow5d": "5日",
+    "watchlistMaBreak": "⚠ 自選 {count} 檔跌破均線:{names}"
   },
   "news": {
     "title": "市場新聞",

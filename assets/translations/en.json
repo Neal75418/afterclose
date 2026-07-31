@@ -76,7 +76,8 @@
     "industryInstitutionalRatio": "Inst {}",
     "industryTopMembers": "{} Top Movers ({})",
     "industryWindow20d": "20D",
-    "industryWindow5d": "5D"
+    "industryWindow5d": "5D",
+    "watchlistMaBreak": "⚠ {count} watchlist stocks broke below MA: {names}"
   },
   "news": {
     "title": "Market News",

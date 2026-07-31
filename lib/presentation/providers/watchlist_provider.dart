@@ -11,6 +11,7 @@ import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/domain/services/price_calculator.dart';
 import 'package:afterclose/core/utils/sentinel.dart';
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/domain/models/signal_names.dart';
 import 'package:afterclose/data/database/cached_accessor.dart';
 import 'package:afterclose/data/repositories/insider_repository.dart';
 import 'package:afterclose/data/repositories/warning_repository.dart';
@@ -386,7 +387,14 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
           hasSignal: reasons.isNotEmpty,
           addedAt: item.entry.createdAt,
           recentPrices: recentPrices,
-          reasons: reasons.map((r) => r.reasonType).toList(),
+          // MA 階段訊號前置(跌破>站回>回踩>蓄勢):ReasonTags 只顯示
+          // 前 1-2 個,不排序會被其他訊號擠出視窗(2026-07-31)
+          reasons: (reasons.map((r) => r.reasonType).toList()
+            ..sort(
+              (a, b) => SignalName.maStagePriority(
+                a,
+              ).compareTo(SignalName.maStagePriority(b)),
+            )),
           warningType: warningType,
           groupId: item.entry.groupId,
           groupName: item.groupName,
