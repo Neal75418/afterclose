@@ -35,6 +35,13 @@ enum ReasonType {
   week52Low('WEEK_52_LOW'),
   maAlignmentBullish('MA_ALIGNMENT_BULLISH'),
   maAlignmentBearish('MA_ALIGNMENT_BEARISH'),
+  // MA 穿越事件(2026-07-31):站回=修復期領先者偵測、跌破=持股風控。
+  // neutral(不進 3-tab 計分)+低分起步,累積 rule_accuracy 一季後由
+  // 校準實證判決升格或歸零——分數唯一正確的制定方式是實證管道。
+  reclaimMa20('RECLAIM_MA20'),
+  reclaimMa60('RECLAIM_MA60'),
+  breakMa20('BREAK_MA20'),
+  breakMa60('BREAK_MA60'),
   rsiExtremeOverbought('RSI_EXTREME_OVERBOUGHT'),
   rsiExtremeOversold('RSI_EXTREME_OVERSOLD'),
   // 第四階段：延伸市場資料訊號
@@ -129,6 +136,10 @@ enum ReasonType {
     ReasonType.week52High => RuleScores.week52High,
     ReasonType.week52Low => RuleScores.week52Low,
     ReasonType.maAlignmentBullish => RuleScores.maAlignmentBullish,
+    ReasonType.reclaimMa20 => RuleScores.reclaimMa20,
+    ReasonType.reclaimMa60 => RuleScores.reclaimMa60,
+    ReasonType.breakMa20 => RuleScores.breakMa20,
+    ReasonType.breakMa60 => RuleScores.breakMa60,
     ReasonType.maAlignmentBearish => RuleScores.maAlignmentBearish,
     ReasonType.rsiExtremeOverbought => RuleScores.rsiExtremeOverboughtSignal,
     ReasonType.rsiExtremeOversold => RuleScores.rsiExtremeOversoldSignal,
@@ -294,6 +305,12 @@ extension ReasonTypeScoringMode on ReasonType {
     // **2026-06-20 階段重設計移入**：dayTradingHigh（高當沖比例）= 投機過熱 /
     // 散戶接刀換手率、非趨勢強度；跟 dayTradingExtreme 同 namespace 對齊入 neutral。
     ReasonType.dayTradingHigh => ScoringMode.neutral,
+    // MA 穿越 4 條(2026-07-31):零歷史紀錄,neutral 起步收 rule_accuracy,
+    // 一季後由校準實證判決升格進 mode 或歸零
+    ReasonType.reclaimMa20 => ScoringMode.neutral,
+    ReasonType.reclaimMa60 => ScoringMode.neutral,
+    ReasonType.breakMa20 => ScoringMode.neutral,
+    ReasonType.breakMa60 => ScoringMode.neutral,
     ReasonType.peOvervalued => ScoringMode.neutral, // 強股 feature、誤殺
     ReasonType.revenueYoyDecline => ScoringMode.neutral, // 基本面 lagging
     ReasonType.epsDeclineWarning => ScoringMode.neutral, // 基本面 lagging
@@ -347,6 +364,10 @@ extension ReasonTypeI18n on ReasonType {
     ReasonType.week52High => 'reasons.week52High',
     ReasonType.week52Low => 'reasons.week52Low',
     ReasonType.maAlignmentBullish => 'reasons.maAlignmentBullish',
+    ReasonType.reclaimMa20 => 'reasons.reclaimMa20',
+    ReasonType.reclaimMa60 => 'reasons.reclaimMa60',
+    ReasonType.breakMa20 => 'reasons.breakMa20',
+    ReasonType.breakMa60 => 'reasons.breakMa60',
     ReasonType.maAlignmentBearish => 'reasons.maAlignmentBearish',
     ReasonType.rsiExtremeOverbought => 'reasons.rsiExtremeOverbought',
     ReasonType.rsiExtremeOversold => 'reasons.rsiExtremeOversold',
@@ -430,6 +451,10 @@ extension ReasonTypeI18n on ReasonType {
     ReasonType.week52High => 'summary.week52High',
     ReasonType.week52Low => 'summary.week52Low',
     ReasonType.maAlignmentBullish => 'summary.maAlignmentBullish',
+    ReasonType.reclaimMa20 => 'summary.reclaimMa20',
+    ReasonType.reclaimMa60 => 'summary.reclaimMa60',
+    ReasonType.breakMa20 => 'summary.breakMa20',
+    ReasonType.breakMa60 => 'summary.breakMa60',
     ReasonType.maAlignmentBearish => 'summary.maAlignmentBearish',
     ReasonType.rsiExtremeOverbought => 'reasonTip.rsiOverbought',
     ReasonType.rsiExtremeOversold => 'reasonTip.rsiOversold',

@@ -352,7 +352,13 @@
     "clearIndustry": "Clear",
     "allIndustries": "All Industries",
     "industryStockCount": "{count} stocks",
-    "filterPriceVolumeWeakRally": "Weak Rally"
+    "filterPriceVolumeWeakRally": "Weak Rally",
+    "filterReclaimMa20": "Reclaim MA20",
+    "filterReclaimMa60": "Reclaim MA60",
+    "filterBreakMa20": "Break MA20",
+    "filterBreakMa60": "Break MA60",
+    "filterPullbackToMa10": "Pullback to MA10",
+    "filterPullbackToMa20": "Pullback to MA20"
   },
   "watchlist": {
     "title": "Watchlist",
@@ -634,7 +640,11 @@
     "pullbackToMa20": "Pullback to MA20",
     "hammerAtSupport": "Hammer at Support",
     "kdHighPullback": "KD High Pullback",
-    "pullbackToMa10": "Pullback to MA10"
+    "pullbackToMa10": "Pullback to MA10",
+    "reclaimMa20": "Reclaim MA20",
+    "reclaimMa60": "Reclaim MA60",
+    "breakMa20": "Break MA20",
+    "breakMa60": "Break MA60"
   },
   "reasonTip": {
     "volumeSpike": "Trading volume significantly increased, indicating major capital flow.",
@@ -1190,7 +1200,11 @@
     "pullbackToMa10": "Shallow pullback to MA10 within strong trend.",
     "hammerAtSupport": "Hammer at support — lower shadow shows buying.",
     "kdHighPullback": "KD pulling back from high — momentum cooling.",
-    "patternDojiBearish": "Doji at highs — indecision, watch for weakness."
+    "patternDojiBearish": "Doji at highs — indecision, watch for weakness.",
+    "reclaimMa20": "Close reclaimed the 20-day MA — early recovery signal",
+    "reclaimMa60": "Close reclaimed the 60-day MA — mid-term trend repair",
+    "breakMa20": "Close broke below the 20-day MA — short-term weakness",
+    "breakMa60": "Close broke below the 60-day MA — mid-term trend weakness"
   },
   "comparison": {
     "title": "Stock Comparison",

@@ -278,6 +278,7 @@ void main() {
           horizon: any(named: 'horizon'),
           calibratedScores: any(named: 'calibratedScores'),
           decayMultipliers: any(named: 'decayMultipliers'),
+          floorAtZero: any(named: 'floorAtZero'),
         ),
       ).thenReturn(80);
 
@@ -370,6 +371,7 @@ void main() {
           horizon: any(named: 'horizon'),
           calibratedScores: any(named: 'calibratedScores'),
           decayMultipliers: any(named: 'decayMultipliers'),
+          floorAtZero: any(named: 'floorAtZero'),
         ),
       ).thenAnswer((invocation) {
         final reasons =
@@ -492,6 +494,7 @@ void main() {
           horizon: any(named: 'horizon'),
           calibratedScores: any(named: 'calibratedScores'),
           decayMultipliers: any(named: 'decayMultipliers'),
+          floorAtZero: any(named: 'floorAtZero'),
         ),
       ).thenReturn(80);
       // 記錄呼叫順序與 clear 當下的 transaction 狀態
@@ -706,6 +709,7 @@ void main() {
           horizon: any(named: 'horizon'),
           calibratedScores: any(named: 'calibratedScores'),
           decayMultipliers: any(named: 'decayMultipliers'),
+          floorAtZero: any(named: 'floorAtZero'),
         ),
       );
     });
@@ -757,6 +761,7 @@ void main() {
           horizon: any(named: 'horizon'),
           calibratedScores: any(named: 'calibratedScores'),
           decayMultipliers: any(named: 'decayMultipliers'),
+          floorAtZero: any(named: 'floorAtZero'),
         ),
       ).thenReturn(returnScore);
 
@@ -920,6 +925,7 @@ void main() {
           horizon: any(named: 'horizon'),
           calibratedScores: any(named: 'calibratedScores'),
           decayMultipliers: any(named: 'decayMultipliers'),
+          floorAtZero: any(named: 'floorAtZero'),
         ),
       ).thenReturn(30);
       when(() => mockRuleEngine.getTopReasons(any())).thenReturn([

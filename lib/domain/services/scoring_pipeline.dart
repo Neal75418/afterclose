@@ -106,23 +106,33 @@ scoreReasonsDualHorizon({
     (r) => calibratedScores.lookup(Horizon.long, r.type.code) ?? r.score,
   );
 
-  final scoreShort = ruleEngine.calculateScore(
+  // floorAtZero: false —— 門檻要看「帶正負號的 raw 總分」:引擎的下限
+  // clamp 會把純空方股(如只觸發跌破季線 -8)變 0 而被剪掉,掃描與風控
+  // 就看不見它們。落庫值另行 floor 回 0,維持下游「分數非負」契約。
+  final rawShort = ruleEngine.calculateScore(
     mutedShort,
     horizon: Horizon.short,
     calibratedScores: calibratedScores,
     decayMultipliers: decayMultipliers,
+    floorAtZero: false,
   );
-  final scoreLong = ruleEngine.calculateScore(
+  final rawLong = ruleEngine.calculateScore(
     mutedLong,
     horizon: Horizon.long,
     calibratedScores: calibratedScores,
     decayMultipliers: decayMultipliers,
+    floorAtZero: false,
   );
 
-  if (scoreShort < RuleParams.observationScoreThreshold &&
-      scoreLong < RuleParams.observationScoreThreshold) {
+  // 門檻取絕對值(2026-07-31):純空方觸發(負總分)的股票也要落庫,
+  // 否則「只跌破季線」的弱勢股在掃描器上隱形——空方風控正好在最需要
+  // 它的股票上失明,rule_accuracy 觀察區也帶倖存者偏差。
+  if (rawShort.abs() < RuleParams.observationScoreThreshold &&
+      rawLong.abs() < RuleParams.observationScoreThreshold) {
     return null;
   }
+  final scoreShort = rawShort < 0 ? 0 : rawShort;
+  final scoreLong = rawLong < 0 ? 0 : rawLong;
 
   final mutedForUi = ruleEngine.applyMutexGroups(reasons, (r) => r.score);
   final topReasons = ruleEngine.getTopReasons(mutedForUi);

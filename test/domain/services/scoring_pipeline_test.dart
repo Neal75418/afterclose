@@ -251,6 +251,7 @@ void main() {
           horizon: Horizon.short,
           calibratedScores: any(named: 'calibratedScores'),
           decayMultipliers: any(named: 'decayMultipliers'),
+          floorAtZero: any(named: 'floorAtZero'),
         ),
       ).thenReturn(25);
       when(
@@ -259,6 +260,7 @@ void main() {
           horizon: Horizon.long,
           calibratedScores: any(named: 'calibratedScores'),
           decayMultipliers: any(named: 'decayMultipliers'),
+          floorAtZero: any(named: 'floorAtZero'),
         ),
       ).thenReturn(0);
 
@@ -283,6 +285,7 @@ void main() {
           horizon: any(named: 'horizon'),
           calibratedScores: any(named: 'calibratedScores'),
           decayMultipliers: any(named: 'decayMultipliers'),
+          floorAtZero: any(named: 'floorAtZero'),
         ),
       ).thenReturn(RuleParams.observationScoreThreshold - 1);
 
@@ -295,6 +298,30 @@ void main() {
       expect(result, isNull);
     });
 
+    test('純空方(負總分)也要落庫:門檻取絕對值(2026-07-31 掃描空方可見性)', () {
+      // 既有縫隙:scoreShort < 8 && scoreLong < 8 會把「只觸發空方訊號」
+      // 的股票整檔剪掉——跌破季線 -8 的純弱勢股在掃描器上隱形,空方
+      // 風控雷達正好在最需要它的股票上失明,rule_accuracy 觀察區也因此
+      // 帶倖存者偏差。門檻改 |score|:漲跌兩方向對稱可見。
+      when(
+        () => engine.calculateScore(
+          any(),
+          horizon: any(named: 'horizon'),
+          calibratedScores: any(named: 'calibratedScores'),
+          decayMultipliers: any(named: 'decayMultipliers'),
+          floorAtZero: any(named: 'floorAtZero'),
+        ),
+      ).thenReturn(-RuleParams.observationScoreThreshold);
+
+      final result = scoreReasonsDualHorizon(
+        ruleEngine: engine,
+        reasons: reasons,
+        calibratedScores: CalibratedScoreContext.empty,
+      );
+
+      expect(result, isNotNull, reason: '|-8| ≥ 8 應保留供掃描/觀察');
+    });
+
     test('恰好等於門檻 → 保留（邊界含）', () {
       when(
         () => engine.calculateScore(
@@ -302,6 +329,7 @@ void main() {
           horizon: any(named: 'horizon'),
           calibratedScores: any(named: 'calibratedScores'),
           decayMultipliers: any(named: 'decayMultipliers'),
+          floorAtZero: any(named: 'floorAtZero'),
         ),
       ).thenReturn(RuleParams.observationScoreThreshold);
 
@@ -313,6 +341,74 @@ void main() {
         ),
         isNotNull,
       );
+    });
+  });
+
+  // ============================================================
+  // 真引擎回歸(2026-07-31 審查 CRITICAL):mock 版的負分測試繞過了
+  // RuleEngine.calculateScore 的「下限 0 clamp」——abs 門檻在生產上
+  // 曾是 no-op(clamp 先把 -8 變 0,abs(0)<8 照樣剪掉)。此 group 用
+  // 真 RuleEngine 走完整管線,鎖住「純空方股必須落庫」的端到端行為。
+  // ============================================================
+  group('scoreReasonsDualHorizon × 真 RuleEngine(純空方落庫端到端)', () {
+    final realEngine = RuleEngine();
+
+    test('只觸發 BREAK_MA60(-8)的股票:必須落庫,落庫分數 floor 為 0', () {
+      const reasons = [
+        TriggeredReason(
+          type: ReasonType.breakMa60,
+          score: RuleScores.breakMa60,
+          description: '跌破季線',
+        ),
+      ];
+
+      final result = scoreReasonsDualHorizon(
+        ruleEngine: realEngine,
+        reasons: reasons,
+        calibratedScores: CalibratedScoreContext.empty,
+      );
+
+      expect(result, isNotNull, reason: '純空方觸發不得被 clamp 吃掉——掃描/風控要看得見');
+      expect(result!.scoreShort, 0, reason: '落庫值維持非負契約(下游 tier/排序不受影響)');
+      expect(result.scoreLong, 0);
+    });
+
+    test('正分股照常(站回季線 +8 壓線落庫)', () {
+      const reasons = [
+        TriggeredReason(
+          type: ReasonType.reclaimMa60,
+          score: RuleScores.reclaimMa60,
+          description: '站回季線',
+        ),
+      ];
+      final result = scoreReasonsDualHorizon(
+        ruleEngine: realEngine,
+        reasons: reasons,
+        calibratedScores: CalibratedScoreContext.empty,
+      );
+      expect(result, isNotNull);
+      expect(result!.scoreShort, RuleScores.reclaimMa60);
+    });
+
+    test('正負抵銷後 |raw| 不足門檻(+8-8=0)→ 過濾', () {
+      const reasons = [
+        TriggeredReason(
+          type: ReasonType.reclaimMa20,
+          score: RuleScores.reclaimMa20,
+          description: '',
+        ),
+        TriggeredReason(
+          type: ReasonType.breakMa60,
+          score: RuleScores.breakMa60,
+          description: '',
+        ),
+      ];
+      final result = scoreReasonsDualHorizon(
+        ruleEngine: realEngine,
+        reasons: reasons,
+        calibratedScores: CalibratedScoreContext.empty,
+      );
+      expect(result, isNull, reason: 'raw=0,兩方向都無足量訊號');
     });
   });
 }

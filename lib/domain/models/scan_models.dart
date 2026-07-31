@@ -141,6 +141,38 @@ enum ScanFilter {
     SignalName.maAlignmentBearish,
     ScanFilterGroup.maAlignment,
   ),
+  // MA 穿越事件+回踩結構(2026-07-31):站回=修復期領先者、跌破=持股
+  // 風控;回踩兩條把既有 Mode C 規則曝光進掃描(不再被 tab 門檻綁住)
+  reclaimMa20(
+    'scan.filterReclaimMa20',
+    SignalName.reclaimMa20,
+    ScanFilterGroup.maAlignment,
+  ),
+  reclaimMa60(
+    'scan.filterReclaimMa60',
+    SignalName.reclaimMa60,
+    ScanFilterGroup.maAlignment,
+  ),
+  breakMa20(
+    'scan.filterBreakMa20',
+    SignalName.breakMa20,
+    ScanFilterGroup.maAlignment,
+  ),
+  breakMa60(
+    'scan.filterBreakMa60',
+    SignalName.breakMa60,
+    ScanFilterGroup.maAlignment,
+  ),
+  pullbackToMa10(
+    'scan.filterPullbackToMa10',
+    SignalName.pullbackToMa10,
+    ScanFilterGroup.maAlignment,
+  ),
+  pullbackToMa20(
+    'scan.filterPullbackToMa20',
+    SignalName.pullbackToMa20,
+    ScanFilterGroup.maAlignment,
+  ),
 
   // Candlestick patterns - neutral
   patternDoji(

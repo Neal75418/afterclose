@@ -149,6 +149,15 @@ abstract final class RuleScores {
   /// 均線多頭排列分數（5>10>20>60）
   static const int maAlignmentBullish = 22;
 
+  /// MA 穿越事件 4 條(2026-07-31,neutral 起步)。±8 為「觀察區壓線」的
+  /// 保守標記分——不進 3-tab 計分,存在意義是落 daily_reason 供掃描與
+  /// rule_accuracy 累積;一季後由校準實證判決。刻意對稱、刻意不精算:
+  /// 分數唯一正確的制定方式是實證管道,起始值只需要「可觀察」。
+  static const int reclaimMa20 = 8;
+  static const int reclaimMa60 = 8;
+  static const int breakMa20 = -8;
+  static const int breakMa60 = -8;
+
   /// 均線空頭排列分數（空方，扣分）
   static const int maAlignmentBearish = -15;
 

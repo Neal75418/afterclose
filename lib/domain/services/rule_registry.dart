@@ -9,6 +9,7 @@ import 'package:afterclose/domain/services/rules/divergence_rules.dart';
 import 'package:afterclose/domain/services/rules/fundamental_rules.dart';
 import 'package:afterclose/domain/services/rules/fundamental_scan_rules.dart';
 import 'package:afterclose/domain/services/rules/insider_rules.dart';
+import 'package:afterclose/domain/services/rules/ma_cross_rules.dart';
 import 'package:afterclose/domain/services/rules/pullback_rules.dart';
 import 'package:afterclose/domain/services/rules/warning_rules.dart';
 
@@ -83,6 +84,12 @@ abstract final class RuleRegistry {
     HealthyPullbackToMa10Rule(),
     HammerAtSupportRule(),
     KdHighLevelPullbackRule(),
+    // MA 穿越事件(2026-07-31):站回=修復期領先者、跌破=持股風控;
+    // neutral ±8 起步,不進 3-tab,校準實證判決升格
+    ReclaimMa20Rule(),
+    ReclaimMa60Rule(),
+    BreakMa20Rule(),
+    BreakMa60Rule(),
     // Killer Features：注意/處置股票規則
     TradingWarningAttentionRule(),
     TradingWarningDisposalRule(),

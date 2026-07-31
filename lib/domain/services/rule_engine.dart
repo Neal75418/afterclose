@@ -210,6 +210,7 @@ class RuleEngine {
     required Horizon horizon,
     CalibratedScoreContext calibratedScores = CalibratedScoreContext.empty,
     Map<String, double>? decayMultipliers,
+    bool floorAtZero = true,
   }) {
     if (reasons.isEmpty) return 0;
 
@@ -231,8 +232,11 @@ class RuleEngine {
       score += (calibrated ?? reason.score) * multiplier;
     }
 
-    // 2. 分數範圍限制（下限 0：僅推薦做多；上限 maxScore 避免多訊號膨脹）
-    if (score < 0) score = 0;
+    // 2. 分數範圍限制（下限 0：僅推薦做多；上限 maxScore 避免多訊號膨脹）。
+    //    [floorAtZero]=false 供 scoring_pipeline 的落庫門檻取得帶正負號的
+    //    raw 總分——下限 clamp 會把純空方股變 0、被門檻剪掉,掃描/風控就
+    //    看不見它們(2026-07-31 審查 CRITICAL:abs 門檻曾因此淪為 no-op)。
+    if (floorAtZero && score < 0) score = 0;
     if (score > RuleScores.maxScore) score = RuleScores.maxScore.toDouble();
 
     return score.round();

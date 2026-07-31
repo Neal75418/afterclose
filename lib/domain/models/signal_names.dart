@@ -68,6 +68,11 @@ abstract final class SignalName {
   // ==================================================
   static const maAlignmentBullish = 'MA_ALIGNMENT_BULLISH';
   static const maAlignmentBearish = 'MA_ALIGNMENT_BEARISH';
+  // MA 穿越事件(2026-07-31)
+  static const reclaimMa20 = 'RECLAIM_MA20';
+  static const reclaimMa60 = 'RECLAIM_MA60';
+  static const breakMa20 = 'BREAK_MA20';
+  static const breakMa60 = 'BREAK_MA60';
 
   // ==================================================
   // Candlestick Patterns

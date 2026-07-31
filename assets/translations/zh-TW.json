@@ -352,7 +352,13 @@
     "clearIndustry": "清除",
     "allIndustries": "全部產業",
     "industryStockCount": "{count} 檔",
-    "filterPriceVolumeWeakRally": "價漲量縮"
+    "filterPriceVolumeWeakRally": "價漲量縮",
+    "filterReclaimMa20": "站回月線",
+    "filterReclaimMa60": "站回季線",
+    "filterBreakMa20": "跌破月線",
+    "filterBreakMa60": "跌破季線",
+    "filterPullbackToMa10": "回踩 10 日線",
+    "filterPullbackToMa20": "回踩月線"
   },
   "watchlist": {
     "title": "自選股票",
@@ -634,7 +640,11 @@
     "pullbackToMa20": "強勢回檔 MA20",
     "hammerAtSupport": "支撐錘子",
     "kdHighPullback": "KD 高檔回落",
-    "pullbackToMa10": "強勢回檔 MA10"
+    "pullbackToMa10": "強勢回檔 MA10",
+    "reclaimMa20": "站回月線",
+    "reclaimMa60": "站回季線",
+    "breakMa20": "跌破月線",
+    "breakMa60": "跌破季線"
   },
   "reasonTip": {
     "volumeSpike": "成交量顯著放大，可能有重要資金進出。",
@@ -1190,7 +1200,11 @@
     "pullbackToMa10": "強勢趨勢中淺回檔至 10 日線，趨勢未破壞。",
     "hammerAtSupport": "支撐位出現鎚子線，下影線顯示買盤承接。",
     "kdHighPullback": "KD 高檔回落，強勢股短線動能降溫、觀察回檔支撐。",
-    "patternDojiBearish": "高檔十字線，多空猶豫、留意轉弱風險。"
+    "patternDojiBearish": "高檔十字線，多空猶豫、留意轉弱風險。",
+    "reclaimMa20": "收盤站回 20 日均線(月線),修復期領先訊號",
+    "reclaimMa60": "收盤站回 60 日均線(季線),中期趨勢修復訊號",
+    "breakMa20": "收盤跌破 20 日均線(月線),短中期轉弱警示",
+    "breakMa60": "收盤跌破 60 日均線(季線),中期趨勢轉弱警示"
   },
   "comparison": {
     "title": "個股比較",
