@@ -272,10 +272,12 @@ void main() {
       expect(find.byIcon(Icons.trending_down_rounded), findsOneWidget);
     });
 
-    testWidgets('shows flat trend icon for null state', (tester) async {
+    testWidgets('null trendState 不顯示趨勢 icon(2026-08-01 語意翻轉:未評分不得宣稱持平)', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildTestApp(const StockCard(symbol: '2330')));
 
-      expect(find.byIcon(Icons.trending_flat_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.trending_flat_rounded), findsNothing);
     });
 
     testWidgets('displays close price and positive change', (tester) async {
@@ -421,6 +423,28 @@ void main() {
       );
       expect(find.byIcon(Icons.push_pin_outlined), findsNothing);
       expect(find.byIcon(Icons.push_pin), findsNothing);
+    });
+  });
+
+  group('未評分股票的趨勢指示(2026-08-01 複審 sweep)', () {
+    testWidgets('trendState null → 不渲染任何趨勢 icon(沒評分不得宣稱持平)', (tester) async {
+      await tester.pumpWidget(
+        buildTestApp(const StockCard(symbol: '9999', stockName: '未評分股')),
+      );
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.byIcon(Icons.trending_flat_rounded), findsNothing);
+      expect(find.byIcon(Icons.trending_up_rounded), findsNothing);
+      expect(find.byIcon(Icons.trending_down_rounded), findsNothing);
+    });
+
+    testWidgets('trendState UP → 正常顯示趨勢 icon(guard 不誤傷)', (tester) async {
+      await tester.pumpWidget(
+        buildTestApp(
+          const StockCard(symbol: '2330', stockName: '台積電', trendState: 'UP'),
+        ),
+      );
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.byIcon(Icons.trending_up_rounded), findsOneWidget);
     });
   });
 }

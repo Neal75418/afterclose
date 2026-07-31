@@ -1019,6 +1019,85 @@ void main() {
       );
     });
 
+    test('🚨 雙市場融資日不同:各市場用**自己的**融資日配指數(2026-08-01 複審)', () async {
+      // 初版修法把兩市場融資日壓成單一 earliest scalar——TPEx(較舊)配對
+      // 正確,但 TWSE 被迫用 TPEx 的舊日期配自己較新的融資值,要修的
+      // 日期錯配換個市場重現。融資 T+1 差異是常態不是例外。
+      setupEmptyDefaults();
+      final twseDay = DateTime(2026, 7, 28); // TWSE 融資較新
+      final tpexDay = DateTime(2026, 7, 27); // TPEx T+1 落後
+
+      when(() => mockDb.getLatestMarginTradingTotalsByMarket()).thenAnswer(
+        (_) async => {
+          MarketCode.twse: (
+            marginBalance: 3000000.0,
+            marginChange: 5000.0,
+            shortBalance: 40000.0,
+            shortChange: -100.0,
+            dataDate: twseDay,
+          ),
+          MarketCode.tpex: (
+            marginBalance: 2220000.0,
+            marginChange: -12000.0,
+            shortBalance: 36000.0,
+            shortChange: 6915.0,
+            dataDate: tpexDay,
+          ),
+        },
+      );
+      when(
+        () => mockDb.getIndexHistoryBatch(any(), days: any(named: 'days')),
+      ).thenAnswer(
+        (_) async => {
+          MarketIndexNames.taiex: [
+            MarketIndexEntry(
+              id: 1,
+              date: tpexDay,
+              name: MarketIndexNames.taiex,
+              close: 41000,
+              change: -900,
+              changePercent: -2.15, // 舊日——TWSE 不得用這天
+              createdAt: tpexDay,
+            ),
+            MarketIndexEntry(
+              id: 2,
+              date: twseDay,
+              name: MarketIndexNames.taiex,
+              close: 41500,
+              change: 500,
+              changePercent: 1.22, // TWSE 融資日的正確配對
+              createdAt: twseDay,
+            ),
+          ],
+          MarketIndexNames.tpexIndex: [
+            MarketIndexEntry(
+              id: 3,
+              date: tpexDay,
+              name: MarketIndexNames.tpexIndex,
+              close: 377.63,
+              change: -14.48,
+              changePercent: -3.69, // TPEx 融資日的正確配對
+              createdAt: tpexDay,
+            ),
+          ],
+        },
+      );
+
+      await container.read(marketOverviewProvider.notifier).loadData();
+      final state = container.read(marketOverviewProvider);
+
+      expect(
+        state.marginIndexChangePercent[MarketCode.twse],
+        1.22,
+        reason: 'TWSE 要用自己的融資日(7/28)指數,不得用 TPEx 的舊日(7/27)',
+      );
+      expect(
+        state.marginIndexChangePercent[MarketCode.tpex],
+        -3.69,
+        reason: 'TPEx 用自己的融資日(7/27)',
+      );
+    });
+
     test('對照組：查不到融資日的指數時回 null，寧可不顯示也不要用錯的', () async {
       setupEmptyDefaults();
       when(() => mockDb.getLatestMarginTradingTotalsByMarket()).thenAnswer(

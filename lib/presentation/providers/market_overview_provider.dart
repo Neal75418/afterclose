@@ -252,7 +252,11 @@ typedef _OverviewSnapshot = (
     Map<String, List<double>>,
     ({Map<String, AdvanceDecline> data, Map<String, DateTime> staleDates}),
     ({Map<String, InstitutionalTotals> data, DateTime dataDate}),
-    ({Map<String, MarginTradingTotals> data, DateTime? dataDate}),
+    ({
+      Map<String, MarginTradingTotals> data,
+      Map<String, DateTime> dataDates,
+      DateTime? dataDate,
+    }),
     Map<String, TradingTurnover>,
   ),
   (
@@ -498,7 +502,7 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
 
     // 籌碼槓桿判讀必須拿**融資那天**的指數，不能拿最新的（見
     // [MarketOverviewState.marginIndexChangePercent] 的說明）。
-    final marginIndexChange = await _loadIndexChangeOn(marginDate);
+    final marginIndexChange = await _loadIndexChangeOn(marginResult.dataDates);
 
     return MarketOverviewState(
       indices: indices,
@@ -647,8 +651,10 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
   /// 到最新值：融資融券常落後 1~3 天，用最新指數配舊融資會讓因果陳述反轉
   /// （2026-07-27 實測櫃買 07-24 為 -3.69%、07-27 為 +0.12%，取後者會把
   /// 「去槓桿中」講成「籌碼洗清，相對健康」）。
-  Future<Map<String, double>> _loadIndexChangeOn(DateTime? date) async {
-    if (date == null) return const {};
+  Future<Map<String, double>> _loadIndexChangeOn(
+    Map<String, DateTime> datesByMarket,
+  ) async {
+    if (datesByMarket.isEmpty) return const {};
     try {
       final byMarket = <String, String>{
         MarketCode.twse: MarketIndexNames.taiex,
@@ -660,6 +666,9 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
       );
       final result = <String, double>{};
       for (final entry in byMarket.entries) {
+        // 逐市場用**自己的**融資日配對(2026-08-01 複審)
+        final date = datesByMarket[entry.key];
+        if (date == null) continue;
         final rows = history[entry.value];
         if (rows == null) continue;
         for (final row in rows) {
@@ -884,8 +893,20 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
   /// 融資融券資料日期可能與 daily_price 不同步（TPEx 有 T+1 延遲），
   /// 因此直接使用 [getLatestMarginTradingTotalsByMarket] 取得各市場最新資料，
   /// 不依賴 daily_price 的日期。
-  /// 回傳融資融券資料 + 實際資料日期（取各市場最早日期作為代表）
-  Future<({Map<String, MarginTradingTotals> data, DateTime? dataDate})>
+  /// 回傳融資融券資料 + per-market 資料日期 + 代表日期(各市場最早,僅供
+  /// sectionDates 顯示)。
+  ///
+  /// **per-market 日期(2026-08-01 複審 Critical)**:TWSE/TPEx 融資日常態
+  /// 不同步(TPEx T+1),初版把兩者壓成單一 earliest scalar 給指數配對用,
+  /// TWSE 一側被迫用 TPEx 的舊日期配自己的融資值——要修的日期錯配換個
+  /// 市場重現。指數配對必須逐市場用**自己的**融資日。
+  Future<
+    ({
+      Map<String, MarginTradingTotals> data,
+      Map<String, DateTime> dataDates,
+      DateTime? dataDate,
+    })
+  >
   _loadMarginByMarket(DateTime date, {DateTime? fallbackDate}) async {
     try {
       // 直接查詢各市場最新融資融券資料，避免日期不同步問題
@@ -893,6 +914,7 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
 
       DateTime? earliestDate;
       final result = <String, MarginTradingTotals>{};
+      final dates = <String, DateTime>{};
       for (final entry in raw.entries) {
         result[entry.key] = MarginTradingTotals(
           marginBalance: entry.value.marginBalance,
@@ -900,17 +922,23 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
           shortBalance: entry.value.shortBalance,
           shortChange: entry.value.shortChange,
         );
-        // 取各市場中最早的日期作為代表（保守顯示）
         final d = entry.value.dataDate;
-        if (d != null && (earliestDate == null || d.isBefore(earliestDate))) {
-          earliestDate = d;
+        if (d != null) {
+          dates[entry.key] = d;
+          if (earliestDate == null || d.isBefore(earliestDate)) {
+            earliestDate = d;
+          }
         }
       }
 
-      return (data: result, dataDate: earliestDate);
+      return (data: result, dataDates: dates, dataDate: earliestDate);
     } catch (e) {
       AppLogger.warning('MarketOverviewNotifier', '載入分市場融資融券總額失敗', e);
-      return (data: <String, MarginTradingTotals>{}, dataDate: null);
+      return (
+        data: <String, MarginTradingTotals>{},
+        dataDates: <String, DateTime>{},
+        dataDate: null,
+      );
     }
   }
 

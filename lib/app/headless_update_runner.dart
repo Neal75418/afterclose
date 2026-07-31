@@ -119,6 +119,15 @@ Future<UpdateResult> runHeadlessUpdate({
 
       return await updateService.runDailyUpdate();
     } finally {
+      // 配額狀態收尾 flush(2026-08-01 複審 Critical):tracker 只在每
+      // 10 次呼叫時自動存檔,run 結束不 flush 會丟掉尾端 ≤9 次記帳——
+      // 遺失=重啟後低估=放行更多呼叫,正是持久化要防的 402 方向
+      // (CLI 的 exit() 更會截斷 in-flight 寫入)。失敗 fail-open 不擋收尾。
+      try {
+        await budgetTracker.flush();
+      } catch (e) {
+        AppLogger.warning('ApiBudgetTracker', '收尾 flush 失敗(fail-open)', e);
+      }
       // 釋放所有 API client 的 Dio 連線。本質是 hygiene 而非累積 leak
       //（isolate / process 結束自然回收），但顯式 close 在 iOS
       // BGProcessingTask 時間緊 / launchd 短任務時值得做。

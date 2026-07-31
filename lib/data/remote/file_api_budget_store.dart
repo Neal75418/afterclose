@@ -27,6 +27,11 @@ class FileApiBudgetStore implements ApiBudgetStore {
 
   @override
   Future<void> save(String json) async {
-    await File(path).writeAsString(json, flush: true);
+    // temp+rename 原子寫(2026-08-01 複審):CLI 的 exit() 可能截斷
+    // in-flight 寫入,直寫被切一半=下次 restore 讀到壞 JSON → fail-open
+    // 回「無歷史」,持久化整組白做。rename 在同目錄是原子操作。
+    final tmp = File('$path.tmp');
+    await tmp.writeAsString(json, flush: true);
+    await tmp.rename(path);
   }
 }

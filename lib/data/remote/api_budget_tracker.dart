@@ -64,7 +64,12 @@ class ApiBudgetTracker {
 
   /// 距上次落盤累積的 [recordCall] 次數。熱路徑每小時最多 600 次，
   /// 每次都寫 SharedPreferences 是浪費，故每 [_persistEveryNCalls] 次才寫。
-  /// 崩潰最多漏記 N 次——這本來就是近似值，方向仍偏保守。
+  ///
+  /// **遺失方向是放寬不是保守(2026-08-01 複審修正)**:崩潰/未 flush 漏記
+  /// 的 ≤N-1 次會讓重啟後的本地計數**低估**真實用量 → checkBudget 放行
+  /// 更多呼叫 → 正是持久化要防的 402 方向。因此 run 收尾必須顯式
+  /// [flush](headless_update_runner 的 finally 已接),每 N 次的自動落盤
+  /// 只是熱路徑的節流,不是完整性保證。
   int _callsSincePersist = 0;
   static const int _persistEveryNCalls = 10;
 

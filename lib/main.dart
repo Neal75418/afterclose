@@ -256,6 +256,13 @@ class _AfterCloseAppState extends ConsumerState<AfterCloseApp>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused) {
       _lastPausedAt = DateTime.now();
+      // 配額狀態落盤(2026-08-01 複審):tracker 每 10 次呼叫才自動存,
+      // 退背景/被殺前 flush 掉尾端記帳——遺失=低估=放行更多=402 方向
+      unawaited(
+        ref.read(apiBudgetTrackerProvider).flush().catchError((Object e) {
+          AppLogger.warning('ApiBudgetTracker', 'paused flush 失敗', e);
+        }),
+      );
     } else if (state == AppLifecycleState.resumed && _lastPausedAt != null) {
       final elapsed = DateTime.now().difference(_lastPausedAt!);
       if (elapsed.inMinutes >= DataFreshness.appStaleThresholdMinutes) {

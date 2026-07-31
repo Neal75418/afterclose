@@ -327,6 +327,13 @@ class _StockCardState extends State<StockCard> {
   }
 
   Widget _buildTrendIndicator({bool compact = false}) {
+    // 未評分(trendState null)不得宣稱趨勢(2026-08-01 複審):d7a0f605 只
+    // 修了 detail header,本卡片(自選/推薦高流量路徑)同型漏掃——nullable
+    // extension 的 _ 分支把 null 畫成「持平」icon,沒評分卻給確定趨勢。
+    if (widget.trendState == null) {
+      final iconSize = compact ? 18.0 : 24.0;
+      return SizedBox(width: iconSize, height: iconSize);
+    }
     final trendColor = widget.trendState.trendColorFor(
       Theme.of(context).brightness,
     );
