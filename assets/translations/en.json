@@ -358,7 +358,9 @@
     "filterBreakMa20": "Break MA20",
     "filterBreakMa60": "Break MA60",
     "filterPullbackToMa10": "Pullback to MA10",
-    "filterPullbackToMa20": "Pullback to MA20"
+    "filterPullbackToMa20": "Pullback to MA20",
+    "filterCoilingBelowMa20": "Coiling < MA20",
+    "filterCoilingBelowMa60": "Coiling < MA60"
   },
   "watchlist": {
     "title": "Watchlist",
@@ -644,7 +646,9 @@
     "reclaimMa20": "Reclaim MA20",
     "reclaimMa60": "Reclaim MA60",
     "breakMa20": "Break MA20",
-    "breakMa60": "Break MA60"
+    "breakMa60": "Break MA60",
+    "coilingBelowMa20": "Coiling below MA20",
+    "coilingBelowMa60": "Coiling below MA60"
   },
   "reasonTip": {
     "volumeSpike": "Trading volume significantly increased, indicating major capital flow.",
@@ -1204,7 +1208,9 @@
     "reclaimMa20": "Close reclaimed the 20-day MA — early recovery signal",
     "reclaimMa60": "Close reclaimed the 60-day MA — mid-term trend repair",
     "breakMa20": "Close broke below the 20-day MA — short-term weakness",
-    "breakMa60": "Close broke below the 60-day MA — mid-term trend weakness"
+    "breakMa60": "Close broke below the 60-day MA — mid-term trend weakness",
+    "coilingBelowMa20": "Close within 3% below the 20-day MA with strong 60-day momentum — one solid candle from breakout",
+    "coilingBelowMa60": "Close within 3% below the 60-day MA with strong 60-day momentum — one solid candle from breakout"
   },
   "comparison": {
     "title": "Stock Comparison",

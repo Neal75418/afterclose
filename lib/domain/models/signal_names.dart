@@ -73,6 +73,8 @@ abstract final class SignalName {
   static const reclaimMa60 = 'RECLAIM_MA60';
   static const breakMa20 = 'BREAK_MA20';
   static const breakMa60 = 'BREAK_MA60';
+  static const coilingBelowMa20 = 'COILING_BELOW_MA20';
+  static const coilingBelowMa60 = 'COILING_BELOW_MA60';
 
   // ==================================================
   // Candlestick Patterns

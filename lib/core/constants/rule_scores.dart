@@ -158,6 +158,10 @@ abstract final class RuleScores {
   static const int breakMa20 = -8;
   static const int breakMa60 = -8;
 
+  /// 蓄勢區 2 條(+8 同家族語意:過落庫門檻的觀察標記,不進 tab)
+  static const int coilingBelowMa20 = 8;
+  static const int coilingBelowMa60 = 8;
+
   /// 均線空頭排列分數（空方，扣分）
   static const int maAlignmentBearish = -15;
 

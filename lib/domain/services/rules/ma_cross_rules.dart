@@ -1,4 +1,5 @@
 import 'package:afterclose/core/constants/reason_type.dart';
+import 'package:afterclose/core/constants/rule_params_pullback.dart';
 import 'package:afterclose/core/constants/rule_scores.dart';
 import 'package:afterclose/core/constants/stock_patterns.dart';
 import 'package:afterclose/domain/models/analysis_context.dart';
@@ -138,6 +139,93 @@ TriggeredReason? _evaluateCross(
       'close': close,
       'prevClose': prevClose,
       'distancePct': (close - ma) / ma * 100,
+    },
+  );
+}
+
+/// 蓄勢區規則(2026-07-31):「還沒噴」的事前偵測。
+///
+/// 收盤在 MA **下方 0~[PullbackParams.coilingMaxDistancePct]%**(一根中紅
+/// 即完成突破)且 60 日報酬 > [PullbackParams.coilingMin60dReturnPct]%
+/// (質量閂——同樣貼線,正動能股是蓄勢、弱勢股是反彈撞壓力;無此閂時
+/// 純位置條件在正常日命中 658 檔=雜訊,加閂後 30-55 檔,2026-07-22/24/31
+/// 三日實證)。與站回(事件)/回踩(進場結構)構成完整生命週期。
+class CoilingBelowMa20Rule extends StockRule {
+  const CoilingBelowMa20Rule();
+
+  @override
+  String get id => 'coiling_below_ma20';
+
+  @override
+  TriggeredReason? evaluate(AnalysisContext context, StockData data) =>
+      _evaluateCoiling(
+        context,
+        data,
+        maSelector: (ind) => ind.ma20,
+        maKey: 'ma20',
+        type: ReasonType.coilingBelowMa20,
+        score: RuleScores.coilingBelowMa20,
+        description: '蓄勢月線下 (MA20)',
+      );
+}
+
+class CoilingBelowMa60Rule extends StockRule {
+  const CoilingBelowMa60Rule();
+
+  @override
+  String get id => 'coiling_below_ma60';
+
+  @override
+  TriggeredReason? evaluate(AnalysisContext context, StockData data) =>
+      _evaluateCoiling(
+        context,
+        data,
+        maSelector: (ind) => ind.ma60,
+        maKey: 'ma60',
+        type: ReasonType.coilingBelowMa60,
+        score: RuleScores.coilingBelowMa60,
+        description: '蓄勢季線下 (MA60)',
+      );
+}
+
+TriggeredReason? _evaluateCoiling(
+  AnalysisContext context,
+  StockData data, {
+  required double? Function(dynamic ind) maSelector,
+  required String maKey,
+  required ReasonType type,
+  required int score,
+  required String description,
+}) {
+  if (StockPatterns.isEtfCode(data.symbol)) return null;
+
+  final ind = context.indicators;
+  if (ind == null) return null;
+  final ma = maSelector(ind);
+  if (ma == null || ma <= 0) return null;
+
+  if (data.prices.length < 61) return null;
+  final close = data.prices.last.close;
+  final past60 = data.prices[data.prices.length - 61].close;
+  if (close == null || past60 == null || past60 <= 0) return null;
+
+  final return60d = (close - past60) / past60 * 100;
+  if (return60d <= PullbackParams.coilingMin60dReturnPct) return null;
+
+  final distancePct = (close - ma) / ma * 100;
+  if (distancePct >= 0 || distancePct < -PullbackParams.coilingMaxDistancePct) {
+    return null;
+  }
+
+  return TriggeredReason(
+    type: type,
+    score: score,
+    description: description,
+    evidence: {
+      maKey: ma,
+      'close': close,
+      'distancePct': distancePct,
+      'return60dPct': return60d,
     },
   );
 }

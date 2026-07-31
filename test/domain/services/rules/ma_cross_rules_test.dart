@@ -182,4 +182,90 @@ void main() {
       expect(r, isNull);
     });
   });
+
+  group('CoilingBelowMa20/Ma60(蓄勢區:貼線下 0~3% + 60D>10%)', () {
+    // 60D 報酬由 prices 計算:count=65 根,closes[60] 為 60 交易日前。
+    // pricesEndingWith 的 baseline=100,把最舊一段改低製造 60D 正報酬。
+    List<DailyPriceEntry> coilingPrices({
+      required double close,
+      double past60Close = 80, // 60D 前 80 → 今收 97 時 60D +21%
+      String symbol = 'TEST',
+    }) {
+      return [
+        for (var i = 0; i < 65; i++)
+          DailyPriceEntry(
+            symbol: symbol,
+            date: DateTime(2026, 1, 1).add(Duration(days: i)),
+            open: 100,
+            high: 101,
+            low: 99,
+            close: i == 64 ? close : (i <= 4 ? past60Close : 100),
+            volume: 1000,
+          ),
+      ];
+    }
+
+    test('貼月線下 2%+60D 強 → fire,evidence 帶距離與動能', () {
+      const rule = CoilingBelowMa20Rule();
+      final r = rule.evaluate(
+        ctx(ma20: 100),
+        StockData(symbol: 'TEST', prices: coilingPrices(close: 98)),
+      );
+      expect(r, isNotNull);
+      expect(r!.type, ReasonType.coilingBelowMa20);
+      expect(r.evidence!['distancePct'], closeTo(-2.0, 0.01));
+    });
+
+    test('線上(已突破)→ null:蓄勢只在線下', () {
+      const rule = CoilingBelowMa20Rule();
+      final r = rule.evaluate(
+        ctx(ma20: 100),
+        StockData(symbol: 'TEST', prices: coilingPrices(close: 101)),
+      );
+      expect(r, isNull);
+    });
+
+    test('離線太遠(>3%)→ null', () {
+      const rule = CoilingBelowMa20Rule();
+      final r = rule.evaluate(
+        ctx(ma20: 100),
+        StockData(symbol: 'TEST', prices: coilingPrices(close: 96)),
+      );
+      expect(r, isNull);
+    });
+
+    test('60D 動能不足(≤10%)→ null:弱勢反彈到壓力不是蓄勢', () {
+      const rule = CoilingBelowMa20Rule();
+      final r = rule.evaluate(
+        ctx(ma20: 100),
+        StockData(
+          symbol: 'TEST',
+          prices: coilingPrices(close: 98, past60Close: 95), // 60D 僅 +3%
+        ),
+      );
+      expect(r, isNull);
+    });
+
+    test('季線版:貼季線下 1% + 60D 強 → fire', () {
+      const rule = CoilingBelowMa60Rule();
+      final r = rule.evaluate(
+        ctx(ma60: 100),
+        StockData(symbol: 'TEST', prices: coilingPrices(close: 99)),
+      );
+      expect(r, isNotNull);
+      expect(r!.type, ReasonType.coilingBelowMa60);
+    });
+
+    test('ETF → null', () {
+      const rule = CoilingBelowMa20Rule();
+      final r = rule.evaluate(
+        ctx(ma20: 100),
+        StockData(
+          symbol: '0050',
+          prices: coilingPrices(close: 98, symbol: '0050'),
+        ),
+      );
+      expect(r, isNull);
+    });
+  });
 }

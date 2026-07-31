@@ -90,6 +90,8 @@ abstract final class RuleRegistry {
     ReclaimMa60Rule(),
     BreakMa20Rule(),
     BreakMa60Rule(),
+    CoilingBelowMa20Rule(),
+    CoilingBelowMa60Rule(),
     // Killer Features：注意/處置股票規則
     TradingWarningAttentionRule(),
     TradingWarningDisposalRule(),

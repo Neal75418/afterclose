@@ -358,7 +358,9 @@
     "filterBreakMa20": "跌破月線",
     "filterBreakMa60": "跌破季線",
     "filterPullbackToMa10": "回踩 10 日線",
-    "filterPullbackToMa20": "回踩月線"
+    "filterPullbackToMa20": "回踩月線",
+    "filterCoilingBelowMa20": "蓄勢月線下",
+    "filterCoilingBelowMa60": "蓄勢季線下"
   },
   "watchlist": {
     "title": "自選股票",
@@ -644,7 +646,9 @@
     "reclaimMa20": "站回月線",
     "reclaimMa60": "站回季線",
     "breakMa20": "跌破月線",
-    "breakMa60": "跌破季線"
+    "breakMa60": "跌破季線",
+    "coilingBelowMa20": "蓄勢月線下",
+    "coilingBelowMa60": "蓄勢季線下"
   },
   "reasonTip": {
     "volumeSpike": "成交量顯著放大，可能有重要資金進出。",
@@ -1204,7 +1208,9 @@
     "reclaimMa20": "收盤站回 20 日均線(月線),修復期領先訊號",
     "reclaimMa60": "收盤站回 60 日均線(季線),中期趨勢修復訊號",
     "breakMa20": "收盤跌破 20 日均線(月線),短中期轉弱警示",
-    "breakMa60": "收盤跌破 60 日均線(季線),中期趨勢轉弱警示"
+    "breakMa60": "收盤跌破 60 日均線(季線),中期趨勢轉弱警示",
+    "coilingBelowMa20": "收盤貼近月線下方 3% 內且 60 日動能強勁——一根中紅即可突破的蓄勢位置",
+    "coilingBelowMa60": "收盤貼近季線下方 3% 內且 60 日動能強勁——一根中紅即可突破的蓄勢位置"
   },
   "comparison": {
     "title": "個股比較",

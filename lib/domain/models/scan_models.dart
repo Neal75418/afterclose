@@ -173,6 +173,16 @@ enum ScanFilter {
     SignalName.pullbackToMa20,
     ScanFilterGroup.maAlignment,
   ),
+  coilingBelowMa20(
+    'scan.filterCoilingBelowMa20',
+    SignalName.coilingBelowMa20,
+    ScanFilterGroup.maAlignment,
+  ),
+  coilingBelowMa60(
+    'scan.filterCoilingBelowMa60',
+    SignalName.coilingBelowMa60,
+    ScanFilterGroup.maAlignment,
+  ),
 
   // Candlestick patterns - neutral
   patternDoji(

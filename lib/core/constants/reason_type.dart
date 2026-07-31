@@ -42,6 +42,10 @@ enum ReasonType {
   reclaimMa60('RECLAIM_MA60'),
   breakMa20('BREAK_MA20'),
   breakMa60('BREAK_MA60'),
+  // 蓄勢區(2026-07-31):貼線下 0~3%+60D>10% 的「還沒噴」事前狀態,
+  // 與站回(事件)/回踩(進場)構成完整生命週期
+  coilingBelowMa20('COILING_BELOW_MA20'),
+  coilingBelowMa60('COILING_BELOW_MA60'),
   rsiExtremeOverbought('RSI_EXTREME_OVERBOUGHT'),
   rsiExtremeOversold('RSI_EXTREME_OVERSOLD'),
   // 第四階段：延伸市場資料訊號
@@ -140,6 +144,8 @@ enum ReasonType {
     ReasonType.reclaimMa60 => RuleScores.reclaimMa60,
     ReasonType.breakMa20 => RuleScores.breakMa20,
     ReasonType.breakMa60 => RuleScores.breakMa60,
+    ReasonType.coilingBelowMa20 => RuleScores.coilingBelowMa20,
+    ReasonType.coilingBelowMa60 => RuleScores.coilingBelowMa60,
     ReasonType.maAlignmentBearish => RuleScores.maAlignmentBearish,
     ReasonType.rsiExtremeOverbought => RuleScores.rsiExtremeOverboughtSignal,
     ReasonType.rsiExtremeOversold => RuleScores.rsiExtremeOversoldSignal,
@@ -311,6 +317,8 @@ extension ReasonTypeScoringMode on ReasonType {
     ReasonType.reclaimMa60 => ScoringMode.neutral,
     ReasonType.breakMa20 => ScoringMode.neutral,
     ReasonType.breakMa60 => ScoringMode.neutral,
+    ReasonType.coilingBelowMa20 => ScoringMode.neutral,
+    ReasonType.coilingBelowMa60 => ScoringMode.neutral,
     ReasonType.peOvervalued => ScoringMode.neutral, // 強股 feature、誤殺
     ReasonType.revenueYoyDecline => ScoringMode.neutral, // 基本面 lagging
     ReasonType.epsDeclineWarning => ScoringMode.neutral, // 基本面 lagging
@@ -368,6 +376,8 @@ extension ReasonTypeI18n on ReasonType {
     ReasonType.reclaimMa60 => 'reasons.reclaimMa60',
     ReasonType.breakMa20 => 'reasons.breakMa20',
     ReasonType.breakMa60 => 'reasons.breakMa60',
+    ReasonType.coilingBelowMa20 => 'reasons.coilingBelowMa20',
+    ReasonType.coilingBelowMa60 => 'reasons.coilingBelowMa60',
     ReasonType.maAlignmentBearish => 'reasons.maAlignmentBearish',
     ReasonType.rsiExtremeOverbought => 'reasons.rsiExtremeOverbought',
     ReasonType.rsiExtremeOversold => 'reasons.rsiExtremeOversold',
@@ -455,6 +465,8 @@ extension ReasonTypeI18n on ReasonType {
     ReasonType.reclaimMa60 => 'summary.reclaimMa60',
     ReasonType.breakMa20 => 'summary.breakMa20',
     ReasonType.breakMa60 => 'summary.breakMa60',
+    ReasonType.coilingBelowMa20 => 'summary.coilingBelowMa20',
+    ReasonType.coilingBelowMa60 => 'summary.coilingBelowMa60',
     ReasonType.maAlignmentBearish => 'summary.maAlignmentBearish',
     ReasonType.rsiExtremeOverbought => 'reasonTip.rsiOverbought',
     ReasonType.rsiExtremeOversold => 'reasonTip.rsiOversold',
