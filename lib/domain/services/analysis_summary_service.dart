@@ -804,8 +804,12 @@ class AnalysisSummaryService {
                 fractionDigits: 1,
               ),
             }),
+        // 量能宣稱帶窗+實際倍數(2026-08-01):priceSpike 量的是 20 日均、
+        // weakRally 量的是 5 日均,兩者同日觸發是合法狀態(連環爆量墊高
+        // 短均)——無窗文案會在同卡寫出「量增顯著」+「量縮」的直接對立。
         SignalName.priceSpike: (e) => LocalizableString('summary.priceSpike', {
           'pctChange': _numStr(e['pctChange'] ?? e['changePct']),
+          'volMult': _numStr(e['volumeMultiple']),
         }),
         SignalName.institutionalBuy: (_) =>
             const LocalizableString('summary.institutionalBuy'),
@@ -949,8 +953,10 @@ class AnalysisSummaryService {
   // ==================================================
   static final _priceVolumeDivergence =
       <String, LocalizableString Function(Map<String, dynamic>)>{
-        SignalName.priceVolumeWeakRally: (_) =>
-            const LocalizableString('summary.priceVolumeWeakRally'),
+        SignalName.priceVolumeWeakRally: (e) => LocalizableString(
+          'summary.priceVolumeWeakRally',
+          {'volShrink': _absNumStr(e['volumeChange'], fractionDigits: 0)},
+        ),
         SignalName.priceVolumeBearishDivergence: (_) =>
             const LocalizableString('summary.bearishDivergence'),
         SignalName.highVolumeBreakout: (_) =>
