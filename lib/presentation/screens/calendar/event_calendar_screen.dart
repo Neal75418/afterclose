@@ -34,11 +34,26 @@ class EventCalendarScreen extends ConsumerStatefulWidget {
 /// 估算高，供動態 rowHeight 反推：(可用高 − 此值) / 當月週數。
 const double _wideLeftFixedHeight = 270;
 
-/// 窄佈局非月曆列固定件(未來14天卡＋月曆 header/星期列＋chips)＋
-/// 日事件區最低保留高的估算,供矮視窗反推動態 rowHeight。
-/// 實測 625dp 視窗:非列内容 ~319dp,保留 ~80dp 給空狀態(FittedBox
-/// 可再縮),取 400。正常手機高度((h−400)/6 ≥ 52)不受影響。
-const double _narrowNonRowFixedHeight = 400;
+/// 窄佈局非月曆列固定件估算(未來14天卡＋月曆 header/星期列＋chips),
+/// 供矮視窗反推動態 rowHeight。實測 625dp 視窗 ~319dp。
+/// 正常手機高度((h−320−80)/6 ≥ 52)不受影響。
+const double _narrowChromeHeight = 320;
+
+/// 日事件區(清單/空狀態)最低保留高;空狀態 FittedBox 可再縮。
+const double _narrowDayBodyMinHeight = 80;
+
+/// 條件式錯誤 banner(MaterialBanner 一行文字+兩鈕)估高——banner 顯示
+/// 時必須計入預算,否則「舊資料+重整失敗+矮視窗+6 列月份」四條件齊發
+/// 會重現溢位(2026-08-01 複審)。
+const double _narrowErrorBannerAllowance = 64;
+
+/// 極矮 fallback(固定件+最小格高都塞不下)整頁轉捲動時,日事件區的
+/// 固定高度。
+const double _narrowScrollFallbackDayBodyHeight = 240;
+
+/// FAB 迴避間距(FAB 直徑 56+邊距 16+餘裕):清單底部與 chips 列尾端
+/// 共用,改 FAB 尺寸/位置時三處同步。
+const double _fabClearance = 88;
 
 /// 當月在「週一起算」月曆上實際佔的週列數（4~6）。
 ///
@@ -167,23 +182,47 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
             // 矮視窗的 Column 無捲動、直接溢位(2026-08-01 跨月實發,
             // 溢 6px)。下限 44 對齊今日圈固定尺寸(44dp 不隨格高縮)。
             final rows = calendarWeekRows(_focusedDay);
+            final showBanner = state.error != null && state.events.isNotEmpty;
+            final bannerAllowance = showBanner
+                ? _narrowErrorBannerAllowance
+                : 0.0;
+            final fixed =
+                _narrowChromeHeight + bannerAllowance + _narrowDayBodyMinHeight;
             final rowHeight = cons.maxHeight.isFinite
-                ? ((cons.maxHeight - _narrowNonRowFixedHeight) / rows).clamp(
-                    44.0,
-                    52.0,
-                  )
+                ? ((cons.maxHeight - fixed) / rows).clamp(44.0, 52.0)
                 : 52.0;
+
+            final children = <Widget>[
+              _buildUpcoming(state, direction: Axis.horizontal),
+              _buildCalendarSection(
+                theme,
+                state,
+                isWide: false,
+                rowHeight: rowHeight,
+              ),
+              if (showBanner) _buildErrorBanner(state),
+            ];
+
+            // 固定件+最小格高都塞不下(6 列月份+banner+極矮視窗)時,
+            // 格高收縮救不回來——整頁轉捲動,日事件區給固定高。
+            final minRequired = fixed + rows * 44.0;
+            if (cons.maxHeight.isFinite && cons.maxHeight < minRequired) {
+              return SingleChildScrollView(
+                child: Column(
+                  children: [
+                    ...children,
+                    SizedBox(
+                      height: _narrowScrollFallbackDayBodyHeight,
+                      child: _buildDayEventsBody(theme, state),
+                    ),
+                  ],
+                ),
+              );
+            }
+
             return Column(
               children: [
-                _buildUpcoming(state, direction: Axis.horizontal),
-                _buildCalendarSection(
-                  theme,
-                  state,
-                  isWide: false,
-                  rowHeight: rowHeight,
-                ),
-                if (state.error != null && state.events.isNotEmpty)
-                  _buildErrorBanner(state),
+                ...children,
                 Expanded(child: _buildDayEventsBody(theme, state)),
               ],
             );
@@ -281,7 +320,7 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
     }
     return ListView(
       // 底部留 FAB 迴避空間
-      padding: const EdgeInsets.only(bottom: 88),
+      padding: const EdgeInsets.only(bottom: _fabClearance),
       children: [
         upcomingBlock,
         const Divider(height: 17),
@@ -339,18 +378,7 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
     return UpcomingEventsSection(
       events: state.visibleUpcomingEvents,
       direction: direction,
-      onEventTap: (event) {
-        setState(() {
-          _selectedDay = event.eventDate;
-          _focusedDay = event.eventDate;
-        });
-        ref.read(eventCalendarProvider.notifier).selectDate(event.eventDate);
-        ref
-            .read(eventCalendarProvider.notifier)
-            .loadMonthEvents(
-              DateTime(event.eventDate.year, event.eventDate.month),
-            );
-      },
+      onEventTap: (event) => _jumpTo(event.eventDate),
     );
   }
 
@@ -543,7 +571,7 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
     return _buildDayEventsPlaceholder(theme, state) ??
         ListView.builder(
           // 底部留 FAB 迴避空間，最後一張卡不被 + 鈕壓住
-          padding: const EdgeInsets.only(top: 8, bottom: 88),
+          padding: const EdgeInsets.only(top: 8, bottom: _fabClearance),
           itemCount: state.selectedDayEvents.length,
           itemBuilder: (context, index) {
             final event = state.selectedDayEvents[index];
@@ -562,7 +590,7 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
         );
   }
 
-  /// [fabClearance] 窄版短視窗下 FAB 會壓住列尾最後一顆 chip，留 88dp
+  /// [fabClearance] 窄版短視窗下 FAB 會壓住列尾最後一顆 chip，留 [_fabClearance]
   /// 尾距讓它能捲出來；寬版 chips 在左欄、離 FAB 遠，不加（避免置中偏移）
   Widget _buildEventTypeFilterChips(
     EventCalendarState state, {
@@ -576,7 +604,7 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
         left: 12,
         top: 6,
         bottom: 6,
-        right: fabClearance ? 88 : 12,
+        right: fabClearance ? _fabClearance : 12,
       ),
       child: Row(
         children: EventType.values.map((type) {
@@ -666,19 +694,26 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
     );
   }
 
-  /// 跳回今天（focus＋選取＋載入當月）
-  void _jumpToToday() {
-    final today = DateTime.now();
-    _pendingFocusTarget = today;
+  /// 程式化跳月的唯一入口(回今日/date picker/未來14天卡片)。
+  ///
+  /// 三件事缺一不可:_pendingFocusTarget 濾掉翻頁動畫殘響(見欄位註解,
+  /// 2026-08-01 複審:第三入口漏設,殘響把目標月踩回舊月)、setState 讓
+  /// widget 參數跟上、provider 端選日+載月。新增第四個跳月入口一律走
+  /// 這裡,不要散裝複製。
+  void _jumpTo(DateTime target) {
+    _pendingFocusTarget = target;
     setState(() {
-      _selectedDay = today;
-      _focusedDay = today;
+      _selectedDay = target;
+      _focusedDay = target;
     });
-    ref.read(eventCalendarProvider.notifier).selectDate(today);
+    ref.read(eventCalendarProvider.notifier).selectDate(target);
     ref
         .read(eventCalendarProvider.notifier)
-        .loadMonthEvents(DateTime(today.year, today.month));
+        .loadMonthEvents(DateTime(target.year, target.month));
   }
+
+  /// 跳回今天（focus＋選取＋載入當月）
+  void _jumpToToday() => _jumpTo(DateTime.now());
 
   /// 點月曆標題開 date picker 跳月
   Future<void> _pickMonth() async {
@@ -689,15 +724,7 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
       lastDate: DateTime(2100),
     );
     if (picked == null || !mounted) return;
-    _pendingFocusTarget = picked;
-    setState(() {
-      _selectedDay = picked;
-      _focusedDay = picked;
-    });
-    ref.read(eventCalendarProvider.notifier).selectDate(picked);
-    ref
-        .read(eventCalendarProvider.notifier)
-        .loadMonthEvents(DateTime(picked.year, picked.month));
+    _jumpTo(picked);
   }
 
   /// 本月事件統計卡（桌面左欄）——各類型 count、點列切換該類型篩選。

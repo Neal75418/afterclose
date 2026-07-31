@@ -279,6 +279,13 @@ class EventRepository {
   /// ⚠️ 若未來新增「財報公布」等第二個 EARNINGS producer：本方法的
   /// (symbol, 日) 去重會讀到**兩個 producer 的事件互相壓制**——屆時需以
   /// title/來源子欄位區分，並考慮 prune 已過期的 auto EARNINGS。
+  ///
+  /// ⚠️ 已知限制（2026-08-01 複審列管）：公告**更正/改期**會派生第二筆
+  /// 事件且舊日期事件永久殘留——(symbol, 日) key 只防重跑冪等，不防同一
+  /// 場次的日期修正；公告永久累積代表舊公告永遠派生舊日期，手動刪事件
+  /// 也會被下次同步復活。盲目 supersede 會誤殺同公司多場法說會的合法
+  /// 情境（真 DB 測試鎖此分支），正確的更正語意需真實 MOPS 更正公告
+  /// 樣本才能設計——樣本到手前不做啟發式。
   Future<int> syncInvestorConferenceEvents() async {
     final watchlistEntries = await _db.getWatchlist();
     final portfolioPositions = await _db.getPortfolioPositions();

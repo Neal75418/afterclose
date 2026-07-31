@@ -69,14 +69,17 @@ enum EventType {
       case EventType.earnings:
         return Colors.green;
       case EventType.shareholderMeeting:
-        // 紫→teal（2026-07-24 使用者回饋：粉紫不喜歡；teal 與品牌藍同
-        // 冷色溫層、與紅/橘/綠/藍四類皆可區分）
-        return Colors.teal;
+        // 紫→teal（2026-07-24 使用者回饋：粉紫不喜歡）→cyan（2026-08-01
+        // 複審：teal 全家族色相 172~175° 落在綠區(88-175)內緣、違反
+        // 紅綠專屬股價鐵律；cyan 186° 出區且保留同一冷色溫觀感，與
+        // 紅/橘/綠/藍灰/棕/藍仍可區分。守門見 semantic_colors_test
+        // 的 EventType 色相掃描）
+        return Colors.cyan;
       case EventType.disposalEnd:
         // 監管類事件走中性藍灰，與五個既有類別皆可區分
         return Colors.blueGrey;
       case EventType.shortSuspension:
-        // 棕：與紅/橘/綠/teal/藍灰/藍皆可區分、且非使用者排除的紫粉家族
+        // 棕：與紅/橘/綠/cyan/藍灰/藍皆可區分、且非使用者排除的紫粉家族
         return Colors.brown;
       case EventType.custom:
         return Colors.blue;
@@ -101,14 +104,16 @@ enum EventType {
         // 深色：綠家族淺綠（同 PriceColors.chipBearish 值，6.86:1）；淺色同上
         return isLight ? Colors.green : const Color(0xFF7DD8A0);
       case EventType.shareholderMeeting:
-        // 淺色 teal 本色 3.1:1 不合格需壓深（teal800 5.5:1）；深色 teal200
-        return isLight ? const Color(0xFF00695C) : const Color(0xFF80CBC4);
+        // 淺色 cyan 本色對比不足需壓深（cyan900 達 4.5）；深色 cyan200
+        return isLight ? const Color(0xFF006064) : const Color(0xFF80DEEA);
       case EventType.disposalEnd:
         // 淺色 blueGrey800、深色 blueGrey200
         return isLight ? const Color(0xFF37474F) : const Color(0xFFB0BEC5);
       case EventType.shortSuspension:
-        // 淺色 brown800、深色 brown200
-        return isLight ? const Color(0xFF4E342E) : const Color(0xFFBCAAA4);
+        // material brown 的深淺階(brown800 11°/brown200 15°)落在紅區
+        // (hue≤15)——手調同觀感棕色、色相移到 25~30°(2026-08-01 複審
+        // 擴掃抓到,守門見 semantic_colors_test EventType 色相掃描)
+        return isLight ? const Color(0xFF5F452A) : const Color(0xFFC9AE93);
       case EventType.custom:
         return isLight ? const Color(0xFF1565C0) : const Color(0xFF90CAF9);
     }

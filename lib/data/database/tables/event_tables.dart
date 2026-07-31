@@ -6,7 +6,8 @@ import 'package:drift/drift.dart';
 /// - EX_DIVIDEND: 除息日（自動從 DividendHistory 匯入）
 /// - EX_RIGHTS: 除權日（自動從 DividendHistory 匯入）
 /// - SHAREHOLDER_MEETING: 股東會（自動從股利行事曆匯入）
-/// - EARNINGS: 財報公布日（保留值，目前無 producer）
+/// - EARNINGS: 法說會（自動從已存重大訊息公告解析，見
+///   EventRepository.syncInvestorConferenceEvents）
 /// - CUSTOM: 使用者自訂備忘
 @DataClassName('StockEventEntry')
 @TableIndex(name: 'idx_stock_event_date', columns: {#eventDate})
@@ -19,7 +20,7 @@ class StockEvent extends Table {
   TextColumn get symbol => text().nullable()();
 
   /// 事件類型：EX_DIVIDEND, EX_RIGHTS, SHAREHOLDER_MEETING, DISPOSAL_END,
-  /// SHORT_SUSPENSION, CUSTOM（EARNINGS 保留無 producer）
+  /// SHORT_SUSPENSION, EARNINGS（法說會，自公告解析）, CUSTOM
   TextColumn get eventType => text()();
 
   /// 事件日期

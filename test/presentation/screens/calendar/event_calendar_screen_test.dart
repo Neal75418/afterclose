@@ -577,6 +577,40 @@ void main() {
       expect(find.byIcon(Icons.event_busy), findsOneWidget);
     });
 
+    testWidgets('narrow cramped height + 錯誤 banner:仍不得溢位(2026-08-01 複審)', (
+      tester,
+    ) async {
+      // 錯誤 banner(MaterialBanner ≥52dp)是條件式節點,原本不在窄佈局
+      // 動態 rowHeight 的固定高度預算內——「有舊資料+重整失敗+矮視窗+
+      // 6 列月份」同時成立時,banner 高度直接吃掉 Expanded 預留、重現
+      // 這批修復要解決的同型溢位。既有兩個測試各只蓋一半:cramped 測試
+      // 無 error、error 測試用寬視窗。
+      tester.view.physicalSize = const Size(1680, 1875);
+      addTearDown(() => tester.view.resetPhysicalSize());
+      await tester.pumpWidget(
+        buildTestWidget(
+          focusedDay: DateTime(2026, 8, 20), // 6 列月份
+          calendarState: EventCalendarState(
+            selectedDate: DateTime(2026, 8, 20),
+            error: 'sync failed',
+            events: {
+              DateTime(2026, 8, 5): [
+                createEvent(
+                  id: 8,
+                  symbol: '2330',
+                  eventDate: DateTime(2026, 8, 5),
+                ),
+              ],
+            },
+            upcomingEvents: [createEvent(id: 9, symbol: '2330')],
+          ),
+        ),
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(tester.takeException(), isNull, reason: '不得 RenderFlex 溢位');
+    });
+
     testWidgets('narrow chips row keeps FAB clearance at scroll end', (
       tester,
     ) async {
@@ -612,6 +646,53 @@ void main() {
 
       // Error should be displayed
       expect(find.byType(EventCalendarScreen), findsOneWidget);
+    });
+  });
+
+  // ====================================================================
+  // 跳月殘響 race 第三入口(2026-08-01 複審)
+  //
+  // _jumpToToday/_pickMonth 都設 _pendingFocusTarget 濾掉翻頁動畫的
+  // 延遲殘響,但「未來14天」卡片點擊(同樣程式化改 _focusedDay、同樣
+  // 觸發套件內部翻頁動畫)漏設——殘響會把剛設好的目標月踩回動畫中途
+  // 的舊月(59-60 行註解描述、已在另兩入口修過的同一個 race)。
+  // 測試直接呼叫 TableCalendar.onPageChanged 模擬殘響,免依賴動畫時序。
+  // ====================================================================
+  group('未來14天卡片跳月 race', () {
+    testWidgets('🚨 點跨月卡片後,殘響 onPageChanged 不得踩回舊月', (tester) async {
+      tester.view.physicalSize = const Size(1680, 2400); // 單欄
+      addTearDown(() => tester.view.resetPhysicalSize());
+      await tester.pumpWidget(
+        buildTestWidget(
+          focusedDay: DateTime(2026, 8, 5),
+          calendarState: EventCalendarState(
+            upcomingEvents: [
+              createEvent(
+                id: 9,
+                symbol: '2330',
+                title: 'CrossMonth',
+                eventDate: DateTime(2026, 9, 10),
+              ),
+            ],
+          ),
+        ),
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      await tester.tap(find.text('CrossMonth'));
+      await tester.pump();
+
+      // 模擬前一個翻頁動畫的延遲殘響:帶著舊月抵達
+      final cal = tester.widget<TableCalendar<StockEventEntry>>(
+        find.byType(TableCalendar<StockEventEntry>),
+      );
+      cal.onPageChanged!(DateTime(2026, 8, 1));
+      await tester.pump();
+
+      final calAfter = tester.widget<TableCalendar<StockEventEntry>>(
+        find.byType(TableCalendar<StockEventEntry>),
+      );
+      expect(calAfter.focusedDay.month, 9, reason: '殘響(8月)不得踩掉剛跳去的目標月(9月)');
     });
   });
 }

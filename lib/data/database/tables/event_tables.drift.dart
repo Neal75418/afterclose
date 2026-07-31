@@ -518,7 +518,7 @@ class StockEventEntry extends i0.DataClass
   final String? symbol;
 
   /// 事件類型：EX_DIVIDEND, EX_RIGHTS, SHAREHOLDER_MEETING, DISPOSAL_END,
-  /// SHORT_SUSPENSION, CUSTOM（EARNINGS 保留無 producer）
+  /// SHORT_SUSPENSION, EARNINGS（法說會，自公告解析）, CUSTOM
   final String eventType;
 
   /// 事件日期

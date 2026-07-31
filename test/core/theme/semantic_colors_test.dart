@@ -35,6 +35,33 @@ void main() {
       }
     });
 
+    test('EventType 事件色不得落在股價色相區(2026-08-01 複審擴掃)', () {
+      // 7/24 股東會紫→teal 時漏了色相檢查:teal 全家族 172~175° 落在
+      // 綠區(88-175)內緣——股東會 dot/chip/pill 會被誤讀為下跌色。
+      // 掃描名單原本只有 Quality/Warning/CategoryColors,EventType 是
+      // 7/24 新增的色彩決策面、完全無守門。
+      //
+      // 豁免 exDividend(紅)/earnings(綠):兩者「屬紅綠家族」是已記錄
+      // 於 Phase 2 清單的既有債務(event_calendar_provider onTintFor
+      // docstring),延後至紅綠專案,不在本守門範圍。
+      const deferred = {EventType.exDividend, EventType.earnings};
+      for (final t in EventType.values.where((t) => !deferred.contains(t))) {
+        for (final c in [
+          t.color,
+          t.onTintFor(Brightness.light),
+          t.onTintFor(Brightness.dark),
+        ]) {
+          expect(
+            _inPriceHueZone(c),
+            isFalse,
+            reason:
+                'EventType.${t.name} 用色 ${c.toARGB32().toRadixString(16)},'
+                '色相 ${ColorContrast.hue(c).toStringAsFixed(1)}° 落在股價語意區',
+          );
+        }
+      }
+    });
+
     test('WarningColors 不得落在股價色相區', () {
       for (final c in WarningColors.all) {
         expect(
