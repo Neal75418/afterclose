@@ -770,11 +770,18 @@ void main() {
 
       localContainer.invalidate(finMindClientProvider);
       await localContainer.pump();
+      // 重建會清空 state;自動恢復走 microtask reload,多推幾輪事件圈
+      await Future<void>.delayed(Duration.zero);
+      await localContainer.pump();
+      await Future<void>.delayed(Duration.zero);
 
       expect(
         localContainer.read(stockDetailProvider(_testSymbol)).price.stock,
-        isNull,
-        reason: 'client 換新後 notifier 應重建(state 歸零),否則舊 client 被永久快照',
+        isNotNull,
+        reason:
+            '2026-08-01 複審:重建清空後必須自動 reload——否則使用者換個'
+            ' token,開著的個股頁靜默變空白且永久卡死(epoch listener 的'
+            ' guard 恰在清空後擋住自己,無任何恢復管道)',
       );
     });
   });

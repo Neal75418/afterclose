@@ -253,6 +253,15 @@ class RuleEngine {
   /// 回傳 code → 係數 map（只含被遞減影響的組員；組外訊號不入 map、
   /// 呼叫端以 1.0 對待）。排序用 hardcoded 設計分數（horizon 無關——
   /// 「證據邊際價值遞減」的語意與 horizon 無關）。
+  ///
+  /// **已知縫隙(INVARIANT,2026-08-01 複審)**:排序不感知三態歸零
+  /// (calibratedScores.zeroedShortRules)——被歸零的規則(貢獻恆 0)仍按
+  /// hardcoded 分數佔用組內 100%/50% 檔位,可能把活著的規則擠到較差
+  /// 檔位,違反「歸零=無效訊號理應讓位」語意。現況不觸發純屬巧合
+  /// (revenue 組唯二排名候選 YOY_SURGE/MOM_GROWTH 目前同時被歸零,組內
+  /// 無活成員可擠壓)。**下次校準重跑若讓其一翻活,必須回頭處理**:
+  /// 結構修法=排序候選剔除歸零者,但 multiplier 為 short/long 共用
+  /// (歸零僅 short),需先拆 horizon 雙份——耦合面不小,勿一行帶過。
   Map<String, double> computeFundamentalDecayMultipliers(
     List<TriggeredReason> reasons,
   ) {

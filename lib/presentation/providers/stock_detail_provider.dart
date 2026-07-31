@@ -42,6 +42,12 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
   late StockChipLoader _chipLoader;
   var _active = true;
 
+  /// 曾成功載入過內容(2026-08-01 複審):build() 因 finMindClientProvider
+  /// invalidate 重跑時 state 被清空,而 epoch listener 的空 state guard
+  /// 恰好在清空後擋住自己——無此旗標則「換 token」讓存活的個股頁靜默
+  /// 空白且永久卡死。同 instance 重跑 field 保留,據此排自動 reload。
+  var _hasLoadedOnce = false;
+
   @override
   StockDetailState build() {
     _active = true;
@@ -86,6 +92,14 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
       loadData();
     });
 
+    // 非首次 build(token 更換觸發的重建):state 即將被下方回傳值清空,
+    // 排 microtask 自動重載——這是清空後唯一的恢復管道(見 _hasLoadedOnce)
+    if (_hasLoadedOnce) {
+      Future.microtask(() {
+        if (_active) loadData();
+      });
+    }
+
     return const StockDetailState();
   }
 
@@ -108,6 +122,7 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
 
   /// 載入股票詳情資料
   Future<void> loadData() async {
+    _hasLoadedOnce = true;
     state = state.copyWith(isLoading: true, error: null);
 
     try {
