@@ -72,6 +72,52 @@ void main() {
       expect(p2330.close, 2205.0);
     });
 
+    test('STOCK_DAY 個股月線零價 sentinel(2026-08-01 審查補漏——'
+        '上市個股歷史回補的實際路徑,初版 sweep 漏了這個端點)', () async {
+      final json = {
+        'stat': 'OK',
+        'date': '20260701',
+        'data': [
+          // 列格式: [日期, 成交股數, 成交金額, 開, 高, 低, 收, 漲跌價差, 筆數]
+          [
+            '115/07/01',
+            '17',
+            '1,511',
+            '0.00',
+            '0.00',
+            '0.00',
+            '0.00',
+            '0.00',
+            '7',
+          ],
+          [
+            '115/07/02',
+            '95,900',
+            '8,448,107',
+            '90.00',
+            '90.00',
+            '86.60',
+            '89.00',
+            '-0.40',
+            '358',
+          ],
+        ],
+      };
+      stubGet(json);
+      final client = TwseClient(dio: mockDio);
+
+      final prices = await client.getStockMonthlyPrices(
+        code: '1472',
+        year: 2026,
+        month: 7,
+      );
+      expect(prices, hasLength(2));
+      expect(prices[0].close, isNull, reason: '無成交日 0.00 → null');
+      expect(prices[0].open, isNull);
+      expect(prices[0].volume, 17.0, reason: '量欄照實');
+      expect(prices[1].close, 89.0);
+    });
+
     test('MI_INDEX 零價 sentinel 同語意(歷史回補路徑)', () {
       final json = {
         'date': '20260730',

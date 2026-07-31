@@ -489,10 +489,13 @@ class TwseClient {
           date: date,
           code: code,
           name: '',
-          open: TwParseUtils.parseFormattedDouble(row[3]),
-          high: TwParseUtils.parseFormattedDouble(row[4]),
-          low: TwParseUtils.parseFormattedDouble(row[5]),
-          close: TwParseUtils.parseFormattedDouble(row[6]),
+          // parsePrice(2026-08-01 審查補漏):此端點是上市個股歷史回補
+          // 的實際路徑,初版零價 sweep 漏了它——無成交日的 0.00 會持續
+          // 灌進 52 週窗,beforeOpen 清理只能兜底追不上源頭
+          open: TwParseUtils.parsePrice(row[3]),
+          high: TwParseUtils.parsePrice(row[4]),
+          low: TwParseUtils.parsePrice(row[5]),
+          close: TwParseUtils.parsePrice(row[6]),
           volume: TwParseUtils.parseFormattedDouble(row[1]),
           change: TwParseUtils.parseFormattedDouble(row[7]),
         );
