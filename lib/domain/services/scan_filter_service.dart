@@ -4,6 +4,7 @@ import 'package:afterclose/domain/services/price_calculator.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/database/cached_accessor.dart';
 import 'package:afterclose/domain/models/scan_models.dart';
+import 'package:afterclose/domain/models/signal_names.dart';
 
 /// 掃描畫面的純業務邏輯服務
 ///
@@ -176,7 +177,15 @@ class ScanFilterService {
         priceChange: priceChanges[analysis.symbol],
         volume: latestPrice?.volume,
         trendState: analysis.trendState,
-        reasons: reasonsMap[analysis.symbol] ?? [],
+        // MA 階段訊號前置(跌破>站回>回踩>蓄勢,2026-07-31 複審):
+        // 卡片 ReasonTags 只顯示 1-2 個,預設 hardcoded 分數排序會把
+        // BREAK(-8)擠出視窗——與自選頁同一排序,風控 tag 保證可見
+        reasons: ((reasonsMap[analysis.symbol] ?? []).toList()
+          ..sort(
+            (a, b) => SignalName.maStagePriority(
+              a.reasonType,
+            ).compareTo(SignalName.maStagePriority(b.reasonType)),
+          )),
         isInWatchlist: watchlistSymbols.contains(analysis.symbol),
         recentPrices: recentPrices,
       );
