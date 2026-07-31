@@ -312,11 +312,14 @@ void main() {
       expect(state.error, isNull);
     });
 
-    test('loadData filters out analyses with score <= 0', () async {
+    test('loadData 池准入:正分訊號股+純空方(雙 0 指紋)股,負分濾除', () async {
+      // 2026-07-31 契約更新:落庫門檻改 |raw| 後,「雙 horizon 皆 0」是
+      // 純空方股的落庫指紋——必須進主池,BREAK_* 篩選器才撈得到。
+      // 負分列在新契約下不會存在(floor 為 0),此處驗防禦行為。
       final analyses = [
         createAnalysis(symbol: '2330', score: 85),
-        createAnalysis(symbol: '2317', score: 0), // should be filtered
-        createAnalysis(symbol: '2454', score: -5), // should be filtered
+        createAnalysis(symbol: '2317', score: 0), // 純空方指紋 → 進池
+        createAnalysis(symbol: '2454', score: -5), // 不應存在的髒資料 → 濾除
       ];
 
       setupLoadDataDefaults(analyses: analyses);
@@ -325,7 +328,7 @@ void main() {
       await notifier.loadData();
 
       final state = container.read(scanProvider);
-      expect(state.totalAnalyzedCount, 1); // only 2330 has score > 0
+      expect(state.totalAnalyzedCount, 2); // 2330(訊號)+2317(空方)
     });
 
     test('loadData sets loading state', () async {
@@ -554,6 +557,27 @@ void main() {
       expect(isScanObservation(a(11, 8)), isTrue); // 8–11 接近觸發
       expect(isScanObservation(a(7, 7)), isFalse); // < 8 雜訊
       expect(isScanObservation(a(12, 3)), isFalse); // 已是訊號、非觀察
+    });
+  });
+
+  group('isScanBearish(2026-07-31 純空方落庫指紋)', () {
+    DailyAnalysisEntry entry(int s, int l) => DailyAnalysisEntry(
+      symbol: 'T',
+      date: DateTime(2026, 7, 31),
+      scoreShort: s.toDouble(),
+      scoreLong: l.toDouble(),
+      trendState: 'DOWN',
+      reversalState: 'NONE',
+      computedAt: DateTime(2026, 7, 31),
+    );
+
+    test('雙 0 = 純空方(負 raw 被 floor)→ true', () {
+      expect(isScanBearish(entry(0, 0)), isTrue);
+    });
+
+    test('任一 horizon 有正分 → false', () {
+      expect(isScanBearish(entry(8, 0)), isFalse);
+      expect(isScanBearish(entry(0, 12)), isFalse);
     });
   });
 }

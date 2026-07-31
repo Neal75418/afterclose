@@ -6,6 +6,7 @@ import 'package:afterclose/core/constants/calibrated_scores/calibrated_scores_re
 import 'package:afterclose/domain/models/signal_names.dart';
 import 'package:afterclose/core/constants/reason_type.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/theme/semantic_colors.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// 推薦原因標籤的尺寸變體
@@ -143,8 +144,11 @@ class _ReasonTag extends StatelessWidget {
         vertical: isCompact ? DesignTokens.spacing4 : DesignTokens.spacing6,
       ),
       decoration: BoxDecoration(
+        // isRisk 背景/文字用 AppTheme.errorColor 家族(WarningBadge 同源):
+        // ErrorColors.onTint* 是對「errorColor tint 合成背景」實測校準的
+        // (4.9~5.5:1),colorScheme.error(#FF6B6B)自疊僅 ~3.6:1 不合格
         color: isRisk
-            ? theme.colorScheme.error.withValues(
+            ? AppTheme.errorColor.withValues(
                 alpha: isDark ? DesignTokens.opacity25 : DesignTokens.opacity10,
               )
             : isDark
@@ -179,7 +183,9 @@ class _ReasonTag extends StatelessWidget {
                     // 淺色主題底色是 primaryColor 10% 疊白，colorScheme.primary
                     // （解析為 brandOnLight）仍合格，維持不變。
                     color: isRisk
-                        ? theme.colorScheme.error
+                        ? ErrorColors.onTintFor(
+                            isDark ? Brightness.dark : Brightness.light,
+                          )
                         : isDark
                         ? AppTheme.brandOnDecorative
                         : theme.colorScheme.primary,

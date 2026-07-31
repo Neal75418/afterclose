@@ -369,7 +369,13 @@ void main() {
       );
 
       expect(result, isNotNull, reason: '純空方觸發不得被 clamp 吃掉——掃描/風控要看得見');
-      expect(result!.scoreShort, 0, reason: '落庫值維持非負契約(下游 tier/排序不受影響)');
+      expect(
+        result!.scoreShort,
+        0,
+        reason:
+            '落庫值維持非負契約;雙 0 是掃描層辨識空方股的指紋'
+            '(scan_provider.isScanBearish)',
+      );
       expect(result.scoreLong, 0);
     });
 

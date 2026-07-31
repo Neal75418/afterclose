@@ -151,6 +151,46 @@ void main() {
         greaterThanOrEqualTo(4.5),
       );
     });
+
+    // 初版用 colorScheme.error 自疊自(#FF6B6B 文字疊自身 25% tint)僅
+    // ~3.6:1——審查抓出後改用 AppTheme.errorColor tint +
+    // ErrorColors.onTintFor(WarningBadge 同源校準)。從 render tree 讀
+    // 實際色,防止改回未校準顏色。每個 brightness 獨立 testWidgets:
+    // MaterialApp 換 theme 有 AnimatedTheme 過渡,同 tree 內切換會讀到
+    // 過渡中的舊 theme。
+    for (final brightness in [Brightness.dark, Brightness.light]) {
+      testWidgets('跌破風控 tag(isRisk)$brightness 實渲染對比達 AA 4.5:1', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestApp(
+            const ReasonTags(reasons: ['BREAK_MA60'], translateCodes: true),
+            brightness: brightness,
+          ),
+        );
+        final theme = brightness == Brightness.dark
+            ? AppTheme.darkTheme
+            : AppTheme.lightTheme;
+        final label = ReasonTags.translateReasonCode('BREAK_MA60');
+        final container = tester.widget<Container>(
+          find
+              .ancestor(of: find.text(label), matching: find.byType(Container))
+              .first,
+        );
+        final tint = (container.decoration! as BoxDecoration).color!;
+        final textColor = tester.widget<Text>(find.text(label)).style!.color!;
+        final composite = ColorContrast.compositeOver(
+          Color.from(alpha: 1.0, red: tint.r, green: tint.g, blue: tint.b),
+          theme.colorScheme.surface,
+          tint.a,
+        );
+        expect(
+          ColorContrast.ratio(textColor, composite),
+          greaterThanOrEqualTo(4.5),
+          reason: '$brightness isRisk tag 對比不足',
+        );
+      });
+    }
   });
 
   group('ReasonTags.translateReasonCode', () {
