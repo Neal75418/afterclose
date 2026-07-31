@@ -48,11 +48,23 @@ class InstitutionalSyncer {
     }
 
     // 遷移剛清空全表，這一輪必須自己補回深度——否則 streak（90 日曆天）與
-    // surge baseline（60 日）會在 ~10 個交易日的資料上靜默失真，而且沒有
-    // 任何機制促成後續那次 force。穩態下 per-day 完整性檢查會跳過已完整的
-    // 天（不睡不打），所以日常更新仍維持淺回補。
+    // surge baseline（60 日）會在 ~10 個交易日的資料上靜默失真。穩態下
+    // per-day 完整性檢查會跳過已完整的天（不睡不打），日常更新仍是淺回補。
+    //
+    // 深窗的觸發不只看 migrated（一次性）——遷移輪的深回補若被限流打斷，
+    // 下一輪 migrated=false 會退回淺窗、第 16~62 天永久缺失。改由
+    // pending marker 承載「深回補還沒完整跑完」：未蓋章前每輪都用深窗，
+    // 已補的天由完整性檢查零成本跳過，撞限流就下輪續傳。
+    var deepPending = migrated;
+    if (!deepPending) {
+      try {
+        deepPending = await _institutionalRepo.isDeepBackfillPending();
+      } catch (e) {
+        AppLogger.warning('InstitutionalSyncer', '深回補 pending 檢核失敗', e);
+      }
+    }
     final effectiveBackfillDays =
-        migrated && backfillDays < ApiConfig.institutionalForceBackfillDays
+        deepPending && backfillDays < ApiConfig.institutionalForceBackfillDays
         ? ApiConfig.institutionalForceBackfillDays
         : backfillDays;
     if (effectiveBackfillDays != backfillDays) {
@@ -122,6 +134,18 @@ class InstitutionalSyncer {
 
     if (skippedDays > 0) {
       AppLogger.debug('InstitutionalSyncer', '法人回補: $skippedDays 天已完整跳過（不睡不打）');
+    }
+
+    // 深回補完整跑完（迴圈未被限流/斷網 rethrow 打斷、零錯誤）才蓋章；
+    // 有錯誤代表某些天沒補到，marker 留著讓下一輪續補。蓋章失敗只記
+    // warning——下一輪多跑一次零成本的深窗預檢而已。
+    if (deepPending && errors.isEmpty) {
+      try {
+        await _institutionalRepo.markDeepBackfillComplete();
+        AppLogger.info('InstitutionalSyncer', '深回補完整跑完，恢復日常淺回補窗');
+      } catch (e) {
+        AppLogger.warning('InstitutionalSyncer', '深回補蓋章失敗（下輪重試）', e);
+      }
     }
 
     AppLogger.info('InstitutionalSyncer', '法人資料同步完成: $syncedDays 天');

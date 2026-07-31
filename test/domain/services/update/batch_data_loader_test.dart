@@ -59,7 +59,7 @@ void main() {
       () => db.getMarketsForSymbolsBatch(any()),
     ).thenAnswer((_) async => <String, String>{});
     when(
-      () => db.getLatestInsiderHoldingsBatch(any()),
+      () => db.getLatestInsiderHoldingsBatch(any(), asOf: any(named: 'asOf')),
     ).thenAnswer((_) async => {});
     when(() => db.getEPSHistoryBatch(any())).thenAnswer((_) async => {});
     when(() => db.getROEHistoryBatch(any())).thenAnswer((_) async => {});

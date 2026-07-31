@@ -39,6 +39,7 @@ void main() {
     syncer = InstitutionalSyncer(institutionalRepository: mockRepo);
 
     when(() => mockRepo.ensureDataVersion()).thenAnswer((_) async => false);
+    when(() => mockRepo.isDeepBackfillPending()).thenAnswer((_) async => false);
     // 預設全缺漏（既有測試的行為前提）
     when(() => mockRepo.isDayComplete(any())).thenAnswer((_) async => false);
     when(
@@ -305,6 +306,79 @@ void main() {
         lessThan(ApiConfig.institutionalDailyBackfillDays),
         reason: '穩態下每輪都掃 62 天會讓日常更新無謂變慢',
       );
+    });
+  });
+
+  // ====================================================================
+  // 深回補中斷自癒(2026-08-01 複審)
+  //
+  // 舊行為:migrated flag 是一次性的——遷移輪清空全表後若深回補(62 天)
+  // 中途撞限流,下一輪 ensureDataVersion 回 false、回補窗退回日常 15 天,
+  // 第 16~62 天的深度**永久缺失**且無任何機制促成補救(代碼自承)。
+  // 新行為:遷移時落 pending marker,深回補完整跑完(零錯誤)才蓋章;
+  // 未蓋章前每一輪都用深窗,per-day 完整性檢查讓已補的天零成本跳過。
+  // ====================================================================
+  group('深回補中斷自癒', () {
+    setUp(() {
+      when(() => mockRepo.markDeepBackfillComplete()).thenAnswer((_) async {});
+    });
+
+    test('🚨 pending 未蓋章:非遷移輪也用深回補窗(限流中斷後自癒)', () async {
+      when(
+        () => mockRepo.isDeepBackfillPending(),
+      ).thenAnswer((_) async => true);
+      when(() => mockRepo.isDayComplete(any())).thenAnswer((_) async => true);
+
+      await syncer.syncInstitutionalData(date: date, backfillDays: 4);
+
+      // 淺窗 4 曆天只預檢 ~2 個交易日;深窗 62 曆天 >30 個。
+      // 已完整的天不睡不打,深窗在穩態下零 API 成本。
+      final preChecks = verify(() => mockRepo.isDayComplete(any())).callCount;
+      expect(
+        preChecks,
+        greaterThan(15),
+        reason: 'pending 未蓋章時必須維持深回補窗,否則深度缺口永久化',
+      );
+    });
+
+    test('深回補完整跑完且零錯誤 → 蓋章 markDeepBackfillComplete', () async {
+      when(
+        () => mockRepo.isDeepBackfillPending(),
+      ).thenAnswer((_) async => true);
+      when(() => mockRepo.isDayComplete(any())).thenAnswer((_) async => true);
+
+      await syncer.syncInstitutionalData(date: date, backfillDays: 4);
+
+      verify(() => mockRepo.markDeepBackfillComplete()).called(1);
+    });
+
+    test('深回補再撞限流 → 不蓋章,下一輪重試', () async {
+      when(
+        () => mockRepo.isDeepBackfillPending(),
+      ).thenAnswer((_) async => true);
+      when(() => mockRepo.isDayComplete(any())).thenAnswer((_) async => false);
+      when(
+        () => mockRepo.syncAllMarketInstitutional(
+          any(),
+          force: any(named: 'force'),
+        ),
+      ).thenThrow(RateLimitException('quota'));
+
+      await expectLater(
+        syncer.syncInstitutionalData(date: date, backfillDays: 4),
+        throwsA(isA<RateLimitException>()),
+      );
+      verifyNever(() => mockRepo.markDeepBackfillComplete());
+    });
+
+    test('穩態 pending=false:維持淺窗、不蓋章', () async {
+      when(() => mockRepo.isDayComplete(any())).thenAnswer((_) async => true);
+
+      await syncer.syncInstitutionalData(date: date, backfillDays: 4);
+
+      final preChecks = verify(() => mockRepo.isDayComplete(any())).callCount;
+      expect(preChecks, lessThan(6));
+      verifyNever(() => mockRepo.markDeepBackfillComplete());
     });
   });
 }

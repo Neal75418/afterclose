@@ -45,9 +45,14 @@ mixin InsiderHoldingDaoMixin on $AppDatabase {
   }
 
   /// 批次取得多檔股票的最新董監持股（批次查詢）
+  ///
+  /// [asOf] 為 point-in-time 上界——歷史重放時不得把超前的月度申報當
+  /// 「最新」（2026-07-26 估值/月營收/外資持股補 as-of 時漏掃的同型，
+  /// 動機見 fundamental_as_of_test.dart 檔頭）。省略維持全域最新語意。
   Future<Map<String, InsiderHoldingEntry>> getLatestInsiderHoldingsBatch(
-    List<String> symbols,
-  ) async {
+    List<String> symbols, {
+    DateTime? asOf,
+  }) async {
     if (symbols.isEmpty) return {};
 
     final placeholders = List.filled(symbols.length, '?').join(', ');
@@ -60,13 +65,17 @@ mixin InsiderHoldingDaoMixin on $AppDatabase {
       SELECT symbol, MAX(date) as max_date
       FROM insider_holding
       WHERE symbol IN ($placeholders)
+      ${asOf == null ? '' : 'AND date <= ?'}
       GROUP BY symbol
     ) latest ON ih.symbol = latest.symbol AND ih.date = latest.max_date
   ''';
 
     final results = await customSelect(
       query,
-      variables: symbols.map((s) => Variable.withString(s)).toList(),
+      variables: [
+        ...symbols.map((s) => Variable.withString(s)),
+        if (asOf != null) Variable.withDateTime(asOf),
+      ],
       readsFrom: {insiderHolding},
     ).get();
 

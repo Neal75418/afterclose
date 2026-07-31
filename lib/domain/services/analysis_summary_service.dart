@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:afterclose/core/utils/number_formatter.dart';
 
 import 'package:collection/collection.dart';
+import 'package:meta/meta.dart';
 
 import 'package:afterclose/core/constants/analysis_params.dart';
 import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
@@ -1073,6 +1074,31 @@ class AnalysisSummaryService {
             const LocalizableString('summary.kdHighPullback'),
       };
 
+  // ==================================================
+  // MA 生命週期(2026-07-31 新增,複審補接摘要層)
+  // ==================================================
+  static final _maStageSignals =
+      <String, LocalizableString Function(Map<String, dynamic>)>{
+        SignalName.reclaimMa20: (_) =>
+            const LocalizableString('summary.reclaimMa20'),
+        SignalName.reclaimMa60: (_) =>
+            const LocalizableString('summary.reclaimMa60'),
+        SignalName.breakMa20: (_) =>
+            const LocalizableString('summary.breakMa20'),
+        SignalName.breakMa60: (_) =>
+            const LocalizableString('summary.breakMa60'),
+        SignalName.coilingBelowMa20: (_) =>
+            const LocalizableString('summary.coilingBelowMa20'),
+        SignalName.coilingBelowMa60: (_) =>
+            const LocalizableString('summary.coilingBelowMa60'),
+      };
+
+  /// 守門測試用:能被翻成摘要文案的訊號代碼全集。缺席的 ReasonType 會被
+  /// `.whereType<LocalizableString>()` 靜默濾掉——回檔 v2(2026-07-23)與
+  /// MA 穿越(2026-07-31)兩批新規則都漏接過,靠結構測試擋第三次。
+  @visibleForTesting
+  static Set<String> get summarySignalCodes => _signalBuilders.keys.toSet();
+
   /// 合併所有分類的 signal builders
   static final Map<String, LocalizableString Function(Map<String, dynamic>)>
   _signalBuilders = {
@@ -1081,6 +1107,7 @@ class AnalysisSummaryService {
     ..._institutionalStreakSignals,
     ..._candlestickPatterns,
     ..._pullbackSignals,
+    ..._maStageSignals,
     ..._technicalIndicators,
     ..._extendedMarketData,
     ..._priceVolumeDivergence,

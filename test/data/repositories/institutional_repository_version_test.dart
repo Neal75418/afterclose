@@ -98,4 +98,48 @@ void main() {
       ),
     ]);
   });
+
+  // 深回補中斷自癒(2026-08-01 複審):遷移清空後的深回補若被限流打斷,
+  // migrated flag 一次性失效會讓深度缺口永久化。pending marker 讓
+  // 「深回補還沒完整跑完」的狀態跨輪存活。
+  test('遷移時同交易落 deep-backfill pending marker', () async {
+    when(
+      () => mockDb.getSetting('institutional_data_version'),
+    ).thenAnswer((_) async => 'finmind-legacy');
+
+    await repo.ensureDataVersion();
+
+    verify(
+      () => mockDb.setSetting('institutional_deep_backfill_pending', '1'),
+    ).called(1);
+  });
+
+  test('認養路徑(無版本記錄)不落 pending——既有資料視為完整', () async {
+    when(
+      () => mockDb.getSetting('institutional_data_version'),
+    ).thenAnswer((_) async => null);
+
+    await repo.ensureDataVersion();
+
+    verifyNever(
+      () => mockDb.setSetting('institutional_deep_backfill_pending', any()),
+    );
+  });
+
+  test('isDeepBackfillPending 讀 marker;markDeepBackfillComplete 蓋章', () async {
+    when(
+      () => mockDb.getSetting('institutional_deep_backfill_pending'),
+    ).thenAnswer((_) async => '1');
+    expect(await repo.isDeepBackfillPending(), isTrue);
+
+    when(
+      () => mockDb.getSetting('institutional_deep_backfill_pending'),
+    ).thenAnswer((_) async => null);
+    expect(await repo.isDeepBackfillPending(), isFalse);
+
+    await repo.markDeepBackfillComplete();
+    verify(
+      () => mockDb.setSetting('institutional_deep_backfill_pending', '0'),
+    ).called(1);
+  });
 }

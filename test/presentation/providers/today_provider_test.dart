@@ -418,4 +418,30 @@ void main() {
       expect(unhandled, isEmpty);
     });
   });
+
+  // ====================================================================
+  // 節流錨點(2026-08-01 複審):lastAttemptAt 必須取 startedAt。
+  // 孤兒 RUNNING 被 beforeOpen 的 failOrphanRunningRuns 收斂成 FAILED 時
+  // finishedAt 會蓋成 sweep 當下——那是 DB bookkeeping、不是一次真實 API
+  // 嘗試。舊寫法 finishedAt ?? startedAt 讓「app 被殺 3 小時後重開」被
+  // 多節流最多一整個節流窗,資料早已過期卻不重試。
+  // ====================================================================
+  group('冷啟動節流錨點', () {
+    test('🚨 sweep 蓋過 finishedAt 的孤兒 run:錨點仍是真實發起時刻', () {
+      final started = DateTime(2026, 7, 22, 6); // 真實嘗試:3 小時前
+      final swept = DateTime(2026, 7, 22, 9); // sweep 收斂當下
+      final run = UpdateRunEntry(
+        id: 1,
+        runDate: DateTime(2026, 7, 22),
+        startedAt: started,
+        finishedAt: swept,
+        status: 'failed',
+      );
+      expect(TodayNotifier.attemptAnchorOf(run), started);
+    });
+
+    test('無任何 run 回 null(從未嘗試)', () {
+      expect(TodayNotifier.attemptAnchorOf(null), isNull);
+    });
+  });
 }

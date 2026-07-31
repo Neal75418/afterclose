@@ -216,6 +216,15 @@ class AppDatabase extends $AppDatabase
   /// 一律 NULL;volume 保留(0=無量、17=零股 皆合法)。新資料由
   /// [TwParseUtils.parsePrice] 在解析層擋,此步收斂存量+兜底。
   Future<void> _ensureZeroPriceSanitized() async {
+    // partial index(2026-08-01 複審):daily_price 3.5M+ 列且逐日成長,
+    // close 無索引時這條 UPDATE 每次啟動都全表掃描。穩態下索引為空
+    // (清過的列 close=NULL 即離開索引),UPDATE 趨近 O(1);建索引本身
+    // 只有首次要掃全表,之後 IF NOT EXISTS no-op。保留 UPDATE 的
+    // 「持續兜底」語意——parser 之外若再混入 0,下次啟動仍會被清。
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_daily_price_zero_close '
+      'ON daily_price (close) WHERE close = 0',
+    );
     await customStatement(
       'UPDATE daily_price SET open = NULL, high = NULL, low = NULL, '
       'close = NULL WHERE close = 0',

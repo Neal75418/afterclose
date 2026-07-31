@@ -16,7 +16,14 @@ import 'package:afterclose/presentation/screens/calendar/widgets/upcoming_events
 
 /// 事件行事曆頁面
 class EventCalendarScreen extends ConsumerStatefulWidget {
-  const EventCalendarScreen({super.key});
+  const EventCalendarScreen({super.key, this.initialFocusedDay});
+
+  /// 測試注入點:釘死初始聚焦月份。production 一律 null(=今天)。
+  ///
+  /// 沒有這個注入,widget 測試會隨真實日期漂移——月曆列數 4~6 列依
+  /// 當月而變(2026-08 六列比 07 五列多 52dp),cramped 高度斷言在
+  /// 跨月當天無預警翻紅(2026-08-01 實發)。
+  final DateTime? initialFocusedDay;
 
   @override
   ConsumerState<EventCalendarScreen> createState() =>
@@ -26,6 +33,12 @@ class EventCalendarScreen extends ConsumerStatefulWidget {
 /// 桌面左欄固定件（月曆 header＋星期列＋chips＋統計 pills 卡＋間距）
 /// 估算高，供動態 rowHeight 反推：(可用高 − 此值) / 當月週數。
 const double _wideLeftFixedHeight = 270;
+
+/// 窄佈局非月曆列固定件(未來14天卡＋月曆 header/星期列＋chips)＋
+/// 日事件區最低保留高的估算,供矮視窗反推動態 rowHeight。
+/// 實測 625dp 視窗:非列内容 ~319dp,保留 ~80dp 給空狀態(FittedBox
+/// 可再縮),取 400。正常手機高度((h−400)/6 ≥ 52)不受影響。
+const double _narrowNonRowFixedHeight = 400;
 
 /// 當月在「週一起算」月曆上實際佔的週列數（4~6）。
 ///
@@ -50,8 +63,8 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
   @override
   void initState() {
     super.initState();
-    _focusedDay = DateTime.now();
-    _selectedDay = DateTime.now();
+    _focusedDay = widget.initialFocusedDay ?? DateTime.now();
+    _selectedDay = widget.initialFocusedDay ?? DateTime.now();
 
     Future.microtask(() => ref.read(eventCalendarProvider.notifier).init());
   }
@@ -147,14 +160,34 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
         constraints: const BoxConstraints(
           maxWidth: Breakpoints.contentMaxWidth,
         ),
-        child: Column(
-          children: [
-            _buildUpcoming(state, direction: Axis.horizontal),
-            _buildCalendarSection(theme, state, isWide: false),
-            if (state.error != null && state.events.isNotEmpty)
-              _buildErrorBanner(state),
-            Expanded(child: _buildDayEventsBody(theme, state)),
-          ],
+        child: LayoutBuilder(
+          builder: (context, cons) {
+            // 矮視窗下格高隨當月週數反推收縮(鏡射 wide 佈局的動態
+            // rowHeight):固定 52 在 6 列月份比 5 列多 52dp 固定高度,
+            // 矮視窗的 Column 無捲動、直接溢位(2026-08-01 跨月實發,
+            // 溢 6px)。下限 44 對齊今日圈固定尺寸(44dp 不隨格高縮)。
+            final rows = calendarWeekRows(_focusedDay);
+            final rowHeight = cons.maxHeight.isFinite
+                ? ((cons.maxHeight - _narrowNonRowFixedHeight) / rows).clamp(
+                    44.0,
+                    52.0,
+                  )
+                : 52.0;
+            return Column(
+              children: [
+                _buildUpcoming(state, direction: Axis.horizontal),
+                _buildCalendarSection(
+                  theme,
+                  state,
+                  isWide: false,
+                  rowHeight: rowHeight,
+                ),
+                if (state.error != null && state.events.isNotEmpty)
+                  _buildErrorBanner(state),
+                Expanded(child: _buildDayEventsBody(theme, state)),
+              ],
+            );
+          },
         ),
       ),
     );

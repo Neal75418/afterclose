@@ -132,7 +132,7 @@ class BatchDataLoader {
     );
     final insiderFuture = timed(
       'insider',
-      _db.getLatestInsiderHoldingsBatch(candidates),
+      _db.getLatestInsiderHoldingsBatch(candidates, asOf: date),
     );
     final epsFuture = timed('eps', _db.getEPSHistoryBatch(candidates));
     final roeFuture = timed('roe', _db.getROEHistoryBatch(candidates));

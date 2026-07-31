@@ -183,7 +183,8 @@ void main() {
       () => mockDb.getMarketsForSymbolsBatch(any()),
     ).thenAnswer((_) async => <String, String>{});
     when(
-      () => mockDb.getLatestInsiderHoldingsBatch(any()),
+      () =>
+          mockDb.getLatestInsiderHoldingsBatch(any(), asOf: any(named: 'asOf')),
     ).thenAnswer((_) async => {});
     when(() => mockDb.getEPSHistoryBatch(any())).thenAnswer((_) async => {});
     when(() => mockDb.getROEHistoryBatch(any())).thenAnswer((_) async => {});

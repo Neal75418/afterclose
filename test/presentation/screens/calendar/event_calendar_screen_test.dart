@@ -77,9 +77,10 @@ void main() {
   Widget buildTestWidget({
     EventCalendarState? calendarState,
     Brightness brightness = Brightness.light,
+    DateTime? focusedDay,
   }) {
     return buildProviderTestApp(
-      const EventCalendarScreen(),
+      EventCalendarScreen(initialFocusedDay: focusedDay),
       overrides: [
         eventCalendarProvider.overrideWith(() {
           final n = FakeEventCalendarNotifier();
@@ -558,10 +559,14 @@ void main() {
       // Expanded 剩 ~80dp，空狀態 icon48+文字 需可縮放不得溢位
       tester.view.physicalSize = const Size(1680, 1875);
       addTearDown(() => tester.view.resetPhysicalSize());
+      // 釘死 6 列月份(2026-08:週六起頭+31 天)——月曆列數 4~6 隨當月
+      // 而變,不釘月份此測試只在 6 列月份翻紅(2026-08-01 跨月實發,
+      // rowHeight 固定 52 時多一列剛好溢位 6px)。
       await tester.pumpWidget(
         buildTestWidget(
+          focusedDay: DateTime(2026, 8, 20),
           calendarState: EventCalendarState(
-            selectedDate: DateTime(2026, 2, 20),
+            selectedDate: DateTime(2026, 8, 20),
             upcomingEvents: [createEvent(id: 9, symbol: '2330')],
           ),
         ),

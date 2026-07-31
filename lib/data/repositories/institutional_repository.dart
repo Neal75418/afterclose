@@ -314,6 +314,16 @@ class InstitutionalRepository implements IInstitutionalRepository {
 
   /// app_settings 的法人口徑版本 key
   static const String _dataVersionKey = 'institutional_data_version';
+  static const String _deepBackfillPendingKey =
+      'institutional_deep_backfill_pending';
+
+  @override
+  Future<bool> isDeepBackfillPending() async =>
+      await _db.getSetting(_deepBackfillPendingKey) == '1';
+
+  @override
+  Future<void> markDeepBackfillComplete() =>
+      _db.setSetting(_deepBackfillPendingKey, '0');
 
   /// 口徑版本檢核：**實際版本不符**才一次性清空重建
   ///
@@ -356,6 +366,11 @@ class InstitutionalRepository implements IInstitutionalRepository {
         _dataVersionKey,
         DataFreshness.institutionalDataVersion,
       );
+      // 深回補 pending:清空後的 62 天深回補若被限流打斷,一次性的
+      // migrated 回傳值救不了下一輪(版本已一致→false→退回 15 天窗,
+      // 第 16~62 天永久缺失)。marker 讓「還沒補完」跨輪存活,由
+      // syncer 在深回補完整跑完後蓋章(markDeepBackfillComplete)。
+      await _db.setSetting(_deepBackfillPendingKey, '1');
     });
     AppLogger.info(
       'InstitutionalRepo',

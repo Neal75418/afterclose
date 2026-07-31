@@ -115,4 +115,33 @@ void main() {
     final onBoundary = await db.getLatestValuationsBatch(['2330'], asOf: past);
     expect(onBoundary['2330']!.per, 10, reason: 'date <= asOf，非 <');
   });
+
+  test('🚨 董監持股：asOf 之後的列不得被當成「最新」(2026-08-01 同型補掃)', () async {
+    // 2026-07-26 為估值/月營收/外資持股補 as-of 上界時漏掃的第四個同型
+    // 「最新值」查詢——與其餘三個一樣直接餵 batch_data_loader 的評分路徑。
+    await db.insertInsiderHoldingData([
+      InsiderHoldingCompanion.insert(
+        symbol: '2330',
+        date: past,
+        insiderRatio: const Value(20),
+      ),
+      InsiderHoldingCompanion.insert(
+        symbol: '2330',
+        date: future,
+        insiderRatio: const Value(99),
+      ),
+    ]);
+
+    final asOfPast = await db.getLatestInsiderHoldingsBatch([
+      '2330',
+    ], asOf: past);
+    expect(
+      asOfPast['2330']!.insiderRatio,
+      20,
+      reason: '評分 7/10 時不得看到 7/24 的持股',
+    );
+
+    final unbounded = await db.getLatestInsiderHoldingsBatch(['2330']);
+    expect(unbounded['2330']!.insiderRatio, 99, reason: '省略 asOf 維持原語意');
+  });
 }

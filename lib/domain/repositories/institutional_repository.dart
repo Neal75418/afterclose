@@ -55,4 +55,15 @@ abstract class IInstitutionalRepository {
   ///
   /// 供回補迴圈**在節流延遲前**預檢——已完整的天不睡不打。
   Future<bool> isDayComplete(DateTime date);
+
+  /// 口徑遷移後的深回補是否尚未完整跑完
+  ///
+  /// [ensureDataVersion] 遷移清空時落 pending marker；深回補（62 天窗）
+  /// 完整跑完由 syncer 呼叫 [markDeepBackfillComplete] 蓋章。未蓋章前
+  /// 每輪同步都維持深回補窗——限流打斷後靠 per-day 完整性檢查斷點續傳，
+  /// 不再依賴一次性的遷移回傳值。
+  Future<bool> isDeepBackfillPending();
+
+  /// 深回補完整跑完（零錯誤）後蓋章，後續輪次恢復日常淺回補窗
+  Future<void> markDeepBackfillComplete();
 }

@@ -8,6 +8,7 @@ import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/utils/sentinel.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/taiwan_calendar.dart';
+import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/database/cached_accessor.dart';
 import 'package:afterclose/data/repositories/market_data_repository.dart';
 import 'package:afterclose/domain/services/data_sync_service.dart';
@@ -125,7 +126,7 @@ class TodayNotifier extends Notifier<TodayState> {
       final lastSuccess = await _marketRepo.getLatestSuccessfulUpdateRun();
       _maybeTriggerColdStartUpdate(
         lastSuccessAt: lastSuccess?.finishedAt ?? lastSuccess?.startedAt,
-        lastAttemptAt: lastRun?.finishedAt ?? lastRun?.startedAt,
+        lastAttemptAt: attemptAnchorOf(lastRun),
       );
 
       // 取得實際資料日期供顯示用（非查詢用途）
@@ -152,6 +153,16 @@ class TodayNotifier extends Notifier<TodayState> {
       state = state.copyWith(isLoading: false, error: ErrorDisplay.message(e));
     }
   }
+
+  /// 節流錨點:最後一筆 run 的**發起**時刻(不分 status)。
+  ///
+  /// 不可用 finishedAt——孤兒 RUNNING 被 beforeOpen 的
+  /// `failOrphanRunningRuns` 收斂成 FAILED 時,finishedAt 會蓋成 sweep
+  /// 當下(DB bookkeeping,非真實 API 行為)。app 被殺數小時後重開,
+  /// 舊寫法會把「剛剛的 sweep」當成「剛剛嘗試過」,冷啟動重試被多擋
+  /// 最多一整個 coldStartRetryThrottleMinutes 窗。
+  @visibleForTesting
+  static DateTime? attemptAnchorOf(UpdateRunEntry? run) => run?.startedAt;
 
   /// B-lite cold-start auto-update 全域開關
   ///
