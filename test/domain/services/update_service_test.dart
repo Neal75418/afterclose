@@ -906,6 +906,29 @@ void main() {
   // 掃過全部 16 處 record `.wait`：只有 update_service.dart:759 落在有
   // `on RateLimitException` 的 try 裡。:287 那處包的四個 helper 各自有內部
   // try/catch 並自行設 rateLimitedAbort，例外不會逸出——**不是同型，別順手改**。
+  // 2026-08-01 實機(run #123 force):額度 600/600 時 getStockList 拋
+  // RateLimitException,syncer 按慣例 rethrow,但 _syncStockList 是唯一
+  // **完全沒有** try/catch 的 pipeline 步驟——整輪「未捕捉例外」硬摔,
+  // 而非優雅 rateLimitedAbort。週一首輪額度總是新鮮,此路徑潛伏至
+  // force+額度耗盡的組合才引爆。
+  group('步驟 2：股票清單限流分型', () {
+    test('🚨 股票清單撞限流:不得未捕捉炸整輪,須標 hasRateLimitError', () async {
+      when(
+        () => mockStockRepo.syncStockList(),
+      ).thenThrow(const RateLimitException('600/600'));
+
+      final service = buildService();
+      final result = await service.runDailyUpdate(forDate: tradingDay);
+
+      expect(result.hasRateLimitError, isTrue);
+      expect(
+        result.errors.any((e) => e.contains('股票清單')),
+        isTrue,
+        reason: '限流要以 recordError 分型入帳,不是未捕捉炸掉',
+      );
+    });
+  });
+
   group('步驟 4.7：rate limit 例外分型', () {
     test('🚨 財報同步撞限流時 hasRateLimitError 必須為 true', () async {
       when(

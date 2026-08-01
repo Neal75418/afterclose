@@ -420,13 +420,26 @@ class UpdateService {
 
   Future<void> _syncStockList(_UpdateContext ctx, DateTime targetDate) async {
     ctx.onProgress?.call(2, 10, '更新股票清單');
-    final stockResult = await _stockListSyncer.smartSync(
-      date: targetDate,
-      force: ctx.force,
-    );
-    ctx.result.stocksUpdated = stockResult.stockCount;
-    if (!stockResult.success && stockResult.error != null) {
-      ctx.result.errors.add('股票清單更新失敗: ${stockResult.error}');
+    // 2026-08-01 實機(force+額度耗盡):此前是唯一沒有 try/catch 的
+    // pipeline 步驟——syncer 按慣例 rethrow 的 RateLimitException 直接
+    // 「未捕捉例外」炸整輪。週一首輪額度總是新鮮,潛伏至 force 連跑
+    // 才引爆。與 sibling 步驟同骨架:限流標 rateLimitedAbort 續走。
+    try {
+      final stockResult = await _stockListSyncer.smartSync(
+        date: targetDate,
+        force: ctx.force,
+      );
+      ctx.result.stocksUpdated = stockResult.stockCount;
+      if (!stockResult.success && stockResult.error != null) {
+        ctx.result.errors.add('股票清單更新失敗: ${stockResult.error}');
+      }
+    } on RateLimitException catch (e) {
+      ctx.rateLimitedAbort = true;
+      AppLogger.warning('UpdateService', '股票清單同步失敗 (rate limit)', e);
+      ctx.result.recordError('股票清單同步失敗 (rate limit): $e', e);
+    } catch (e) {
+      AppLogger.warning('UpdateService', '股票清單同步失敗', e);
+      ctx.result.recordError('股票清單同步失敗: $e', e);
     }
   }
 
