@@ -1487,17 +1487,27 @@ class TwseClient {
   /// FinMind TaiwanStockInfo 給上市電子股的分類多為泛用「電子工業」，
   /// 細分要靠官方碼——見 IndustryNames.nameForTwseCode 的說明。
   /// 僅涵蓋上市公司（無 ETF/DR），缺席者由呼叫端 fallback。
-  Future<Map<String, String>> fetchIndustryCodes() async {
-    final response = await _dio.get(
-      ApiEndpoints.twseStockInfo,
-      options: Options(headers: {'Accept': 'application/json'}),
-    );
-    if (response.statusCode != 200 || response.data is! List) {
-      return const {};
-    }
-    final map = parseIndustryCodes(response.data as List);
-    AppLogger.debug(_tag, '官方產業別代碼: ${map.length} 家公司');
-    return map;
+  Future<Map<String, String>> fetchIndustryCodes() {
+    // executeRequest 包裹(2026-08-01 補):初版仿 _fetchIssuedShares 的裸
+    // _dio.get、零重試——force 更新對 TWSE openapi 連發十餘請求,此 fetch
+    // 夾在中間被暫時性限流即陣亡,fail-soft 讓整輪退回 FinMind 分類、
+    // 殭屍清理被 sanity floor 跳過(floor 防護正確,但根因是缺重試)。
+    // 與其餘 client 方法一致走 mixin(帶重試+統一錯誤處理)。
+    return MarketClientMixin.executeRequest(_tag, '官方產業別', () async {
+      final response = await _dio.get(
+        ApiEndpoints.twseStockInfo,
+        options: Options(headers: {'Accept': 'application/json'}),
+      );
+      if (response.statusCode != 200 || response.data is! List) {
+        throw ApiException(
+          '$_tag OpenData API error: ${response.statusCode}',
+          response.statusCode,
+        );
+      }
+      final map = parseIndustryCodes(response.data as List);
+      AppLogger.info(_tag, '官方產業別代碼: ${map.length} 家公司');
+      return map;
+    });
   }
 
   /// t187ap03_L 列 → (公司代號, 產業別) 對照；缺欄跳過。
