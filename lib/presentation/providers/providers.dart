@@ -176,6 +176,7 @@ final stockRepositoryProvider = Provider<StockRepository>((ref) {
   return StockRepository(
     database: ref.watch(databaseProvider),
     finMindClient: ref.watch(finMindClientProvider),
+    twseClient: ref.watch(twseClientProvider),
   );
 });
 

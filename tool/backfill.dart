@@ -1316,7 +1316,11 @@ Future<int> runBackfillCli(List<String> args) async {
     const clock = SystemClock();
 
     // 初始化 repositories
-    final stockRepo = StockRepository(database: db, finMindClient: finMind);
+    final stockRepo = StockRepository(
+      database: db,
+      finMindClient: finMind,
+      twseClient: twse,
+    );
     final priceRepo = PriceRepository(
       database: db,
       finMindClient: finMind,

@@ -4,6 +4,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
+import 'package:afterclose/data/remote/twse_client.dart';
 import 'package:afterclose/data/repositories/stock_repository.dart';
 
 class MockAppDatabase extends Mock implements AppDatabase {
@@ -14,6 +15,8 @@ class MockAppDatabase extends Mock implements AppDatabase {
 }
 
 class MockFinMindClient extends Mock implements FinMindClient {}
+
+class MockTwseClient extends Mock implements TwseClient {}
 
 // Fake classes for registerFallbackValue
 class FakeStockMasterCompanion extends Fake implements StockMasterCompanion {}
@@ -99,6 +102,124 @@ void main() {
         final result = await repository.getStock('9999');
 
         expect(result, isNull);
+      });
+    });
+
+    // ==================================================
+    // TWSE 官方產業別覆蓋(2026-08-01 複審)
+    //
+    // FinMind TaiwanStockInfo 給上市電子股的分類多為泛用「電子工業」——
+    // 實測 305 檔 active 塌陷同一桶(台積電/聯發科/大立光在內),上市
+    // 「半導體業」卡只剩 29 檔且混著下市殭屍;產業排行整組失真。
+    // 官方 t187ap03_L(免額度)才有細分碼:2330→24(半導體業)。
+    // ==================================================
+    group('TWSE 官方產業別覆蓋', () {
+      late MockTwseClient mockTwse;
+
+      setUp(() {
+        mockTwse = MockTwseClient();
+        repository = StockRepository(
+          database: mockDb,
+          finMindClient: mockClient,
+          twseClient: mockTwse,
+        );
+        when(() => mockDb.upsertStocks(any())).thenAnswer((_) async {});
+        when(
+          () => mockDb.deactivateStocksNotIn(any()),
+        ).thenAnswer((_) async => 0);
+      });
+
+      List<StockMasterCompanion> capturedEntries() =>
+          verify(() => mockDb.upsertStocks(captureAny())).captured.single
+              as List<StockMasterCompanion>;
+
+      test('🚨 官方碼覆蓋 FinMind 泛用「電子工業」:2330→半導體業', () async {
+        when(() => mockClient.getStockList()).thenAnswer(
+          (_) async => const [
+            FinMindStockInfo(
+              stockId: '2330',
+              stockName: '台積電',
+              industryCategory: '電子工業',
+              type: 'twse',
+            ),
+          ],
+        );
+        when(
+          () => mockTwse.fetchIndustryCodes(),
+        ).thenAnswer((_) async => {'2330': '24'});
+
+        await repository.syncStockList();
+
+        final entry = capturedEntries().single;
+        expect(entry.industry.value, '半導體業');
+      });
+
+      test('FinMind 同 symbol 重複列:細分優先,泛用列在後不得覆蓋', () async {
+        when(() => mockClient.getStockList()).thenAnswer(
+          (_) async => const [
+            FinMindStockInfo(
+              stockId: '3450',
+              stockName: '聯鈞',
+              industryCategory: '半導體業',
+              type: 'twse',
+            ),
+            FinMindStockInfo(
+              stockId: '3450',
+              stockName: '聯鈞',
+              industryCategory: '電子工業',
+              type: 'twse',
+            ),
+          ],
+        );
+        when(
+          () => mockTwse.fetchIndustryCodes(),
+        ).thenAnswer((_) async => <String, String>{});
+
+        final count = await repository.syncStockList();
+
+        expect(count, 1, reason: '同 symbol 去重後只寫一筆');
+        expect(capturedEntries().single.industry.value, '半導體業');
+      });
+
+      test('官方端點失敗 fail-soft:沿用 FinMind 分類、同步不中斷', () async {
+        when(() => mockClient.getStockList()).thenAnswer(
+          (_) async => const [
+            FinMindStockInfo(
+              stockId: '2330',
+              stockName: '台積電',
+              industryCategory: '電子工業',
+              type: 'twse',
+            ),
+          ],
+        );
+        when(
+          () => mockTwse.fetchIndustryCodes(),
+        ).thenThrow(const NetworkException('boom'));
+
+        final count = await repository.syncStockList();
+
+        expect(count, 1);
+        expect(capturedEntries().single.industry.value, '電子工業');
+      });
+
+      test('上櫃股不套上市官方碼(TPEx 分類本就細分正確)', () async {
+        when(() => mockClient.getStockList()).thenAnswer(
+          (_) async => const [
+            FinMindStockInfo(
+              stockId: '6488',
+              stockName: '環球晶',
+              industryCategory: '半導體業',
+              type: 'tpex',
+            ),
+          ],
+        );
+        when(
+          () => mockTwse.fetchIndustryCodes(),
+        ).thenAnswer((_) async => {'6488': '26'});
+
+        await repository.syncStockList();
+
+        expect(capturedEntries().single.industry.value, '半導體業');
       });
     });
 

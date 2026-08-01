@@ -1447,6 +1447,39 @@ class TwseClient {
     });
   }
 
+  /// 上市公司產業別代碼（t187ap03_L，免額度）
+  ///
+  /// 回傳 Map<公司代號, 產業別代碼>（如 2330→'24' 半導體業）。
+  /// FinMind TaiwanStockInfo 給上市電子股的分類多為泛用「電子工業」，
+  /// 細分要靠官方碼——見 IndustryNames.nameForTwseCode 的說明。
+  /// 僅涵蓋上市公司（無 ETF/DR），缺席者由呼叫端 fallback。
+  Future<Map<String, String>> fetchIndustryCodes() async {
+    final response = await _dio.get(
+      ApiEndpoints.twseStockInfo,
+      options: Options(headers: {'Accept': 'application/json'}),
+    );
+    if (response.statusCode != 200 || response.data is! List) {
+      return const {};
+    }
+    final map = parseIndustryCodes(response.data as List);
+    AppLogger.debug(_tag, '官方產業別代碼: ${map.length} 家公司');
+    return map;
+  }
+
+  /// t187ap03_L 列 → (公司代號, 產業別) 對照；缺欄跳過。
+  @visibleForTesting
+  static Map<String, String> parseIndustryCodes(List<dynamic> data) {
+    final out = <String, String>{};
+    for (final row in data) {
+      if (row is! Map) continue;
+      final code = row['公司代號']?.toString() ?? '';
+      final industry = row['產業別']?.toString() ?? '';
+      if (code.isEmpty || industry.isEmpty) continue;
+      out[code] = industry;
+    }
+    return out;
+  }
+
   /// 從 TWSE OpenData 取得已發行股數
   ///
   /// 端點: t187ap03_L
