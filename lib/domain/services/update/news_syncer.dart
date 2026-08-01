@@ -1,4 +1,5 @@
 import 'package:afterclose/core/constants/data_freshness.dart';
+import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/repositories/news_repository.dart';
 
@@ -18,6 +19,10 @@ class NewsSyncer {
     final errors = <String>[];
     var itemsAdded = 0;
 
+    // RateLimit/Network 必須 rethrow(CLAUDE.md 慣例;2026-08-01 補)——
+    // 修前這裡是十個 syncer 中唯一的裸 catch:RateLimitException 被降級
+    // 成 errors 字串,UpdateService 的 rateLimitedAbort 熔斷對新聞路徑
+    // 完全失效(限流時下游照打)。fail-soft 只留給非限流/非網路的錯誤。
     try {
       final result = await _newsRepo.syncNews();
       itemsAdded = result.itemsAdded;
@@ -27,6 +32,10 @@ class NewsSyncer {
           errors.add('RSS 錯誤: $error');
         }
       }
+    } on RateLimitException {
+      rethrow;
+    } on NetworkException {
+      rethrow;
     } catch (e) {
       errors.add('新聞同步失敗: $e');
       AppLogger.warning('NewsSyncer', '新聞同步失敗', e);
@@ -36,6 +45,10 @@ class NewsSyncer {
     try {
       final added = await _newsRepo.syncMaterialInfo();
       itemsAdded += added;
+    } on RateLimitException {
+      rethrow;
+    } on NetworkException {
+      rethrow;
     } catch (e) {
       errors.add('重大訊息同步失敗: $e');
       AppLogger.warning('NewsSyncer', '重大訊息同步失敗', e);

@@ -525,9 +525,21 @@ class UpdateService {
   }
 
   Future<void> _syncNews(_UpdateContext ctx) async {
-    final newsResult = await _newsSyncer.syncAndCleanup();
-    ctx.result.newsUpdated = newsResult.itemsAdded;
-    ctx.result.errors.addAll(newsResult.errors);
+    // 修前是唯一沒有 rateLimitedAbort guard 的步驟,且 errors.addAll 繞過
+    // recordError 的限流偵測——與 NewsSyncer 的裸 catch 疊加成熔斷盲區
+    if (ctx.rateLimitedAbort) return;
+    try {
+      final newsResult = await _newsSyncer.syncAndCleanup();
+      ctx.result.newsUpdated = newsResult.itemsAdded;
+      ctx.result.errors.addAll(newsResult.errors);
+    } on RateLimitException catch (e) {
+      ctx.rateLimitedAbort = true;
+      AppLogger.warning('UpdateService', '新聞同步失敗 (rate limit)', e);
+      ctx.result.recordError('新聞同步失敗 (rate limit): $e', e);
+    } catch (e) {
+      AppLogger.warning('UpdateService', '新聞同步失敗', e);
+      ctx.result.recordError('新聞同步失敗: $e', e);
+    }
   }
 
   Future<DateTime> _syncDailyPrices(
