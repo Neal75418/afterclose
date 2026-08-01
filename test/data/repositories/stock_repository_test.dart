@@ -29,12 +29,22 @@ void main() {
 
   late MockAppDatabase mockDb;
   late MockFinMindClient mockClient;
+  late MockTwseClient mockTwse;
   late StockRepository repository;
 
   setUp(() {
     mockDb = MockAppDatabase();
     mockClient = MockFinMindClient();
-    repository = StockRepository(database: mockDb, finMindClient: mockClient);
+    mockTwse = MockTwseClient();
+    // 預設空 map:legacy 測試維持 FinMind fallback 行為(floor 擋殭屍步)
+    when(
+      () => mockTwse.fetchIndustryCodes(),
+    ).thenAnswer((_) async => <String, String>{});
+    repository = StockRepository(
+      database: mockDb,
+      finMindClient: mockClient,
+      twseClient: mockTwse,
+    );
   });
 
   group('StockRepository', () {

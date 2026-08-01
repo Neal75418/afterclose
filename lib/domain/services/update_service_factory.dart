@@ -63,6 +63,7 @@ class UpdateServiceFactory {
     final stockRepo = StockRepository(
       database: database,
       finMindClient: finMindClient,
+      twseClient: twseClient,
     );
     final priceRepo = PriceRepository(
       database: database,

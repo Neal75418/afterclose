@@ -16,7 +16,7 @@ class StockRepository implements IStockRepository {
   StockRepository({
     required AppDatabase database,
     required FinMindClient finMindClient,
-    TwseClient? twseClient,
+    required TwseClient twseClient,
   }) : _db = database,
        _client = finMindClient,
        _twseClient = twseClient;
@@ -24,9 +24,14 @@ class StockRepository implements IStockRepository {
   final AppDatabase _db;
   final FinMindClient _client;
 
-  /// 上市官方產業別來源（t187ap03_L）。null（如部分工具鏈）＝不覆蓋，
-  /// 沿用 FinMind 分類。
-  final TwseClient? _twseClient;
+  /// 上市官方產業別來源（t187ap03_L）。
+  ///
+  /// **required(2026-08-02)**:原為 optional「測試便利」,結果
+  /// update_service_factory 這個第三建構點漏傳、null 靜默跳過——更新
+  /// 管線的官方覆蓋+殭屍清理從未執行,且無任何 log(三輪 force 實機
+  /// 才定位)。改 required 讓「新建構點漏傳」直接編譯失敗,不再靠
+  /// 人肉掃描;測試注入 mock 並 stub 空 map 即得舊 fallback 行為。
+  final TwseClient _twseClient;
 
   /// Request deduplicator for getAllStocks
   final _stockListDedup = RequestDeduplicator<List<StockMasterEntry>>();
@@ -65,13 +70,10 @@ class StockRepository implements IStockRepository {
       // 上市半導體/光電細分卡整組失真），官方 t187ap03_L 才有細分碼。
       // fail-soft：抓不到就沿用 FinMind 分類，同步不中斷。
       var officialCodes = const <String, String>{};
-      final twse = _twseClient;
-      if (twse != null) {
-        try {
-          officialCodes = await twse.fetchIndustryCodes();
-        } catch (e) {
-          AppLogger.warning('StockRepo', 'TWSE 官方產業別取得失敗，沿用 FinMind 分類', e);
-        }
+      try {
+        officialCodes = await _twseClient.fetchIndustryCodes();
+      } catch (e) {
+        AppLogger.warning('StockRepo', 'TWSE 官方產業別取得失敗，沿用 FinMind 分類', e);
       }
 
       // 過濾有效股票代碼：4 位數字（一般股票）或 00 開頭（ETF）
