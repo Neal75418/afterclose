@@ -860,6 +860,40 @@ class TwseClient {
     });
   }
 
+  /// 上市除權除息預告表（TWT48U_ALL,免額度)——帶確定除權息交易日
+  ///
+  /// 行事曆除權息事件的資料源:大宗「已宣告股利」(t187ap45)只帶金額
+  /// 不帶日期,只有本預告表有確定交易日(2026-08-01 實測 122 筆、
+  /// 滾動前瞻約兩個月)。
+  Future<List<ExRightPreannouncement>> getExRightPreannouncements() {
+    return MarketClientMixin.executeRequest(_tag, '除權息預告', () async {
+      const cacheKey = 'exright_preannouncement';
+      final cached = _cache.get(cacheKey) as List<ExRightPreannouncement>?;
+      if (cached != null) return cached;
+
+      final response = await _dio.get(ApiEndpoints.twseExRightPreannouncement);
+      if (response.statusCode != 200) {
+        throw ApiException(
+          '$_tag OpenData API error: ${response.statusCode}',
+          response.statusCode,
+        );
+      }
+      final data = response.data;
+      if (data is! List) {
+        AppLogger.warning(_tag, '除權息預告: 非預期資料型別');
+        return <ExRightPreannouncement>[];
+      }
+      final results = data
+          .whereType<Map<String, dynamic>>()
+          .map(ExRightPreannouncement.tryFromTwseJson)
+          .whereType<ExRightPreannouncement>()
+          .toList();
+      AppLogger.info(_tag, '除權息預告: ${results.length} 筆');
+      _cache.put(cacheKey, results);
+      return results;
+    });
+  }
+
   /// 取得所有股票的月營收（最新月份）
   ///
   /// 來源: TWSE Open Data API (t187ap05_L)

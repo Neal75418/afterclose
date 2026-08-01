@@ -259,6 +259,7 @@ final eventRepositoryProvider = Provider<EventRepository>((ref) {
   return EventRepository(
     database: ref.watch(databaseProvider),
     twseClient: ref.watch(twseClientProvider),
+    tpexClient: ref.watch(tpexClientProvider),
   );
 });
 

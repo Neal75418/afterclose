@@ -9,6 +9,7 @@ import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/lru_cache.dart';
 import 'package:afterclose/core/utils/tw_parse_utils.dart';
 import 'package:afterclose/data/models/tpex/models.dart';
+import 'package:afterclose/data/models/twse/exright_preannouncement.dart';
 import 'package:afterclose/data/models/twse/twse_market_index.dart';
 import 'package:afterclose/data/remote/insider_holding_aggregator.dart';
 import 'package:afterclose/data/remote/market_client_mixin.dart';
@@ -656,6 +657,36 @@ class TpexClient {
   /// 端點: /openapi/v1/tpex_disposal_information
   ///
   /// 回傳交易受限制的股票清單。
+  /// 上櫃除權除息預告表（tpex_exright_prepost,免額度)——帶確定交易日
+  ///
+  /// 與 TWSE TWT48U_ALL 同構,為行事曆除權息事件的上櫃資料源。
+  Future<List<ExRightPreannouncement>> getExRightPreannouncements() {
+    return MarketClientMixin.executeRequest(_tag, '除權息預告', () async {
+      final response = await _dio.get(
+        ApiEndpoints.tpexExRightPreannouncement,
+        options: Options(headers: {'Accept': 'application/json'}),
+      );
+      if (response.statusCode != 200) {
+        throw ApiException(
+          '$_tag OpenAPI error: ${response.statusCode}',
+          response.statusCode,
+        );
+      }
+      final data = response.data;
+      if (data is! List) {
+        AppLogger.warning(_tag, '除權息預告: 非預期資料型別');
+        return <ExRightPreannouncement>[];
+      }
+      final results = data
+          .whereType<Map<String, dynamic>>()
+          .map(ExRightPreannouncement.tryFromTpexJson)
+          .whereType<ExRightPreannouncement>()
+          .toList();
+      AppLogger.info(_tag, '除權息預告: ${results.length} 筆');
+      return results;
+    });
+  }
+
   Future<List<TpexTradingWarning>> getDisposalInfo() {
     return MarketClientMixin.executeRequest(_tag, '處置股票', () async {
       final response = await _dio.get(

@@ -35,6 +35,10 @@ abstract final class ApiEndpoints {
   static const String twseMaterialInfo =
       'https://openapi.twse.com.tw/v1/opendata/t187ap04_L';
 
+  /// TWSE 上市除權除息預告表（openapi TWT48U_ALL）——帶確定除權息交易日
+  static const String twseExRightPreannouncement =
+      'https://openapi.twse.com.tw/v1/exchangeReport/TWT48U_ALL';
+
   /// TWSE 停資停券預告表（openapi BFI84U）
   static const String twseShortSuspension =
       'https://openapi.twse.com.tw/v1/exchangeReport/BFI84U';
@@ -106,6 +110,10 @@ abstract final class ApiEndpoints {
   /// 櫃買指數歷史（OHLC + Change）- OpenAPI（免費、無限制）
   /// 回傳近月每日指數資料，日期格式 YYYYMMDD
   static const String tpexIndex = '$tpexOpenApiBaseUrl/v1/tpex_index';
+
+  /// TPEx 上櫃除權除息預告表——帶確定除權息交易日
+  static const String tpexExRightPreannouncement =
+      '$tpexOpenApiBaseUrl/v1/tpex_exright_prepost';
 
   /// 上櫃估值資料（本益比、股價淨值比、殖利率）- OpenAPI
   /// 回傳 JSON 陣列，每筆含 SecuritiesCompanyCode, PriceEarningRatio, PriceBookRatio, YieldRatio
