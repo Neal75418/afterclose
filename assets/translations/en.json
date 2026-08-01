@@ -373,6 +373,7 @@
     "added": "Added {symbol}",
     "addedToWatchlist": "Added {symbol} to watchlist",
     "addFailed": "Failed to add to watchlist",
+    "removeFailed": "Failed to remove from watchlist",
     "notFound": "Stock {symbol} not found",
     "undo": "Undo",
     "searchHint": "Search by symbol or name",

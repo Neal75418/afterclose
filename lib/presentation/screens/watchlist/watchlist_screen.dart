@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/core/constants/animations.dart';
+import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/constants/app_routes.dart';
 import 'package:afterclose/core/utils/error_display.dart';
@@ -84,7 +85,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
       final watchlistState = ref.read(watchlistProvider);
       messenger.showSnackBar(
         SnackBar(
-          content: Text(watchlistState.error ?? 'watchlist.removeFailed'.tr()),
+          content: Text(watchlistState.error ?? S.watchlistRemoveFailed),
           behavior: SnackBarBehavior.floating,
           backgroundColor: Theme.of(context).colorScheme.error,
         ),

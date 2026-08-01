@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
+import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/core/constants/pagination.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/date_context.dart';
@@ -569,14 +570,15 @@ class ScanNotifier extends Notifier<ScanState> {
       if (isInWatchlist) {
         final success = await watchlistNotifier.removeStock(symbol);
         if (!success) {
-          final msg = ref.read(watchlistProvider).error ?? '移除自選股失敗';
+          final msg =
+              ref.read(watchlistProvider).error ?? S.watchlistRemoveFailed;
           throw StateError(msg);
         }
         _watchlistSymbols.remove(symbol);
       } else {
         final success = await watchlistNotifier.addStock(symbol);
         if (!success) {
-          final msg = ref.read(watchlistProvider).error ?? '加入自選股失敗';
+          final msg = ref.read(watchlistProvider).error ?? S.watchlistAddFailed;
           throw StateError(msg);
         }
         _watchlistSymbols.add(symbol);

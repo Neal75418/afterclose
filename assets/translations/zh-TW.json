@@ -373,6 +373,7 @@
     "added": "已加入 {symbol}",
     "addedToWatchlist": "已加入自選 {symbol}",
     "addFailed": "加入自選失敗",
+    "removeFailed": "移除自選失敗",
     "notFound": "找不到股票 {symbol}",
     "undo": "復原",
     "searchHint": "搜尋股票代號或名稱",

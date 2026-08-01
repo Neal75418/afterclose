@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/constants/api_config.dart';
+import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/date_context.dart';
@@ -255,13 +256,14 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
     if (wasInWatchlist) {
       final success = await watchlistNotifier.removeStock(_symbol);
       if (!success) {
-        final msg = ref.read(watchlistProvider).error ?? '移除自選股失敗';
+        final msg =
+            ref.read(watchlistProvider).error ?? S.watchlistRemoveFailed;
         throw StateError(msg);
       }
     } else {
       final success = await watchlistNotifier.addStock(_symbol);
       if (!success) {
-        final msg = ref.read(watchlistProvider).error ?? '加入自選股失敗';
+        final msg = ref.read(watchlistProvider).error ?? S.watchlistAddFailed;
         throw StateError(msg);
       }
     }

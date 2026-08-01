@@ -107,6 +107,7 @@ class S {
   static String watchlistAddedToWatchlist(String symbol) =>
       'watchlist.addedToWatchlist'.tr(namedArgs: {'symbol': symbol});
   static String get watchlistAddFailed => 'watchlist.addFailed'.tr();
+  static String get watchlistRemoveFailed => 'watchlist.removeFailed'.tr();
   static String watchlistNotFound(String symbol) =>
       'watchlist.notFound'.tr(namedArgs: {'symbol': symbol});
   static String get watchlistUndo => 'watchlist.undo'.tr();

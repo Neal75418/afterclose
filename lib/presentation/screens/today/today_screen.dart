@@ -815,7 +815,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
       if (!success) {
         final watchlistState = ref.read(watchlistProvider);
         _showSnackBar(
-          watchlistState.error ?? 'watchlist.removeFailed'.tr(),
+          watchlistState.error ?? S.watchlistRemoveFailed,
           isError: true,
         );
       } else {
