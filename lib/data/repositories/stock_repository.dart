@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/constants/industry_names.dart';
 import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
@@ -90,10 +91,36 @@ class StockRepository implements IStockRepository {
         }
       }
 
+      // 殭屍清理:FinMind 持續回傳已下市股(華亞科 2016 下市仍 type=twse,
+      // 2026-08-01 實測 135 檔 active 殭屍、全部近月零價格),
+      // deactivateStocksNotIn 永遠排除不到——官方名單缺席=下市。
+      // 三重防護:(1) sanity floor 擋部分回應的大規模誤殺;
+      // (2) DR(91xx)自校準守衛——官方名單實測涵蓋交易中 DR(9103/9105
+      // 在冊,欄位名「TDR原股發行股數」為結構性佐證),但仍以「當輪名單
+      // 含任一 91xx」為前提,上游哪天移除 DR 涵蓋即自動跳過;
+      // (3) ETF(00 開頭)/上櫃不在官方公司名單範圍,一律不清。
+      // 重上市自癒:回到名單即恢復 active(upsert 覆寫)。
+      final officialUsable =
+          officialCodes.length >= ApiConfig.twseOfficialListSanityFloor;
+      final officialCoversDr = officialCodes.keys.any(
+        (s) => s.startsWith('91'),
+      );
+      bool delistedByOfficial(FinMindStockInfo stock) {
+        if (!officialUsable) return false;
+        if (stock.market != MarketCode.twse) return false;
+        final id = stock.stockId;
+        if (id.length != 4 || id.startsWith('00')) return false;
+        if (id.startsWith('91') && !officialCoversDr) return false;
+        return !officialCodes.containsKey(id);
+      }
+
+      final delisted = <String>[];
       final entries = bySymbol.values.map((stock) {
         final official = stock.market == MarketCode.twse
             ? IndustryNames.nameForTwseCode(officialCodes[stock.stockId] ?? '')
             : null;
+        final zombie = delistedByOfficial(stock);
+        if (zombie) delisted.add(stock.stockId);
         return StockMasterCompanion.insert(
           symbol: stock.stockId,
           name: stock.stockName,
@@ -101,9 +128,17 @@ class StockRepository implements IStockRepository {
           industry: Value(
             official ?? _normalizeIndustry(stock.industryCategory),
           ),
-          isActive: const Value(true),
+          isActive: Value(!zombie),
         );
       }).toList();
+
+      if (delisted.isNotEmpty) {
+        AppLogger.info(
+          'StockRepo',
+          '官方名單缺席標記下市: ${delisted.length} 檔'
+              '(如 ${delisted.take(5).join(", ")})',
+        );
+      }
 
       // upsert + deactivate 應為原子操作，避免中途失敗造成不一致
       int deactivated = 0;

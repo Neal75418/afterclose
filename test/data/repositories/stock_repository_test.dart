@@ -223,6 +223,147 @@ void main() {
       });
     });
 
+    // ==================================================
+    // 官方名單殭屍清理(2026-08-01)
+    //
+    // FinMind 持續回傳已下市股(華亞科 2016 下市仍 type=twse),
+    // deactivateStocksNotIn 永遠排除不到——實測 135 檔 active 殭屍,
+    // 全部近月零價格資料(絕不誤殺交易中標的的實證)。官方 t187ap03_L
+    // 名單缺席=下市。防護:sanity floor 擋部分回應、DR 自校準守衛
+    // (官方名單當輪含 91xx 才對 DR 適用;實測名單涵蓋交易中 DR)。
+    // ==================================================
+    group('官方名單殭屍清理', () {
+      late MockTwseClient mockTwse;
+
+      /// 產生過 sanity floor 的官方名單(≥800 家)
+      Map<String, String> bigOfficial(Map<String, String> extra) => {
+        for (var i = 0; i < 900; i++) '${1000 + i}': '01',
+        ...extra,
+      };
+
+      setUp(() {
+        mockTwse = MockTwseClient();
+        repository = StockRepository(
+          database: mockDb,
+          finMindClient: mockClient,
+          twseClient: mockTwse,
+        );
+        when(() => mockDb.upsertStocks(any())).thenAnswer((_) async {});
+        when(
+          () => mockDb.deactivateStocksNotIn(any()),
+        ).thenAnswer((_) async => 0);
+      });
+
+      List<StockMasterCompanion> capturedEntries() =>
+          verify(() => mockDb.upsertStocks(captureAny())).captured.single
+              as List<StockMasterCompanion>;
+
+      const zombie = FinMindStockInfo(
+        stockId: '3474',
+        stockName: '華亞科',
+        industryCategory: '半導體業',
+        type: 'twse',
+      );
+      const alive = FinMindStockInfo(
+        stockId: '2330',
+        stockName: '台積電',
+        industryCategory: '電子工業',
+        type: 'twse',
+      );
+
+      test('🚨 官方名單缺席的上市 4 碼標 inactive;在冊者維持 active', () async {
+        when(
+          () => mockClient.getStockList(),
+        ).thenAnswer((_) async => const [zombie, alive]);
+        when(
+          () => mockTwse.fetchIndustryCodes(),
+        ).thenAnswer((_) async => bigOfficial({'2330': '24'}));
+
+        await repository.syncStockList();
+
+        final bySymbol = {for (final e in capturedEntries()) e.symbol.value: e};
+        expect(bySymbol['3474']!.isActive.value, isFalse, reason: '下市殭屍');
+        expect(bySymbol['2330']!.isActive.value, isTrue);
+      });
+
+      test('ETF(00 開頭)與上櫃股不受官方名單影響', () async {
+        when(() => mockClient.getStockList()).thenAnswer(
+          (_) async => const [
+            FinMindStockInfo(
+              stockId: '0050',
+              stockName: '元大台灣50',
+              industryCategory: 'ETF',
+              type: 'twse',
+            ),
+            FinMindStockInfo(
+              stockId: '5483',
+              stockName: '中美晶',
+              industryCategory: '半導體業',
+              type: 'tpex',
+            ),
+          ],
+        );
+        when(
+          () => mockTwse.fetchIndustryCodes(),
+        ).thenAnswer((_) async => bigOfficial({}));
+
+        await repository.syncStockList();
+
+        for (final e in capturedEntries()) {
+          expect(e.isActive.value, isTrue, reason: '${e.symbol.value} 不在清理範圍');
+        }
+      });
+
+      test('DR 自校準守衛:官方名單含 91xx 時死 DR 清掉、不含時 DR 一律不動', () async {
+        const deadDr = FinMindStockInfo(
+          stockId: '9104',
+          stockName: '萬宇科',
+          industryCategory: '存託憑證',
+          type: 'twse',
+        );
+        when(
+          () => mockClient.getStockList(),
+        ).thenAnswer((_) async => const [deadDr]);
+
+        // 官方名單含交易中 DR(9103)→ 涵蓋 DR → 缺席的 9104 清掉
+        when(
+          () => mockTwse.fetchIndustryCodes(),
+        ).thenAnswer((_) async => bigOfficial({'9103': '22'}));
+        await repository.syncStockList();
+        expect(capturedEntries().single.isActive.value, isFalse);
+
+        // 官方名單無任何 91xx → DR 涵蓋性存疑 → 不動
+        when(
+          () => mockTwse.fetchIndustryCodes(),
+        ).thenAnswer((_) async => bigOfficial({}));
+        await repository.syncStockList();
+        expect(capturedEntries().single.isActive.value, isTrue);
+      });
+
+      test('官方名單過小(部分回應)→ 跳過清理,industry 覆蓋照常', () async {
+        when(
+          () => mockClient.getStockList(),
+        ).thenAnswer((_) async => const [zombie, alive]);
+        when(
+          () => mockTwse.fetchIndustryCodes(),
+        ).thenAnswer((_) async => {'2330': '24'}); // 僅 1 家,遠低於 floor
+
+        await repository.syncStockList();
+
+        final bySymbol = {for (final e in capturedEntries()) e.symbol.value: e};
+        expect(
+          bySymbol['3474']!.isActive.value,
+          isTrue,
+          reason: '名單不完整時不得大規模誤殺',
+        );
+        expect(
+          bySymbol['2330']!.industry.value,
+          '半導體業',
+          reason: '覆蓋不受 floor 限制',
+        );
+      });
+    });
+
     group('syncStockList', () {
       test('syncs valid 4-digit stock codes', () async {
         final stockInfos = [
