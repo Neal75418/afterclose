@@ -42,6 +42,18 @@ mixin EventDaoMixin on $AppDatabase {
     return into(stockEvent).insert(entry);
   }
 
+  /// 批次新增事件(2026-08-01 smell 掃描 Tier 1:producers 重建動輒
+  /// 百餘筆,逐筆 await 是 N+1;比照 [DividendDaoMixin.insertDividendData]
+  /// 的 batch 慣例)
+  Future<void> insertStockEvents(List<StockEventCompanion> entries) async {
+    if (entries.isEmpty) return;
+    await batch((b) {
+      for (final entry in entries) {
+        b.insert(stockEvent, entry);
+      }
+    });
+  }
+
   /// 更新事件
   Future<void> updateStockEvent(int id, StockEventCompanion entry) {
     return (update(stockEvent)..where((t) => t.id.equals(id))).write(entry);
