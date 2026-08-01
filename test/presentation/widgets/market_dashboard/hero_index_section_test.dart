@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:afterclose/data/remote/twse_client.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/hero_index_section.dart';
+import 'package:afterclose/presentation/screens/stock_detail/widgets/mini_trend_chart.dart';
 
 import '../../../helpers/widget_test_helpers.dart';
 
@@ -111,6 +112,58 @@ void main() {
       });
 
       // 判讀層（P2）— 位階乖離判讀行
+
+      // ==================================================
+      // 並排對齊(2026-08-02 使用者實機抓到「一高一低」)
+      //
+      // bias 判讀原為獨立一行:一側超跌一側無判讀時,兩卡 sparkline 與
+      // 其下所有內容垂直錯位。判讀併入位階資訊列(同一行)後,兩卡結構
+      // 恆定——此測試鎖住「異構雙卡 sparkline 同高」的不變量。
+      // ==================================================
+      group('並排雙卡對齊', () {
+        testWidgets('🚨 一側有 bias 判讀、一側沒有:sparkline 不得一高一低', (tester) async {
+          tester.view.physicalSize = const Size(4000, 2400);
+          addTearDown(() => tester.view.resetPhysicalSize());
+
+          // 左:緩升多頭、乖離溫和 → 無判讀行
+          final mild = List.generate(80, (i) => 22000.0 + i * 2);
+          // 右:平盤後暴跌 → bearish + 距 MA60 -31% → 超跌判讀
+          final oversold = [...List.generate(79, (_) => 22000.0), 15000.0];
+
+          await tester.pumpWidget(
+            buildTestApp(
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: HeroIndexSection(
+                      index: createIndex(),
+                      historyData: mild,
+                      stageHistory: mild,
+                    ),
+                  ),
+                  Expanded(
+                    child: HeroIndexSection(
+                      index: createIndex(close: 15000, change: -7000),
+                      historyData: oversold,
+                      stageHistory: oversold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+
+          final tops = find
+              .byType(MiniTrendChart)
+              .evaluate()
+              .map((e) => tester.getRect(find.byWidget(e.widget)).top)
+              .toList();
+          expect(tops, hasLength(2));
+          expect(tops[0], tops[1], reason: 'bias 判讀行不得把單側 sparkline 往下推(一高一低)');
+        });
+      });
+
       testWidgets(
         'renders stage-bias interpretation line when bias is extreme',
         (tester) async {
@@ -134,8 +187,12 @@ void main() {
             ),
           );
 
+          // 判讀已併入位階資訊列(RichText 單行,2026-08-02 對齊修復)
           expect(
-            find.text('marketOverview.reading.stageBias.overheated'),
+            find.textContaining(
+              'marketOverview.reading.stageBias.overheated',
+              findRichText: true,
+            ),
             findsOneWidget,
           );
         },
@@ -158,7 +215,10 @@ void main() {
           // 位階 chip 仍在，但不應出現乖離判讀行
           expect(find.text('marketOverview.stage.bullish'), findsOneWidget);
           expect(
-            find.textContaining('marketOverview.reading.stageBias'),
+            find.textContaining(
+              'marketOverview.reading.stageBias',
+              findRichText: true,
+            ),
             findsNothing,
           );
         },

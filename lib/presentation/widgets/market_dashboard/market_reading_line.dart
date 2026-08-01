@@ -33,19 +33,17 @@ class MarketReadingLine extends StatelessWidget {
   /// 蓋過各區塊自己的數字。
   final bool prominent;
 
-  @override
-  Widget build(BuildContext context) {
-    final reading = this.reading;
-    if (reading == null) return const SizedBox.shrink();
-
-    final theme = Theme.of(context);
+  /// tone → 文字色(單一來源;hero 卡的 inline 判讀與此元件共用)。
+  /// warning 走疊色專屬文字色(caution 黃只能當 tint 不能當文字)、
+  /// negative=下跌色,其餘 muted;prominent 時 positive/neutral 升
+  /// onSurface。
+  static Color textColorFor(
+    InterpretationTone tone,
+    ThemeData theme, {
+    bool prominent = false,
+  }) {
     final mutedColor = theme.colorScheme.onSurfaceVariant;
-
-    // tone → 文字色：warning 走疊色專屬文字色（caution 黃對白底／自身 tint
-    // 合成底僅 1.3～1.4:1，只能當 tint 不能當文字）、negative=下跌色，
-    // 其餘 muted。prominent 時 positive/neutral 改用全對比 onSurface，
-    // 避免醒目 strip 裡的文字仍是灰階、達不到「readable weight」。
-    final color = switch (reading.tone) {
+    return switch (tone) {
       InterpretationTone.warning => WarningColors.onTintFor(theme.brightness),
       InterpretationTone.negative => AppTheme.downColor,
       InterpretationTone.positive =>
@@ -53,6 +51,20 @@ class MarketReadingLine extends StatelessWidget {
       InterpretationTone.neutral =>
         prominent ? theme.colorScheme.onSurface : mutedColor,
     };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final reading = this.reading;
+    if (reading == null) return const SizedBox.shrink();
+
+    final theme = Theme.of(context);
+
+    // tone → 文字色：warning 走疊色專屬文字色（caution 黃對白底／自身 tint
+    // 合成底僅 1.3～1.4:1，只能當 tint 不能當文字）、negative=下跌色，
+    // 其餘 muted。prominent 時 positive/neutral 改用全對比 onSurface，
+    // 避免醒目 strip 裡的文字仍是灰階、達不到「readable weight」。
+    final color = textColorFor(reading.tone, theme, prominent: prominent);
 
     // 醒目 strip 的淡背景維持 tone 識別色（warning 仍是琥珀 tint），
     // 不跟著文字色走——文字可讀性與底色識別是兩個獨立需求。

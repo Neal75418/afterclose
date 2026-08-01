@@ -249,12 +249,34 @@ class HeroIndexSection extends StatelessWidget {
             ),
           ),
           const SizedBox(width: DesignTokens.spacing8),
-          // 距 20MA / 距 60MA 乖離率
+          // 距 20MA / 距 60MA 乖離率＋位階乖離判讀(同一行)
+          //
+          // 判讀原為獨立一行——雙欄並排時「一側超跌一側無判讀」讓兩卡
+          // sparkline 與其下全部內容垂直錯位(2026-08-02 使用者實機抓到
+          // 一高一低)。併入同行後兩卡結構恆定;窄視窗由 ellipsis 承接。
           Flexible(
-            child: Text(
-              '${'marketOverview.biasMa20'.tr(namedArgs: {'value': _formatBias(result.biasMa20)})}'
-              '  '
-              '${'marketOverview.biasMa60'.tr(namedArgs: {'value': _formatBias(result.biasMa60)})}',
+            child: Text.rich(
+              TextSpan(
+                text:
+                    '${'marketOverview.biasMa20'.tr(namedArgs: {'value': _formatBias(result.biasMa20)})}'
+                    '  '
+                    '${'marketOverview.biasMa60'.tr(namedArgs: {'value': _formatBias(result.biasMa60)})}',
+                children: [
+                  if (reading != null)
+                    TextSpan(
+                      text:
+                          '  ·  '
+                          '${reading.tone == InterpretationTone.warning ? '⚠ ' : ''}'
+                          '${reading.messageKey.tr()}',
+                      style: TextStyle(
+                        color: MarketReadingLine.textColorFor(
+                          reading.tone,
+                          theme,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
               overflow: TextOverflow.ellipsis,
               style: theme.textTheme.labelSmall?.copyWith(
                 color: mutedColor,
@@ -265,8 +287,6 @@ class HeroIndexSection extends StatelessWidget {
           ),
         ],
       ),
-      // 判讀層（位階乖離）— 僅在 reading 非 null 時渲染
-      if (reading != null) MarketReadingLine(reading: reading),
     ];
   }
 
