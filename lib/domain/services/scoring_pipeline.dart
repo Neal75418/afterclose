@@ -15,6 +15,18 @@ import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/models/models.dart';
 import 'package:afterclose/domain/services/rule_engine.dart';
 
+/// 豁免落庫門檻的 MA 階段穿越訊號。
+///
+/// 這四條是 Today 頁警示 banner／自選 tag 的**唯一**資料來源(讀
+/// `daily_reason`),被淨額抵銷吞掉等於工具在事件當天失明。豁免只放行
+/// 「落庫」,不改分數——落庫值仍 floor 到 0,排序與 mode routing 不受影響。
+const _maStageExemptTypes = {
+  ReasonType.breakMa20,
+  ReasonType.breakMa60,
+  ReasonType.reclaimMa20,
+  ReasonType.reclaimMa60,
+};
+
 /// 候選股被略過的原因分類（統計計數用）
 enum CandidateSkipReason { noData, insufficientData, lowLiquidity, staleBar }
 
@@ -127,7 +139,21 @@ scoreReasonsDualHorizon({
   // 門檻取絕對值(2026-07-31):純空方觸發(負總分)的股票也要落庫,
   // 否則「只跌破季線」的弱勢股在掃描器上隱形——空方風控正好在最需要
   // 它的股票上失明,rule_accuracy 觀察區也帶倖存者偏差。
-  if (rawShort.abs() < RuleParams.observationScoreThreshold &&
+  //
+  // MA 階段穿越豁免(2026-08-03):上面那次修補只處理了「純空方」那一半,
+  // 「正負抵銷歸零」是同一個洞的另一半——breakMa20(-8) 與
+  // coilingBelowMa20(+8) 分數對稱、不在任何 mutex group,而觸發條件天生
+  // 重疊(「強勢股小幅跌破月線」必然同時命中),MA 家族自己就淨額歸零。
+  //
+  // 落庫門檻是**掃描頁的雜訊過濾器**,不是風控訊號閘門。站回/跌破是
+  // Today 頁警示 banner 與自選 tag 的唯一資料來源,不得被抵銷吞掉。
+  // 實機(2026-08-03 自選 24 檔):真實 5 次穿越只報 3 次——6538 跌破月線
+  // (raw=7)、8039 漲停站回月線,兩檔整檔未落庫,40% 漏報。
+  final hasStageSignal = reasons.any(
+    (r) => _maStageExemptTypes.contains(r.type),
+  );
+  if (!hasStageSignal &&
+      rawShort.abs() < RuleParams.observationScoreThreshold &&
       rawLong.abs() < RuleParams.observationScoreThreshold) {
     return null;
   }

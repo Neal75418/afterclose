@@ -396,16 +396,95 @@ void main() {
       expect(result!.scoreShort, RuleScores.reclaimMa60);
     });
 
-    test('正負抵銷後 |raw| 不足門檻(+8-8=0)→ 過濾', () {
+    // 2026-08-03 行為變更(本測試由 isNull 翻轉為 isNotNull):
+    //
+    // 落庫門檻是**掃描頁的雜訊過濾器**,不是風控訊號閘門。MA 階段穿越
+    // (站回/跌破)是 Today 頁警示 banner 與自選 tag 的**唯一**資料來源
+    // ——被淨額抵銷吞掉時,使用者的工具正好在事件發生當天失明。
+    //
+    // 實機證據(2026-08-03 收盤,自選 24 檔):真實發生 5 次 MA 穿越,
+    // app 只報 3 次。6538 倉和跌破月線(EPS翻正+15、蓄勢+8、量價背離-8、
+    // 跌破月線-8 = raw 7 < 8)、8039 台虹漲停站回月線,兩檔**整檔**未落庫。
+    //
+    // 結構性必然:breakMa20(-8) 與 coilingBelowMa20(+8) 分數對稱、
+    // 且不在任何 mutex group,而觸發條件天生重疊(「強勢股小幅跌破月線」
+    // 同時滿足兩者)——MA 家族自己就會淨額歸零。2026-07-31 的 .abs()
+    // 修補只處理了「純空方」那一半。
+    test('🚨 MA 階段穿越豁免門檻:正負抵銷後仍落庫(風控訊號不得消失)', () {
       const reasons = [
         TriggeredReason(
           type: ReasonType.reclaimMa20,
           score: RuleScores.reclaimMa20,
-          description: '',
+          description: '站回月線 (MA20)',
         ),
         TriggeredReason(
           type: ReasonType.breakMa60,
           score: RuleScores.breakMa60,
+          description: '跌破季線 (MA60)',
+        ),
+      ];
+      final result = scoreReasonsDualHorizon(
+        ruleEngine: realEngine,
+        reasons: reasons,
+        calibratedScores: CalibratedScoreContext.empty,
+      );
+      expect(result, isNotNull, reason: 'MA 穿越是 banner 唯一資料源,不得被抵銷吞掉');
+      expect(
+        result!.topReasons.map((r) => r.type),
+        containsAll([ReasonType.reclaimMa20, ReasonType.breakMa60]),
+        reason: '兩條穿越訊號都要進 topReasons',
+      );
+      expect(result.scoreShort, 0, reason: 'raw=0 落庫值 floor 到 0,不影響排序');
+    });
+
+    test('🚨 6538 實機組合(raw=7 < 門檻 8)因帶 BREAK_MA20 而落庫', () {
+      const reasons = [
+        // description 必須各異:getTopReasons 依 description 去重,
+        // 真實規則的描述天生不同(空字串是 fixture 陷阱,會只留第一條)
+        TriggeredReason(
+          type: ReasonType.epsTurnaround,
+          score: RuleScores.epsTurnaround,
+          description: 'EPS 轉正',
+        ),
+        TriggeredReason(
+          type: ReasonType.coilingBelowMa20,
+          score: RuleScores.coilingBelowMa20,
+          description: '蓄勢月線下',
+        ),
+        TriggeredReason(
+          type: ReasonType.priceVolumeWeakRally,
+          score: RuleScores.priceVolumeWeakRally,
+          description: '價漲量縮',
+        ),
+        TriggeredReason(
+          type: ReasonType.breakMa20,
+          score: RuleScores.breakMa20,
+          description: '跌破月線 (MA20)',
+        ),
+      ];
+      final result = scoreReasonsDualHorizon(
+        ruleEngine: realEngine,
+        reasons: reasons,
+        calibratedScores: CalibratedScoreContext.empty,
+      );
+      expect(result, isNotNull);
+      expect(
+        result!.topReasons.map((r) => r.type),
+        contains(ReasonType.breakMa20),
+        reason: '跌破訊號必須進 topReasons,banner 才讀得到',
+      );
+    });
+
+    test('非 MA 穿越的正負抵銷仍然過濾(雜訊過濾器不得失守)', () {
+      const reasons = [
+        TriggeredReason(
+          type: ReasonType.kdGoldenCross,
+          score: RuleScores.kdGoldenCross,
+          description: '',
+        ),
+        TriggeredReason(
+          type: ReasonType.kdDeathCross,
+          score: -RuleScores.kdGoldenCross,
           description: '',
         ),
       ];
@@ -414,7 +493,7 @@ void main() {
         reasons: reasons,
         calibratedScores: CalibratedScoreContext.empty,
       );
-      expect(result, isNull, reason: 'raw=0,兩方向都無足量訊號');
+      expect(result, isNull, reason: '無 MA 穿越時門檻照舊生效');
     });
   });
 }
