@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:k_chart_plus/k_chart_plus.dart';
 
+import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/chart_indicators.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/services/technical_indicator_service.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/indicator_cards.dart';
@@ -46,7 +47,7 @@ void main() {
         buildTestApp(
           IndicatorCardsSection(
             priceHistory: shortHistory,
-            secondaryIndicators: {SecondaryState.RSI},
+            secondaryIndicators: {ChartSecondaryIndicator.rsi},
             mainIndicators: {},
             indicatorService: indicatorService,
           ),
@@ -64,7 +65,7 @@ void main() {
         buildTestApp(
           IndicatorCardsSection(
             priceHistory: generatePriceHistory(),
-            secondaryIndicators: {SecondaryState.RSI},
+            secondaryIndicators: {ChartSecondaryIndicator.rsi},
             mainIndicators: {},
             indicatorService: indicatorService,
           ),
@@ -82,7 +83,7 @@ void main() {
         buildTestApp(
           IndicatorCardsSection(
             priceHistory: generatePriceHistory(count: 40),
-            secondaryIndicators: {SecondaryState.MACD},
+            secondaryIndicators: {ChartSecondaryIndicator.macd},
             mainIndicators: {},
             indicatorService: indicatorService,
           ),
@@ -101,7 +102,7 @@ void main() {
           IndicatorCardsSection(
             priceHistory: generatePriceHistory(),
             secondaryIndicators: {},
-            mainIndicators: {MainState.BOLL},
+            mainIndicators: {ChartMainIndicator.boll},
             indicatorService: indicatorService,
           ),
         ),

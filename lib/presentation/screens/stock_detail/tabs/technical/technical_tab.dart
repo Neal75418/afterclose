@@ -1,8 +1,8 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:k_chart_plus/k_chart_plus.dart';
 
+import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/chart_indicators.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/domain/services/technical_indicator_service.dart';
 import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
@@ -39,16 +39,16 @@ class TechnicalTab extends ConsumerStatefulWidget {
 
 class _TechnicalTabState extends ConsumerState<TechnicalTab> {
   // 主圖指標（疊加於 K 線圖）：MA、BOLL、SAR
-  final Set<MainState> _mainIndicators = {MainState.MA};
+  final Set<ChartMainIndicator> _mainIndicators = {ChartMainIndicator.ma};
   // 副圖指標（子圖表）：MACD、KDJ、RSI、WR、CCI
-  final Set<SecondaryState> _secondaryIndicators = {};
+  final Set<ChartSecondaryIndicator> _secondaryIndicators = {};
   // 時間範圍（預設 3 個月）
   ChartTimeRange _timeRange = ChartTimeRange.threeMonths;
 
   final TechnicalIndicatorService _indicatorService =
       TechnicalIndicatorService();
 
-  void _toggleMainIndicator(MainState indicator) {
+  void _toggleMainIndicator(ChartMainIndicator indicator) {
     setState(() {
       if (_mainIndicators.contains(indicator)) {
         _mainIndicators.remove(indicator);
@@ -58,7 +58,7 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
     });
   }
 
-  void _toggleSecondaryIndicator(SecondaryState indicator) {
+  void _toggleSecondaryIndicator(ChartSecondaryIndicator indicator) {
     setState(() {
       if (_secondaryIndicators.contains(indicator)) {
         _secondaryIndicators.remove(indicator);
@@ -74,14 +74,17 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
     });
   }
 
-  /// 根據選擇的時間範圍過濾價格歷史資料
-  List<DailyPriceEntry> _filterPriceHistory(List<DailyPriceEntry> history) {
-    if (_timeRange == ChartTimeRange.all || history.isEmpty) {
-      return history;
-    }
+  /// 選定時間範圍內的 K 棒數（null＝全部）。
+  ///
+  /// 2026-08-03 由「先截斷再傳圖表」改為「傳完整歷史＋只給顯示筆數」：
+  /// 截斷版會讓 MA 在**截斷後**的資料上計算——1M 視圖只有約 20 根 bar，
+  /// MA60 完全算不出來；3M 也只有右緣幾個點有值。指標必須在完整歷史上
+  /// 算完，才截尾顯示（見 [KLineChartWidget.visibleCount]）。
+  int? _visibleBarCount(List<DailyPriceEntry> history) {
+    if (_timeRange == ChartTimeRange.all || history.isEmpty) return null;
 
     final cutoffDate = DateTime.now().subtract(Duration(days: _timeRange.days));
-    return history.where((entry) => entry.date.isAfter(cutoffDate)).toList();
+    return history.where((entry) => entry.date.isAfter(cutoffDate)).length;
   }
 
   /// 建立時間範圍選擇器
@@ -173,11 +176,12 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
 
           // 含指標的 K 線圖
           KLineChartWidget(
-            priceHistory: _filterPriceHistory(priceState.priceHistory),
+            priceHistory: priceState.priceHistory,
+            visibleCount: _visibleBarCount(priceState.priceHistory),
             mainIndicators: _mainIndicators,
             secondaryIndicators: _secondaryIndicators,
             height: totalChartHeight,
-            maDayList: const [5, 10, 20, 60],
+            maDayList: kTechnicalMaDayList,
           ),
           const SizedBox(height: DesignTokens.spacing16),
 

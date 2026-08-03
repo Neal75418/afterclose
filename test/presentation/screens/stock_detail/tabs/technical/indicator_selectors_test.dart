@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:k_chart_plus/k_chart_plus.dart';
 
+import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/chart_indicators.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/indicator_selectors.dart';
 
 import '../../../../../helpers/widget_test_helpers.dart';
@@ -43,7 +44,7 @@ void main() {
 
     testWidgets('calls onToggle when chip tapped', (tester) async {
       widenViewport(tester);
-      MainState? toggled;
+      ChartMainIndicator? toggled;
       await tester.pumpWidget(
         buildTestApp(
           MainIndicatorSelector(
@@ -54,7 +55,7 @@ void main() {
       );
 
       await tester.tap(find.text('MA'));
-      expect(toggled, MainState.MA);
+      expect(toggled, ChartMainIndicator.ma);
     });
   });
 
@@ -93,7 +94,7 @@ void main() {
 
     testWidgets('calls onToggle when chip tapped', (tester) async {
       widenViewport(tester);
-      SecondaryState? toggled;
+      ChartSecondaryIndicator? toggled;
       await tester.pumpWidget(
         buildTestApp(
           SecondaryIndicatorSelector(
@@ -104,7 +105,7 @@ void main() {
       );
 
       await tester.tap(find.text('RSI'));
-      expect(toggled, SecondaryState.RSI);
+      expect(toggled, ChartSecondaryIndicator.rsi);
     });
   });
 }

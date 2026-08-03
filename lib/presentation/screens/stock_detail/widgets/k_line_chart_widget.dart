@@ -1,33 +1,53 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:k_chart_plus/k_chart_plus.dart';
-import 'package:k_chart_plus/chart_translations.dart';
 
 // k_chart_plus 也匯出名為 `S` 的類別，需前綴避免衝突
 import 'package:afterclose/core/l10n/app_strings.dart' as l10n;
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/indicator_colors.dart';
+import 'package:afterclose/core/theme/semantic_colors.dart';
 import 'package:afterclose/core/utils/number_formatter.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/chart_indicators.dart';
+import 'package:afterclose/presentation/screens/stock_detail/widgets/k_chart_detail_popup.dart';
 
 /// 使用 k_chart_plus 套件的 K 線圖 Widget，
 /// 支援 MA、BOLL、SAR、RSI、KDJ、MACD、WR、CCI 指標。
+///
+/// 2026-08-03 升級至 k_chart_plus 1.0.4，修掉 1.0.3 的兩個缺陷：
+/// 1. `MainRenderer.drawMaLine` 寫死 `if (i == 3) break;`——**第四條均線
+///    (MA60) 的線從來沒有被畫到 canvas**，只有圖例文字被畫出來
+/// 2. `ChartColors.getMAColor` 用 `index % 3` 循環三色——MA60 的圖例
+///    撞回 MA5 的藍色
+///
+/// 代價（已知、可接受）：1.0.4 的 [KChartStyle] 樣式欄位改為 final 硬編碼，
+/// 原本的 `topPadding=30` / `candleLineWidth=1.5` 等微調回到套件預設值。
 class KLineChartWidget extends StatefulWidget {
   const KLineChartWidget({
     super.key,
     required this.priceHistory,
-    this.mainIndicators = const {MainState.MA},
+    this.mainIndicators = const {ChartMainIndicator.ma},
     this.secondaryIndicators = const {},
-    this.maDayList = const [5, 10, 20],
+    this.maDayList = kTechnicalMaDayList,
     this.height = 400,
+    this.visibleCount,
   });
 
+  /// 價格歷史（完整，未依顯示區間截斷）
   final List<DailyPriceEntry> priceHistory;
-  final Set<MainState> mainIndicators;
-  final Set<SecondaryState> secondaryIndicators;
+  final Set<ChartMainIndicator> mainIndicators;
+  final Set<ChartSecondaryIndicator> secondaryIndicators;
   final List<int> maDayList;
   final double height;
+
+  /// 只顯示最後 N 根 K 棒（null＝全部）。
+  ///
+  /// **指標在完整歷史上計算，之後才截尾顯示** —— 呼叫端若自行把
+  /// `priceHistory` 先截短再傳進來，MA60 在 3M 視圖只會剩幾個有效點、
+  /// 1M 視圖完全算不出來（60 日均線需要 60 根 bar）。
+  final int? visibleCount;
 
   @override
   State<KLineChartWidget> createState() => _KLineChartWidgetState();
@@ -48,6 +68,7 @@ class _KLineChartWidgetState extends State<KLineChartWidget> {
     if (oldWidget.priceHistory != widget.priceHistory ||
         oldWidget.mainIndicators != widget.mainIndicators ||
         oldWidget.secondaryIndicators != widget.secondaryIndicators ||
+        oldWidget.visibleCount != widget.visibleCount ||
         oldWidget.maDayList != widget.maDayList) {
       _buildKLineData();
     }
@@ -85,20 +106,56 @@ class _KLineChartWidgetState extends State<KLineChartWidget> {
       }
     }
 
-    // 計算所有技術指標
+    // 指標在**完整歷史**上計算（MA 值算完後存進每個 entity），
+    // 再截尾取顯示區間 —— 這樣 1M/3M 視圖裡的每根 K 棒都帶著用完整
+    // 歷史算出的正確 MA60，而不是只有右緣幾個點有值。
     if (kLineData.isNotEmpty) {
-      DataUtil.calculate(kLineData, widget.maDayList);
+      DataUtil.calculateAll(
+        kLineData,
+        _mainIndicatorsForCalc(),
+        _secondaries(),
+      );
     }
 
+    final visible = widget.visibleCount;
+    final shown = (visible != null && visible < kLineData.length)
+        ? kLineData.sublist(kLineData.length - visible)
+        : kLineData;
+
     setState(() {
-      _kLineData = kLineData;
+      _kLineData = shown;
     });
   }
+
+  /// 計算用的主圖指標（樣式不影響計算值，故用預設樣式即可）
+  List<MainIndicator> _mainIndicatorsForCalc() => [
+    if (widget.mainIndicators.contains(ChartMainIndicator.ma))
+      MAIndicator(calcParams: widget.maDayList),
+    if (widget.mainIndicators.contains(ChartMainIndicator.boll))
+      BOLLIndicator(),
+    if (widget.mainIndicators.contains(ChartMainIndicator.sar)) SARIndicator(),
+  ];
+
+  List<SecondaryIndicator> _secondaries() => [
+    if (widget.secondaryIndicators.contains(ChartSecondaryIndicator.macd))
+      MACDIndicator(),
+    if (widget.secondaryIndicators.contains(ChartSecondaryIndicator.kdj))
+      KDJIndicator(),
+    if (widget.secondaryIndicators.contains(ChartSecondaryIndicator.rsi))
+      RSIIndicator(),
+    if (widget.secondaryIndicators.contains(ChartSecondaryIndicator.wr))
+      WRIndicator(),
+    if (widget.secondaryIndicators.contains(ChartSecondaryIndicator.cci))
+      CCIIndicator(),
+  ];
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = context.isDark;
+    final chartBg = isDark
+        ? IndicatorColors.chartDarkBackground
+        : SemanticColors.lightBackground;
 
     if (_kLineData.isEmpty) {
       return Container(
@@ -118,51 +175,41 @@ class _KLineChartWidgetState extends State<KLineChartWidget> {
       );
     }
 
-    // 依主題設定圖表顏色
-    final chartColors = ChartColors(
-      bgColor: isDark
-          ? IndicatorColors.chartDarkBackground
-          : Colors.white, // Match AppTheme.scaffoldBackgroundColor
+    // 依主題設定圖表顏色（1.0.4 的 KChartColors 只保留背景/K 棒/格線等
+    // 共用色；各指標的線色移到自己的 IndicatorStyle）
+    final chartColors = KChartColors(
+      bgColor: chartBg,
       kLineColor: theme.colorScheme.primary,
       gridColor: theme.colorScheme.outlineVariant.withValues(alpha: 0.1),
-      ma5Color: IndicatorColors.chartPrimary,
-      ma10Color: IndicatorColors.chartSecondary,
-      ma30Color: IndicatorColors.chartTertiary,
-      upColor: AppTheme.upColor, // Red
-      dnColor: AppTheme.downColor, // Green
+      upColor: AppTheme.upColor, // 台股慣例：紅漲
+      dnColor: AppTheme.downColor, // 綠跌
       volColor: theme.colorScheme.primary.withValues(alpha: 0.5),
-      macdColor: IndicatorColors.chartPrimary,
-      difColor: IndicatorColors.chartPrimary,
-      deaColor: IndicatorColors.chartSecondary,
-      kColor: IndicatorColors.chartPrimary,
-      dColor: IndicatorColors.chartSecondary,
-      jColor: IndicatorColors.chartTertiary,
-      rsiColor: IndicatorColors.chartSecondary,
+      volUpColor: AppTheme.upColor,
+      volDnColor: AppTheme.downColor,
       defaultTextColor: theme.colorScheme.onSurfaceVariant,
       nowPriceUpColor: AppTheme.upColor,
       nowPriceDnColor: AppTheme.downColor,
-      nowPriceTextColor: Colors.white,
+      selectBorderColor: theme.colorScheme.outlineVariant,
+      selectFillColor: theme.colorScheme.surfaceContainerHighest,
+      crossColor: theme.colorScheme.onSurfaceVariant,
+      crossTextColor: theme.colorScheme.onSurface,
       maxColor: AppTheme.upColor,
       minColor: AppTheme.downColor,
     );
 
-    // 設定圖表樣式（使用可變屬性）
-    final chartStyle = ChartStyle()
-      ..topPadding = 30
-      ..bottomPadding = 20
-      ..childPadding = 12
-      ..pointWidth = 11
-      ..candleWidth = 8.5
-      ..candleLineWidth = 1.5
-      ..volWidth = 8.5
-      ..macdWidth = 3
-      ..vCrossWidth = 8.5
-      ..hCrossWidth = 0.5
-      ..nowPriceLineLength = 1
-      ..nowPriceLineSpan = 1
-      ..nowPriceLineWidth = 1
-      ..gridRows = 4
-      ..gridColumns = 4;
+    // 繪製用的指標實例：同一組 calcParams、換上主題色
+    final maColors = IndicatorColors.maColorsFor(theme.brightness);
+    final mainForRender = <MainIndicator>[
+      if (widget.mainIndicators.contains(ChartMainIndicator.ma))
+        MAIndicator(
+          calcParams: widget.maDayList,
+          indicatorStyle: MAStyle(maColors: maColors),
+        ),
+      if (widget.mainIndicators.contains(ChartMainIndicator.boll))
+        BOLLIndicator(),
+      if (widget.mainIndicators.contains(ChartMainIndicator.sar))
+        SARIndicator(),
+    ];
 
     // 計算圖表摘要資訊供無障礙使用
     final summary = _buildChartSummary();
@@ -173,7 +220,7 @@ class _KLineChartWidgetState extends State<KLineChartWidget> {
       child: Container(
         height: widget.height,
         decoration: BoxDecoration(
-          color: isDark ? IndicatorColors.chartDarkBackground : Colors.white,
+          color: chartBg,
           borderRadius: BorderRadius.circular(DesignTokens.radiusXl),
           // 以細框線定義圖表區域
           border: Border.all(
@@ -183,11 +230,11 @@ class _KLineChartWidgetState extends State<KLineChartWidget> {
         clipBehavior: Clip.antiAlias,
         child: KChartWidget(
           _kLineData,
-          chartStyle,
+          const KChartStyle(),
           chartColors,
           isTrendLine: false,
-          mainStateLi: widget.mainIndicators,
-          secondaryStateLi: widget.secondaryIndicators,
+          mainIndicators: mainForRender,
+          secondaryIndicators: _secondaries(),
           volHidden: false,
           isLine: false,
           isTapShowInfoDialog: true,
@@ -195,20 +242,10 @@ class _KLineChartWidgetState extends State<KLineChartWidget> {
           showNowPrice: true,
           showInfoDialog: true,
           materialInfoDialog: true,
-          maDayList: widget.maDayList,
           timeFormat: TimeFormat.YEAR_MONTH_DAY,
           mBaseHeight: widget.height - 50,
           fixedLength: 2,
-          chartTranslations: ChartTranslations(
-            date: 'stockDetail.date'.tr(),
-            open: 'stockDetail.open'.tr(),
-            high: 'stockDetail.high'.tr(),
-            low: 'stockDetail.low'.tr(),
-            close: 'stockDetail.close'.tr(),
-            changeAmount: 'stockDetail.change'.tr(),
-            change: 'stockDetail.changePercent'.tr(),
-            vol: 'stockDetail.volume'.tr(),
-          ),
+          detailBuilder: (entity) => KChartDetailPopup(entity: entity),
         ),
       ),
     );

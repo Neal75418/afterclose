@@ -10,6 +10,34 @@ abstract final class IndicatorColors {
   // 圖表線條顏色
   // ==================================================
 
+  /// K 線圖四條均線的顏色(MA5 / MA10 / MA20 / MA60,順序對應
+  /// `kTechnicalMaDayList`)。
+  ///
+  /// 取 [CategoryColors.chartPaletteFor] 既有色盤的 index tuple,**不宣告
+  /// 新色值**——因此自動繼承 `semantic_colors_test` 對該色盤已在跑的
+  /// 對比度與色族間距守門(新色值得重驗與既有 6 色的兩兩間距)。
+  ///
+  /// 配色理由:
+  /// - 唯一同色族的一對(MA5/MA60,色相僅差 5.5°)配給**幾何差異最大**的
+  ///   兩條線——MA5 每根 K 都在扭、緊貼 K 棒,MA60 近乎水平,不會有
+  ///   「兩條纏在一起分不出」的情境;會反覆交叉的相鄰均線
+  ///   (MA5/MA10、MA10/MA20)全部落在不同色族(間距 ≥ 41°)。
+  ///   這一對另靠對比度區分:深色 9.82 vs 4.82(2.0x)。
+  /// - 兩條決策線色相對立(178.96°):MA20 是回檔進場帶、MA60 是 regime
+  ///   gate(`pullback_rules` 硬過濾 ma20 > ma60),且兩條拿最高的兩檔對比。
+  /// - MA5 刻意最暗(四條最低):它大部分時間貼在 K 棒上,越亮越跟紅綠
+  ///   K 棒搶語意。
+  ///
+  /// 與台股慣例的差異:券商常見「紅 MA5 / 綠 MA20」,但紅綠在本專案是
+  /// 股價漲跌的專屬語意色(K 線圖上紅綠已代表漲跌,見 [SemanticColors]
+  /// 的色相禁區),均線再用紅綠會語意打架,故不照抄。
+  static const maPaletteIndices = [0, 2, 4, 3];
+
+  static List<Color> maColorsFor(Brightness brightness) {
+    final palette = CategoryColors.chartPaletteFor(brightness);
+    return [for (final i in maPaletteIndices) palette[i]];
+  }
+
   /// 主要指標線（K, DIF, MA5, MACD）— Sky Blue
   static const chartPrimary = Color(0xFF60A5FA);
 

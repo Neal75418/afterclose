@@ -1,7 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:k_chart_plus/k_chart_plus.dart';
 
+import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/chart_indicators.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/services/ohlcv_data.dart';
 import 'package:afterclose/domain/services/technical_indicator_service.dart';
@@ -46,8 +46,8 @@ class IndicatorCardsSection extends StatefulWidget {
   });
 
   final List<DailyPriceEntry> priceHistory;
-  final Set<SecondaryState> secondaryIndicators;
-  final Set<MainState> mainIndicators;
+  final Set<ChartSecondaryIndicator> secondaryIndicators;
+  final Set<ChartMainIndicator> mainIndicators;
   final TechnicalIndicatorService indicatorService;
 
   @override
@@ -123,13 +123,13 @@ class _IndicatorCardsSectionState extends State<IndicatorCardsSection> {
 
     return Column(
       children: [
-        if (widget.secondaryIndicators.contains(SecondaryState.RSI))
+        if (widget.secondaryIndicators.contains(ChartSecondaryIndicator.rsi))
           RSICard(rsi: rsi, prices: prices),
-        if (widget.secondaryIndicators.contains(SecondaryState.KDJ))
+        if (widget.secondaryIndicators.contains(ChartSecondaryIndicator.kdj))
           KDCard(kd: kd),
-        if (widget.secondaryIndicators.contains(SecondaryState.MACD))
+        if (widget.secondaryIndicators.contains(ChartSecondaryIndicator.macd))
           MACDCard(macd: macd),
-        if (widget.mainIndicators.contains(MainState.BOLL))
+        if (widget.mainIndicators.contains(ChartMainIndicator.boll))
           BollingerCard(boll: boll, prices: prices),
         if (volumes.length >= 2) OBVCard(obv: obv),
         if (highs.length >= 14 && lows.length >= 14 && prices.length >= 14)

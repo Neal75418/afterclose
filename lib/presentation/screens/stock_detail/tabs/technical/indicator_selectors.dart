@@ -1,7 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:k_chart_plus/k_chart_plus.dart';
 
+import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/chart_indicators.dart';
 import 'package:afterclose/core/constants/animations.dart';
 import 'package:afterclose/core/theme/indicator_colors.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
@@ -14,8 +14,8 @@ class MainIndicatorSelector extends StatelessWidget {
     required this.onToggle,
   });
 
-  final Set<MainState> selectedIndicators;
-  final ValueChanged<MainState> onToggle;
+  final Set<ChartMainIndicator> selectedIndicators;
+  final ValueChanged<ChartMainIndicator> onToggle;
 
   @override
   Widget build(BuildContext context) {
@@ -50,20 +50,26 @@ class MainIndicatorSelector extends StatelessWidget {
                 _IndicatorChip(
                   label: 'MA',
                   color: IndicatorColors.selectorBlue,
-                  isSelected: selectedIndicators.contains(MainState.MA),
-                  onTap: () => onToggle(MainState.MA),
+                  isSelected: selectedIndicators.contains(
+                    ChartMainIndicator.ma,
+                  ),
+                  onTap: () => onToggle(ChartMainIndicator.ma),
                 ),
                 _IndicatorChip(
                   label: 'BOLL',
                   color: IndicatorColors.selectorPurple,
-                  isSelected: selectedIndicators.contains(MainState.BOLL),
-                  onTap: () => onToggle(MainState.BOLL),
+                  isSelected: selectedIndicators.contains(
+                    ChartMainIndicator.boll,
+                  ),
+                  onTap: () => onToggle(ChartMainIndicator.boll),
                 ),
                 _IndicatorChip(
                   label: 'SAR',
                   color: IndicatorColors.selectorOrange,
-                  isSelected: selectedIndicators.contains(MainState.SAR),
-                  onTap: () => onToggle(MainState.SAR),
+                  isSelected: selectedIndicators.contains(
+                    ChartMainIndicator.sar,
+                  ),
+                  onTap: () => onToggle(ChartMainIndicator.sar),
                 ),
               ],
             ),
@@ -82,8 +88,8 @@ class SecondaryIndicatorSelector extends StatelessWidget {
     required this.onToggle,
   });
 
-  final Set<SecondaryState> selectedIndicators;
-  final ValueChanged<SecondaryState> onToggle;
+  final Set<ChartSecondaryIndicator> selectedIndicators;
+  final ValueChanged<ChartSecondaryIndicator> onToggle;
 
   @override
   Widget build(BuildContext context) {
@@ -122,32 +128,42 @@ class SecondaryIndicatorSelector extends StatelessWidget {
                 _IndicatorChip(
                   label: 'MACD',
                   color: IndicatorColors.selectorBlue,
-                  isSelected: selectedIndicators.contains(SecondaryState.MACD),
-                  onTap: () => onToggle(SecondaryState.MACD),
+                  isSelected: selectedIndicators.contains(
+                    ChartSecondaryIndicator.macd,
+                  ),
+                  onTap: () => onToggle(ChartSecondaryIndicator.macd),
                 ),
                 _IndicatorChip(
                   label: 'KDJ',
                   color: IndicatorColors.selectorOrange,
-                  isSelected: selectedIndicators.contains(SecondaryState.KDJ),
-                  onTap: () => onToggle(SecondaryState.KDJ),
+                  isSelected: selectedIndicators.contains(
+                    ChartSecondaryIndicator.kdj,
+                  ),
+                  onTap: () => onToggle(ChartSecondaryIndicator.kdj),
                 ),
                 _IndicatorChip(
                   label: 'RSI',
                   color: IndicatorColors.selectorPurple,
-                  isSelected: selectedIndicators.contains(SecondaryState.RSI),
-                  onTap: () => onToggle(SecondaryState.RSI),
+                  isSelected: selectedIndicators.contains(
+                    ChartSecondaryIndicator.rsi,
+                  ),
+                  onTap: () => onToggle(ChartSecondaryIndicator.rsi),
                 ),
                 _IndicatorChip(
                   label: 'WR',
                   color: IndicatorColors.selectorTeal,
-                  isSelected: selectedIndicators.contains(SecondaryState.WR),
-                  onTap: () => onToggle(SecondaryState.WR),
+                  isSelected: selectedIndicators.contains(
+                    ChartSecondaryIndicator.wr,
+                  ),
+                  onTap: () => onToggle(ChartSecondaryIndicator.wr),
                 ),
                 _IndicatorChip(
                   label: 'CCI',
                   color: IndicatorColors.selectorRed,
-                  isSelected: selectedIndicators.contains(SecondaryState.CCI),
-                  onTap: () => onToggle(SecondaryState.CCI),
+                  isSelected: selectedIndicators.contains(
+                    ChartSecondaryIndicator.cci,
+                  ),
+                  onTap: () => onToggle(ChartSecondaryIndicator.cci),
                 ),
               ],
             ),

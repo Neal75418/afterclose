@@ -77,7 +77,7 @@ dependencies:
 
   # Charts
   fl_chart: ^1.1.1
-  k_chart_plus: ^1.0.3
+  k_chart_plus: ^1.0.4
 
   # Calendar
   table_calendar: ^3.1.2
@@ -128,6 +128,7 @@ dev_dependencies:
 dependency_overrides:
   analyzer: '>=10.0.0 <11.0.0'  # Pin to 10.x — dart_style 3.1.8 needs analyzer 11+
   dart_style: 3.1.5             # Pin exact — 3.1.8 requires BlockEnumBody from analyzer 11+
+  intl: ^0.20.1                 # k_chart_plus 1.0.4 宣告 ^0.19，實際只用 NumberFormat（0.19→0.20 該 API 無變更）
 
 # App Icon Configuration
 flutter_launcher_icons:
