@@ -11,6 +11,7 @@ import 'package:afterclose/data/network/calibration_updater.dart';
 import 'package:afterclose/data/remote/api_budget_tracker.dart';
 import 'package:afterclose/data/remote/shared_prefs_api_budget_store.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
+import 'package:afterclose/data/remote/mops_client.dart';
 import 'package:afterclose/presentation/providers/settings_provider.dart';
 import 'package:afterclose/data/remote/rss_parser.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
@@ -101,6 +102,11 @@ final twseClientProvider = Provider<TwseClient>((ref) {
   final client = TwseClient();
   ref.onDispose(client.close);
   return client;
+});
+
+/// MOPS(舊版)月營收公布期 client Provider
+final mopsClientProvider = Provider<MopsClient>((ref) {
+  return MopsClient();
 });
 
 /// TPEX 開放資料客戶端（用於取得每日全市場上櫃價格）
@@ -224,6 +230,7 @@ final marketDataRepositoryProvider = Provider<MarketDataRepository>((ref) {
 /// 基本面資料儲存庫 Provider（第六階段：營收、本益比、股價淨值比、殖利率）
 final fundamentalRepositoryProvider = Provider<FundamentalRepository>((ref) {
   return FundamentalRepository(
+    mops: ref.watch(mopsClientProvider),
     db: ref.watch(databaseProvider),
     finMind: ref.watch(finMindClientProvider),
     twse: ref.watch(twseClientProvider),

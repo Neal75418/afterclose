@@ -22,6 +22,10 @@ abstract final class DataFreshness {
   /// 全市場通常有 ~1800+ 檔股票，超過此數量視為該月已有資料。
   static const int revenueRecordThreshold = 1000;
 
+  /// 上櫃營收覆蓋門檻(MOPS 漸進同步跳過判斷)。上櫃主板約 800 家,
+  /// 600 = 覆蓋約 75% 即視為 openapi/大宗已到位,漸進掃描不再必要。
+  static const int otcRevenueRecordThreshold = 600;
+
   // ==================================================
   // 時效性判斷
   // ==================================================

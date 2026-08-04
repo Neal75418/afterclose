@@ -55,6 +55,20 @@ abstract final class ApiConfig {
   /// 內的資料仍是對的）。
   static const int twseOfficialListSanityFloor = 800;
 
+  /// MOPS(公開資訊觀測站,舊版)base URL——月營收公布期漸進 CSV 來源。
+  /// 新版 MOPS 已下架靜態頁,只有舊版過渡站有;關站風險由呼叫端 fail-soft
+  /// 承接(退回等 openapi 月批,零下行)。
+  static const String mopsBaseUrl = 'https://mopsov.twse.com.tw';
+
+  /// MOPS WAF 會擋非瀏覽器 UA(回安全頁),需帶一般瀏覽器 UA(2026-08-03 實測)
+  static const String mopsUserAgent =
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) '
+      'AppleWebKit/537.36 (KHTML, like Gecko) Safari/537.36';
+
+  /// 月營收公布期窗口:每月 1~此日內,每日更新掃 MOPS 漸進 CSV。
+  /// 法定申報截止 10 日,+4 天緩衝(補申報/更正)。
+  static const int mopsRevenueWindowLastDay = 14;
+
   /// TWSE/TPEX 市場 API 最大重試次數
   static const int marketClientMaxRetries = 2;
 

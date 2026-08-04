@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
@@ -9,6 +10,7 @@ import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/taiwan_calendar.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
+import 'package:afterclose/data/remote/mops_client.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
 import 'package:afterclose/domain/repositories/fundamental_repository.dart';
@@ -20,17 +22,24 @@ class FundamentalRepository implements IFundamentalRepository {
     required FinMindClient finMind,
     required TwseClient twse,
     required TpexClient tpex,
+    required MopsClient mops,
     AppClock clock = const SystemClock(),
   }) : _db = db,
        _finMind = finMind,
        _twse = twse,
        _tpex = tpex,
+       _mops = mops,
        _clock = clock;
 
   final AppDatabase _db;
   final FinMindClient _finMind;
   final TwseClient _twse;
   final TpexClient _tpex;
+
+  /// 月營收公布期漸進來源(舊版 MOPS)。required:update_service_factory
+  /// 漏接 optional client 導致功能靜默不執行的前科(見 stock_repository
+  /// 的 _twseClient 註解),新 client 一律編譯期強制。
+  final MopsClient _mops;
   final AppClock _clock;
 
   /// 同步 API 資料的通用模板方法
@@ -467,6 +476,89 @@ class FundamentalRepository implements IFundamentalRepository {
     } catch (e) {
       throw DatabaseException('Failed to sync TPEX OTC revenue batch', e);
     }
+  }
+
+  /// 公布期漸進營收同步(舊版 MOPS,每月 1~14 日)。
+  ///
+  /// TWSE openapi 彙總表是月批式(申報期結束才切月),這裡在申報期間
+  /// 逐日吃 MOPS 的漸進 CSV——營收訊號公布當晚即觸發,不等 10 日後
+  /// 補考。與 openapi 同單位(千元,2026-08-03 台泥 6 月值逐位元對帳),
+  /// 走同一個 upsert,兩源天然可互換。
+  ///
+  /// 回傳:寫入筆數;窗口外/全部跳過/來源掛掉 → null。
+  /// **fail-soft**:mopsov 是官方舊版過渡站,可能隨時關站——任何錯誤
+  /// 只記 warning,不得中斷更新管線(退回等 openapi 的現狀,零下行)。
+  Future<int?> syncInProgressRevenue(DateTime date) async {
+    if (date.day > ApiConfig.mopsRevenueWindowLastDay) return null;
+
+    // 目標月 = 上個月(Dart DateTime 月 0 自動正規化為去年 12 月)
+    final target = DateTime(date.year, date.month - 1);
+
+    var total = 0;
+    var wrote = false;
+    final markets = [
+      (MarketCode.twse, MopsMarket.sii, DataFreshness.revenueRecordThreshold),
+      (
+        MarketCode.tpex,
+        MopsMarket.otc,
+        DataFreshness.otcRevenueRecordThreshold,
+      ),
+    ];
+    for (final (market, mopsMarket, threshold) in markets) {
+      try {
+        final existing = await _db.getRevenueCountForYearMonth(
+          target.year,
+          target.month,
+          market: market,
+        );
+        if (existing > threshold) continue; // openapi 已接手,不做白工
+
+        final rows = await _mops.getInProgressRevenue(
+          year: target.year,
+          month: target.month,
+          market: mopsMarket,
+        );
+        if (rows.isEmpty) continue;
+
+        final stockList = await _db.getAllActiveStocks();
+        final validSymbols = stockList.map((st) => st.symbol).toSet();
+        final entries = rows
+            .where((r) => validSymbols.contains(r.code))
+            .map(
+              (r) => MonthlyRevenueCompanion.insert(
+                symbol: r.code,
+                date: DateTime(r.year, r.month),
+                revenueYear: r.year,
+                revenueMonth: r.month,
+                revenue: r.revenue,
+                momGrowth: Value(r.momGrowth),
+                yoyGrowth: Value(r.yoyGrowth),
+              ),
+            )
+            .toList();
+        if (entries.isEmpty) continue;
+
+        await _db.insertMonthlyRevenue(entries);
+        total += entries.length;
+        wrote = true;
+      } catch (e) {
+        // 含 RateLimit/Network:MOPS 無額度概念,且為選配增強源,
+        // 一律 fail-soft——這是與其他 syncer 慣例的刻意偏離
+        AppLogger.warning(
+          'FundamentalRepo',
+          'MOPS 公布期營收同步失敗(${mopsMarket.name}),退回等 openapi',
+          e,
+        );
+      }
+    }
+
+    if (wrote) {
+      AppLogger.info(
+        'FundamentalRepo',
+        'MOPS 公布期營收: ${target.year}/${target.month} 寫入 $total 筆',
+      );
+    }
+    return wrote ? total : null;
   }
 
   /// 同步單檔股票的損益表資料（含 EPS、營收、毛利等）

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:k_chart_plus/k_chart_plus.dart';
 
 import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/chart_indicators.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/indicator_selectors.dart';

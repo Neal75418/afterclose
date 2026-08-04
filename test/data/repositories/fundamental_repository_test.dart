@@ -1,6 +1,7 @@
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
+import 'package:afterclose/data/remote/mops_client.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
 import 'package:afterclose/data/repositories/fundamental_repository.dart';
@@ -14,6 +15,8 @@ class MockFinMindClient extends Mock implements FinMindClient {}
 class MockTwseClient extends Mock implements TwseClient {}
 
 class MockTpexClient extends Mock implements TpexClient {}
+
+class MockMopsClient extends Mock implements MopsClient {}
 
 void main() {
   late MockAppDatabase mockDb;
@@ -32,6 +35,7 @@ void main() {
     mockTwse = MockTwseClient();
     mockTpex = MockTpexClient();
     repo = FundamentalRepository(
+      mops: MockMopsClient(),
       db: mockDb,
       finMind: mockFinMind,
       twse: mockTwse,

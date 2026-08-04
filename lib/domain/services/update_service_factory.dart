@@ -1,6 +1,7 @@
 import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
+import 'package:afterclose/data/remote/mops_client.dart';
 import 'package:afterclose/data/remote/rss_parser.dart';
 import 'package:afterclose/data/remote/tdcc_client.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
@@ -103,6 +104,7 @@ class UpdateServiceFactory {
       clock: clock,
     );
     final fundamentalRepo = FundamentalRepository(
+      mops: MopsClient(),
       db: database,
       finMind: finMindClient,
       twse: twseClient,

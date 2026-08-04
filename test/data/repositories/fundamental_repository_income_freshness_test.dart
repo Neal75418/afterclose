@@ -13,6 +13,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
+import 'package:afterclose/data/remote/mops_client.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
 import 'package:afterclose/data/repositories/fundamental_repository.dart';
@@ -24,6 +25,8 @@ class MockFinMindClient extends Mock implements FinMindClient {}
 class MockTwseClient extends Mock implements TwseClient {}
 
 class MockTpexClient extends Mock implements TpexClient {}
+
+class MockMopsClient extends Mock implements MopsClient {}
 
 class _FixedClock implements AppClock {
   const _FixedClock(this._now);
@@ -42,6 +45,7 @@ void main() {
   });
 
   FundamentalRepository buildRepo(DateTime now) => FundamentalRepository(
+    mops: MockMopsClient(),
     db: mockDb,
     finMind: mockFinMind,
     twse: MockTwseClient(),

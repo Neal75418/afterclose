@@ -103,10 +103,23 @@ class FundamentalSyncer {
       action: () => _fundamentalRepo.syncAllMarketRevenue(date, force: force),
     );
 
+    // 公布期漸進營收(MOPS,每月 1~14 日):openapi 月批切換前逐日吃
+    // 已申報公司,營收訊號公布當晚即觸發。窗口外/來源掛掉回 null,
+    // fail-soft 不中斷管線。
+    final mopsCount = await guardSync<int?>(
+      tag: 'FundamentalSyncer',
+      label: 'MOPS 公布期營收同步',
+      fallback: null,
+      errors: errors,
+      errorLabel: 'MOPS 公布期營收',
+      action: () => _fundamentalRepo.syncInProgressRevenue(date),
+    );
+
     final revenueLabel = revenueCount == null ? '已快取' : '$revenueCount';
+    final mopsLabel = mopsCount == null ? '—' : '+$mopsCount(公布期)';
     AppLogger.info(
       'FundamentalSyncer',
-      '全市場基本面: 估值=$valuationCount, 營收=$revenueLabel',
+      '全市場基本面: 估值=$valuationCount, 營收=$revenueLabel, MOPS=$mopsLabel',
     );
 
     return FundamentalSyncResult(
