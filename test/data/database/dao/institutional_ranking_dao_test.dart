@@ -168,6 +168,23 @@ void main() {
     expect(symbols, {'3231', '6538'}, reason: '用 d2 完整日的資料,不是 d3 半套');
   });
 
+  test('🚨 ETF(00 開頭)不進榜——申購/造市的機制性買賣非選股訊號', () async {
+    await seedStocks();
+    await db.upsertStocks([
+      StockMasterCompanion.insert(
+        symbol: '0050',
+        name: '元大台灣50',
+        market: 'TWSE',
+      ),
+    ]);
+    await seedDay('0050', d3, foreignNet: 50000e3, close: 200); // 100 億也不進
+    await seedDay('3231', d3, foreignNet: 1000e3, close: 200);
+
+    final r = await db.getInstitutionalRanking();
+
+    expect(r!.foreignBuy.map((e) => e.symbol).toList(), ['3231']);
+  });
+
   test('空表 → null', () async {
     expect(await db.getInstitutionalRanking(), isNull);
   });

@@ -215,7 +215,11 @@ mixin InstitutionalDaoMixin on $AppDatabase {
       'FROM daily_institutional di '
       'JOIN stock_master sm ON sm.symbol = di.symbol AND sm.is_active = 1 '
       'JOIN daily_price dp ON dp.symbol = di.symbol AND dp.date = di.date '
-      'WHERE di.date = ? AND dp.close IS NOT NULL',
+      // ETF(00 開頭)不進榜:法人對 ETF 的買賣是申購/造市的機制性
+      // 行為(投信買 0050 常為自家申購),非選股觀點;與掃描器排除
+      // ETF 的口徑一致(2026-08-05 實機複查:0050/0056/00947 曾入榜)
+      "WHERE di.date = ? AND dp.close IS NOT NULL "
+      "AND di.symbol NOT LIKE '00%'",
       variables: [Variable.withString(latestStr)],
       readsFrom: {dailyInstitutional, stockMaster, dailyPrice},
     ).get();
