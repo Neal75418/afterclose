@@ -65,8 +65,7 @@ class QuarterlyReportOverviewState {
     };
 
     double? keyOf(QuarterlyReportOverviewRow r) => switch (sortBy) {
-      QuarterlySortBy.epsGrowth =>
-        (r.eps != null && r.priorEps != null) ? r.eps! - r.priorEps! : null,
+      QuarterlySortBy.epsGrowth => r.epsYoyDelta,
       QuarterlySortBy.eps => r.eps,
       QuarterlySortBy.netIncome => r.netIncome,
     };

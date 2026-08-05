@@ -53,6 +53,13 @@ class QuarterlyReportOverviewRow {
   /// 加總;任一季缺漏即 null,不硬算低估的假基期)
   final double? priorEps;
 
+  /// EPS 年增差值(元)——「EPS 年增」排序鍵與總覽頁年增欄的**單一
+  /// 事實來源**(2026-08-06:排序鍵原本只算不顯示,使用者看不出榜單
+  /// 依據;顯示與排序共用此 getter 保證永遠一致)。刻意用差值不用
+  /// 比率:低基期(創見 1.85→46.63 = +2,420%)會把比率炸成噪音。
+  double? get epsYoyDelta =>
+      (eps != null && priorEps != null) ? eps! - priorEps! : null;
+
   /// 轉虧為盈(去年同期 EPS ≤ 0、本期 > 0;兩值皆須存在)
   bool get isTurnaround =>
       eps != null && priorEps != null && priorEps! <= 0 && eps! > 0;

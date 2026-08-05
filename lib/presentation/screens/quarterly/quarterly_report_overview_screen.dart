@@ -263,13 +263,14 @@ class _QuarterlyReportOverviewScreenState
                 ],
               ),
             ),
-            _epsCell(theme, row),
-            const SizedBox(width: DesignTokens.spacing12),
             _numCell(
               theme,
-              row.priorEps?.toStringAsFixed(2) ?? '--',
-              color: theme.colorScheme.onSurfaceVariant,
+              row.eps?.toStringAsFixed(2) ?? '--',
+              color: theme.colorScheme.onSurface,
+              bold: true,
             ),
+            const SizedBox(width: DesignTokens.spacing12),
+            _yoyCell(theme, row.epsYoyDelta),
             const SizedBox(width: DesignTokens.spacing12),
             _numCell(
               theme,
@@ -285,20 +286,18 @@ class _QuarterlyReportOverviewScreenState
     );
   }
 
-  /// 本期 EPS:有去年基準時按年增方向著色(紅=優於去年、綠=遜於去年,
-  /// 同股價漲跌語意);無基準或持平走中性色。
-  Widget _epsCell(ThemeData theme, QuarterlyReportOverviewRow row) {
-    final eps = row.eps;
-    final prior = row.priorEps;
-    Color color = theme.colorScheme.onSurface;
-    if (eps != null && prior != null && eps != prior) {
-      color = AppTheme.getPriceColor(eps - prior, theme.brightness);
+  /// EPS 年增差值(元):排序鍵直接顯示(2026-08-06——原本只顯本期與
+  /// 去年兩個原料,排序依據要使用者心算,等於沒溝通)。帶號、按方向
+  /// 著色(紅=優於去年、綠=遜於去年,同股價漲跌語意);無基準顯「--」。
+  /// 去年同期值=EPS−年增,可推導;「去年虧損」狀態由轉盈 badge 標示。
+  Widget _yoyCell(ThemeData theme, double? delta) {
+    if (delta == null) {
+      return _numCell(theme, '--', color: theme.colorScheme.onSurfaceVariant);
     }
     return _numCell(
       theme,
-      eps?.toStringAsFixed(2) ?? '--',
-      color: color,
-      bold: true,
+      '${delta > 0 ? '+' : ''}${delta.toStringAsFixed(2)}',
+      color: AppTheme.getPriceColor(delta, theme.brightness),
     );
   }
 
@@ -344,7 +343,7 @@ class _QuarterlyReportOverviewScreenState
           const Spacer(),
           h('quarterlyOverview.epsCol'),
           const SizedBox(width: DesignTokens.spacing12),
-          h('quarterlyOverview.priorEpsCol'),
+          h('quarterlyOverview.yoyCol'),
           const SizedBox(width: DesignTokens.spacing12),
           h('quarterlyOverview.netIncomeCol'),
         ],

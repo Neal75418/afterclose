@@ -201,5 +201,15 @@ void main() {
       expect(row(eps: null, priorEps: -0.5).isTurnaround, isFalse);
       expect(row(eps: 1.2, priorEps: null).isTurnaround, isFalse);
     });
+
+    test('epsYoyDelta=排序鍵與年增欄的單一事實來源;缺任一值 null', () {
+      expect(
+        row(eps: 30.44, priorEps: 35.93).epsYoyDelta,
+        closeTo(-5.49, 1e-9),
+      );
+      expect(row(eps: 1.2, priorEps: -0.5).epsYoyDelta, closeTo(1.7, 1e-9));
+      expect(row(eps: 1.2, priorEps: null).epsYoyDelta, isNull);
+      expect(row(eps: null, priorEps: 0.5).epsYoyDelta, isNull);
+    });
   });
 }
