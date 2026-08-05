@@ -10,14 +10,19 @@ import 'package:afterclose/core/utils/taiwan_time.dart';
 import 'package:afterclose/presentation/providers/quarterly_report_overview_provider.dart';
 import 'package:afterclose/presentation/providers/watchlist_provider.dart';
 
-/// 今日頁的「季報公布中」入口(僅申報窗口內顯示,窗口見
-/// [QuarterlyFilingCalendar])。
+/// 今日頁的季報入口——**常駐**,文案隨申報窗口切換(2026-08-06 定案):
 ///
-/// 結構完全鏡射 [RevenueFilingEntrySection]:只是入口不是內容——
-/// 進度+自選交卷數一行帶過,點擊進 [AppRoutes.quarterlyOverview] 的
-/// 完整清單頁。跨日補載用同一套 day-idempotent 機制(TodayScreen 被
-/// indexedStack 保活,State 永不重建,initState 一次性載入會讓入口
-/// 跨月/跨窗口隱形——2026-08-05 營收入口複審 Medium #5 的同一課)。
+/// - 公布期(窗口內且 DB 已有該季資料):「Q2 季報公布中・已公布 N 家」
+/// - 其餘時間:「Q2 季報總表・共 N 家」——與月營收入口刻意**不同**:
+///   月營收兩週就過期,窗口外藏起來沒損失;季報是整季唯一的基本面
+///   總表,截止後那 ~7 週正是價值高峰,入口的存廢跟資料半衰期走,
+///   不跟月營收對稱。唯一隱藏條件=DB 尚無季報資料(全新安裝)。
+///
+/// 其餘結構鏡射 [RevenueFilingEntrySection]:只是入口不是內容,點擊進
+/// [AppRoutes.quarterlyOverview] 的完整清單頁。跨日補載用同一套
+/// day-idempotent 機制(TodayScreen 被 indexedStack 保活,State 永不
+/// 重建,initState 一次性載入會讓入口跨窗口隱形——2026-08-05 營收
+/// 入口複審 Medium #5 的同一課)。
 class QuarterlyFilingEntrySection extends ConsumerStatefulWidget {
   const QuarterlyFilingEntrySection({super.key});
 
@@ -44,10 +49,6 @@ class _QuarterlyFilingEntrySectionState
 
   @override
   Widget build(BuildContext context) {
-    final expected = QuarterlyFilingCalendar.expectedFilingQuarter(
-      TaiwanTime.now(),
-    );
-    if (expected == null) return const SizedBox.shrink();
     _ensureLoadedToday();
 
     final overview = ref.watch(
@@ -55,12 +56,16 @@ class _QuarterlyFilingEntrySectionState
     );
     if (overview == null) return const SizedBox.shrink();
 
-    // 季 gate:窗口內但 DB 最新季還是上一季(窗口首日同步前的常態)時,
-    // 不顯示「Q2 公布中」這種矛盾入口——等第一批新季資料落庫再現身。
-    if (overview.year != expected.year ||
-        overview.quarter != expected.quarter) {
-      return const SizedBox.shrink();
-    }
+    // 「公布中」須同時滿足:窗口內 **且** DB 最新季=窗口對應季——
+    // 窗口首日同步前(DB 還停在上一季)自動落回總表模式,不會出現
+    // 「Q3 公布中」卻列著 Q2 清單的矛盾文案。
+    final expected = QuarterlyFilingCalendar.expectedFilingQuarter(
+      TaiwanTime.now(),
+    );
+    final inProgress =
+        expected != null &&
+        overview.year == expected.year &&
+        overview.quarter == expected.quarter;
 
     final watchlistSymbols = ref.watch(
       watchlistProvider.select((s) => s.items.map((i) => i.symbol).toSet()),
@@ -100,21 +105,26 @@ class _QuarterlyFilingEntrySectionState
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'quarterlyOverview.entryTitle'.tr(
-                          namedArgs: {'quarter': '${overview.quarter}'},
-                        ),
+                        (inProgress
+                                ? 'quarterlyOverview.entryTitle'
+                                : 'quarterlyOverview.entryTitleComplete')
+                            .tr(namedArgs: {'quarter': '${overview.quarter}'}),
                         style: theme.textTheme.bodySmall?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                       Text(
-                        'quarterlyOverview.entrySubtitle'.tr(
-                          namedArgs: {
-                            'filed': '$filed',
-                            'watchFiled': '$watchFiled',
-                            'watchTotal': '${watchlistSymbols.length}',
-                          },
-                        ),
+                        inProgress
+                            ? 'quarterlyOverview.entrySubtitle'.tr(
+                                namedArgs: {
+                                  'filed': '$filed',
+                                  'watchFiled': '$watchFiled',
+                                  'watchTotal': '${watchlistSymbols.length}',
+                                },
+                              )
+                            : 'quarterlyOverview.entrySubtitleComplete'.tr(
+                                namedArgs: {'filed': '$filed'},
+                              ),
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),

@@ -6,8 +6,8 @@ import 'package:afterclose/core/utils/quarterly_filing_calendar.dart';
 ///
 /// 期限依證期局規定(一般公司):Q1=5/15、Q2=8/14、Q3=11/14、
 /// 年報(含 Q4)=3/31。窗口起點取季結束後申報潮實際開始的月初
-/// (7/1、10/1、4/1、1/1)——與月營收入口的 1~14 日窗口同一設計語言:
-/// 窗口內顯示「公布中」入口,窗口外入口隱藏。
+/// (7/1、10/1、4/1、1/1)。窗口只決定入口文案模式(公布中 vs 總表),
+/// 入口本身常駐——2026-08-06 定案,理由見 QuarterlyFilingEntrySection。
 void main() {
   ({int year, int quarter})? at(int y, int m, int d) =>
       QuarterlyFilingCalendar.expectedFilingQuarter(DateTime(y, m, d));

@@ -1607,6 +1607,8 @@
       "netIncome": "Net income"
     },
     "entryTitle": "Q{quarter} reports filing",
-    "entrySubtitle": "{filed} filed · Watchlist {watchFiled}/{watchTotal} in"
+    "entrySubtitle": "{filed} filed · Watchlist {watchFiled}/{watchTotal} in",
+    "entryTitleComplete": "Q{quarter} report summary",
+    "entrySubtitleComplete": "{filed} companies · full list"
   }
 }

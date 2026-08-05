@@ -1607,6 +1607,8 @@
       "netIncome": "淨利"
     },
     "entryTitle": "Q{quarter} 季報公布中",
-    "entrySubtitle": "已公布 {filed} 家・自選 {watchFiled}/{watchTotal} 已交卷"
+    "entrySubtitle": "已公布 {filed} 家・自選 {watchFiled}/{watchTotal} 已交卷",
+    "entryTitleComplete": "Q{quarter} 季報總表",
+    "entrySubtitleComplete": "共 {filed} 家・完整清單"
   }
 }
