@@ -1542,5 +1542,28 @@
   },
   "reasonTags": {
     "calibrationBackedNote": "此訊號經回測校準驗證有統計 edge；其餘為啟發式訊號，分數僅供發現排序、非 edge 排名。"
+  },
+  "revenueOverview": {
+    "title": "月營收總覽",
+    "monthLabel": "{year} 年 {month} 月",
+    "empty": "尚無營收資料",
+    "noMatch": "沒有符合過濾條件的股票",
+    "progressFiling": "公布中——上市 {twseFiled}/{twseTotal}、上櫃 {tpexFiled}/{tpexTotal} 家已申報(早申報樣本偏樂觀,截止日前的沉默也是資訊)",
+    "progressComplete": "本月完整({count} 家)",
+    "newHigh": "創高",
+    "momShort": "月增",
+    "yoyShort": "年增",
+    "filter": {
+      "all": "全部",
+      "watchlist": "自選",
+      "newHigh": "創高"
+    },
+    "sort": {
+      "yoy": "年增率",
+      "mom": "月增率",
+      "revenue": "營收額"
+    },
+    "entryTitle": "{month} 月營收公布中",
+    "entrySubtitle": "已公布 {filed} 家・自選 {watchFiled}/{watchTotal} 已交卷"
   }
 }

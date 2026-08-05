@@ -3,6 +3,52 @@ import 'package:drift/drift.dart';
 import 'package:afterclose/data/database/app_database.drift.dart';
 import 'package:afterclose/data/database/tables/market_data_tables.drift.dart';
 
+/// 營收總覽清單(最新月全部已申報公司)
+class RevenueOverview {
+  const RevenueOverview({
+    required this.year,
+    required this.month,
+    required this.rows,
+    required this.filedByMarket,
+    required this.activeByMarket,
+  });
+
+  final int year;
+  final int month;
+  final List<RevenueOverviewRow> rows;
+
+  /// 各市場已申報家數(公布期進度分子)
+  final Map<String, int> filedByMarket;
+
+  /// 各市場 active 總數(進度分母)
+  final Map<String, int> activeByMarket;
+}
+
+/// 營收總覽單列
+class RevenueOverviewRow {
+  const RevenueOverviewRow({
+    required this.symbol,
+    required this.name,
+    required this.market,
+    required this.revenue,
+    required this.momGrowth,
+    required this.yoyGrowth,
+    required this.isNewHigh,
+  });
+
+  final String symbol;
+  final String name;
+  final String market;
+
+  /// 千元
+  final double revenue;
+  final double? momGrowth;
+  final double? yoyGrowth;
+
+  /// 當月營收 > 歷史最高(純資料口徑,不含技術過濾)
+  final bool isNewHigh;
+}
+
 /// 月營收操作
 mixin RevenueDaoMixin on $AppDatabase {
   /// 取得股票的月營收歷史
@@ -171,6 +217,81 @@ mixin RevenueDaoMixin on $AppDatabase {
         );
       }
     });
+  }
+
+  /// 營收總覽:資料中最新月份的完整清單(2026-08-05,營收總覽頁)。
+  ///
+  /// - 「最新月份」= monthly_revenue 實際存在的最大 (year, month)——
+  ///   零日曆邏輯:公布期自然指向進行中的月,平時指向最後完整月
+  /// - 「創高」= 純資料口徑(當月 > 歷史最高,排除當月自身),與
+  ///   [getMaxRevenueBatch] 同一把尺;**刻意不含** REVENUE_NEW_HIGH 規則
+  ///   的「站上 MA20」過濾——清單是資料事實視角,技術面安靜的創高股
+  ///   正是訊號層看不見、清單要保住的族群
+  /// - 只列 active 股票(殭屍下市股 join 排除)
+  Future<RevenueOverview?> getRevenueOverviewForLatestMonth() async {
+    final latest = await customSelect(
+      'SELECT revenue_year AS y, revenue_month AS m FROM monthly_revenue '
+      'ORDER BY revenue_year DESC, revenue_month DESC LIMIT 1',
+      readsFrom: {monthlyRevenue},
+    ).getSingleOrNull();
+    if (latest == null) return null;
+    final year = latest.read<int>('y');
+    final month = latest.read<int>('m');
+
+    // 當月清單(join 主檔取名稱/市場、排除非 active)+ 歷史最高
+    // (排除當月自身)一次算完
+    final rows = await customSelect(
+      '''
+      SELECT mr.symbol, sm.name, sm.market,
+             mr.revenue, mr.mom_growth, mr.yoy_growth,
+             (SELECT MAX(h.revenue) FROM monthly_revenue h
+               WHERE h.symbol = mr.symbol
+                 AND NOT (h.revenue_year = mr.revenue_year
+                          AND h.revenue_month = mr.revenue_month)
+             ) AS max_prior
+      FROM monthly_revenue mr
+      JOIN stock_master sm ON sm.symbol = mr.symbol AND sm.is_active = 1
+      WHERE mr.revenue_year = ? AND mr.revenue_month = ?
+      ''',
+      variables: [Variable.withInt(year), Variable.withInt(month)],
+      readsFrom: {monthlyRevenue, stockMaster},
+    ).get();
+
+    final entries = rows.map((r) {
+      final maxPrior = r.readNullable<double>('max_prior');
+      final revenue = r.read<double>('revenue');
+      return RevenueOverviewRow(
+        symbol: r.read<String>('symbol'),
+        name: r.read<String>('name'),
+        market: r.read<String>('market'),
+        revenue: revenue,
+        momGrowth: r.readNullable<double>('mom_growth'),
+        yoyGrowth: r.readNullable<double>('yoy_growth'),
+        // 無歷史基準(首月資料)不算創高——「創高」必須有可比對象
+        isNewHigh: maxPrior != null && maxPrior > 0 && revenue > maxPrior,
+      );
+    }).toList();
+
+    final filedByMarket = <String, int>{};
+    for (final e in entries) {
+      filedByMarket.update(e.market, (v) => v + 1, ifAbsent: () => 1);
+    }
+    final activeRows = await customSelect(
+      'SELECT market, COUNT(*) AS n FROM stock_master '
+      'WHERE is_active = 1 GROUP BY market',
+      readsFrom: {stockMaster},
+    ).get();
+    final activeByMarket = {
+      for (final r in activeRows) r.read<String>('market'): r.read<int>('n'),
+    };
+
+    return RevenueOverview(
+      year: year,
+      month: month,
+      rows: entries,
+      filedByMarket: filedByMarket,
+      activeByMarket: activeByMarket,
+    );
   }
 
   /// 批次取得多檔股票的歷史最高月營收（排除最新月份）

@@ -496,23 +496,12 @@ class FundamentalRepository implements IFundamentalRepository {
 
     var total = 0;
     var wrote = false;
-    final markets = [
-      (MarketCode.twse, MopsMarket.sii, DataFreshness.revenueRecordThreshold),
-      (
-        MarketCode.tpex,
-        MopsMarket.otc,
-        DataFreshness.otcRevenueRecordThreshold,
-      ),
-    ];
-    for (final (market, mopsMarket, threshold) in markets) {
+    // 窗口內一律抓、不設覆蓋門檻跳過(2026-08-05 修):上櫃沒有月批全量源
+    // 接手(openapi 只涵蓋上市),若以覆蓋數提前跳過,8/10 壓線申報的上櫃
+    // 公司會永遠缺漏。省下的只是一次免費請求,代價卻是清單不完整——
+    // upsert 冪等且兩源數值逐位元一致,重複寫零風險。
+    for (final mopsMarket in MopsMarket.values) {
       try {
-        final existing = await _db.getRevenueCountForYearMonth(
-          target.year,
-          target.month,
-          market: market,
-        );
-        if (existing > threshold) continue; // openapi 已接手,不做白工
-
         final rows = await _mops.getInProgressRevenue(
           year: target.year,
           month: target.month,

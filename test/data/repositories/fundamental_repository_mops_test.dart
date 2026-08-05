@@ -37,7 +37,7 @@ StockMasterEntry _stock(String symbol, String market) => StockMasterEntry(
 /// 行為契約:
 /// - 每月 1~14 日(申報期+緩衝)內,每次更新都掃 MOPS 當月 CSV;
 ///   15 日後靜默跳過(openapi 已接手)
-/// - 該市場當月覆蓋已達門檻 → 跳過該市場(不做白工)
+/// - 窗口內一律抓(無覆蓋門檻跳過——上櫃壓線申報者的完整性優先)
 /// - MOPS 掛掉(舊版隨時可能關站)→ fail-soft,不得中斷更新管線
 /// - 目標月 = 上個月(1 月時 = 去年 12 月)
 void main() {
@@ -127,13 +127,18 @@ void main() {
     );
   });
 
-  test('該市場覆蓋已達門檻 → 跳過該市場、另一市場照掃', () async {
+  // 2026-08-05 行為變更(原「覆蓋達門檻→跳過」測試翻轉):上櫃沒有月批
+  // 全量源接手(openapi 只涵蓋上市),以覆蓋數提前跳過會讓 8/10 壓線申報
+  // 的上櫃公司永遠缺漏——省一次免費請求換清單不完整,不划算。窗口內
+  // 一律抓;upsert 冪等、兩源逐位元一致,重複寫零風險。
+  test('🚨 覆蓋已滿仍照抓(保上櫃壓線交卷完整性,不做門檻跳過)', () async {
     when(
-      () => db.getRevenueCountForYearMonth(2026, 7, market: MarketCode.twse),
-    ).thenAnswer((_) async => 1050); // 上市已滿(openapi 已接手)
-    when(
-      () => db.getRevenueCountForYearMonth(2026, 7, market: MarketCode.tpex),
-    ).thenAnswer((_) async => 0);
+      () => mops.getInProgressRevenue(
+        year: any(named: 'year'),
+        month: any(named: 'month'),
+        market: MopsMarket.sii,
+      ),
+    ).thenAnswer((_) async => [row('2408')]);
     when(
       () => mops.getInProgressRevenue(
         year: any(named: 'year'),
@@ -142,14 +147,21 @@ void main() {
       ),
     ).thenAnswer((_) async => [row('6538')]);
 
-    final count = await repo.syncInProgressRevenue(DateTime(2026, 8, 4));
+    final count = await repo.syncInProgressRevenue(DateTime(2026, 8, 10));
 
-    expect(count, 1);
-    verifyNever(
+    expect(count, 2, reason: '兩市場都抓,與 DB 既有覆蓋數無關');
+    verify(
       () => mops.getInProgressRevenue(
         year: any(named: 'year'),
         month: any(named: 'month'),
         market: MopsMarket.sii,
+      ),
+    ).called(1);
+    verifyNever(
+      () => db.getRevenueCountForYearMonth(
+        any(),
+        any(),
+        market: any(named: 'market'),
       ),
     );
   });

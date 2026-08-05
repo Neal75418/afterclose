@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:afterclose/presentation/screens/today/widgets/revenue_filing_entry.dart';
 import 'package:afterclose/core/constants/animations.dart';
 import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/constants/app_routes.dart';
@@ -600,6 +601,9 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
         // 族群排行（L1：族群決定 80%）— 大盤 context 之後、個股推薦之前。
         // 空資料 / 載入中自動收起，不佔版面。
         const SliverToBoxAdapter(child: IndustryRankingSection()),
+
+        // 月營收公布中入口(僅每月上旬顯示;窗口外/無資料自動收起)
+        const SliverToBoxAdapter(child: RevenueFilingEntrySection()),
 
         // 部分錯誤橫幅（有推薦資料但重新整理失敗時顯示）
         Consumer(

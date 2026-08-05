@@ -15,6 +15,7 @@ import 'package:afterclose/presentation/screens/scan/scan_screen.dart';
 import 'package:afterclose/presentation/screens/settings/settings_screen.dart';
 import 'package:afterclose/presentation/screens/comparison/comparison_screen.dart';
 import 'package:afterclose/presentation/screens/calendar/event_calendar_screen.dart';
+import 'package:afterclose/presentation/screens/revenue/revenue_overview_screen.dart';
 import 'package:afterclose/presentation/screens/short_sell/short_sell_ranking_screen.dart';
 import 'package:afterclose/presentation/screens/industry/industry_eps_screen.dart';
 import 'package:afterclose/presentation/screens/portfolio/position_detail_screen.dart';
@@ -193,6 +194,11 @@ final router = GoRouter(
     ),
 
     // 融券賣出排行（全螢幕，Shell 外）
+    GoRoute(
+      path: AppRoutes.revenueOverview,
+      name: 'revenueOverview',
+      builder: (context, state) => const RevenueOverviewScreen(),
+    ),
     GoRoute(
       path: AppRoutes.shortSellRanking,
       name: 'shortSellRanking',
