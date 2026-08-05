@@ -1566,5 +1566,23 @@
     "entryTitle": "{month} revenue filing in progress",
     "entrySubtitle": "{filed} reported · watchlist {watchFiled}/{watchTotal} filed",
     "revenueCol": "Revenue"
+  },
+  "instRanking": {
+    "title": "Institutional Ranking",
+    "empty": "No institutional data yet",
+    "noRows": "No rows in this view",
+    "view": {
+      "foreignBuy": "Foreign Buy",
+      "foreignSell": "Foreign Sell",
+      "trustBuy": "Trust Buy",
+      "trustSell": "Trust Sell"
+    },
+    "colShares": "Lots",
+    "colAmount": "Amount",
+    "colStreakBuy": "Streak",
+    "colStreakSell": "Streak",
+    "dualBuy": "Dual buy",
+    "dualSell": "Dual sell",
+    "entry": "Rankings"
   }
 }

@@ -3,6 +3,52 @@ import 'package:drift/drift.dart';
 import 'package:afterclose/data/database/app_database.drift.dart';
 import 'package:afterclose/data/database/tables/daily_institutional.drift.dart';
 
+/// 法人買賣超排行(單一機構視角的一列)
+class InstitutionalRankingRow {
+  const InstitutionalRankingRow({
+    required this.symbol,
+    required this.name,
+    required this.market,
+    required this.netShares,
+    required this.netAmount,
+    required this.streakDays,
+    required this.isDualSide,
+  });
+
+  final String symbol;
+  final String name;
+  final String market;
+
+  /// 該機構淨買賣超(股;賣超為負)
+  final double netShares;
+
+  /// 淨買賣超金額(元;netShares × 當日收盤,賣超為負)
+  final double netAmount;
+
+  /// 連買/連賣天數(以資料存在的交易日連續同號計,含最新日)
+  final int streakDays;
+
+  /// 外資與投信同日同向(買榜=雙買、賣榜=雙賣)——最強共識訊號
+  final bool isDualSide;
+}
+
+/// 法人買賣超排行(最新資料日的四視角)
+class InstitutionalRanking {
+  const InstitutionalRanking({
+    required this.date,
+    required this.foreignBuy,
+    required this.foreignSell,
+    required this.trustBuy,
+    required this.trustSell,
+  });
+
+  final DateTime date;
+  final List<InstitutionalRankingRow> foreignBuy;
+  final List<InstitutionalRankingRow> foreignSell;
+  final List<InstitutionalRankingRow> trustBuy;
+  final List<InstitutionalRankingRow> trustSell;
+}
+
 /// 每日三大法人進出資料操作
 mixin InstitutionalDaoMixin on $AppDatabase {
   /// 取得股票的法人資料歷史
@@ -137,5 +183,165 @@ mixin InstitutionalDaoMixin on $AppDatabase {
       variables: [Variable.withDateTime(date)],
     ).getSingle();
     return result.read<int>('cnt');
+  }
+
+  /// 法人買賣超排行(2026-08-05,盤後籌碼排行頁)。
+  ///
+  /// 口徑:
+  /// - 排序鍵=金額(淨股數 × 當日收盤)——跨價位可比;張數並列供顯示
+  /// - 連買天數:資料存在的交易日連續同號,含最新日(60 日回看窗)
+  /// - 雙買/雙賣:外資與投信同日同向
+  /// - 自營刻意不做(避險盤污染+持續性差,2026-08-05 設計定稿)
+  /// - 只列 active 股票;無當日收盤價者無法計金額,不進榜
+  Future<InstitutionalRanking?> getInstitutionalRanking({
+    int limit = 50,
+  }) async {
+    // 基準日=「上市資料已到」的最新日,不是裸 MAX(date):TPEx 法人
+    // ~15:00 先發布、TWSE ~16:00 後——15:30 輪之後、21:30 輪之前的
+    // 時段裸 MAX 會指向只有上櫃的半套日,外資榜整排只剩上櫃股。
+    // 上市較晚發布,它到了=兩市場都齊(2026-08-05 實測過渡態後修正)。
+    final latest = await customSelect(
+      'SELECT MAX(di.date) AS d FROM daily_institutional di '
+      'JOIN stock_master sm ON sm.symbol = di.symbol '
+      "WHERE sm.market = 'TWSE'",
+      readsFrom: {dailyInstitutional, stockMaster},
+    ).getSingleOrNull();
+    final latestStr = latest?.readNullable<String>('d');
+    if (latestStr == null) return null;
+
+    final rows = await customSelect(
+      'SELECT di.symbol, sm.name, sm.market, '
+      '       di.foreign_net, di.investment_trust_net, dp.close '
+      'FROM daily_institutional di '
+      'JOIN stock_master sm ON sm.symbol = di.symbol AND sm.is_active = 1 '
+      'JOIN daily_price dp ON dp.symbol = di.symbol AND dp.date = di.date '
+      'WHERE di.date = ? AND dp.close IS NOT NULL',
+      variables: [Variable.withString(latestStr)],
+      readsFrom: {dailyInstitutional, stockMaster, dailyPrice},
+    ).get();
+    if (rows.isEmpty) return null;
+
+    final parsed = rows
+        .map(
+          (r) => (
+            symbol: r.read<String>('symbol'),
+            name: r.read<String>('name'),
+            market: r.read<String>('market'),
+            foreignNet: r.readNullable<double>('foreign_net'),
+            trustNet: r.readNullable<double>('investment_trust_net'),
+            close: r.read<double>('close'),
+          ),
+        )
+        .toList();
+
+    // 四視角各自取 top,先選出需要算連買天數的 symbol 聯集
+    List<T> topBy<T>(
+      List<T> list,
+      double Function(T) key, {
+      required bool descending,
+    }) {
+      final sorted = List.of(list)
+        ..sort(
+          (a, b) =>
+              descending ? key(b).compareTo(key(a)) : key(a).compareTo(key(b)),
+        );
+      return sorted.take(limit).toList();
+    }
+
+    final fBuy = topBy(
+      parsed.where((r) => (r.foreignNet ?? 0) > 0).toList(),
+      (r) => r.foreignNet! * r.close,
+      descending: true,
+    );
+    final fSell = topBy(
+      parsed.where((r) => (r.foreignNet ?? 0) < 0).toList(),
+      (r) => r.foreignNet! * r.close,
+      descending: false,
+    );
+    final tBuy = topBy(
+      parsed.where((r) => (r.trustNet ?? 0) > 0).toList(),
+      (r) => r.trustNet! * r.close,
+      descending: true,
+    );
+    final tSell = topBy(
+      parsed.where((r) => (r.trustNet ?? 0) < 0).toList(),
+      (r) => r.trustNet! * r.close,
+      descending: false,
+    );
+
+    // 連買天數:只為榜上 symbol 算(60 日回看;ISO 字串前 10 碼比較,
+    // 避開儲存格式的時區後綴差異)
+    final symbols = <String>{
+      for (final r in [...fBuy, ...fSell, ...tBuy, ...tSell]) r.symbol,
+    };
+    final latestDay = DateTime.parse(latestStr.substring(0, 10));
+    final cutoff = latestDay
+        .subtract(const Duration(days: 90))
+        .toIso8601String()
+        .substring(0, 10);
+    final histRows = symbols.isEmpty
+        ? const <QueryRow>[]
+        : await customSelect(
+            'SELECT symbol, date, foreign_net, investment_trust_net '
+            'FROM daily_institutional '
+            "WHERE symbol IN (${List.filled(symbols.length, '?').join(', ')}) "
+            "AND date >= '$cutoff' "
+            'ORDER BY symbol, date DESC',
+            variables: [for (final sym in symbols) Variable.withString(sym)],
+            readsFrom: {dailyInstitutional},
+          ).get();
+
+    final histBySymbol = <String, List<({double? f, double? t})>>{};
+    for (final r in histRows) {
+      histBySymbol.putIfAbsent(r.read<String>('symbol'), () => []).add((
+        f: r.readNullable<double>('foreign_net'),
+        t: r.readNullable<double>('investment_trust_net'),
+      ));
+    }
+
+    int streak(String symbol, {required bool foreign, required bool buy}) {
+      var count = 0;
+      for (final day in histBySymbol[symbol] ?? const []) {
+        final net = foreign ? day.f : day.t;
+        final match = net != null && (buy ? net > 0 : net < 0);
+        if (!match) break;
+        count++;
+      }
+      return count;
+    }
+
+    InstitutionalRankingRow toRow(
+      ({
+        double? foreignNet,
+        String market,
+        String name,
+        String symbol,
+        double? trustNet,
+        double close,
+      })
+      r, {
+      required bool foreign,
+      required bool buy,
+    }) {
+      final net = foreign ? r.foreignNet! : r.trustNet!;
+      final other = foreign ? r.trustNet : r.foreignNet;
+      return InstitutionalRankingRow(
+        symbol: r.symbol,
+        name: r.name,
+        market: r.market,
+        netShares: net,
+        netAmount: net * r.close,
+        streakDays: streak(r.symbol, foreign: foreign, buy: buy),
+        isDualSide: other != null && (buy ? other > 0 : other < 0),
+      );
+    }
+
+    return InstitutionalRanking(
+      date: latestDay,
+      foreignBuy: [for (final r in fBuy) toRow(r, foreign: true, buy: true)],
+      foreignSell: [for (final r in fSell) toRow(r, foreign: true, buy: false)],
+      trustBuy: [for (final r in tBuy) toRow(r, foreign: false, buy: true)],
+      trustSell: [for (final r in tSell) toRow(r, foreign: false, buy: false)],
+    );
   }
 }

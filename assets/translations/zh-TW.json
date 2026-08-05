@@ -1566,5 +1566,23 @@
     "entryTitle": "{month} 月營收公布中",
     "entrySubtitle": "已公布 {filed} 家・自選 {watchFiled}/{watchTotal} 已交卷",
     "revenueCol": "營收"
+  },
+  "instRanking": {
+    "title": "法人買賣超排行",
+    "empty": "尚無法人資料",
+    "noRows": "本視角無資料",
+    "view": {
+      "foreignBuy": "外資買超",
+      "foreignSell": "外資賣超",
+      "trustBuy": "投信買超",
+      "trustSell": "投信賣超"
+    },
+    "colShares": "張數",
+    "colAmount": "金額",
+    "colStreakBuy": "連買(日)",
+    "colStreakSell": "連賣(日)",
+    "dualBuy": "雙買",
+    "dualSell": "雙賣",
+    "entry": "買賣超排行"
   }
 }
