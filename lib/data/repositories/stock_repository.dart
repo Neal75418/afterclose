@@ -104,33 +104,69 @@ class StockRepository implements IStockRepository {
       // 重上市自癒:回到名單即恢復 active(upsert 覆寫)。
       final officialUsable =
           officialCodes.length >= ApiConfig.twseOfficialListSanityFloor;
+      // floor 漂移警報:名冊規模若逐年縮向 floor,守衛會先於失效前
+      // 在此留下訊號(距 floor <10% 即警告),避免靜默進入永久跳過。
+      if (officialUsable &&
+          officialCodes.length < ApiConfig.twseOfficialListSanityFloor * 1.1) {
+        AppLogger.warning(
+          'StockRepo',
+          '官方名冊 ${officialCodes.length} 家已逼近 sanity floor '
+              '(${ApiConfig.twseOfficialListSanityFloor})，floor 需重新校準',
+        );
+      }
       final officialCoversDr = officialCodes.keys.any(
         (s) => s.startsWith('91'),
       );
-      bool delistedByOfficial(FinMindStockInfo stock) {
-        if (!officialUsable) return false;
-        if (stock.market != MarketCode.twse) return false;
+
+      // 三態判定(2026-08-05 複審修正):原本「跳過清理」被實作成
+      // 「寫入 isActive=true」——fail-soft/floor/DR 守衛任一觸發時,
+      // 上一輪已停用的 135 檔殭屍整輪復活(死股無成交,價格步救不回,
+      // 持續到下次成功輪最長一週)。防護的正確語意是**保持現狀**:
+      // 未知一律回 null → companion 該欄 absent → Drift DoUpdate 不寫入。
+      // industry 同理:官方權威範圍內狀態未知時不得以 FinMind taxonomy
+      // 降級覆寫上一輪的官方分類(產業卡組成會週際翻覆)。
+      //
+      // 官方權威範圍=上市 4 碼非 ETF;範圍外(上櫃/ETF)的存活語意
+      // 仍是「FinMind 名單有=活」(其停用由 deactivateStocksNotIn 承接)。
+      bool inOfficialUniverse(FinMindStockInfo stock) {
         final id = stock.stockId;
-        if (id.length != 4 || id.startsWith('00')) return false;
-        if (id.startsWith('91') && !officialCoversDr) return false;
-        return !officialCodes.containsKey(id);
+        return stock.market == MarketCode.twse &&
+            id.length == 4 &&
+            !id.startsWith('00');
+      }
+
+      // true=存活(自癒復活)、false=下市、null=未知(不寫入)
+      bool? officialVerdict(FinMindStockInfo stock) {
+        if (!inOfficialUniverse(stock)) return true;
+        if (!officialUsable) return null;
+        final id = stock.stockId;
+        if (id.startsWith('91') && !officialCoversDr) return null;
+        return officialCodes.containsKey(id) ? true : false;
       }
 
       final delisted = <String>[];
       final entries = bySymbol.values.map((stock) {
-        final official = stock.market == MarketCode.twse
-            ? IndustryNames.nameForTwseCode(officialCodes[stock.stockId] ?? '')
-            : null;
-        final zombie = delistedByOfficial(stock);
-        if (zombie) delisted.add(stock.stockId);
+        final verdict = officialVerdict(stock);
+        if (verdict == false) delisted.add(stock.stockId);
+
+        final Value<String> industryValue;
+        if (!inOfficialUniverse(stock)) {
+          industryValue = Value(_normalizeIndustry(stock.industryCategory));
+        } else if (verdict == null) {
+          industryValue = const Value.absent();
+        } else {
+          industryValue = Value(
+            IndustryNames.nameForTwseCode(officialCodes[stock.stockId] ?? '') ??
+                _normalizeIndustry(stock.industryCategory),
+          );
+        }
+
         return StockMasterCompanion.insert(
           symbol: stock.stockId,
           name: stock.stockName,
           market: stock.market,
-          industry: Value(
-            official ?? _normalizeIndustry(stock.industryCategory),
-          ),
-          isActive: Value(!zombie),
+          industry: industryValue,
+          isActive: verdict == null ? const Value.absent() : Value(verdict),
         );
       }).toList();
 

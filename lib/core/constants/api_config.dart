@@ -53,7 +53,13 @@ abstract final class ApiConfig {
   /// 部分回應——殭屍清理（官方名單缺席→標下市）當輪跳過，避免 API
   /// 截斷造成大規模誤殺；per-symbol 的產業別覆蓋不受此限（部分名單
   /// 內的資料仍是對的）。
-  static const int twseOfficialListSanityFloor = 800;
+  /// 2026-08-05 複審調升 800→1000:實際名冊 ~1,093 家,800 留下 293 檔
+  /// 的部分回應盲區(floor 過了但名單仍缺漏 → 缺席者被誤判下市)。1000
+  /// 縮盲區至 ~93 檔;誤殺者若有成交,同輪價格步(STOCK_DAY_ALL feed 的
+  /// isActive=true)分鐘級救回——此救援依賴為顯式設計,見
+  /// stock_repository 的三態註解。若未來上市家數縮水逼近 floor,
+  /// syncStockList 會記警報(見該處),屆時再行下調。
+  static const int twseOfficialListSanityFloor = 1000;
 
   /// MOPS(公開資訊觀測站,舊版)base URL——月營收公布期漸進 CSV 來源。
   /// 新版 MOPS 已下架靜態頁,只有舊版過渡站有;關站風險由呼叫端 fail-soft

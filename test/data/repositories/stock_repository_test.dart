@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
@@ -154,16 +155,28 @@ void main() {
             ),
           ],
         );
-        when(
-          () => mockTwse.fetchIndustryCodes(),
-        ).thenAnswer((_) async => {'2330': '24'});
+        // 名單須 ≥ floor 才可信(三態語意);補足量假名單
+        when(() => mockTwse.fetchIndustryCodes()).thenAnswer(
+          (_) async => {
+            for (
+              var i = 1000;
+              i < 1000 + ApiConfig.twseOfficialListSanityFloor + 100;
+              i++
+            )
+              '$i': '20',
+            '2330': '24',
+          },
+        );
 
         await repository.syncStockList();
 
         final entry = capturedEntries().single;
         expect(entry.industry.value, '半導體業');
+        expect(entry.isActive.value, isTrue, reason: '官方在冊=存活(自癒)');
       });
 
+      // 2026-08-05 複審調整:改用上櫃股承載——dedup 邏輯市場無關,而
+      // 上市股在官方名單不可用時 industry 已改為不寫入,無從驗證 dedup。
       test('FinMind 同 symbol 重複列:細分優先,泛用列在後不得覆蓋', () async {
         when(() => mockClient.getStockList()).thenAnswer(
           (_) async => const [
@@ -171,13 +184,13 @@ void main() {
               stockId: '3450',
               stockName: '聯鈞',
               industryCategory: '半導體業',
-              type: 'twse',
+              type: 'tpex',
             ),
             FinMindStockInfo(
               stockId: '3450',
               stockName: '聯鈞',
               industryCategory: '電子工業',
-              type: 'twse',
+              type: 'tpex',
             ),
           ],
         );
@@ -191,7 +204,12 @@ void main() {
         expect(capturedEntries().single.industry.value, '半導體業');
       });
 
-      test('官方端點失敗 fail-soft:沿用 FinMind 分類、同步不中斷', () async {
+      // 2026-08-05 複審修正:原斷言「沿用 FinMind 分類」實為**降級覆寫**
+      // ——fail-soft 輪會把 1,087 檔上一輪已正確的官方分類整批洗成
+      // FinMind taxonomy(生技 61→27、冒出官方不存在的「化學生技醫療」),
+      // 產業卡組成週際翻覆。三態語意:官方權威範圍(上市 4 碼非 ETF)
+      // 狀態未知時,industry 與 isActive 一律不寫入、保留 DB 現值。
+      test('官方端點失敗 fail-soft:上市股 industry/isActive 皆不寫入(保留現值)', () async {
         when(() => mockClient.getStockList()).thenAnswer(
           (_) async => const [
             FinMindStockInfo(
@@ -209,7 +227,9 @@ void main() {
         final count = await repository.syncStockList();
 
         expect(count, 1);
-        expect(capturedEntries().single.industry.value, '電子工業');
+        final entry = capturedEntries().single;
+        expect(entry.industry.present, isFalse, reason: '不得以 FinMind 降級覆寫官方分類');
+        expect(entry.isActive.present, isFalse, reason: '不得復活已停用殭屍');
       });
 
       test('上櫃股不套上市官方碼(TPEx 分類本就細分正確)', () async {
@@ -245,9 +265,10 @@ void main() {
     group('官方名單殭屍清理', () {
       late MockTwseClient mockTwse;
 
-      /// 產生過 sanity floor 的官方名單(≥800 家)
+      /// 產生過 sanity floor 的官方名單(引用常數,floor 調整自動跟隨)
       Map<String, String> bigOfficial(Map<String, String> extra) => {
-        for (var i = 0; i < 900; i++) '${1000 + i}': '01',
+        for (var i = 0; i < ApiConfig.twseOfficialListSanityFloor + 100; i++)
+          '${1000 + i}': '01',
         ...extra,
       };
 
@@ -342,15 +363,25 @@ void main() {
         await repository.syncStockList();
         expect(capturedEntries().single.isActive.value, isFalse);
 
-        // 官方名單無任何 91xx → DR 涵蓋性存疑 → 不動
+        // 官方名單無任何 91xx → DR 涵蓋性存疑 → 「不動」=不寫入
+        // (2026-08-05 複審修正:原斷言 isTrue 把「守衛跳過=復活死股」
+        // 鎖成規格——上一輪已停用的 9104 會被寫回 active。三態語意下
+        // 未知一律 absent,保留 DB 現值)
         when(
           () => mockTwse.fetchIndustryCodes(),
         ).thenAnswer((_) async => bigOfficial({}));
         await repository.syncStockList();
-        expect(capturedEntries().single.isActive.value, isTrue);
+        expect(
+          capturedEntries().single.isActive.present,
+          isFalse,
+          reason: '守衛跳過時不得寫入 isActive,否則復活已停用殭屍',
+        );
       });
 
-      test('官方名單過小(部分回應)→ 跳過清理,industry 覆蓋照常', () async {
+      // 2026-08-05 複審修正:原斷言「industry 覆蓋照常」在三態語意下
+      // 不再成立——floor 觸發代表整份名單不可信,industry 也一律不寫入
+      // (上一輪的官方分類保留在 DB,不套用可疑的部分名單零損失)。
+      test('官方名單過小(部分回應)→ 清理與 industry 皆不寫入(保留現值)', () async {
         when(
           () => mockClient.getStockList(),
         ).thenAnswer((_) async => const [zombie, alive]);
@@ -362,15 +393,16 @@ void main() {
 
         final bySymbol = {for (final e in capturedEntries()) e.symbol.value: e};
         expect(
-          bySymbol['3474']!.isActive.value,
-          isTrue,
-          reason: '名單不完整時不得大規模誤殺',
+          bySymbol['3474']!.isActive.present,
+          isFalse,
+          reason: '名單不完整時不得誤殺、也不得復活——一律不寫入',
         );
         expect(
-          bySymbol['2330']!.industry.value,
-          '半導體業',
-          reason: '覆蓋不受 floor 限制',
+          bySymbol['2330']!.industry.present,
+          isFalse,
+          reason: '可疑名單不得套用;上一輪官方分類保留於 DB',
         );
+        expect(bySymbol['2330']!.isActive.present, isFalse);
       });
     });
 

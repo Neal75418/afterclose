@@ -1532,17 +1532,39 @@ class TwseClient {
     // 殭屍清理被 sanity floor 跳過(floor 防護正確,但根因是缺重試)。
     // 與其餘 client 方法一致走 mixin(帶重試+統一錯誤處理)。
     return MarketClientMixin.executeRequest(_tag, '官方產業別', () async {
+      // 快取(2026-08-05 複審補):t187ap03_L 同端點被本方法與
+      // _fetchIssuedShares 各下載一次/輪,零快取放大 openapi 連發壓力
+      // ——正是重試要防的限流成因。走與其他端點一致的 LruCache。
+      const cacheKey = 'industryCodes';
+      final cached = _cache.get(cacheKey) as Map<String, String>?;
+      if (cached != null) return cached;
+
       final response = await _dio.get(
         ApiEndpoints.twseStockInfo,
         options: Options(headers: {'Accept': 'application/json'}),
       );
-      if (response.statusCode != 200 || response.data is! List) {
+      if (response.statusCode != 200) {
         throw ApiException(
           '$_tag OpenData API error: ${response.statusCode}',
           response.statusCode,
         );
       }
-      final map = parseIndustryCodes(response.data as List);
+      final data = response.data;
+      // HTML 型限流分型(2026-08-05 複審補):TWSE 家族以 200+HTML 實作
+      // 限流(mixin.decodeResponseData 明文記載),此時 data 是 String
+      // ——擲 ApiException 會被 executeRequest 直接 rethrow 零重試;
+      // 分型成 RateLimitException 讓上游熔斷鏈正確接手。
+      if (data is String &&
+          (data.trimLeft().startsWith('<!DOCTYPE') ||
+              data.trimLeft().startsWith('<html'))) {
+        AppLogger.warning(_tag, '官方產業別: 收到 HTML 回應（疑似 API 限流）');
+        throw const RateLimitException('API 回傳 HTML 而非 JSON，疑似限流');
+      }
+      if (data is! List) {
+        throw const ApiException('TWSE OpenData API error: 非預期資料型別', null);
+      }
+      final map = parseIndustryCodes(data);
+      _cache.put(cacheKey, map);
       AppLogger.info(_tag, '官方產業別代碼: ${map.length} 家公司');
       return map;
     });
