@@ -84,7 +84,18 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
     if (_timeRange == ChartTimeRange.all || history.isEmpty) return null;
 
     final cutoffDate = DateTime.now().subtract(Duration(days: _timeRange.days));
-    return history.where((entry) => entry.date.isAfter(cutoffDate)).length;
+    // 只數 OHLC 齊全列(2026-08-05 複審):圖表建 K 棒會剔除缺值列,
+    // 這裡若照數全列,sublist 起點前移、尾端多顯示範圍外的舊 K。
+    return history
+        .where(
+          (entry) =>
+              entry.date.isAfter(cutoffDate) &&
+              entry.open != null &&
+              entry.high != null &&
+              entry.low != null &&
+              entry.close != null,
+        )
+        .length;
   }
 
   /// 建立時間範圍選擇器

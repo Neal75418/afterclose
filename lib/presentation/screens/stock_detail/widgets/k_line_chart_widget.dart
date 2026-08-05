@@ -11,6 +11,7 @@ import 'package:afterclose/core/utils/number_formatter.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/chart_indicators.dart';
+import 'package:afterclose/presentation/screens/stock_detail/widgets/chart_indicator_styles.dart';
 import 'package:afterclose/presentation/screens/stock_detail/widgets/k_chart_detail_popup.dart';
 
 /// 使用 k_chart_plus 套件的 K 線圖 Widget，
@@ -65,9 +66,13 @@ class _KLineChartWidgetState extends State<KLineChartWidget> {
   @override
   void didUpdateWidget(KLineChartWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
+    // 指標選取集合刻意**不在**重算條件內(2026-08-05 複審 High #2):
+    // 呼叫端 toggle 是就地改同一個 Set 實例,identity 比較永不觸發——
+    // 1.0.3 時無害(套件無條件算全部指標),1.0.4 只算傳入清單後變成
+    // 「切換指標畫面空白」的迴歸。修法回到 1.0.3 的哲學:資料一律算
+    // **全部**指標(8 指標 × 數百根 K 成本趨近零),選取只決定畫哪些
+    // ——整個 bug class 從結構上消失。
     if (oldWidget.priceHistory != widget.priceHistory ||
-        oldWidget.mainIndicators != widget.mainIndicators ||
-        oldWidget.secondaryIndicators != widget.secondaryIndicators ||
         oldWidget.visibleCount != widget.visibleCount ||
         oldWidget.maDayList != widget.maDayList) {
       _buildKLineData();
@@ -106,15 +111,23 @@ class _KLineChartWidgetState extends State<KLineChartWidget> {
       }
     }
 
-    // 指標在**完整歷史**上計算（MA 值算完後存進每個 entity），
-    // 再截尾取顯示區間 —— 這樣 1M/3M 視圖裡的每根 K 棒都帶著用完整
-    // 歷史算出的正確 MA60，而不是只有右緣幾個點有值。
+    // 漲跌欄位=vs 前一根收盤(2026-08-05 複審 Medium #7):套件的
+    // calculateAll 不填 change/ratio,浮層 fallback close−open 是
+    // 「當日 K 內」語意——跳空日方向會反(昨收100 開95 收98 顯示 +3)。
+    // app 手上有完整排序歷史,直接補正;首根無昨收留 null,浮層顯 --。
+    for (var i = 1; i < kLineData.length; i++) {
+      final prevClose = kLineData[i - 1].close;
+      kLineData[i].change = kLineData[i].close - prevClose;
+      kLineData[i].ratio = prevClose == 0
+          ? null
+          : (kLineData[i].close - prevClose) / prevClose * 100;
+    }
+
+    // 指標在**完整歷史**上計算（值存進每個 entity）再截尾顯示——
+    // 1M/3M 視圖的每根 K 都帶完整歷史算出的 MA60;且一律算全部指標
+    // (見 didUpdateWidget 註解)。
     if (kLineData.isNotEmpty) {
-      DataUtil.calculateAll(
-        kLineData,
-        _mainIndicatorsForCalc(),
-        _secondaries(),
-      );
+      DataUtil.calculateAll(kLineData, _allMainIndicators, _allSecondaries);
     }
 
     final visible = widget.visibleCount;
@@ -127,26 +140,34 @@ class _KLineChartWidgetState extends State<KLineChartWidget> {
     });
   }
 
-  /// 計算用的主圖指標（樣式不影響計算值，故用預設樣式即可）
-  List<MainIndicator> _mainIndicatorsForCalc() => [
-    if (widget.mainIndicators.contains(ChartMainIndicator.ma))
-      MAIndicator(calcParams: widget.maDayList),
-    if (widget.mainIndicators.contains(ChartMainIndicator.boll))
-      BOLLIndicator(),
-    if (widget.mainIndicators.contains(ChartMainIndicator.sar)) SARIndicator(),
+  /// 計算用:一律全部指標(樣式不影響計算值)
+  List<MainIndicator> get _allMainIndicators => [
+    MAIndicator(calcParams: widget.maDayList),
+    BOLLIndicator(),
+    SARIndicator(),
   ];
 
-  List<SecondaryIndicator> _secondaries() => [
+  List<SecondaryIndicator> get _allSecondaries => [
+    MACDIndicator(),
+    KDJIndicator(),
+    RSIIndicator(),
+    WRIndicator(),
+    CCIIndicator(),
+  ];
+
+  /// 繪製用:依選取過濾+帶 app 樣式(集中於 [ChartIndicatorStyles],
+  /// 副圖色彩守門見 chart_secondary_styles_test)
+  List<SecondaryIndicator> _secondariesForRender(Brightness b) => [
     if (widget.secondaryIndicators.contains(ChartSecondaryIndicator.macd))
-      MACDIndicator(),
+      MACDIndicator(indicatorStyle: ChartIndicatorStyles.macdFor(b)),
     if (widget.secondaryIndicators.contains(ChartSecondaryIndicator.kdj))
-      KDJIndicator(),
+      KDJIndicator(indicatorStyle: ChartIndicatorStyles.kdjFor(b)),
     if (widget.secondaryIndicators.contains(ChartSecondaryIndicator.rsi))
-      RSIIndicator(),
+      RSIIndicator(indicatorStyle: ChartIndicatorStyles.rsiFor(b)),
     if (widget.secondaryIndicators.contains(ChartSecondaryIndicator.wr))
-      WRIndicator(),
+      WRIndicator(indicatorStyle: ChartIndicatorStyles.wrFor(b)),
     if (widget.secondaryIndicators.contains(ChartSecondaryIndicator.cci))
-      CCIIndicator(),
+      CCIIndicator(indicatorStyle: ChartIndicatorStyles.cciFor(b)),
   ];
 
   @override
@@ -198,12 +219,11 @@ class _KLineChartWidgetState extends State<KLineChartWidget> {
     );
 
     // 繪製用的指標實例：同一組 calcParams、換上主題色
-    final maColors = IndicatorColors.maColorsFor(theme.brightness);
     final mainForRender = <MainIndicator>[
       if (widget.mainIndicators.contains(ChartMainIndicator.ma))
         MAIndicator(
           calcParams: widget.maDayList,
-          indicatorStyle: MAStyle(maColors: maColors),
+          indicatorStyle: ChartIndicatorStyles.maFor(theme.brightness),
         ),
       if (widget.mainIndicators.contains(ChartMainIndicator.boll))
         BOLLIndicator(),
@@ -234,7 +254,7 @@ class _KLineChartWidgetState extends State<KLineChartWidget> {
           chartColors,
           isTrendLine: false,
           mainIndicators: mainForRender,
-          secondaryIndicators: _secondaries(),
+          secondaryIndicators: _secondariesForRender(theme.brightness),
           volHidden: false,
           isLine: false,
           isTapShowInfoDialog: true,

@@ -177,22 +177,28 @@ class HeroIndexSection extends StatelessWidget {
     );
   }
 
+  /// 位階行的固定高度:chip 版(labelSmall+chip 直距)與純文字版(資料
+  /// 不足)天然差 ~4px,雙欄並排時 sparkline 會一高一低——2026-08-05
+  /// 複審:位階行是「兩卡結構恆定」剩下的最後一個異構源,三種狀態
+  /// (chip 行/insufficient 文字/無歷史)一律以此高度佔位。
+  static const double _stageRowHeight = 24;
+
   /// 建構大盤位階單行（位階 chip + 距 20MA / 距 60MA 乖離率）
   ///
-  /// 資料不足時顯示「位階資料不足」muted 提示；完全沒有歷史資料時回傳空。
+  /// 任何狀態(含無歷史資料)都回傳**同高**的一行,維持雙欄逐像素對齊。
   List<Widget> _buildStageRow(BuildContext context, ThemeData theme) {
-    if (stageHistory.length < 2) return const [];
-
-    final result = TechnicalIndicatorService().calculateMarketStage(
-      stageHistory,
-    );
-
     final mutedColor = theme.colorScheme.onSurfaceVariant;
 
-    // 資料不足：顯示 muted 提示（一行）
-    if (result.stage == MarketStage.insufficient) {
-      return [
-        const SizedBox(height: DesignTokens.spacing8),
+    List<Widget> fixedHeightRow(Widget child) => [
+      const SizedBox(height: DesignTokens.spacing8),
+      SizedBox(
+        height: _stageRowHeight,
+        child: Align(alignment: Alignment.centerLeft, child: child),
+      ),
+    ];
+
+    if (stageHistory.length < 2) {
+      return fixedHeightRow(
         Text(
           'marketOverview.stage.insufficient'.tr(),
           style: theme.textTheme.labelSmall?.copyWith(
@@ -200,7 +206,24 @@ class HeroIndexSection extends StatelessWidget {
             fontSize: DesignTokens.fontSizeXs,
           ),
         ),
-      ];
+      );
+    }
+
+    final result = TechnicalIndicatorService().calculateMarketStage(
+      stageHistory,
+    );
+
+    // 資料不足：顯示 muted 提示（一行）
+    if (result.stage == MarketStage.insufficient) {
+      return fixedHeightRow(
+        Text(
+          'marketOverview.stage.insufficient'.tr(),
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: mutedColor,
+            fontSize: DesignTokens.fontSizeXs,
+          ),
+        ),
+      );
     }
 
     // 台股慣例：多頭 / 正乖離 = 紅、空頭 / 負乖離 = 綠、糾結 = 灰
@@ -224,68 +247,71 @@ class HeroIndexSection extends StatelessWidget {
 
     return [
       const SizedBox(height: DesignTokens.spacing8),
-      Row(
-        children: [
-          // 位階 chip
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: DesignTokens.spacing8,
-              vertical: DesignTokens.spacing2,
-            ),
-            decoration: BoxDecoration(
-              color: stageColor.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(DesignTokens.radiusSm),
-            ),
-            child: Text(
-              'marketOverview.stage.$stageKey'.tr(),
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: PriceColors.onTintOf(
-                  stageColor,
-                  Theme.of(context).brightness,
+      SizedBox(
+        height: _stageRowHeight,
+        child: Row(
+          children: [
+            // 位階 chip
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: DesignTokens.spacing8,
+                vertical: DesignTokens.spacing2,
+              ),
+              decoration: BoxDecoration(
+                color: stageColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(DesignTokens.radiusSm),
+              ),
+              child: Text(
+                'marketOverview.stage.$stageKey'.tr(),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: PriceColors.onTintOf(
+                    stageColor,
+                    Theme.of(context).brightness,
+                  ),
+                  fontWeight: FontWeight.w700,
+                  fontSize: DesignTokens.fontSizeXs,
                 ),
-                fontWeight: FontWeight.w700,
-                fontSize: DesignTokens.fontSizeXs,
               ),
             ),
-          ),
-          const SizedBox(width: DesignTokens.spacing8),
-          // 距 20MA / 距 60MA 乖離率＋位階乖離判讀(同一行)
-          //
-          // 判讀原為獨立一行——雙欄並排時「一側超跌一側無判讀」讓兩卡
-          // sparkline 與其下全部內容垂直錯位(2026-08-02 使用者實機抓到
-          // 一高一低)。併入同行後兩卡結構恆定;窄視窗由 ellipsis 承接。
-          Flexible(
-            child: Text.rich(
-              TextSpan(
-                text:
-                    '${'marketOverview.biasMa20'.tr(namedArgs: {'value': _formatBias(result.biasMa20)})}'
-                    '  '
-                    '${'marketOverview.biasMa60'.tr(namedArgs: {'value': _formatBias(result.biasMa60)})}',
-                children: [
-                  if (reading != null)
-                    TextSpan(
-                      text:
-                          '  ·  '
-                          '${reading.tone == InterpretationTone.warning ? '⚠ ' : ''}'
-                          '${reading.messageKey.tr()}',
-                      style: TextStyle(
-                        color: MarketReadingLine.textColorFor(
-                          reading.tone,
-                          theme,
+            const SizedBox(width: DesignTokens.spacing8),
+            // 距 20MA / 距 60MA 乖離率＋位階乖離判讀(同一行)
+            //
+            // 判讀原為獨立一行——雙欄並排時「一側超跌一側無判讀」讓兩卡
+            // sparkline 與其下全部內容垂直錯位(2026-08-02 使用者實機抓到
+            // 一高一低)。併入同行後兩卡結構恆定;窄視窗由 ellipsis 承接。
+            Flexible(
+              child: Text.rich(
+                TextSpan(
+                  text:
+                      '${'marketOverview.biasMa20'.tr(namedArgs: {'value': _formatBias(result.biasMa20)})}'
+                      '  '
+                      '${'marketOverview.biasMa60'.tr(namedArgs: {'value': _formatBias(result.biasMa60)})}',
+                  children: [
+                    if (reading != null)
+                      TextSpan(
+                        text:
+                            '  ·  '
+                            '${reading.tone == InterpretationTone.warning ? '⚠ ' : ''}'
+                            '${reading.messageKey.tr()}',
+                        style: TextStyle(
+                          color: MarketReadingLine.textColorFor(
+                            reading.tone,
+                            theme,
+                          ),
                         ),
                       ),
-                    ),
-                ],
-              ),
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: mutedColor,
-                fontSize: DesignTokens.fontSizeXs,
-                fontFeatures: const [FontFeature.tabularFigures()],
+                  ],
+                ),
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: mutedColor,
+                  fontSize: DesignTokens.fontSizeXs,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     ];
   }

@@ -5,6 +5,7 @@ import 'package:k_chart_plus/k_chart_plus.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:afterclose/core/utils/localized_number_format.dart';
 
 /// 長按 K 棒時顯示的詳情浮層。
 ///
@@ -25,10 +26,11 @@ class KChartDetailPopup extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final date = DateTime.fromMillisecondsSinceEpoch(entity.time ?? 0);
-    final change = entity.change ?? (entity.close - entity.open);
-    final changePct =
-        entity.ratio ?? (entity.open == 0 ? 0.0 : change / entity.open * 100);
-    // 漲跌一律走 getPriceColor(紅漲綠跌,淺色主題自動換較深階)
+    // change/ratio 由 KLineChartWidget 以「vs 前一根收盤」填入(2026-08-05
+    // 複審修正:原 fallback close−open 是當日 K 內語意,跳空日方向會反)。
+    // 首根無昨收 → null → 顯示 -- 、中性色。
+    final change = entity.change;
+    final changePct = entity.ratio;
     final changeColor = AppTheme.getPriceColor(change, theme.brightness);
 
     return Container(
@@ -65,16 +67,20 @@ class KChartDetailPopup extends StatelessWidget {
           _row(
             theme,
             'stockDetail.change'.tr(),
-            _fmt(change),
+            change == null ? '--' : _fmt(change),
             valueColor: changeColor,
           ),
           _row(
             theme,
             'stockDetail.changePercent'.tr(),
-            '${changePct.toStringAsFixed(2)}%',
+            changePct == null ? '--' : '${changePct.toStringAsFixed(2)}%',
             valueColor: changeColor,
           ),
-          _row(theme, 'stockDetail.volume'.tr(), entity.vol.toStringAsFixed(0)),
+          _row(
+            theme,
+            'stockDetail.volume'.tr(),
+            LocalizedNumberFormat.compact(entity.vol),
+          ),
         ],
       ),
     );

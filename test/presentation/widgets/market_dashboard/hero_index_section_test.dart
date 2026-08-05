@@ -100,14 +100,16 @@ void main() {
         expect(find.text('marketOverview.stage.bullish'), findsNothing);
       });
 
-      testWidgets('omits stage row entirely when no stage history', (
-        tester,
-      ) async {
+      // 2026-08-05 複審翻轉:原「無歷史→整行消失」正是雙欄並排時
+      // sparkline 一高一低的最後一個異構源(單側指數歷史缺漏時,一側
+      // 有位階行、一側整行沒有,高度差 ~30px)。新語意:任何狀態都
+      // 渲染**同高**的位階行,無歷史顯示「資料不足」。
+      testWidgets('no stage history → 仍渲染同高位階行(資料不足)', (tester) async {
         await tester.pumpWidget(
           buildTestApp(HeroIndexSection(index: createIndex())),
         );
 
-        expect(find.text('marketOverview.stage.insufficient'), findsNothing);
+        expect(find.text('marketOverview.stage.insufficient'), findsOneWidget);
         expect(find.text('marketOverview.stage.bullish'), findsNothing);
       });
 
