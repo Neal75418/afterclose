@@ -1564,6 +1564,7 @@
       "revenue": "營收額"
     },
     "entryTitle": "{month} 月營收公布中",
-    "entrySubtitle": "已公布 {filed} 家・自選 {watchFiled}/{watchTotal} 已交卷"
+    "entrySubtitle": "已公布 {filed} 家・自選 {watchFiled}/{watchTotal} 已交卷",
+    "revenueCol": "營收"
   }
 }

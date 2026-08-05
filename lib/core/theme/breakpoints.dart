@@ -23,6 +23,13 @@ abstract final class Breakpoints {
   /// 每格仍有 ~140dp、清單行寬也不至於一行拉太長。
   static const double contentMaxWidth = 1000;
 
+  /// 單欄數值表格最大寬度(桌面)。
+  ///
+  /// 「名稱+少數右對齊數字欄」的清單(營收總覽等)用 [contentMaxWidth]
+  /// (1000,為 7 欄月曆設計)仍會在名稱與數字之間留大段空白;720 讓
+  /// 名稱欄 ~420dp、數字欄緊湊靠攏,讀起來才像表格。
+  static const double tableMaxWidth = 720;
+
   /// Modal bottom sheet 最大寬度。
   ///
   /// 寬視窗（桌面）下 modal bottom sheet 預設撐滿全寬、不置中，閱讀體驗差；

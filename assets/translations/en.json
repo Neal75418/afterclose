@@ -1564,6 +1564,7 @@
       "revenue": "Revenue"
     },
     "entryTitle": "{month} revenue filing in progress",
-    "entrySubtitle": "{filed} reported · watchlist {watchFiled}/{watchTotal} filed"
+    "entrySubtitle": "{filed} reported · watchlist {watchFiled}/{watchTotal} filed",
+    "revenueCol": "Revenue"
   }
 }

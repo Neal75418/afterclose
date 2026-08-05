@@ -76,7 +76,7 @@ class _RevenueOverviewScreenState extends ConsumerState<RevenueOverviewScreen> {
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(
-            maxWidth: Breakpoints.contentMaxWidth,
+            maxWidth: Breakpoints.tableMaxWidth,
           ),
           child: state.isLoading && overview == null
               ? const GenericListShimmer(itemCount: 10)
@@ -226,46 +226,46 @@ class _RevenueOverviewScreenState extends ConsumerState<RevenueOverviewScreen> {
         child: Row(
           children: [
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
                 children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          '${row.symbol} ${row.name}',
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            fontWeight: isWatched
-                                ? FontWeight.w700
-                                : FontWeight.w500,
-                          ),
-                        ),
+                  Flexible(
+                    child: Text(
+                      '${row.symbol} ${row.name}',
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: isWatched
+                            ? FontWeight.w700
+                            : FontWeight.w500,
                       ),
-                      if (isWatched) ...[
-                        const SizedBox(width: DesignTokens.spacing4),
-                        Icon(
-                          Icons.star_rounded,
-                          size: 14,
-                          color: theme.colorScheme.primary,
-                        ),
-                      ],
-                      if (row.isNewHigh) ...[
-                        const SizedBox(width: DesignTokens.spacing4),
-                        _newHighBadge(theme),
-                      ],
-                    ],
-                  ),
-                  Text(
-                    revenueLabel,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      fontFeatures: const [FontFeature.tabularFigures()],
                     ),
                   ),
+                  if (isWatched) ...[
+                    const SizedBox(width: DesignTokens.spacing4),
+                    Icon(
+                      Icons.star_rounded,
+                      size: 14,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ],
+                  if (row.isNewHigh) ...[
+                    const SizedBox(width: DesignTokens.spacing4),
+                    _newHighBadge(theme),
+                  ],
                 ],
               ),
             ),
+            SizedBox(
+              width: _revenueCellWidth,
+              child: Text(
+                revenueLabel,
+                textAlign: TextAlign.end,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ),
+            const SizedBox(width: DesignTokens.spacing12),
             _growthCell(theme, value: row.momGrowth),
             const SizedBox(width: DesignTokens.spacing12),
             _growthCell(theme, value: row.yoyGrowth),
@@ -316,6 +316,18 @@ class _RevenueOverviewScreenState extends ConsumerState<RevenueOverviewScreen> {
       child: Row(
         children: [
           const Spacer(),
+          SizedBox(
+            width: _revenueCellWidth,
+            child: Text(
+              'revenueOverview.revenueCol'.tr(),
+              textAlign: TextAlign.end,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                fontSize: DesignTokens.fontSizeXs,
+              ),
+            ),
+          ),
+          const SizedBox(width: DesignTokens.spacing12),
           h('revenueOverview.momShort'),
           const SizedBox(width: DesignTokens.spacing12),
           h('revenueOverview.yoyShort'),
@@ -325,6 +337,7 @@ class _RevenueOverviewScreenState extends ConsumerState<RevenueOverviewScreen> {
   }
 
   static const double _growthCellWidth = 76;
+  static const double _revenueCellWidth = 88;
 
   Widget _growthCell(ThemeData theme, {required double? value}) {
     final color = value == null
