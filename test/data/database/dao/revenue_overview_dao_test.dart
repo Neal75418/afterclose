@@ -86,7 +86,7 @@ void main() {
     expect(bySymbol['2330']!.isNewHigh, isFalse, reason: '無歷史可比不算創高');
   });
 
-  test('列帶名稱/市場/YoY;各市場已申報數與 active 總數正確', () async {
+  test('列帶名稱/市場/YoY;各市場已申報數正確(無分母——算不準的不顯示)', () async {
     await seedStocks();
     await seedRevenue('2408', 2026, 7, 100, yoy: 12.3);
     await seedRevenue('6538', 2026, 7, 50);
@@ -99,8 +99,6 @@ void main() {
     expect(r.yoyGrowth, closeTo(12.3, 0.001));
     expect(overview.filedByMarket['TWSE'], 1);
     expect(overview.filedByMarket['TPEx'], 1);
-    expect(overview.activeByMarket['TWSE'], 2, reason: '2330 active 但未申報');
-    expect(overview.activeByMarket['TPEx'], 1);
   });
 
   test('非 active(下市)股票不進清單', () async {

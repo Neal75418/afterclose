@@ -1548,7 +1548,7 @@
     "monthLabel": "{year}/{month}",
     "empty": "No revenue data yet",
     "noMatch": "No stocks match the filter",
-    "progressFiling": "Filing in progress — TWSE {twseFiled}/{twseTotal}, TPEx {tpexFiled}/{tpexTotal} reported (early filers skew positive)",
+    "progressFiling": "Filing in progress — TWSE {twseFiled}, TPEx {tpexFiled} reported (early filers skew positive)",
     "progressComplete": "Month complete ({count} companies)",
     "newHigh": "Record",
     "momShort": "MoM",

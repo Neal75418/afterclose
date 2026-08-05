@@ -3,12 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/constants/app_routes.dart';
 import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/semantic_colors.dart';
+import 'package:afterclose/core/theme/breakpoints.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/utils/localized_number_format.dart';
+import 'package:afterclose/core/utils/taiwan_time.dart';
 import 'package:afterclose/data/database/dao/revenue_dao.dart';
 import 'package:afterclose/presentation/providers/revenue_overview_provider.dart';
 import 'package:afterclose/presentation/providers/watchlist_provider.dart';
@@ -68,14 +71,23 @@ class _RevenueOverviewScreenState extends ConsumerState<RevenueOverviewScreen> {
           ],
         ),
       ),
-      body: state.isLoading && overview == null
-          ? const GenericListShimmer(itemCount: 10)
-          : overview == null
-          ? EmptyState(
-              icon: Icons.receipt_long_outlined,
-              title: 'revenueOverview.empty'.tr(),
-            )
-          : _buildList(state, overview, watchlistSymbols),
+      // 桌面寬視窗限寬置中:否則左欄貼左、增減率貼右,一列橫跨全寬,
+      // 中間全是虛空(2026-08-05 實機回饋)
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: Breakpoints.contentMaxWidth,
+          ),
+          child: state.isLoading && overview == null
+              ? const GenericListShimmer(itemCount: 10)
+              : overview == null
+              ? EmptyState(
+                  icon: Icons.receipt_long_outlined,
+                  title: 'revenueOverview.empty'.tr(),
+                )
+              : _buildList(state, overview, watchlistSymbols),
+        ),
+      ),
     );
   }
 
@@ -93,6 +105,7 @@ class _RevenueOverviewScreenState extends ConsumerState<RevenueOverviewScreen> {
         slivers: [
           SliverToBoxAdapter(child: _buildProgressHeader(overview)),
           SliverToBoxAdapter(child: _buildControls(state)),
+          SliverToBoxAdapter(child: _buildColumnHeader(theme)),
           if (rows.isEmpty)
             SliverFillRemaining(
               hasScrollBody: false,
@@ -115,18 +128,19 @@ class _RevenueOverviewScreenState extends ConsumerState<RevenueOverviewScreen> {
     );
   }
 
-  /// 公布期進度:樣本範圍自明(「已公布 N 家中」——早申報樣本偏樂觀,
-  /// 8/10 截止前的沉默本身就是資訊)
+  /// 公布期進度。
+  ///
+  /// 只顯示真實可知的「已公布家數」——**沒有分母**:stock_master 無
+  /// 主板/興櫃欄位(FinMind 把興櫃標成 TPEx),任何分母都是假分數
+  /// (實機曾顯示「上櫃 34/1320」,主板實際 ~800)。「公布中/完整」
+  /// 以申報窗口(每月 1~14 日)判定,不猜覆蓋率。
   Widget _buildProgressHeader(RevenueOverview overview) {
     final theme = Theme.of(context);
     final twseFiled = overview.filedByMarket[MarketCode.twse] ?? 0;
-    final twseTotal = overview.activeByMarket[MarketCode.twse] ?? 0;
     final tpexFiled = overview.filedByMarket[MarketCode.tpex] ?? 0;
-    final tpexTotal = overview.activeByMarket[MarketCode.tpex] ?? 0;
-    final total = twseTotal + tpexTotal;
     final filed = twseFiled + tpexFiled;
-    // 覆蓋率 >= 95% 視為完整月,不再顯示「公布中」進度
-    final inProgress = total > 0 && filed / total < 0.95;
+    final inProgress =
+        TaiwanTime.now().day <= ApiConfig.mopsRevenueWindowLastDay;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(
@@ -140,9 +154,7 @@ class _RevenueOverviewScreenState extends ConsumerState<RevenueOverviewScreen> {
             ? 'revenueOverview.progressFiling'.tr(
                 namedArgs: {
                   'twseFiled': '$twseFiled',
-                  'twseTotal': '$twseTotal',
                   'tpexFiled': '$tpexFiled',
-                  'tpexTotal': '$tpexTotal',
                 },
               )
             : 'revenueOverview.progressComplete'.tr(
@@ -254,17 +266,9 @@ class _RevenueOverviewScreenState extends ConsumerState<RevenueOverviewScreen> {
                 ],
               ),
             ),
-            _growthCell(
-              theme,
-              label: 'revenueOverview.momShort'.tr(),
-              value: row.momGrowth,
-            ),
+            _growthCell(theme, value: row.momGrowth),
             const SizedBox(width: DesignTokens.spacing12),
-            _growthCell(
-              theme,
-              label: 'revenueOverview.yoyShort'.tr(),
-              value: row.yoyGrowth,
-            ),
+            _growthCell(theme, value: row.yoyGrowth),
           ],
         ),
       ),
@@ -289,37 +293,55 @@ class _RevenueOverviewScreenState extends ConsumerState<RevenueOverviewScreen> {
     );
   }
 
-  Widget _growthCell(
-    ThemeData theme, {
-    required String label,
-    required double? value,
-  }) {
+  /// 欄位標頭(一次性,取代每列重複的「月增/年增」小標籤)
+  Widget _buildColumnHeader(ThemeData theme) {
+    Widget h(String key) => SizedBox(
+      width: _growthCellWidth,
+      child: Text(
+        key.tr(),
+        textAlign: TextAlign.end,
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+          fontSize: DesignTokens.fontSizeXs,
+        ),
+      ),
+    );
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        DesignTokens.spacing16,
+        DesignTokens.spacing8,
+        DesignTokens.spacing16,
+        DesignTokens.spacing4,
+      ),
+      child: Row(
+        children: [
+          const Spacer(),
+          h('revenueOverview.momShort'),
+          const SizedBox(width: DesignTokens.spacing12),
+          h('revenueOverview.yoyShort'),
+        ],
+      ),
+    );
+  }
+
+  static const double _growthCellWidth = 76;
+
+  Widget _growthCell(ThemeData theme, {required double? value}) {
     final color = value == null
         ? theme.colorScheme.onSurfaceVariant
         : AppTheme.getPriceColor(value, theme.brightness);
     return SizedBox(
-      width: 76,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Text(
-            label,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-              fontSize: DesignTokens.fontSizeXs,
-            ),
-          ),
-          Text(
-            value == null
-                ? '--'
-                : '${value > 0 ? '+' : ''}${value.toStringAsFixed(1)}%',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: color,
-              fontWeight: FontWeight.w600,
-              fontFeatures: const [FontFeature.tabularFigures()],
-            ),
-          ),
-        ],
+      width: _growthCellWidth,
+      child: Text(
+        value == null
+            ? '--'
+            : '${value > 0 ? '+' : ''}${value.toStringAsFixed(1)}%',
+        textAlign: TextAlign.end,
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: color,
+          fontWeight: FontWeight.w600,
+          fontFeatures: const [FontFeature.tabularFigures()],
+        ),
       ),
     );
   }

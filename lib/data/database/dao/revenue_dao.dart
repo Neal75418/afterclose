@@ -10,18 +10,19 @@ class RevenueOverview {
     required this.month,
     required this.rows,
     required this.filedByMarket,
-    required this.activeByMarket,
   });
 
   final int year;
   final int month;
   final List<RevenueOverviewRow> rows;
 
-  /// 各市場已申報家數(公布期進度分子)
+  /// 各市場已申報家數。
+  ///
+  /// **刻意不提供分母**(2026-08-05):stock_master 無主板/興櫃欄位——
+  /// FinMind 把興櫃股也標成 TPEx(實測 4 碼非 ETF 上櫃 1,305 檔 vs
+  /// 主板實際 ~800),而 ETF 不申報月營收。任何可得的分母都會把進度
+  /// 變成到不了的假分數;只顯示真實可知的「已公布家數」。
   final Map<String, int> filedByMarket;
-
-  /// 各市場 active 總數(進度分母)
-  final Map<String, int> activeByMarket;
 }
 
 /// 營收總覽單列
@@ -276,21 +277,12 @@ mixin RevenueDaoMixin on $AppDatabase {
     for (final e in entries) {
       filedByMarket.update(e.market, (v) => v + 1, ifAbsent: () => 1);
     }
-    final activeRows = await customSelect(
-      'SELECT market, COUNT(*) AS n FROM stock_master '
-      'WHERE is_active = 1 GROUP BY market',
-      readsFrom: {stockMaster},
-    ).get();
-    final activeByMarket = {
-      for (final r in activeRows) r.read<String>('market'): r.read<int>('n'),
-    };
 
     return RevenueOverview(
       year: year,
       month: month,
       rows: entries,
       filedByMarket: filedByMarket,
-      activeByMarket: activeByMarket,
     );
   }
 

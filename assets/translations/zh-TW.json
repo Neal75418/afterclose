@@ -1548,7 +1548,7 @@
     "monthLabel": "{year} 年 {month} 月",
     "empty": "尚無營收資料",
     "noMatch": "沒有符合過濾條件的股票",
-    "progressFiling": "公布中——上市 {twseFiled}/{twseTotal}、上櫃 {tpexFiled}/{tpexTotal} 家已申報(早申報樣本偏樂觀,截止日前的沉默也是資訊)",
+    "progressFiling": "公布中——已公布 上市 {twseFiled}、上櫃 {tpexFiled} 家(早申報樣本偏樂觀,截止日前的沉默也是資訊)",
     "progressComplete": "本月完整({count} 家)",
     "newHigh": "創高",
     "momShort": "月增",

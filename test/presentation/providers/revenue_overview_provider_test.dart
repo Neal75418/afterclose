@@ -35,7 +35,6 @@ void main() {
       month: 7,
       rows: rows,
       filedByMarket: const {},
-      activeByMarket: const {},
     ),
     sortBy: sortBy,
     filter: filter,
