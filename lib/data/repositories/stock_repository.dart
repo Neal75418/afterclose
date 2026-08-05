@@ -86,9 +86,18 @@ class StockRepository implements IStockRepository {
       for (final stock in stocks) {
         if (!validStockPattern.hasMatch(stock.stockId)) continue;
         final prev = bySymbol[stock.stockId];
-        if (prev == null ||
-            (prev.industryCategory == '電子工業' &&
-                stock.industryCategory != '電子工業')) {
+        final prevGeneric = prev?.industryCategory == '電子工業';
+        final currGeneric = stock.industryCategory == '電子工業';
+        // 勝者規則(2026-08-05 複審補定序):細分 > 泛用;兩列皆細分時
+        // 取分類名字典序小者——原本「首列贏」讓勝者隨 API 回傳順序
+        // 週際漂移,產業歸屬跳動。
+        final replace =
+            prev == null ||
+            (prevGeneric && !currGeneric) ||
+            (!prevGeneric &&
+                !currGeneric &&
+                stock.industryCategory.compareTo(prev.industryCategory) < 0);
+        if (replace) {
           bySymbol[stock.stockId] = stock;
         }
       }

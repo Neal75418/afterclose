@@ -101,6 +101,25 @@ class InsiderTransferSyncer {
         return 0;
       }
 
+      // PK 碰撞偵測哨(2026-08-05 複審 Low):表 PK={symbol, reportDate,
+      // identity, name} 不含轉讓方式——同人同日以兩種方式各申報一筆會
+      // insertOrReplace 塌縮成一筆(SUM 低報)。pre-existing 設計且 live
+      // 未見樣本,不動 schema;此哨把「無實證」變成「發生即留痕」,
+      // 觀察到實例再議 migration。
+      final pkSeen = <String>{};
+      for (final c in companions) {
+        final pk =
+            '${c.symbol.value}|${c.reportDate.value}'
+            '|${c.identity.value}|${c.name.value}';
+        if (!pkSeen.add(pk)) {
+          AppLogger.warning(
+            'InsiderTransferSyncer',
+            'PK 碰撞:$pk 同人同日多筆申報將塌縮成一筆(低報)——'
+                '如反覆出現需為 PK 補 transferMethod 欄',
+          );
+        }
+      }
+
       await _db.insertInsiderTransfers(companions);
 
       AppLogger.info(

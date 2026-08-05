@@ -8,6 +8,7 @@ import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/data/remote/mops_client.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
+import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/data/repositories/fundamental_repository.dart';
 
 class MockAppDatabase extends Mock implements AppDatabase {}
@@ -23,6 +24,13 @@ class MockMopsClient extends Mock implements MopsClient {}
 class FakeMonthlyRevenueCompanion extends Fake
     implements MonthlyRevenueCompanion {}
 
+class _FixedClock implements AppClock {
+  const _FixedClock(this._now);
+  final DateTime _now;
+  @override
+  DateTime now() => _now;
+}
+
 StockMasterEntry _stock(String symbol, String market) => StockMasterEntry(
   symbol: symbol,
   name: '測試$symbol',
@@ -35,8 +43,9 @@ StockMasterEntry _stock(String symbol, String market) => StockMasterEntry(
 /// MOPS 公布期漸進營收同步(2026-08-03)。
 ///
 /// 行為契約:
-/// - 每月 1~14 日(申報期+緩衝)內,每次更新都掃 MOPS 當月 CSV;
-///   15 日後靜默跳過(openapi 已接手)
+/// - 窗口與目標月以 **clock 真實今天** 判定(2026-08-05 複審修正:
+///   原用傳入的校正交易日,月初逢週末/元旦時校正日=上月末 → day>14
+///   → 公布首日整段跳過);每月 1~14 日內每次更新都掃,15 日後靜默跳過
 /// - 窗口內一律抓(無覆蓋門檻跳過——上櫃壓線申報者的完整性優先)
 /// - MOPS 掛掉(舊版隨時可能關站)→ fail-soft,不得中斷更新管線
 /// - 目標月 = 上個月(1 月時 = 去年 12 月)
@@ -44,6 +53,15 @@ void main() {
   late MockAppDatabase db;
   late MockMopsClient mops;
   late FundamentalRepository repo;
+
+  FundamentalRepository buildRepo(DateTime now) => FundamentalRepository(
+    db: db,
+    finMind: MockFinMindClient(),
+    twse: MockTwseClient(),
+    tpex: MockTpexClient(),
+    mops: mops,
+    clock: _FixedClock(now),
+  );
 
   setUpAll(() {
     registerFallbackValue(FakeMonthlyRevenueCompanion());
@@ -100,6 +118,7 @@ void main() {
       ),
     ).thenAnswer((_) async => [row('6538')]);
 
+    repo = buildRepo(DateTime(2026, 8, 4));
     final count = await repo.syncInProgressRevenue(DateTime(2026, 8, 4));
 
     expect(count, 2);
@@ -115,6 +134,7 @@ void main() {
   });
 
   test('🚨 15 日後:靜默跳過,client 不被呼叫', () async {
+    repo = buildRepo(DateTime(2026, 8, 15));
     final count = await repo.syncInProgressRevenue(DateTime(2026, 8, 15));
 
     expect(count, isNull);
@@ -202,6 +222,28 @@ void main() {
     expect(count, 1);
   });
 
+  test('🚨 月初逢週末:校正日=上月末仍要跑(窗口用真今天,複審 Low #5)', () async {
+    repo = buildRepo(DateTime(2026, 8, 1)); // 週六,真今天 8/1
+    when(
+      () => mops.getInProgressRevenue(
+        year: any(named: 'year'),
+        month: any(named: 'month'),
+        market: any(named: 'market'),
+      ),
+    ).thenAnswer((_) async => const []);
+
+    // 傳入的是校正後交易日 7/31(day=31)——不得因此跳過
+    await repo.syncInProgressRevenue(DateTime(2026, 7, 31));
+
+    verify(
+      () => mops.getInProgressRevenue(
+        year: 2026,
+        month: 7,
+        market: MopsMarket.sii,
+      ),
+    ).called(1);
+  });
+
   test('1 月的目標月 = 去年 12 月', () async {
     when(
       () => mops.getInProgressRevenue(
@@ -211,6 +253,7 @@ void main() {
       ),
     ).thenAnswer((_) async => const []);
 
+    repo = buildRepo(DateTime(2027, 1, 5));
     await repo.syncInProgressRevenue(DateTime(2027, 1, 5));
 
     verify(

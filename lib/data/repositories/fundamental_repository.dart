@@ -489,10 +489,16 @@ class FundamentalRepository implements IFundamentalRepository {
   /// **fail-soft**:mopsov 是官方舊版過渡站,可能隨時關站——任何錯誤
   /// 只記 warning,不得中斷更新管線(退回等 openapi 的現狀,零下行)。
   Future<int?> syncInProgressRevenue(DateTime date) async {
-    if (date.day > ApiConfig.mopsRevenueWindowLastDay) return null;
+    // 窗口與目標月用**真實今天**而非傳入的校正交易日(2026-08-05 複審
+    // Low #5):月初逢非交易日時校正日是上月末(8/1 週六→7/31、元旦→
+    // 12/31),day>14 導致公布首日整段跳過——「公布當晚觸發」的承諾
+    // 在每月 1~2 日打折,元旦年年必發生。申報窗口是日曆概念,跟交易日
+    // 校正無關。
+    final now = _clock.now();
+    if (now.day > ApiConfig.mopsRevenueWindowLastDay) return null;
 
     // 目標月 = 上個月(Dart DateTime 月 0 自動正規化為去年 12 月)
-    final target = DateTime(date.year, date.month - 1);
+    final target = DateTime(now.year, now.month - 1);
 
     var total = 0;
     var wrote = false;

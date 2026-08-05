@@ -136,16 +136,22 @@ class MopsClient {
       final yoy = double.tryParse(fields[9]);
 
       // 自洽檢核:重算增減率 vs CSV 給的值(容忍浮點誤差 0.5 個百分點)
+      var rowInconsistent = 0;
       if (prevRevenue != null && prevRevenue > 0 && mom != null) {
         checked++;
         final expected = (revenue - prevRevenue) / prevRevenue * 100;
-        if ((expected - mom).abs() > 0.5) inconsistent++;
+        if ((expected - mom).abs() > 0.5) rowInconsistent++;
       }
       if (lastYearRevenue != null && lastYearRevenue > 0 && yoy != null) {
         checked++;
         final expected = (revenue - lastYearRevenue) / lastYearRevenue * 100;
-        if ((expected - yoy).abs() > 0.5) inconsistent++;
+        if ((expected - yoy).abs() > 0.5) rowInconsistent++;
       }
+      inconsistent += rowInconsistent;
+      // 逐列剔除(2026-08-05 複審 Low #3):MoM 與 YoY **雙雙**失配的列
+      // 自證損毀(欄序漂移打到該列),不落庫——補上批次拒收在小樣本
+      // (失配 ≤2 筆)時的失守窗;單一失配仍容忍(個股特例)。
+      if (rowInconsistent >= 2) continue;
 
       byCode.putIfAbsent(
         code,

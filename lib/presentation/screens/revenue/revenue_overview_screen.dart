@@ -80,6 +80,10 @@ class _RevenueOverviewScreenState extends ConsumerState<RevenueOverviewScreen> {
           ),
           child: state.isLoading && overview == null
               ? const GenericListShimmer(itemCount: 10)
+              : state.error != null && overview == null
+              // 複審 Low #6:DB 讀取失敗原本偽裝成「尚無資料」——
+              // 使用者無從得知該重試
+              ? EmptyState(icon: Icons.error_outline, title: state.error!)
               : overview == null
               ? EmptyState(
                   icon: Icons.receipt_long_outlined,
@@ -139,8 +143,15 @@ class _RevenueOverviewScreenState extends ConsumerState<RevenueOverviewScreen> {
     final twseFiled = overview.filedByMarket[MarketCode.twse] ?? 0;
     final tpexFiled = overview.filedByMarket[MarketCode.tpex] ?? 0;
     final filed = twseFiled + tpexFiled;
+    // 「公布中」須同時滿足:日曆窗口內 **且** 顯示的月份=上個月——
+    // 否則每月 1 日當晚同步前,上月完整表會被標成「公布中」(複審
+    // Low #4 的矛盾文案)。
+    final now = TaiwanTime.now();
+    final expected = DateTime(now.year, now.month - 1);
     final inProgress =
-        TaiwanTime.now().day <= ApiConfig.mopsRevenueWindowLastDay;
+        now.day <= ApiConfig.mopsRevenueWindowLastDay &&
+        overview.year == expected.year &&
+        overview.month == expected.month;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(

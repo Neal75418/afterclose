@@ -960,9 +960,20 @@ class TwseClient {
         AppLogger.warning(_tag, '月營收: 非預期資料型別');
         return [];
       }
+      // 年月合理性過濾(2026-08-05 複審 Low #12):TPEx 版有 month 1..12
+      // 檢核、本側原本沒有——單筆髒年月(如 2027/x 或 month=13)落庫會
+      // 永久劫持營收總覽的「最新月」錨點且無清理路徑;整批欄位缺失
+      // (year=0)則會讓 freshness check 永久「已快取」跳過。
       final results = data
           .map(
             (json) => TwseMonthlyRevenue.fromJson(json as Map<String, dynamic>),
+          )
+          .where(
+            (r) =>
+                r.month >= 1 &&
+                r.month <= 12 &&
+                r.year >= 2000 &&
+                r.year <= DateTime.now().year + 1,
           )
           .toList();
       AppLogger.info(_tag, '月營收: ${results.length} 筆');
