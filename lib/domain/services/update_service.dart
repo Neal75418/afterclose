@@ -122,10 +122,11 @@ class UpdateService {
                tpexClient: clients.tpex,
              )
            : null,
-       _insiderTransferSyncer = clients.tpex != null
+       _insiderTransferSyncer = (clients.tpex != null || clients.twse != null)
            ? InsiderTransferSyncer(
                database: database,
-               tpexClient: clients.tpex!,
+               tpexClient: clients.tpex,
+               twseClient: clients.twse,
              )
            : null;
 

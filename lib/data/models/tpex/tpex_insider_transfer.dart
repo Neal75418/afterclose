@@ -73,6 +73,65 @@ class TpexInsiderTransfer {
     );
   }
 
+  /// TWSE 版(t187ap12_L,2026-08-05 上市源補接)。
+  ///
+  /// 與 TPEx(mopsfin_t187ap12_O)同構但欄名不同:代號=「公司代號」
+  /// (非 SecuritiesCompanyCode)、日期=「出表日期」(非 Date)、身分=
+  /// 「申報人身分」(TPEx 是「申請人身分」)。**值帶前導空格**(live 實測
+  /// " 一般交易…"/" 150000"),一律 trim。股數 fallback 規則與 TPEx 同:
+  /// 方式別股數空(信託/贈與)→「預定轉讓總股數-自有持股」。
+  factory TpexInsiderTransfer.fromTwseJson(Map<String, dynamic> json) {
+    String field(String key) => json[key]?.toString().trim() ?? '';
+
+    final symbol = field('公司代號');
+    if (symbol.isEmpty || symbol.length < 4 || symbol.length > 6) {
+      throw FormatException('無效的公司代號: "$symbol"', json);
+    }
+
+    final reportDateStr = field('出表日期');
+    final reportDate = TwParseUtils.parseCompactRocDate(reportDateStr);
+    if (reportDate == null) {
+      throw FormatException('無效的出表日期: "$reportDateStr"', json);
+    }
+
+    final methodSpecificShares = field('預定轉讓方式及股數-轉讓股數');
+    final totalOwnShares = field('預定轉讓總股數-自有持股');
+    final transferSharesStr = methodSpecificShares.isNotEmpty
+        ? methodSpecificShares
+        : totalOwnShares;
+    final transferShares =
+        int.tryParse(transferSharesStr.replaceAll(',', '')) ?? 0;
+
+    final currentHolding =
+        int.tryParse(field('目前持有股數-自有持股').replaceAll(',', '')) ?? 0;
+
+    final (validPeriodStart, validPeriodEnd) = _parseValidPeriod(
+      field('有效轉讓期間'),
+    );
+
+    return TpexInsiderTransfer(
+      symbol: symbol,
+      companyName: field('公司名稱'),
+      reportDate: reportDate,
+      identity: field('申報人身分'),
+      name: field('姓名'),
+      transferMethod: field('預定轉讓方式及股數-轉讓方式'),
+      transferShares: transferShares,
+      currentHolding: currentHolding,
+      validPeriodStart: validPeriodStart,
+      validPeriodEnd: validPeriodEnd,
+    );
+  }
+
+  static TpexInsiderTransfer? tryFromTwseJson(Map<String, dynamic> json) {
+    try {
+      return TpexInsiderTransfer.fromTwseJson(json);
+    } catch (e) {
+      AppLogger.debug('TWSE', '解析內部人轉讓失敗: ${json['公司代號']} ($e)');
+      return null;
+    }
+  }
+
   static TpexInsiderTransfer? tryFromJson(Map<String, dynamic> json) {
     try {
       return TpexInsiderTransfer.fromJson(json);

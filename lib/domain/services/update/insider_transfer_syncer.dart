@@ -4,11 +4,16 @@ import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
+import 'package:afterclose/data/remote/twse_client.dart';
 
 /// 內部人股權轉讓同步器
 ///
-/// 從 TPEX OpenAPI (ap12_O) 取得董監事/經理人/大股東的
-/// 股權轉讓申報記錄，寫入 InsiderTransfer 表。
+/// 從 TWSE(t187ap12_L)與 TPEX(ap12_O)取得董監事/經理人/大股東的
+/// 股權轉讓申報記錄,寫入 InsiderTransfer 表。
+///
+/// 2026-08-05 補接上市源:原本只有上櫃,面板左欄(上市)永遠空白——
+/// 空白被誤讀成「今天沒異動」比缺功能更糟。雙源 per-source 隔離
+/// (單側連線故障不砍另一側;同日 TPEx 大檔曾三連斷線的實例)。
 ///
 /// - 資料來源為「最新」全市場轉讓申報（非歷史）
 /// - 使用 InsertOrReplace 避免重複
@@ -16,20 +21,54 @@ import 'package:afterclose/data/remote/tpex_client.dart';
 class InsiderTransferSyncer {
   const InsiderTransferSyncer({
     required AppDatabase database,
-    required TpexClient tpexClient,
+    TpexClient? tpexClient,
+    TwseClient? twseClient,
   }) : _db = database,
-       _tpex = tpexClient;
+       _tpex = tpexClient,
+       _twse = twseClient;
 
   final AppDatabase _db;
-  final TpexClient _tpex;
+
+  /// 兩源可各自為 null(測試/降級 harness);生產接線(factory/providers)
+  /// 恆為雙源。null 源逐一跳過並記 debug,不靜默:單側缺席在 log 可見。
+  final TpexClient? _tpex;
+  final TwseClient? _twse;
 
   /// 同步內部人轉讓資料
   ///
   /// 回傳寫入的筆數。
   Future<int> sync() async {
     try {
-      final transfers = await _tpex.getInsiderTransfers();
+      // 雙源 per-source 隔離:單側故障記 warning、另一側照常;
+      // 兩側都掛才往上拋(RateLimitException 一律直接 rethrow)
+      final transfers = <TpexInsiderTransfer>[];
+      Object? firstError;
+      final fetchers = <String, Future<List<TpexInsiderTransfer>> Function()>{
+        if (_twse != null) '上市': _twse.getInsiderTransfers,
+        if (_tpex != null) '上櫃': _tpex.getInsiderTransfers,
+      };
+      if (fetchers.length < 2) {
+        AppLogger.debug(
+          'InsiderTransferSyncer',
+          '僅 ${fetchers.keys.join()} 源可用(另一側未接線)',
+        );
+      }
+      for (final entry in fetchers.entries) {
+        try {
+          transfers.addAll(await entry.value());
+        } on RateLimitException {
+          rethrow;
+        } catch (e) {
+          AppLogger.warning(
+            'InsiderTransferSyncer',
+            '${entry.key}源失敗,另一側照常',
+            e,
+          );
+          firstError ??= e;
+        }
+      }
       if (transfers.isEmpty) {
+        if (firstError != null) throw firstError;
         AppLogger.debug('InsiderTransferSyncer', 'API 回傳空資料');
         return 0;
       }

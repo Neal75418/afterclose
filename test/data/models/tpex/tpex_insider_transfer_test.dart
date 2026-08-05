@@ -86,4 +86,55 @@ void main() {
       );
     });
   });
+
+  group('tryFromTwseJson(TWSE t187ap12_L,2026-08-05 上市源補接)', () {
+    Map<String, dynamic> twseRow() => {
+      '出表日期': '1150804',
+      '公司代號': '6834',
+      '公司名稱': '天二科技',
+      '申報人身分': '經理人利用他人名義持有者',
+      '姓名': '宸芝芝投資有限公司',
+      // TWSE 值帶前導空格(live API 實測)——解析必須 trim
+      '預定轉讓方式及股數-轉讓方式': ' 一般交易(每日得轉讓股數限制)',
+      '預定轉讓方式及股數-轉讓股數': ' 150000',
+      '目前持有股數-自有持股': '150000',
+      '預定轉讓總股數-自有持股': '150000',
+      '有效轉讓期間': '1150807~1150906',
+    };
+
+    test('🚨 live 樣本完整解析(欄名差異:公司代號/出表日期/申報人身分)', () {
+      final t = TpexInsiderTransfer.tryFromTwseJson(twseRow());
+
+      expect(t, isNotNull);
+      expect(t!.symbol, '6834');
+      expect(t.reportDate, DateTime(2026, 8, 4));
+      expect(t.identity, '經理人利用他人名義持有者');
+      expect(t.name, '宸芝芝投資有限公司');
+      expect(t.transferMethod, '一般交易(每日得轉讓股數限制)', reason: '前導空格須 trim');
+      expect(t.transferShares, 150000);
+      expect(t.currentHolding, 150000);
+      expect(t.validPeriodStart, DateTime(2026, 8, 7));
+      expect(t.validPeriodEnd, DateTime(2026, 9, 6));
+    });
+
+    test('方式別股數空(信託/贈與)→ fallback 總股數(與 TPEx 同規則)', () {
+      final row = twseRow()
+        ..['預定轉讓方式及股數-轉讓方式'] = '贈與'
+        ..['預定轉讓方式及股數-轉讓股數'] = ''
+        ..['預定轉讓總股數-自有持股'] = '88000';
+      final t = TpexInsiderTransfer.tryFromTwseJson(row);
+      expect(t!.transferShares, 88000);
+    });
+
+    test('無效代號/日期 → null 不炸', () {
+      expect(
+        TpexInsiderTransfer.tryFromTwseJson(twseRow()..['公司代號'] = ''),
+        isNull,
+      );
+      expect(
+        TpexInsiderTransfer.tryFromTwseJson(twseRow()..['出表日期'] = 'x'),
+        isNull,
+      );
+    });
+  });
 }

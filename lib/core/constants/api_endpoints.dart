@@ -50,6 +50,10 @@ abstract final class ApiEndpoints {
   static const String twseMonthlyRevenue =
       '$twseOpenDataBaseUrl/v1/opendata/t187ap05_L';
 
+  /// 上市內部人持股轉讓事前申報(每日,2026-08-05 補接上市源)
+  static const String twseInsiderTransfer =
+      '$twseOpenDataBaseUrl/v1/opendata/t187ap12_L';
+
   /// 大盤各類指數（每日收盤後更新）
   static const String twseMarketIndex = '/rwd/zh/afterTrading/MI_INDEX';
 

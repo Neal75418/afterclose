@@ -8,6 +8,7 @@ import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/lru_cache.dart';
 import 'package:afterclose/core/utils/tw_parse_utils.dart';
+import 'package:afterclose/data/models/tpex/tpex_insider_transfer.dart';
 import 'package:afterclose/data/models/twse/models.dart';
 import 'package:afterclose/data/remote/insider_holding_aggregator.dart';
 import 'package:afterclose/data/remote/market_client_mixin.dart';
@@ -890,6 +891,43 @@ class TwseClient {
           .toList();
       AppLogger.info(_tag, '除權息預告: ${results.length} 筆');
       _cache.put(cacheKey, results);
+      return results;
+    });
+  }
+
+  /// 取得上市內部人持股轉讓事前申報(每日,t187ap12_L)。
+  ///
+  /// 2026-08-05 補接:內部人轉讓面板原本只有上櫃源,上市側永遠空白——
+  /// 監控範圍恰好漏掉部位最重的市場,且空白會被誤讀成「今天沒異動」。
+  Future<List<TpexInsiderTransfer>> getInsiderTransfers() {
+    return MarketClientMixin.executeRequest(_tag, '內部人轉讓', () async {
+      const cacheKey = 'insiderTransfer';
+      final cached = _cache.get(cacheKey) as List<TpexInsiderTransfer>?;
+      if (cached != null) return cached;
+
+      final response = await _dio.get(ApiEndpoints.twseInsiderTransfer);
+
+      if (response.statusCode != 200) {
+        throw ApiException(
+          '$_tag OpenData API error: ${response.statusCode}',
+          response.statusCode,
+        );
+      }
+
+      final data = response.data;
+      if (data is! List) {
+        AppLogger.warning(_tag, '內部人轉讓: 非預期資料型別');
+        return <TpexInsiderTransfer>[];
+      }
+
+      final results = <TpexInsiderTransfer>[];
+      for (final item in data) {
+        if (item is! Map<String, dynamic>) continue;
+        final parsed = TpexInsiderTransfer.tryFromTwseJson(item);
+        if (parsed != null) results.add(parsed);
+      }
+      _cache.put(cacheKey, results);
+      AppLogger.info(_tag, '內部人轉讓: ${results.length} 筆');
       return results;
     });
   }
