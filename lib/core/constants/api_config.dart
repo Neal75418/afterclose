@@ -104,6 +104,18 @@ abstract final class ApiConfig {
   /// 依剩餘額度下修——見 [otcFinancialBackfillReserve]。
   static const int otcFinancialSyncMaxCount = 100;
 
+  /// 財報回填(上市+上櫃合併)的小時額度保留量(2026-08-05 季報季修復)。
+  ///
+  /// 上市佇列原無額度守衛——「重跑 needy 為空」的假設在**季報季**破產:
+  /// Q2 一開始全市場同時變 needy,每輪 150+100 檔 ×2=488 次呼叫,單輪
+  /// 吃掉 82% 小時額度(2026-08-05 實測 494/600),連點更新即 402、其他
+  /// FinMind 步驟(持股/營收歷史/月營收)全滅。
+  ///
+  /// 200 的量法:單輪非財報 FinMind 用量 ~50(自選持股+營收歷史+OTC
+  /// 配額步)×2 輪+緩衝——保證同一小時內「一輪重回填+一輪快速手動」
+  /// 都不會撞 402。
+  static const int financialBackfillReserve = 200;
+
   /// 上櫃財報回填時保留給後續步驟的 FinMind 額度
   ///
   /// 回填佇列是最舊優先，設計上保證每輪都選得出 100 檔全新的 stale 股，

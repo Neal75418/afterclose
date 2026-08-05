@@ -850,27 +850,36 @@ class UpdateService {
     if (fundamentalSyncer == null) return;
 
     try {
-      final targetSymbols = selectFinancialSyncTargets(
-        prioritySymbols: {...watchlistSymbols, ..._popularStocks},
-        marketCandidates: ctx.marketCandidates,
-      );
-      // 上櫃專屬回填佇列。上面那條吃 `[...twse, ...tpex]` 的前 150 名，而上市
-      // 候選恆為 500~800 檔以上（2026-07-27 日誌：候選 1372）→ 上櫃永遠是餘數
-      // 而餘數是 0，實測財報覆蓋率上市 32.9% vs 上櫃 1.5%。給獨立佇列而非調整
-      // 上面的排序，才不會把名額從上市搬走。
+      // 兩市場統一額度配額(2026-08-05 季報季修復):上市佇列原無額度
+      // 守衛——「重跑 needy 為空」在季報季破產(全市場同時變 needy),
+      // 單輪 488 次呼叫吃掉 82% 小時額度。額度感知從上櫃推廣到全財報:
+      // 上市先拿、上櫃吃剩,總支出保證留 reserve 給其餘步驟與下一輪。
       final usage = _finMindClient?.hourlyUsage;
-      final otcLimit = otcFinancialLimitForBudget(usage: usage);
-      if (usage != null && otcLimit < ApiConfig.otcFinancialSyncMaxCount) {
+      final quota = financialQuotaForBudget(usage: usage);
+      if (usage != null &&
+          (quota.twse < ApiConfig.financialSyncMaxCandidates ||
+              quota.otc < ApiConfig.otcFinancialSyncMaxCount)) {
         AppLogger.info(
           'UpdateService',
-          '上櫃財報回填縮量: ${ApiConfig.otcFinancialSyncMaxCount} → $otcLimit 檔 '
-              '(FinMind 已用 ${usage.used}/${usage.budget})',
+          '財報回填縮量: 上市 ${quota.twse} 檔、上櫃 ${quota.otc} 檔 '
+              '(FinMind 已用 ${usage.used}/${usage.budget},保留 '
+              '${ApiConfig.financialBackfillReserve})',
         );
       }
-      final otcBacklog = await fundamentalSyncer.selectOtcFinancialBacklog(
-        candidates: ctx.marketCandidates,
-        limit: otcLimit,
-      );
+      final targetSymbols = quota.twse == 0
+          ? const <String>[]
+          : selectFinancialSyncTargets(
+              prioritySymbols: {...watchlistSymbols, ..._popularStocks},
+              marketCandidates: ctx.marketCandidates,
+              maxCandidates: quota.twse,
+            );
+      // 上櫃專屬回填佇列(獨立於上市名額,理由見 selectOtcFinancialBacklog)
+      final otcBacklog = quota.otc == 0
+          ? const <String>[]
+          : await fundamentalSyncer.selectOtcFinancialBacklog(
+              candidates: ctx.marketCandidates,
+              limit: quota.otc,
+            );
       final allTargets = {...targetSymbols, ...otcBacklog}.toList();
       if (allTargets.isNotEmpty) {
         // 損益表與資產負債表無相依性，平行執行以縮短等待時間。
@@ -928,6 +937,35 @@ class UpdateService {
   /// 只約束上櫃這條自己的用量。上市那條的
   /// [ApiConfig.financialSyncMaxCandidates] 維持不動——它先於本功能存在，
   /// 且重跑時 needy 為空，不是壓力來源。
+  /// 財報回填的兩市場統一額度配額(2026-08-05 季報季修復)。
+  ///
+  /// affordable =(budget − used − [ApiConfig.financialBackfillReserve])÷2
+  /// (每檔打損益+資負兩次);上市先拿(候選恆超上限,是覆蓋主力)、
+  /// 上櫃吃剩餘。整點滿額度時上市拿滿 150、上櫃約 50——單輪財報支出
+  /// 封頂 400,加其餘步驟 ~50 仍留 >150 給同小時的下一次手動更新;
+  /// 額度耗至 reserve 內時兩市場歸零,更新數十秒完成且不再 402。
+  ///
+  /// [usage] null(未掛 tracker)回雙上限:「量不到」≠「沒額度」。
+  @visibleForTesting
+  static ({int twse, int otc}) financialQuotaForBudget({
+    required ({int used, int budget})? usage,
+  }) {
+    if (usage == null) {
+      return (
+        twse: ApiConfig.financialSyncMaxCandidates,
+        otc: ApiConfig.otcFinancialSyncMaxCount,
+      );
+    }
+    final affordable =
+        (usage.budget - usage.used - ApiConfig.financialBackfillReserve) ~/ 2;
+    final twse = affordable.clamp(0, ApiConfig.financialSyncMaxCandidates);
+    final otc = (affordable - twse).clamp(
+      0,
+      ApiConfig.otcFinancialSyncMaxCount,
+    );
+    return (twse: twse, otc: otc);
+  }
+
   @visibleForTesting
   static int otcFinancialLimitForBudget({
     required ({int used, int budget})? usage,
@@ -944,9 +982,9 @@ class UpdateService {
   static List<String> selectFinancialSyncTargets({
     required Set<String> prioritySymbols,
     required List<String> marketCandidates,
+    int maxCandidates = ApiConfig.financialSyncMaxCandidates,
   }) {
-    final remainingSlots =
-        ApiConfig.financialSyncMaxCandidates - prioritySymbols.length;
+    final remainingSlots = maxCandidates - prioritySymbols.length;
     return {
       ...prioritySymbols,
       if (remainingSlots > 0)

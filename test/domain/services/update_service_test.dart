@@ -989,6 +989,48 @@ void main() {
   //
   // 這組測試守的是**接線**：backlog 算出來卻沒接進同步呼叫會是靜默 no-op，
   // 日誌照印、測試照綠，而上櫃覆蓋率原地不動——正是本輪要修的病本身。
+  group('financialQuotaForBudget(2026-08-05 季報季額度爆量修復)', () {
+    // 背景:上市佇列原無額度守衛(假設「重跑 needy 為空」),Q2 季報季
+    // 全市場同時變 needy → 每輪 150+100 檔 ×2=488 次呼叫,單輪吃掉
+    // 82% 小時額度,連點更新即 402、其他 FinMind 步驟全滅。
+    test('🚨 整點滿額度:上市滿額、上櫃吃剩餘,總支出必留 reserve', () {
+      final q = UpdateService.financialQuotaForBudget(
+        usage: (used: 0, budget: 600),
+      );
+      expect(q.twse, ApiConfig.financialSyncMaxCandidates);
+      expect(q.otc, lessThan(ApiConfig.otcFinancialSyncMaxCount));
+      final spend = (q.twse + q.otc) * 2;
+      expect(
+        600 - spend,
+        greaterThanOrEqualTo(ApiConfig.financialBackfillReserve),
+        reason: '財報支出後必須留 reserve 給本輪其餘步驟+下一次手動更新',
+      );
+    });
+
+    test('🚨 同小時第二輪:額度耗到 reserve 內 → 兩市場皆 0(快速通過)', () {
+      final q = UpdateService.financialQuotaForBudget(
+        usage: (used: 450, budget: 600),
+      );
+      expect(q.twse, 0);
+      expect(q.otc, 0);
+    });
+
+    test('部分額度:上市先拿、上櫃吃剩', () {
+      // affordable = (600-300-200)/2 = 50 → twse 50、otc 0
+      final q = UpdateService.financialQuotaForBudget(
+        usage: (used: 300, budget: 600),
+      );
+      expect(q.twse, 50);
+      expect(q.otc, 0);
+    });
+
+    test('usage null(未掛 tracker)→ 回上限(量不到≠沒額度)', () {
+      final q = UpdateService.financialQuotaForBudget(usage: null);
+      expect(q.twse, ApiConfig.financialSyncMaxCandidates);
+      expect(q.otc, ApiConfig.otcFinancialSyncMaxCount);
+    });
+  });
+
   group('步驟 4.7：上櫃財報回填佇列', () {
     /// 上市候選遠多於 `financialSyncMaxCandidates`，模擬正式環境
     /// （2026-07-27 日誌：上市候選 1372 檔 vs 上限 150）
@@ -1093,10 +1135,12 @@ void main() {
         () => mockDb.getLatestFinancialDataDatesBatch(any(), any()),
       ).thenAnswer((_) async => const {});
 
-      // 模擬同一小時的第二輪：tracker 已記 520 次
-      // → 剩 600-520-40(reserve) = 40 → 40 ~/ 2 = 20 檔
+      // 2026-08-05 季報季修復後語意更新:配額統一為 financialQuotaForBudget
+      // (reserve 200、上市先拿)。used=60 → affordable=(600-60-200)/2=170
+      // → 上市拿滿 150、上櫃吃剩 20——沿用「算出的上限要真的傳下去」的
+      // 接線守護(若接線漏掉仍傳固定 100,這裡會是 60=候選全數)。
       final tracker = ApiBudgetTracker();
-      for (var i = 0; i < 520; i++) {
+      for (var i = 0; i < 60; i++) {
         tracker.recordCall(ApiVendor.finMind);
       }
       final finMind = FinMindClient(budgetTracker: tracker);
@@ -1122,8 +1166,38 @@ void main() {
         otcSynced,
         20,
         reason:
-            '剩餘額度只夠 20 檔（(600-520-40)/2）。若接線漏掉、仍傳固定 100，'
-            '這裡會是 60（候選全數）—— 那就是同一小時第二輪撞爆 600 的路徑',
+            '上市先拿 150 後上櫃只剩 20((600-60-200)/2-150)。若接線漏掉、'
+            '仍傳固定 100,這裡會是 60(候選全數)——撞爆 600 的路徑',
+      );
+    });
+
+    test('🚨 額度耗至 reserve 內:財報整段跳過(同小時第二輪不再 402)', () async {
+      stubCandidates([...twseCandidates, otcSymbol]);
+      when(() => mockDb.getStocksByMarket(any())).thenAnswer((_) async => []);
+      when(
+        () => mockDb.getLatestFinancialDataDatesBatch(any(), any()),
+      ).thenAnswer((_) async => const {});
+
+      final tracker = ApiBudgetTracker();
+      for (var i = 0; i < 520; i++) {
+        tracker.recordCall(ApiVendor.finMind);
+      }
+      final finMind = FinMindClient(budgetTracker: tracker);
+      addTearDown(finMind.close);
+
+      final mockFundamental = buildFundamentalMock();
+      final service = buildService(
+        fundamental: mockFundamental,
+        finMind: finMind,
+      );
+      await service.runDailyUpdate(forDate: tradingDay);
+
+      verifyNever(
+        () => mockFundamental.syncFinancialStatements(
+          symbol: any(named: 'symbol'),
+          startDate: any(named: 'startDate'),
+          endDate: any(named: 'endDate'),
+        ),
       );
     });
 
