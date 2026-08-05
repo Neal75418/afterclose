@@ -166,6 +166,12 @@ void main() {
     expect(r!.date, DateTime(2026, 8, 3), reason: '基準日=上市已到的最新日');
     final symbols = r.foreignBuy.map((e) => e.symbol).toSet();
     expect(symbols, {'3231', '6538'}, reason: '用 d2 完整日的資料,不是 d3 半套');
+    // 2026-08-05 複審 High #4:streak 歷史查詢原本沒有 date <= 基準日
+    // 上界——上櫃股已進 DB 的 d3 列排在 DESC 首位,streak 從 d3 起算
+    // 而榜單量是 d2 的(live 實測:榜上 8 檔上櫃股 5 檔錯)。6538 在
+    // bug 下 streak=2(d3+d2),正確=1(僅 d2;d1 無資料)。
+    final f6538 = r.foreignBuy.firstWhere((e) => e.symbol == '6538');
+    expect(f6538.streakDays, 1, reason: 'streak 必須鎖在基準日(含)之前');
   });
 
   test('🚨 ETF(00 開頭)不進榜——申購/造市的機制性買賣非選股訊號', () async {

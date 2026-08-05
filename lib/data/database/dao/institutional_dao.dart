@@ -189,7 +189,7 @@ mixin InstitutionalDaoMixin on $AppDatabase {
   ///
   /// 口徑:
   /// - 排序鍵=金額(淨股數 × 當日收盤)——跨價位可比;張數並列供顯示
-  /// - 連買天數:資料存在的交易日連續同號,含最新日(60 日回看窗)
+  /// - 連買天數:資料存在的交易日連續同號,含最新日(90 日回看窗)
   /// - 雙買/雙賣:外資與投信同日同向
   /// - 自營刻意不做(避險盤污染+持續性差,2026-08-05 設計定稿)
   /// - 只列 active 股票;無當日收盤價者無法計金額,不進榜
@@ -283,15 +283,21 @@ mixin InstitutionalDaoMixin on $AppDatabase {
         .subtract(const Duration(days: 90))
         .toIso8601String()
         .substring(0, 10);
+    // 上界鎖基準日(2026-08-05 複審 High #4):TPEx 法人比 TWSE 早發布,
+    // 過渡態(15:30~21:30)DB 已有比基準日更新的上櫃列;無上界時 DESC
+    // 首列是那筆,streak 與榜單的量口徑錯開一天(live 實測 8 檔錯 5 檔)。
     final histRows = symbols.isEmpty
         ? const <QueryRow>[]
         : await customSelect(
             'SELECT symbol, date, foreign_net, investment_trust_net '
             'FROM daily_institutional '
             "WHERE symbol IN (${List.filled(symbols.length, '?').join(', ')}) "
-            "AND date >= '$cutoff' "
+            "AND date >= '$cutoff' AND date <= ? "
             'ORDER BY symbol, date DESC',
-            variables: [for (final sym in symbols) Variable.withString(sym)],
+            variables: [
+              for (final sym in symbols) Variable.withString(sym),
+              Variable.withString(latestStr),
+            ],
             readsFrom: {dailyInstitutional},
           ).get();
 
