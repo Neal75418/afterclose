@@ -1201,7 +1201,7 @@
     "confidenceMedium": "佐證中等",
     "confidenceLow": "佐證有限",
     "ruleAccuracy": "規則準確度",
-    "priceVolumeWeakRally": "價格上漲但量能較近 5 日均量萎縮 {volShrink}%，漲勢可能無力。",
+    "priceVolumeWeakRally": "近 5 日價格上漲但量能較 5 日均量萎縮 {volShrink}%，漲勢可能無力。",
     "pullbackToMa20": "強勢股健康回檔至月線附近（距 {distance}%），回檔進場觀察點。",
     "pullbackToMa10": "強勢趨勢中淺回檔至 10 日線，趨勢未破壞。",
     "hammerAtSupport": "支撐位出現鎚子線，下影線顯示買盤承接。",
@@ -1493,7 +1493,7 @@
     "eveningStar": "夜星形態",
     "threeBlackCrows": "三黑鴉",
     "gapDown": "跳空缺口向下",
-    "bearishDivergence": "價跌 > 1% 且 量較 5 日均量增 > 10%",
+    "bearishDivergence": "近 5 日價跌 > 1% 且 量較 5 日均量增 > 10%",
     "volumeBreakout": "帶量突破",
     "lowVolumeAccum": "低量整理",
     "revenueYoySurge": "營收年增率 ≥ 30%",
@@ -1504,7 +1504,7 @@
     "peUndervalued": "本益比 ≤ 10",
     "peOvervalued": "本益比 ≥ 60",
     "pbrUndervalued": "股價淨值比 ≤ 0.8",
-    "priceVolumeWeakRally": "價漲 > 1% 且 量較 5 日均量縮 > 10%"
+    "priceVolumeWeakRally": "近 5 日價漲 > 1% 且 量較 5 日均量縮 > 10%"
   },
   "updateHistory": {
     "title": "更新紀錄",

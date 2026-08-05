@@ -20,6 +20,8 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:afterclose/core/constants/rule_params.dart';
+
 import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 import 'package:afterclose/domain/services/analysis_summary_service.dart';
 
@@ -37,15 +39,43 @@ void main() {
         '🚨 $locale:priceSpike 帶 20 日窗、weakRally/bearishDivergence 帶 5 日窗',
         () {
           final copy = summaryCopy(locale);
+          // 錨定參數常數(2026-08-05 複審):文案數字若寫死,volMa 或
+          // lookback 一改就無聲漂移;斷言直接引用實作同源常數。
           expect(
             copy['priceSpike'] as String,
-            contains('20'),
+            contains('${RuleParams.volMa}'),
             reason:
-                'priceSpike 的量能宣稱(vs 20 日均量)須標窗,'
-                '否則與 weakRally(vs 5 日均量)同卡對立',
+                'priceSpike 的量能宣稱(vs ${RuleParams.volMa} 日均量)須標窗,'
+                '否則與 weakRally 同卡對立',
           );
-          expect(copy['priceVolumeWeakRally'] as String, contains('5'));
-          expect(copy['bearishDivergence'] as String, contains('5'));
+          expect(
+            copy['priceVolumeWeakRally'] as String,
+            contains('${TrendParams.priceVolumeLookbackDays}'),
+          );
+          expect(
+            copy['bearishDivergence'] as String,
+            contains('${TrendParams.priceVolumeLookbackDays}'),
+          );
+          // 價格宣稱也要帶窗(複審 Medium #8):weakRally 的價格條件量的
+          // 是 5 日前收盤 vs 今收,無窗文案在紅 K 日讀起來像在說今天
+          final zhPricePattern = RegExp(
+            r'近\s*'
+            '${TrendParams.priceVolumeLookbackDays}'
+            r'\s*日',
+          );
+          if (locale == 'zh-TW') {
+            expect(
+              zhPricePattern.hasMatch(copy['priceVolumeWeakRally'] as String),
+              isTrue,
+              reason: 'weakRally 價格宣稱須標 5 日窗',
+            );
+          } else {
+            expect(
+              (copy['priceVolumeWeakRally'] as String).contains('5 days') ||
+                  (copy['priceVolumeWeakRally'] as String).contains('5-day'),
+              isTrue,
+            );
+          }
         },
       );
     }

@@ -374,7 +374,7 @@ void main() {
         0,
         reason:
             '落庫值維持非負契約;雙 0 是掃描層辨識空方股的指紋'
-            '(scan_provider.isScanBearish)',
+            '(scan_provider.isScanRiskVisible)',
       );
       expect(result.scoreLong, 0);
     });

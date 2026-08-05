@@ -1201,7 +1201,7 @@
     "confidenceMedium": "Moderate",
     "confidenceLow": "Limited",
     "ruleAccuracy": "Rule Accuracy",
-    "priceVolumeWeakRally": "Weak rally signal: price up but volume {volShrink}% below the 5-day average.",
+    "priceVolumeWeakRally": "Weak rally signal: price up over 5 days but volume {volShrink}% below the 5-day average.",
     "pullbackToMa20": "Healthy pullback to MA20 ({distance}% away) — pullback entry watch.",
     "pullbackToMa10": "Shallow pullback to MA10 within strong trend.",
     "hammerAtSupport": "Hammer at support — lower shadow shows buying.",
@@ -1493,7 +1493,7 @@
     "eveningStar": "Evening star",
     "threeBlackCrows": "Three black crows",
     "gapDown": "Gap down",
-    "bearishDivergence": "Price down > 1%, volume > 10% above 5-day avg",
+    "bearishDivergence": "5-day price down > 1%, volume > 10% above 5-day avg",
     "volumeBreakout": "High-volume breakout",
     "lowVolumeAccum": "Low-volume accumulation",
     "revenueYoySurge": "Revenue YoY ≥ 30%",
@@ -1504,7 +1504,7 @@
     "peUndervalued": "PE ratio ≤ 10",
     "peOvervalued": "PE ratio ≥ 60",
     "pbrUndervalued": "PBR ≤ 0.8",
-    "priceVolumeWeakRally": "Price up > 1%, volume > 10% below 5-day avg"
+    "priceVolumeWeakRally": "5-day price up > 1%, volume > 10% below 5-day avg"
   },
   "updateHistory": {
     "title": "Update History",

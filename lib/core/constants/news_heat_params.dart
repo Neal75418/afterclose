@@ -12,7 +12,10 @@ abstract final class NewsHeatParams {
   /// v3（2026-07-25）：ThemeMatcher 加 ASCII-字母相鄰守衛，修 AI/EV
   /// 英文子字串誤配（Taiwan→AI、7-Eleven→電動車；語料實測 ev 誤配率
   /// 60%、ai 7%）——matching 行為變、bump 觸發快照重算
-  static const int dictionaryVersion = 3;
+  /// v4(2026-08-05):日月光別名 2311→3711 是 mention 歸屬的語意性
+  /// 異動(2026-08-01 上線時漏 bump,複審補記)——v3 段內 8/1 前後的
+  /// 快照歸屬不同無法自資料辨識,自 v4 起版本邊界恢復可信。
+  static const int dictionaryVersion = 4;
 
   /// 熱度近窗（天）
   static const int recentWindowDays = 7;

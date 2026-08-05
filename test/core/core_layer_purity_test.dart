@@ -13,7 +13,8 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   test('lib/core 不得 import domain/data/presentation', () {
     final importRe = RegExp(
-      r'''import\s+['"]package:afterclose/(domain|data|presentation)/''',
+      // 2026-08-05 複審補強:同 domain 守門——export 與相對路徑亦攔。
+      r'''(import|export)\s+['"](package:afterclose/(domain|data|presentation)/|\.[^'"]*/(domain|data|presentation)/)''',
     );
     final violations = <String>[];
     for (final entity in Directory('lib/core').listSync(recursive: true)) {

@@ -251,12 +251,12 @@ class ScanNotifier extends Notifier<ScanState> {
       // - 主清單（訊號）：scoreLong>0 且 max(short,long) ≥ minScoreThreshold
       //   （= 門檻調整前的 universe，主清單行為不變）
       // - 觀察區（接近觸發）：scoreLong>0 且 max(short,long) 落在 [observation, signal)
-      // 純空方股(2026-07-31):落庫門檻改 |raw| 後,「雙 horizon 皆 0」
-      // 是純空方股的落庫指紋(|raw|≥8 才落庫、負值 floor 為 0)——它們
-      // 必須進主池,BREAK_* 篩選器才撈得到(風控發現的唯一管道)。
+      // 風控可見層(2026-08-05 更名):雙 0 落庫股=純空方+MA 穿越豁免
+      // 兩族群(語意見 isScanRiskVisible),都須進主池供 BREAK_*/
+      // RECLAIM_* 篩選器發現。
       _allAnalyses = analyses
           .where(
-            (a) => (a.scoreLong > 0 && isScanSignal(a)) || isScanBearish(a),
+            (a) => (a.scoreLong > 0 && isScanSignal(a)) || isScanRiskVisible(a),
           )
           .toList();
       _observationAnalyses = analyses
@@ -610,12 +610,15 @@ bool isScanSignal(DailyAnalysisEntry a) =>
     a.scoreShort >= RuleParams.minScoreThreshold ||
     a.scoreLong >= RuleParams.minScoreThreshold;
 
-/// 純空方落庫股(2026-07-31):雙 horizon 皆 0 ⟺ 只靠負分訊號過
-/// |raw| 門檻(正分股至少 observationScoreThreshold)。scoring_pipeline
-/// 落庫時把負 raw floor 成 0,此指紋是掃描層辨識空方股的唯一依據
-/// (raw 未落庫)。
+/// 風控可見層(2026-08-05 複審更名,原 isScanBearish):雙 horizon 皆 0
+/// 的落庫股涵蓋**兩個族群**,不再等價於「純空方」——
+/// 1. 純空方:只靠負分訊號過 |raw|≥8 門檻(2026-07-31 起)
+/// 2. MA 穿越豁免:|raw|<8 但帶站回/跌破訊號(2026-08-03 起,可能
+///    含站回月線等**多方**事件)
+/// 兩者都必須進主池,BREAK_*/RECLAIM_* 篩選器才撈得到(banner 之外
+/// 的第二條風控發現管道);但**不得**把這個指紋當「空方」語意使用。
 @visibleForTesting
-bool isScanBearish(DailyAnalysisEntry a) =>
+bool isScanRiskVisible(DailyAnalysisEntry a) =>
     a.scoreShort == 0 && a.scoreLong == 0;
 
 /// 觀察層（接近觸發）：未達訊號、但任一 horizon ≥ [RuleParams.observationScoreThreshold]。

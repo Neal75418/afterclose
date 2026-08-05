@@ -560,7 +560,7 @@ void main() {
     });
   });
 
-  group('isScanBearish(2026-07-31 純空方落庫指紋)', () {
+  group('isScanRiskVisible(原 isScanBearish;2026-08-05 更名——雙 0=風控可見層兩族群)', () {
     DailyAnalysisEntry entry(int s, int l) => DailyAnalysisEntry(
       symbol: 'T',
       date: DateTime(2026, 7, 31),
@@ -572,12 +572,12 @@ void main() {
     );
 
     test('雙 0 = 純空方(負 raw 被 floor)→ true', () {
-      expect(isScanBearish(entry(0, 0)), isTrue);
+      expect(isScanRiskVisible(entry(0, 0)), isTrue);
     });
 
     test('任一 horizon 有正分 → false', () {
-      expect(isScanBearish(entry(8, 0)), isFalse);
-      expect(isScanBearish(entry(0, 12)), isFalse);
+      expect(isScanRiskVisible(entry(8, 0)), isFalse);
+      expect(isScanRiskVisible(entry(0, 12)), isFalse);
     });
   });
 }
