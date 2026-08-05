@@ -70,7 +70,9 @@ class DayTrading extends Table {
 /// 逐日填充)。與 [FinancialData](FinMind 回補)的差異:本表反映「誰已
 /// 申報」的**官方事實**,不受自家回補佇列進度影響——季報總覽頁的清單
 /// 完整性以此為基礎(沿月營收 MOPS 的同一設計原則)。
-/// EPS/淨利為**累計制**(Q2=上半年),與 FinMind 同口徑,YoY 直接可比。
+/// EPS/淨利為**累計制**(Q2=上半年);FinMind 的 financial_data EPS 是
+/// **單季**值,口徑不同——YoY 基期須加總去年各季(見
+/// QuarterlyReportDaoMixin)。
 class QuarterlyReport extends Table {
   /// 股票代碼
   TextColumn get symbol =>

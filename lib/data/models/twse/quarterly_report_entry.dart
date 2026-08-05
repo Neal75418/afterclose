@@ -9,7 +9,8 @@ import 'package:afterclose/core/utils/logger.dart';
 /// 各養一個 factory。
 ///
 /// 數字口徑(對 live 快照驗證):淨利/營收=千元、EPS=元,**皆為累計制**
-/// (Q2=上半年)——與 financial_data 的 FinMind EPS 同口徑,YoY 直接可比。
+/// (Q2=上半年)。注意 financial_data 的 FinMind EPS 是**單季**值,
+/// 口徑不同——YoY 比較須在 DAO 層加總去年各季。
 class QuarterlyReportEntry {
   const QuarterlyReportEntry({
     required this.symbol,

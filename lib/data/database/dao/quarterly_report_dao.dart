@@ -49,8 +49,8 @@ class QuarterlyReportOverviewRow {
   /// 營業收入(千元,累計;金融業別無此欄)
   final double? revenue;
 
-  /// 去年同期 EPS(元,累計;來自 financial_data 的 FinMind 回補,
-  /// 同為累計制口徑——無該季歷史則 null)
+  /// 去年同期 EPS(元,累計基期=去年 1..Q 季的 FinMind **單季** EPS
+  /// 加總;任一季缺漏即 null,不硬算低估的假基期)
   final double? priorEps;
 
   /// 轉虧為盈(去年同期 EPS ≤ 0、本期 > 0;兩值皆須存在)
@@ -75,9 +75,12 @@ mixin QuarterlyReportDaoMixin on $AppDatabase {
   /// - 「最新一季」= quarterly_report 實際存在的最大 (year, quarter)——
   ///   零日曆邏輯:公布期自然指向進行中的季,平時指向最後完整季
   /// - 只列 active 股票(殭屍下市股 join 排除)
-  /// - 去年同期 EPS 以 financial_data(dataType='EPS')的**季末日**列
-  ///   LEFT JOIN:FinMind EPS 與官方 t187ap06 同為累計制,直接可比;
-  ///   無歷史(新上市/回補未及)則 null,UI 顯示「—」不硬算
+  /// - 去年同期 EPS:官方 t187ap06 是**累計制**(Q2=上半年),FinMind 的
+  ///   financial_data EPS 是**單季**值(2026-08-06 生產資料實測:2454 的
+  ///   2025 四季序列 18.43→17.5→15.84→14.4 遞減,累計制不可能遞減)——
+  ///   基期必須**加總去年 1..Q 季**的單季值,且 Q 季齊全才成立;缺季
+  ///   寧可 null(UI 顯「—」)也不硬算:拿單季冒充累計基期會把年增
+  ///   方向整個弄反(2454 實例:錯法 +12.94、正解 −5.49)
   Future<QuarterlyReportOverview?> getQuarterlyReportOverview() async {
     final latest = await customSelect(
       'SELECT year AS y, quarter AS q FROM quarterly_report '
@@ -88,30 +91,42 @@ mixin QuarterlyReportDaoMixin on $AppDatabase {
     final year = latest.read<int>('y');
     final quarter = latest.read<int>('q');
 
-    // 季末日=去年同期 EPS 在 financial_data 的主鍵日(FinMind 慣例,
-    // 已對 live DB 驗證:2330 的 EPS 列日期恰為 3/31、6/30、9/30、12/31)
-    final quarterEnd = switch (quarter) {
-      1 => DateTime(year - 1, 3, 31),
-      2 => DateTime(year - 1, 6, 30),
-      3 => DateTime(year - 1, 9, 30),
-      _ => DateTime(year - 1, 12, 31),
-    };
+    // 去年 1..Q 季的季末日(FinMind EPS 列的主鍵日,已對 live DB 驗證
+    // 恰為 3/31、6/30、9/30、12/31)
+    final priorQuarterEnds = [
+      for (var q = 1; q <= quarter; q++)
+        switch (q) {
+          1 => DateTime(year - 1, 3, 31),
+          2 => DateTime(year - 1, 6, 30),
+          3 => DateTime(year - 1, 9, 30),
+          _ => DateTime(year - 1, 12, 31),
+        },
+    ];
+    final datePlaceholders = List.filled(
+      priorQuarterEnds.length,
+      '?',
+    ).join(', ');
 
     final rows = await customSelect(
       '''
       SELECT qr.symbol, sm.name, sm.market,
              qr.eps, qr.net_income, qr.revenue,
-             fd.value AS prior_eps
+             fd.prior_eps
       FROM quarterly_report qr
       JOIN stock_master sm ON sm.symbol = qr.symbol AND sm.is_active = 1
-      LEFT JOIN financial_data fd
-        ON fd.symbol = qr.symbol
-       AND fd.data_type = 'EPS'
-       AND fd.date = ?
+      LEFT JOIN (
+        SELECT symbol, SUM(value) AS prior_eps, COUNT(*) AS quarter_count
+        FROM financial_data
+        WHERE data_type = 'EPS'
+          AND value IS NOT NULL
+          AND date IN ($datePlaceholders)
+        GROUP BY symbol
+      ) fd ON fd.symbol = qr.symbol AND fd.quarter_count = ?
       WHERE qr.year = ? AND qr.quarter = ?
       ''',
       variables: [
-        Variable.withDateTime(quarterEnd),
+        ...priorQuarterEnds.map(Variable.withDateTime),
+        Variable.withInt(quarter),
         Variable.withInt(year),
         Variable.withInt(quarter),
       ],
