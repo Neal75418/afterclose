@@ -932,6 +932,64 @@ class TwseClient {
     });
   }
 
+  /// 取得上市最新一季綜合損益表(t187ap06_L_*,六業別合併)。
+  ///
+  /// 公布期逐日填充:誰申報了就出現誰——「最新一季財報總覽」的清單
+  /// 完整性以此官方事實為基礎,不受自家 FinMind 回補佇列進度影響
+  /// (2026-08-06,沿月營收 MOPS 源同一設計原則)。
+  ///
+  /// 六業別 per-variant 隔離:單一業別失敗記 warning、其餘照收,全部
+  /// 失敗才拋(RateLimitException 一律直接 rethrow)——金融業別平日
+  /// 常態零星,單端點異常不該砍掉整份清單。
+  Future<List<QuarterlyReportEntry>> getQuarterlyReports() {
+    return MarketClientMixin.executeRequest(_tag, '季報', () async {
+      const cacheKey = 'quarterlyReports';
+      final cached = _cache.get(cacheKey) as List<QuarterlyReportEntry>?;
+      if (cached != null) return cached;
+
+      final results = <QuarterlyReportEntry>[];
+      var okVariants = 0;
+      Object? firstError;
+      for (final suffix in ApiEndpoints.quarterlyReportIndustrySuffixes) {
+        try {
+          final response = await _dio.get(
+            ApiEndpoints.twseQuarterlyReport(suffix),
+          );
+          if (response.statusCode != 200) {
+            throw ApiException(
+              '$_tag OpenData API error: ${response.statusCode}',
+              response.statusCode,
+            );
+          }
+          final data = response.data;
+          if (data is! List) {
+            AppLogger.warning(_tag, '季報($suffix): 非預期資料型別');
+            continue;
+          }
+          for (final item in data) {
+            if (item is! Map<String, dynamic>) continue;
+            final parsed = QuarterlyReportEntry.tryFromJson(item);
+            if (parsed != null) results.add(parsed);
+          }
+          okVariants++;
+        } on RateLimitException {
+          rethrow;
+        } catch (e) {
+          AppLogger.warning(_tag, '季報($suffix)失敗,其餘業別照收', e);
+          firstError ??= e;
+        }
+      }
+      if (okVariants == 0 && firstError != null) throw firstError;
+      AppLogger.info(
+        _tag,
+        '季報: ${results.length} 筆($okVariants/'
+        '${ApiEndpoints.quarterlyReportIndustrySuffixes.length} 業別)',
+      );
+      _cache.put(cacheKey, results);
+      return results;
+    });
+  }
+
   /// 取得所有股票的月營收（最新月份）
   ///
   /// 來源: TWSE Open Data API (t187ap05_L)

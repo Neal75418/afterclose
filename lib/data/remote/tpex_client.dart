@@ -10,6 +10,7 @@ import 'package:afterclose/core/utils/lru_cache.dart';
 import 'package:afterclose/core/utils/tw_parse_utils.dart';
 import 'package:afterclose/data/models/tpex/models.dart';
 import 'package:afterclose/data/models/twse/exright_preannouncement.dart';
+import 'package:afterclose/data/models/twse/quarterly_report_entry.dart';
 import 'package:afterclose/data/models/twse/twse_market_index.dart';
 import 'package:afterclose/data/remote/insider_holding_aggregator.dart';
 import 'package:afterclose/data/remote/market_client_mixin.dart';
@@ -1095,6 +1096,61 @@ class TpexClient {
       }
 
       AppLogger.info(_tag, '內部人轉讓: ${results.length} 筆');
+      _cache.put(cacheKey, results);
+      return results;
+    });
+  }
+
+  /// 取得上櫃最新一季綜合損益表(mopsfin_t187ap06_O_*,六業別合併)。
+  ///
+  /// 語意與 [TwseClient.getQuarterlyReports] 完全同構(欄名差異由
+  /// QuarterlyReportEntry 的雙 key fallback 吸收);per-variant 隔離
+  /// 同款:單業別失敗照收其餘、全滅才拋、RateLimit 直接 rethrow。
+  Future<List<QuarterlyReportEntry>> getQuarterlyReports() {
+    return MarketClientMixin.executeRequest(_tag, '季報', () async {
+      const cacheKey = 'quarterlyReports';
+      final cached = _cache.get(cacheKey) as List<QuarterlyReportEntry>?;
+      if (cached != null) return cached;
+
+      final results = <QuarterlyReportEntry>[];
+      var okVariants = 0;
+      Object? firstError;
+      for (final suffix in ApiEndpoints.quarterlyReportIndustrySuffixes) {
+        try {
+          final response = await _dio.get(
+            ApiEndpoints.tpexQuarterlyReport(suffix),
+            options: Options(headers: {'Accept': 'application/json'}),
+          );
+          if (response.statusCode != 200) {
+            throw ApiException(
+              '$_tag OpenAPI error: ${response.statusCode}',
+              response.statusCode,
+            );
+          }
+          final data = response.data;
+          if (data is! List) {
+            AppLogger.warning(_tag, '季報($suffix): 非預期資料型別');
+            continue;
+          }
+          for (final item in data) {
+            if (item is! Map<String, dynamic>) continue;
+            final parsed = QuarterlyReportEntry.tryFromJson(item);
+            if (parsed != null) results.add(parsed);
+          }
+          okVariants++;
+        } on RateLimitException {
+          rethrow;
+        } catch (e) {
+          AppLogger.warning(_tag, '季報($suffix)失敗,其餘業別照收', e);
+          firstError ??= e;
+        }
+      }
+      if (okVariants == 0 && firstError != null) throw firstError;
+      AppLogger.info(
+        _tag,
+        '季報: ${results.length} 筆($okVariants/'
+        '${ApiEndpoints.quarterlyReportIndustrySuffixes.length} 業別)',
+      );
       _cache.put(cacheKey, results);
       return results;
     });

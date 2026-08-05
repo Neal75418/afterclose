@@ -54,6 +54,21 @@ abstract final class ApiEndpoints {
   static const String twseInsiderTransfer =
       '$twseOpenDataBaseUrl/v1/opendata/t187ap12_L';
 
+  /// 綜合損益表六業別後綴(ci=一般業、basi=金融保險、bd=證券期貨、
+  /// fh=金控、ins=保險、mim=異業;兩市場共用同一組,2026-08-06 季報總覽)
+  static const List<String> quarterlyReportIndustrySuffixes = [
+    'ci',
+    'basi',
+    'bd',
+    'fh',
+    'ins',
+    'mim',
+  ];
+
+  /// 上市綜合損益表(季報,t187ap06_L_業別;公布期逐日填充)
+  static String twseQuarterlyReport(String suffix) =>
+      '$twseOpenDataBaseUrl/v1/opendata/t187ap06_L_$suffix';
+
   /// 大盤各類指數（每日收盤後更新）
   static const String twseMarketIndex = '/rwd/zh/afterTrading/MI_INDEX';
 
@@ -163,6 +178,10 @@ abstract final class ApiEndpoints {
   /// 回傳董監事/經理人/大股東股權轉讓申報資料
   static const String tpexInsiderTransfer =
       '$tpexOpenApiBaseUrl/v1/mopsfin_t187ap12_O';
+
+  /// 上櫃綜合損益表(季報,mopsfin_t187ap06_O_業別;後綴同上市)
+  static String tpexQuarterlyReport(String suffix) =>
+      '$tpexOpenApiBaseUrl/v1/mopsfin_t187ap06_O_$suffix';
 
   /// 上櫃融券賣出排行 - OpenAPI（免費、無限制）
   /// 回傳融券賣出排名 Top 20

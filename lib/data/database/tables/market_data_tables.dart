@@ -64,6 +64,37 @@ class DayTrading extends Table {
   Set<Column> get primaryKey => {symbol, date};
 }
 
+/// 季報快照(官方申報事實,2026-08-06)。
+///
+/// 來源:TWSE/TPEx openapi 綜合損益表(t187ap06 六業別 × 兩市場,公布期
+/// 逐日填充)。與 [FinancialData](FinMind 回補)的差異:本表反映「誰已
+/// 申報」的**官方事實**,不受自家回補佇列進度影響——季報總覽頁的清單
+/// 完整性以此為基礎(沿月營收 MOPS 的同一設計原則)。
+/// EPS/淨利為**累計制**(Q2=上半年),與 FinMind 同口徑,YoY 直接可比。
+class QuarterlyReport extends Table {
+  /// 股票代碼
+  TextColumn get symbol =>
+      text().references(StockMaster, #symbol, onDelete: KeyAction.cascade)();
+
+  /// 西元年度
+  IntColumn get year => integer()();
+
+  /// 季別 1~4
+  IntColumn get quarter => integer()();
+
+  /// 基本每股盈餘(元,累計)
+  RealColumn get eps => real().nullable()();
+
+  /// 本期淨利(千元,累計)
+  RealColumn get netIncome => real().nullable()();
+
+  /// 營業收入(千元,累計;金融業別無此欄為 NULL)
+  RealColumn get revenue => real().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {symbol, year, quarter};
+}
+
 /// 財務報表資料 Table
 ///
 /// 儲存損益表、資產負債表、現金流量表的 Key-Value 資料

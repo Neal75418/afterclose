@@ -1584,5 +1584,29 @@
     "dualBuy": "Dual buy",
     "dualSell": "Dual sell",
     "entry": "Rankings"
+  },
+  "quarterlyOverview": {
+    "title": "Quarterly Reports",
+    "quarterLabel": "{year} Q{quarter}",
+    "empty": "No quarterly report data yet",
+    "noMatch": "No stocks match the filter",
+    "progressFiling": "Filing in progress — TWSE {twseFiled}, TPEx {tpexFiled} filed (early filers skew positive; silence near the deadline is information too)",
+    "progressComplete": "Quarter complete ({count} companies)",
+    "turnaround": "Turnaround",
+    "epsCol": "EPS",
+    "priorEpsCol": "Prior yr",
+    "netIncomeCol": "Net income",
+    "filter": {
+      "all": "All",
+      "watchlist": "Watchlist",
+      "turnaround": "Turnaround"
+    },
+    "sort": {
+      "epsGrowth": "EPS YoY",
+      "eps": "EPS",
+      "netIncome": "Net income"
+    },
+    "entryTitle": "Q{quarter} reports filing",
+    "entrySubtitle": "{filed} filed · Watchlist {watchFiled}/{watchTotal} in"
   }
 }

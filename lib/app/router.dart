@@ -16,6 +16,7 @@ import 'package:afterclose/presentation/screens/settings/settings_screen.dart';
 import 'package:afterclose/presentation/screens/comparison/comparison_screen.dart';
 import 'package:afterclose/presentation/screens/calendar/event_calendar_screen.dart';
 import 'package:afterclose/presentation/screens/institutional/institutional_ranking_screen.dart';
+import 'package:afterclose/presentation/screens/quarterly/quarterly_report_overview_screen.dart';
 import 'package:afterclose/presentation/screens/revenue/revenue_overview_screen.dart';
 import 'package:afterclose/presentation/screens/short_sell/short_sell_ranking_screen.dart';
 import 'package:afterclose/presentation/screens/industry/industry_eps_screen.dart';
@@ -204,6 +205,11 @@ final router = GoRouter(
       path: AppRoutes.revenueOverview,
       name: 'revenueOverview',
       builder: (context, state) => const RevenueOverviewScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.quarterlyOverview,
+      name: 'quarterlyOverview',
+      builder: (context, state) => const QuarterlyReportOverviewScreen(),
     ),
     GoRoute(
       path: AppRoutes.shortSellRanking,

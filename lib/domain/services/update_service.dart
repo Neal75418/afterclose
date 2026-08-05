@@ -128,6 +128,13 @@ class UpdateService {
                tpexClient: clients.tpex,
                twseClient: clients.twse,
              )
+           : null,
+       _quarterlyReportSyncer = (clients.tpex != null || clients.twse != null)
+           ? QuarterlyReportSyncer(
+               database: database,
+               twseClient: clients.twse,
+               tpexClient: clients.tpex,
+             )
            : null;
 
   final AppDatabase _db;
@@ -158,6 +165,7 @@ class UpdateService {
   final TdccHoldingSyncer? _tdccHoldingSyncer;
   final DividendSyncer? _dividendSyncer;
   final InsiderTransferSyncer? _insiderTransferSyncer;
+  final QuarterlyReportSyncer? _quarterlyReportSyncer;
 
   /// 取得或建立 ScoringService（延遲初始化）
   ScoringService get _scoring =>
@@ -534,6 +542,24 @@ class UpdateService {
       } catch (e) {
         AppLogger.warning('UpdateService', '內部人轉讓同步失敗', e);
         ctx.result.recordError('內部人轉讓同步失敗: $e', e);
+      }
+    }
+    // 季報快照(t187ap06 兩市場,12 個免額度 openapi 端點):每次更新都
+    // 同步——公布期端點逐日長、平時回最後完整季,總覽頁因此恆有資料
+    if (ctx.rateLimitedAbort) return;
+    if (_quarterlyReportSyncer != null) {
+      try {
+        final reportCount = await _quarterlyReportSyncer.sync();
+        if (reportCount > 0) {
+          AppLogger.info('UpdateService', '季報同步: $reportCount 筆');
+        }
+      } on RateLimitException catch (e) {
+        ctx.rateLimitedAbort = true;
+        AppLogger.warning('UpdateService', '季報同步失敗 (rate limit)', e);
+        ctx.result.recordError('季報同步失敗 (rate limit): $e', e);
+      } catch (e) {
+        AppLogger.warning('UpdateService', '季報同步失敗', e);
+        ctx.result.recordError('季報同步失敗: $e', e);
       }
     }
   }

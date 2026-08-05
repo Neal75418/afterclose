@@ -53,6 +53,7 @@ import 'package:afterclose/data/database/dao/market_overview_dao.dart';
 import 'package:afterclose/data/database/dao/news_dao.dart';
 import 'package:afterclose/data/database/dao/portfolio_dao.dart';
 import 'package:afterclose/data/database/dao/price_dao.dart';
+import 'package:afterclose/data/database/dao/quarterly_report_dao.dart';
 import 'package:afterclose/data/database/dao/revenue_dao.dart';
 import 'package:afterclose/data/database/dao/shareholding_dao.dart';
 import 'package:afterclose/data/database/dao/stock_dao.dart';
@@ -114,6 +115,7 @@ import 'package:afterclose/data/database/dao/valuation_dao.dart';
     StockEvent,
     // 大盤指數歷史（Phase 5.2）
     MarketIndex,
+    QuarterlyReport,
   ],
 )
 class AppDatabase extends $AppDatabase
@@ -139,6 +141,7 @@ class AppDatabase extends $AppDatabase
         TradingWarningDaoMixin,
         InsiderHoldingDaoMixin,
         InsiderTransferDaoMixin,
+        QuarterlyReportDaoMixin,
         MarketOverviewDaoMixin,
         CalibrationCacheDaoMixin {
   /// 純 Dart constructor — caller 注入 [QueryExecutor]
@@ -195,6 +198,7 @@ class AppDatabase extends $AppDatabase
       await _ensureRuleAccuracyDistinctDatesColumn();
       await _ensureWatchlistGroupsSchema();
       await _ensurePinnedThesisSchema();
+      await _ensureQuarterlyReportSchema();
       await _ensureIndexHygiene();
       // 歷史零價列收斂(2026-07-30):TWSE STOCK_DAY_ALL 對「無成交」
       // 用 0.00 表達,parser 修正(TwParseUtils.parsePrice)前已有 41 列
@@ -237,6 +241,16 @@ class AppDatabase extends $AppDatabase
   /// 既有 DB 已建過 no-op、全新安裝由 createAll 先建好這裡也 no-op）。
   Future<void> _ensurePinnedThesisSchema() async {
     await Migrator(this).createTable(pinnedThesis);
+  }
+
+  /// 季報快照表(2026-08-06,additive)。
+  ///
+  /// 沿 [_ensurePinnedThesisSchema] 先例:**不 bump fingerprint**——指紋
+  /// bump 會 wipe 非白名單表,價格/財報等 350 萬列衍生資料要重抓數日額度,
+  /// 為加一張新表付這代價不成比例。createTable=CREATE TABLE IF NOT EXISTS,
+  /// 既有 DB 冪等補建、新裝機由 createAll 先建好此處 no-op,零資料損失。
+  Future<void> _ensureQuarterlyReportSchema() async {
+    await Migrator(this).createTable(quarterlyReport);
   }
 
   /// 2026-07-29 索引衛生（多角色審查 Fix 1）：清除與複合 PK autoindex 完全

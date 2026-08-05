@@ -15,7 +15,7 @@ paths:
 graph TB
     US["UpdateService<br/>(Coordinator)"]
 
-    subgraph Syncers["10 Syncers"]
+    subgraph Syncers["11 Syncers"]
         SLS["StockListSyncer"]
         HPS["HistoricalPriceSyncer"]
         IS["InstitutionalSyncer"]
@@ -26,6 +26,7 @@ graph TB
         THS["TdccHoldingSyncer"]
         DS["DividendSyncer"]
         ITS["InsiderTransferSyncer"]
+        QRS["QuarterlyReportSyncer"]
     end
 
     subgraph Helpers["3 Helpers"]
@@ -46,8 +47,9 @@ graph TB
 ## Update 元件
 
 - **Coordinator**: `UpdateService` — 協調所有 syncer 執行順序 + 錯誤處理
-- **10 Syncers**: 各自從 External API 拉取特定類別資料（stock list、price、institutional、market data、fundamental、news、market index、TDCC holding、dividend、insider transfer）
+- **11 Syncers**: 各自從 External API 拉取特定類別資料（stock list、price、institutional、market data、fundamental、news、market index、TDCC holding、dividend、insider transfer、quarterly report）
   - `HistoricalPriceSyncer` 兩段式：**Phase 0 市場日快照回補**（lookback 窗內整市場缺漏的交易日，1 次呼叫補該市場全部股票一天——TWSE MI_INDEX / TPEx afterTrading 歷史端點；單次上限與連續零筆斷路器見 `ApiConfig.historicalMarketDay*`）→ **Phase 1 per-symbol**（補個股殘缺；priority＝自選+熱門追 250 天、非 priority 180 天早退）。**成本分市場**：上櫃走 TPEx `fetchSingleStockPrices` 整段 **1 次**呼叫，上市才是 FinMind `fetchMonthlyPrices` **逐月**；預算估算（`_estimateAvgMonthsNeeded`）據此分流，**查不到市場者一律按上市保守計價**——高估只是回補變慢，低估會放大 `maxSyncCount` 打爆額度。限流中止會把原始例外放進 `HistoricalPriceSyncResult.rateLimitError`（**不 rethrow**，已抓到的資料要保留），caller 據此設 `rateLimitedAbort`
+  - `QuarterlyReportSyncer`（2026-08-06）：TWSE/TPEx t187ap06 六業別 × 兩市場共 12 個免額度 openapi 端點,抓「最新一季綜合損益表」官方申報快照寫入 `quarterly_report`。每次更新都跑:公布期端點逐日填充、平時回最後完整季。雙源 per-source 隔離 + 業別 per-variant 隔離;金融業別未申報時回單一全 null 佔位列,model 的 null-aware 解析自然拒收
   - `FundamentalSyncer` 財報有**兩條獨立佇列**：上市走 `UpdateService.selectFinancialSyncTargets`
     （取 `[...twse, ...tpex]` 前 `financialSyncMaxCandidates`）；上櫃另走
     `selectOtcFinancialBacklog`（**最舊優先 + ETF 在取前 N 之前排除**），因為串接下上市候選恆

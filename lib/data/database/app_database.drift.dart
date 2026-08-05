@@ -78,6 +78,8 @@ abstract class $AppDatabase extends i0.GeneratedDatabase {
       .$PortfolioTransactionTable(this);
   late final i9.$StockEventTable stockEvent = i9.$StockEventTable(this);
   late final i10.$MarketIndexTable marketIndex = i10.$MarketIndexTable(this);
+  late final i7.$QuarterlyReportTable quarterlyReport = i7
+      .$QuarterlyReportTable(this);
   @override
   Iterable<i0.TableInfo<i0.Table, Object?>> get allTables =>
       allSchemaEntities.whereType<i0.TableInfo<i0.Table, Object?>>();
@@ -116,6 +118,7 @@ abstract class $AppDatabase extends i0.GeneratedDatabase {
     portfolioTransaction,
     stockEvent,
     marketIndex,
+    quarterlyReport,
     i1.idxStockMasterIndustry,
     i2.idxDailyPriceDate,
     i3.idxDailyInstitutionalDate,
@@ -325,6 +328,13 @@ abstract class $AppDatabase extends i0.GeneratedDatabase {
         i0.TableUpdate('portfolio_transaction', kind: i0.UpdateKind.delete),
       ],
     ),
+    i0.WritePropagation(
+      on: i0.TableUpdateQuery.onTableName(
+        'stock_master',
+        limitUpdateKind: i0.UpdateKind.delete,
+      ),
+      result: [i0.TableUpdate('quarterly_report', kind: i0.UpdateKind.delete)],
+    ),
   ]);
   @override
   i0.DriftDatabaseOptions get options =>
@@ -406,4 +416,6 @@ class $AppDatabaseManager {
       i9.$$StockEventTableTableManager(_db, _db.stockEvent);
   i10.$$MarketIndexTableTableManager get marketIndex =>
       i10.$$MarketIndexTableTableManager(_db, _db.marketIndex);
+  i7.$$QuarterlyReportTableTableManager get quarterlyReport =>
+      i7.$$QuarterlyReportTableTableManager(_db, _db.quarterlyReport);
 }

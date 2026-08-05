@@ -1584,5 +1584,29 @@
     "dualBuy": "雙買",
     "dualSell": "雙賣",
     "entry": "買賣超排行"
+  },
+  "quarterlyOverview": {
+    "title": "季報總覽",
+    "quarterLabel": "{year} 年 Q{quarter}",
+    "empty": "尚無季報資料",
+    "noMatch": "沒有符合過濾條件的股票",
+    "progressFiling": "公布中——已公布 上市 {twseFiled}、上櫃 {tpexFiled} 家(先交卷的多半是好消息,壓線的沉默也是資訊)",
+    "progressComplete": "本季完整({count} 家)",
+    "turnaround": "轉盈",
+    "epsCol": "EPS",
+    "priorEpsCol": "去年同期",
+    "netIncomeCol": "淨利",
+    "filter": {
+      "all": "全部",
+      "watchlist": "自選",
+      "turnaround": "轉盈"
+    },
+    "sort": {
+      "epsGrowth": "EPS 年增",
+      "eps": "EPS",
+      "netIncome": "淨利"
+    },
+    "entryTitle": "Q{quarter} 季報公布中",
+    "entrySubtitle": "已公布 {filed} 家・自選 {watchFiled}/{watchTotal} 已交卷"
   }
 }

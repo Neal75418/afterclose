@@ -16,6 +16,7 @@ abstract final class AppRoutes {
   static const calendar = '/calendar';
   static const shortSellRanking = '/short-sell-ranking';
   static const revenueOverview = '/revenue-overview';
+  static const quarterlyOverview = '/quarterly-overview';
   static const institutionalRanking = '/institutional-ranking';
   static const industryEps = '/industry-eps';
 

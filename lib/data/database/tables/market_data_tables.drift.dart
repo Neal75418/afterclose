@@ -768,6 +768,382 @@ typedef $$DayTradingTableProcessedTableManager =
       i1.DayTradingEntry,
       i0.PrefetchHooks Function({bool symbol})
     >;
+typedef $$QuarterlyReportTableCreateCompanionBuilder =
+    i1.QuarterlyReportCompanion Function({
+      required String symbol,
+      required int year,
+      required int quarter,
+      i0.Value<double?> eps,
+      i0.Value<double?> netIncome,
+      i0.Value<double?> revenue,
+      i0.Value<int> rowid,
+    });
+typedef $$QuarterlyReportTableUpdateCompanionBuilder =
+    i1.QuarterlyReportCompanion Function({
+      i0.Value<String> symbol,
+      i0.Value<int> year,
+      i0.Value<int> quarter,
+      i0.Value<double?> eps,
+      i0.Value<double?> netIncome,
+      i0.Value<double?> revenue,
+      i0.Value<int> rowid,
+    });
+
+final class $$QuarterlyReportTableReferences
+    extends
+        i0.BaseReferences<
+          i0.GeneratedDatabase,
+          i1.$QuarterlyReportTable,
+          i1.QuarterlyReportData
+        > {
+  $$QuarterlyReportTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static i4.$StockMasterTable _symbolTable(i0.GeneratedDatabase db) =>
+      i5.ReadDatabaseContainer(db)
+          .resultSet<i4.$StockMasterTable>('stock_master')
+          .createAlias(
+            i0.$_aliasNameGenerator(
+              i5.ReadDatabaseContainer(
+                db,
+              ).resultSet<i1.$QuarterlyReportTable>('quarterly_report').symbol,
+              i5.ReadDatabaseContainer(
+                db,
+              ).resultSet<i4.$StockMasterTable>('stock_master').symbol,
+            ),
+          );
+
+  i4.$$StockMasterTableProcessedTableManager get symbol {
+    final $_column = $_itemColumn<String>('symbol')!;
+
+    final manager = i4
+        .$$StockMasterTableTableManager(
+          $_db,
+          i5.ReadDatabaseContainer(
+            $_db,
+          ).resultSet<i4.$StockMasterTable>('stock_master'),
+        )
+        .filter((f) => f.symbol.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_symbolTable($_db));
+    if (item == null) return manager;
+    return i0.ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$QuarterlyReportTableFilterComposer
+    extends i0.Composer<i0.GeneratedDatabase, i1.$QuarterlyReportTable> {
+  $$QuarterlyReportTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  i0.ColumnFilters<int> get year => $composableBuilder(
+    column: $table.year,
+    builder: (column) => i0.ColumnFilters(column),
+  );
+
+  i0.ColumnFilters<int> get quarter => $composableBuilder(
+    column: $table.quarter,
+    builder: (column) => i0.ColumnFilters(column),
+  );
+
+  i0.ColumnFilters<double> get eps => $composableBuilder(
+    column: $table.eps,
+    builder: (column) => i0.ColumnFilters(column),
+  );
+
+  i0.ColumnFilters<double> get netIncome => $composableBuilder(
+    column: $table.netIncome,
+    builder: (column) => i0.ColumnFilters(column),
+  );
+
+  i0.ColumnFilters<double> get revenue => $composableBuilder(
+    column: $table.revenue,
+    builder: (column) => i0.ColumnFilters(column),
+  );
+
+  i4.$$StockMasterTableFilterComposer get symbol {
+    final i4.$$StockMasterTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: i5.ReadDatabaseContainer(
+        $db,
+      ).resultSet<i4.$StockMasterTable>('stock_master'),
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => i4.$$StockMasterTableFilterComposer(
+            $db: $db,
+            $table: i5.ReadDatabaseContainer(
+              $db,
+            ).resultSet<i4.$StockMasterTable>('stock_master'),
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$QuarterlyReportTableOrderingComposer
+    extends i0.Composer<i0.GeneratedDatabase, i1.$QuarterlyReportTable> {
+  $$QuarterlyReportTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  i0.ColumnOrderings<int> get year => $composableBuilder(
+    column: $table.year,
+    builder: (column) => i0.ColumnOrderings(column),
+  );
+
+  i0.ColumnOrderings<int> get quarter => $composableBuilder(
+    column: $table.quarter,
+    builder: (column) => i0.ColumnOrderings(column),
+  );
+
+  i0.ColumnOrderings<double> get eps => $composableBuilder(
+    column: $table.eps,
+    builder: (column) => i0.ColumnOrderings(column),
+  );
+
+  i0.ColumnOrderings<double> get netIncome => $composableBuilder(
+    column: $table.netIncome,
+    builder: (column) => i0.ColumnOrderings(column),
+  );
+
+  i0.ColumnOrderings<double> get revenue => $composableBuilder(
+    column: $table.revenue,
+    builder: (column) => i0.ColumnOrderings(column),
+  );
+
+  i4.$$StockMasterTableOrderingComposer get symbol {
+    final i4.$$StockMasterTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: i5.ReadDatabaseContainer(
+        $db,
+      ).resultSet<i4.$StockMasterTable>('stock_master'),
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => i4.$$StockMasterTableOrderingComposer(
+            $db: $db,
+            $table: i5.ReadDatabaseContainer(
+              $db,
+            ).resultSet<i4.$StockMasterTable>('stock_master'),
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$QuarterlyReportTableAnnotationComposer
+    extends i0.Composer<i0.GeneratedDatabase, i1.$QuarterlyReportTable> {
+  $$QuarterlyReportTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  i0.GeneratedColumn<int> get year =>
+      $composableBuilder(column: $table.year, builder: (column) => column);
+
+  i0.GeneratedColumn<int> get quarter =>
+      $composableBuilder(column: $table.quarter, builder: (column) => column);
+
+  i0.GeneratedColumn<double> get eps =>
+      $composableBuilder(column: $table.eps, builder: (column) => column);
+
+  i0.GeneratedColumn<double> get netIncome =>
+      $composableBuilder(column: $table.netIncome, builder: (column) => column);
+
+  i0.GeneratedColumn<double> get revenue =>
+      $composableBuilder(column: $table.revenue, builder: (column) => column);
+
+  i4.$$StockMasterTableAnnotationComposer get symbol {
+    final i4.$$StockMasterTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: i5.ReadDatabaseContainer(
+        $db,
+      ).resultSet<i4.$StockMasterTable>('stock_master'),
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => i4.$$StockMasterTableAnnotationComposer(
+            $db: $db,
+            $table: i5.ReadDatabaseContainer(
+              $db,
+            ).resultSet<i4.$StockMasterTable>('stock_master'),
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$QuarterlyReportTableTableManager
+    extends
+        i0.RootTableManager<
+          i0.GeneratedDatabase,
+          i1.$QuarterlyReportTable,
+          i1.QuarterlyReportData,
+          i1.$$QuarterlyReportTableFilterComposer,
+          i1.$$QuarterlyReportTableOrderingComposer,
+          i1.$$QuarterlyReportTableAnnotationComposer,
+          $$QuarterlyReportTableCreateCompanionBuilder,
+          $$QuarterlyReportTableUpdateCompanionBuilder,
+          (i1.QuarterlyReportData, i1.$$QuarterlyReportTableReferences),
+          i1.QuarterlyReportData,
+          i0.PrefetchHooks Function({bool symbol})
+        > {
+  $$QuarterlyReportTableTableManager(
+    i0.GeneratedDatabase db,
+    i1.$QuarterlyReportTable table,
+  ) : super(
+        i0.TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              i1.$$QuarterlyReportTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              i1.$$QuarterlyReportTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () => i1
+              .$$QuarterlyReportTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                i0.Value<String> symbol = const i0.Value.absent(),
+                i0.Value<int> year = const i0.Value.absent(),
+                i0.Value<int> quarter = const i0.Value.absent(),
+                i0.Value<double?> eps = const i0.Value.absent(),
+                i0.Value<double?> netIncome = const i0.Value.absent(),
+                i0.Value<double?> revenue = const i0.Value.absent(),
+                i0.Value<int> rowid = const i0.Value.absent(),
+              }) => i1.QuarterlyReportCompanion(
+                symbol: symbol,
+                year: year,
+                quarter: quarter,
+                eps: eps,
+                netIncome: netIncome,
+                revenue: revenue,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String symbol,
+                required int year,
+                required int quarter,
+                i0.Value<double?> eps = const i0.Value.absent(),
+                i0.Value<double?> netIncome = const i0.Value.absent(),
+                i0.Value<double?> revenue = const i0.Value.absent(),
+                i0.Value<int> rowid = const i0.Value.absent(),
+              }) => i1.QuarterlyReportCompanion.insert(
+                symbol: symbol,
+                year: year,
+                quarter: quarter,
+                eps: eps,
+                netIncome: netIncome,
+                revenue: revenue,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  i1.$$QuarterlyReportTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({symbol = false}) {
+            return i0.PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends i0.TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (symbol) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.symbol,
+                                referencedTable: i1
+                                    .$$QuarterlyReportTableReferences
+                                    ._symbolTable(db),
+                                referencedColumn: i1
+                                    .$$QuarterlyReportTableReferences
+                                    ._symbolTable(db)
+                                    .symbol,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$QuarterlyReportTableProcessedTableManager =
+    i0.ProcessedTableManager<
+      i0.GeneratedDatabase,
+      i1.$QuarterlyReportTable,
+      i1.QuarterlyReportData,
+      i1.$$QuarterlyReportTableFilterComposer,
+      i1.$$QuarterlyReportTableOrderingComposer,
+      i1.$$QuarterlyReportTableAnnotationComposer,
+      $$QuarterlyReportTableCreateCompanionBuilder,
+      $$QuarterlyReportTableUpdateCompanionBuilder,
+      (i1.QuarterlyReportData, i1.$$QuarterlyReportTableReferences),
+      i1.QuarterlyReportData,
+      i0.PrefetchHooks Function({bool symbol})
+    >;
 typedef $$FinancialDataTableCreateCompanionBuilder =
     i1.FinancialDataCompanion Function({
       required String symbol,
@@ -5388,6 +5764,438 @@ class DayTradingCompanion extends i0.UpdateCompanion<i1.DayTradingEntry> {
           ..write('sellVolume: $sellVolume, ')
           ..write('dayTradingRatio: $dayTradingRatio, ')
           ..write('tradeVolume: $tradeVolume, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $QuarterlyReportTable extends i2.QuarterlyReport
+    with i0.TableInfo<$QuarterlyReportTable, i1.QuarterlyReportData> {
+  @override
+  final i0.GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $QuarterlyReportTable(this.attachedDatabase, [this._alias]);
+  static const i0.VerificationMeta _symbolMeta = const i0.VerificationMeta(
+    'symbol',
+  );
+  @override
+  late final i0.GeneratedColumn<String> symbol = i0.GeneratedColumn<String>(
+    'symbol',
+    aliasedName,
+    false,
+    type: i0.DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: i0.GeneratedColumn.constraintIsAlways(
+      'REFERENCES stock_master (symbol) ON DELETE CASCADE',
+    ),
+  );
+  static const i0.VerificationMeta _yearMeta = const i0.VerificationMeta(
+    'year',
+  );
+  @override
+  late final i0.GeneratedColumn<int> year = i0.GeneratedColumn<int>(
+    'year',
+    aliasedName,
+    false,
+    type: i0.DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const i0.VerificationMeta _quarterMeta = const i0.VerificationMeta(
+    'quarter',
+  );
+  @override
+  late final i0.GeneratedColumn<int> quarter = i0.GeneratedColumn<int>(
+    'quarter',
+    aliasedName,
+    false,
+    type: i0.DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const i0.VerificationMeta _epsMeta = const i0.VerificationMeta('eps');
+  @override
+  late final i0.GeneratedColumn<double> eps = i0.GeneratedColumn<double>(
+    'eps',
+    aliasedName,
+    true,
+    type: i0.DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const i0.VerificationMeta _netIncomeMeta = const i0.VerificationMeta(
+    'netIncome',
+  );
+  @override
+  late final i0.GeneratedColumn<double> netIncome = i0.GeneratedColumn<double>(
+    'net_income',
+    aliasedName,
+    true,
+    type: i0.DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const i0.VerificationMeta _revenueMeta = const i0.VerificationMeta(
+    'revenue',
+  );
+  @override
+  late final i0.GeneratedColumn<double> revenue = i0.GeneratedColumn<double>(
+    'revenue',
+    aliasedName,
+    true,
+    type: i0.DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<i0.GeneratedColumn> get $columns => [
+    symbol,
+    year,
+    quarter,
+    eps,
+    netIncome,
+    revenue,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'quarterly_report';
+  @override
+  i0.VerificationContext validateIntegrity(
+    i0.Insertable<i1.QuarterlyReportData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = i0.VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('symbol')) {
+      context.handle(
+        _symbolMeta,
+        symbol.isAcceptableOrUnknown(data['symbol']!, _symbolMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_symbolMeta);
+    }
+    if (data.containsKey('year')) {
+      context.handle(
+        _yearMeta,
+        year.isAcceptableOrUnknown(data['year']!, _yearMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_yearMeta);
+    }
+    if (data.containsKey('quarter')) {
+      context.handle(
+        _quarterMeta,
+        quarter.isAcceptableOrUnknown(data['quarter']!, _quarterMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_quarterMeta);
+    }
+    if (data.containsKey('eps')) {
+      context.handle(
+        _epsMeta,
+        eps.isAcceptableOrUnknown(data['eps']!, _epsMeta),
+      );
+    }
+    if (data.containsKey('net_income')) {
+      context.handle(
+        _netIncomeMeta,
+        netIncome.isAcceptableOrUnknown(data['net_income']!, _netIncomeMeta),
+      );
+    }
+    if (data.containsKey('revenue')) {
+      context.handle(
+        _revenueMeta,
+        revenue.isAcceptableOrUnknown(data['revenue']!, _revenueMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<i0.GeneratedColumn> get $primaryKey => {symbol, year, quarter};
+  @override
+  i1.QuarterlyReportData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return i1.QuarterlyReportData(
+      symbol: attachedDatabase.typeMapping.read(
+        i0.DriftSqlType.string,
+        data['${effectivePrefix}symbol'],
+      )!,
+      year: attachedDatabase.typeMapping.read(
+        i0.DriftSqlType.int,
+        data['${effectivePrefix}year'],
+      )!,
+      quarter: attachedDatabase.typeMapping.read(
+        i0.DriftSqlType.int,
+        data['${effectivePrefix}quarter'],
+      )!,
+      eps: attachedDatabase.typeMapping.read(
+        i0.DriftSqlType.double,
+        data['${effectivePrefix}eps'],
+      ),
+      netIncome: attachedDatabase.typeMapping.read(
+        i0.DriftSqlType.double,
+        data['${effectivePrefix}net_income'],
+      ),
+      revenue: attachedDatabase.typeMapping.read(
+        i0.DriftSqlType.double,
+        data['${effectivePrefix}revenue'],
+      ),
+    );
+  }
+
+  @override
+  $QuarterlyReportTable createAlias(String alias) {
+    return $QuarterlyReportTable(attachedDatabase, alias);
+  }
+}
+
+class QuarterlyReportData extends i0.DataClass
+    implements i0.Insertable<i1.QuarterlyReportData> {
+  /// 股票代碼
+  final String symbol;
+
+  /// 西元年度
+  final int year;
+
+  /// 季別 1~4
+  final int quarter;
+
+  /// 基本每股盈餘(元,累計)
+  final double? eps;
+
+  /// 本期淨利(千元,累計)
+  final double? netIncome;
+
+  /// 營業收入(千元,累計;金融業別無此欄為 NULL)
+  final double? revenue;
+  const QuarterlyReportData({
+    required this.symbol,
+    required this.year,
+    required this.quarter,
+    this.eps,
+    this.netIncome,
+    this.revenue,
+  });
+  @override
+  Map<String, i0.Expression> toColumns(bool nullToAbsent) {
+    final map = <String, i0.Expression>{};
+    map['symbol'] = i0.Variable<String>(symbol);
+    map['year'] = i0.Variable<int>(year);
+    map['quarter'] = i0.Variable<int>(quarter);
+    if (!nullToAbsent || eps != null) {
+      map['eps'] = i0.Variable<double>(eps);
+    }
+    if (!nullToAbsent || netIncome != null) {
+      map['net_income'] = i0.Variable<double>(netIncome);
+    }
+    if (!nullToAbsent || revenue != null) {
+      map['revenue'] = i0.Variable<double>(revenue);
+    }
+    return map;
+  }
+
+  i1.QuarterlyReportCompanion toCompanion(bool nullToAbsent) {
+    return i1.QuarterlyReportCompanion(
+      symbol: i0.Value(symbol),
+      year: i0.Value(year),
+      quarter: i0.Value(quarter),
+      eps: eps == null && nullToAbsent
+          ? const i0.Value.absent()
+          : i0.Value(eps),
+      netIncome: netIncome == null && nullToAbsent
+          ? const i0.Value.absent()
+          : i0.Value(netIncome),
+      revenue: revenue == null && nullToAbsent
+          ? const i0.Value.absent()
+          : i0.Value(revenue),
+    );
+  }
+
+  factory QuarterlyReportData.fromJson(
+    Map<String, dynamic> json, {
+    i0.ValueSerializer? serializer,
+  }) {
+    serializer ??= i0.driftRuntimeOptions.defaultSerializer;
+    return QuarterlyReportData(
+      symbol: serializer.fromJson<String>(json['symbol']),
+      year: serializer.fromJson<int>(json['year']),
+      quarter: serializer.fromJson<int>(json['quarter']),
+      eps: serializer.fromJson<double?>(json['eps']),
+      netIncome: serializer.fromJson<double?>(json['netIncome']),
+      revenue: serializer.fromJson<double?>(json['revenue']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({i0.ValueSerializer? serializer}) {
+    serializer ??= i0.driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'symbol': serializer.toJson<String>(symbol),
+      'year': serializer.toJson<int>(year),
+      'quarter': serializer.toJson<int>(quarter),
+      'eps': serializer.toJson<double?>(eps),
+      'netIncome': serializer.toJson<double?>(netIncome),
+      'revenue': serializer.toJson<double?>(revenue),
+    };
+  }
+
+  i1.QuarterlyReportData copyWith({
+    String? symbol,
+    int? year,
+    int? quarter,
+    i0.Value<double?> eps = const i0.Value.absent(),
+    i0.Value<double?> netIncome = const i0.Value.absent(),
+    i0.Value<double?> revenue = const i0.Value.absent(),
+  }) => i1.QuarterlyReportData(
+    symbol: symbol ?? this.symbol,
+    year: year ?? this.year,
+    quarter: quarter ?? this.quarter,
+    eps: eps.present ? eps.value : this.eps,
+    netIncome: netIncome.present ? netIncome.value : this.netIncome,
+    revenue: revenue.present ? revenue.value : this.revenue,
+  );
+  QuarterlyReportData copyWithCompanion(i1.QuarterlyReportCompanion data) {
+    return QuarterlyReportData(
+      symbol: data.symbol.present ? data.symbol.value : this.symbol,
+      year: data.year.present ? data.year.value : this.year,
+      quarter: data.quarter.present ? data.quarter.value : this.quarter,
+      eps: data.eps.present ? data.eps.value : this.eps,
+      netIncome: data.netIncome.present ? data.netIncome.value : this.netIncome,
+      revenue: data.revenue.present ? data.revenue.value : this.revenue,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('QuarterlyReportData(')
+          ..write('symbol: $symbol, ')
+          ..write('year: $year, ')
+          ..write('quarter: $quarter, ')
+          ..write('eps: $eps, ')
+          ..write('netIncome: $netIncome, ')
+          ..write('revenue: $revenue')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(symbol, year, quarter, eps, netIncome, revenue);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is i1.QuarterlyReportData &&
+          other.symbol == this.symbol &&
+          other.year == this.year &&
+          other.quarter == this.quarter &&
+          other.eps == this.eps &&
+          other.netIncome == this.netIncome &&
+          other.revenue == this.revenue);
+}
+
+class QuarterlyReportCompanion
+    extends i0.UpdateCompanion<i1.QuarterlyReportData> {
+  final i0.Value<String> symbol;
+  final i0.Value<int> year;
+  final i0.Value<int> quarter;
+  final i0.Value<double?> eps;
+  final i0.Value<double?> netIncome;
+  final i0.Value<double?> revenue;
+  final i0.Value<int> rowid;
+  const QuarterlyReportCompanion({
+    this.symbol = const i0.Value.absent(),
+    this.year = const i0.Value.absent(),
+    this.quarter = const i0.Value.absent(),
+    this.eps = const i0.Value.absent(),
+    this.netIncome = const i0.Value.absent(),
+    this.revenue = const i0.Value.absent(),
+    this.rowid = const i0.Value.absent(),
+  });
+  QuarterlyReportCompanion.insert({
+    required String symbol,
+    required int year,
+    required int quarter,
+    this.eps = const i0.Value.absent(),
+    this.netIncome = const i0.Value.absent(),
+    this.revenue = const i0.Value.absent(),
+    this.rowid = const i0.Value.absent(),
+  }) : symbol = i0.Value(symbol),
+       year = i0.Value(year),
+       quarter = i0.Value(quarter);
+  static i0.Insertable<i1.QuarterlyReportData> custom({
+    i0.Expression<String>? symbol,
+    i0.Expression<int>? year,
+    i0.Expression<int>? quarter,
+    i0.Expression<double>? eps,
+    i0.Expression<double>? netIncome,
+    i0.Expression<double>? revenue,
+    i0.Expression<int>? rowid,
+  }) {
+    return i0.RawValuesInsertable({
+      if (symbol != null) 'symbol': symbol,
+      if (year != null) 'year': year,
+      if (quarter != null) 'quarter': quarter,
+      if (eps != null) 'eps': eps,
+      if (netIncome != null) 'net_income': netIncome,
+      if (revenue != null) 'revenue': revenue,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  i1.QuarterlyReportCompanion copyWith({
+    i0.Value<String>? symbol,
+    i0.Value<int>? year,
+    i0.Value<int>? quarter,
+    i0.Value<double?>? eps,
+    i0.Value<double?>? netIncome,
+    i0.Value<double?>? revenue,
+    i0.Value<int>? rowid,
+  }) {
+    return i1.QuarterlyReportCompanion(
+      symbol: symbol ?? this.symbol,
+      year: year ?? this.year,
+      quarter: quarter ?? this.quarter,
+      eps: eps ?? this.eps,
+      netIncome: netIncome ?? this.netIncome,
+      revenue: revenue ?? this.revenue,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, i0.Expression> toColumns(bool nullToAbsent) {
+    final map = <String, i0.Expression>{};
+    if (symbol.present) {
+      map['symbol'] = i0.Variable<String>(symbol.value);
+    }
+    if (year.present) {
+      map['year'] = i0.Variable<int>(year.value);
+    }
+    if (quarter.present) {
+      map['quarter'] = i0.Variable<int>(quarter.value);
+    }
+    if (eps.present) {
+      map['eps'] = i0.Variable<double>(eps.value);
+    }
+    if (netIncome.present) {
+      map['net_income'] = i0.Variable<double>(netIncome.value);
+    }
+    if (revenue.present) {
+      map['revenue'] = i0.Variable<double>(revenue.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = i0.Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('QuarterlyReportCompanion(')
+          ..write('symbol: $symbol, ')
+          ..write('year: $year, ')
+          ..write('quarter: $quarter, ')
+          ..write('eps: $eps, ')
+          ..write('netIncome: $netIncome, ')
+          ..write('revenue: $revenue, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
