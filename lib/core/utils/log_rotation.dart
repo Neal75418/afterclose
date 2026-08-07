@@ -12,7 +12,9 @@ import 'dart:io';
 /// 握著同一個 file descriptor,改名會讓後續輸出繼續寫進已改名的舊檔
 /// (寫到沒人看的地方),就地截斷則沒有這個問題。
 abstract final class LogRotation {
-  /// 預設上限 1 MB:心跳 55 行/日 × ~40 bytes ≈ 2 KB/日,足夠留超過一年
+  /// 預設上限 1 MB。實測(2026-08-08 三次審查 F-7):每次執行約 100 bytes
+  /// ——心跳行之外還有 `dart run` 自己吐的 `Running build hooks...`(44
+  /// bytes 且無換行)。55 次/日 ≈ 5.5 KB/日 → 1 MB 約留 **190 天**。
   static const int defaultMaxBytes = 1024 * 1024;
 
   /// 超過 [maxBytes] 時就地截斷,保留最新的約一半內容。

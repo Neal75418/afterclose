@@ -13,8 +13,10 @@ UID_NUM="$(id -u)"
 
 # 路徑含空白或 shell 特殊字元會產生「plutil 過但 job 永遠死」的假成功
 # (2026-08-08 二次審查 F7):寧可拒裝也不要裝一個假的
+# `|` 是下方 sed 的分隔符、`;` 會在 plist 的 zsh -c 字串裡變成命令分隔符
+# (2026-08-08 三次審查 F-4:前一版都沒擋)
 case "$REPO$DART$HOME" in
-  *[\ \'\"\&\<\>\$\`]*)
+  *[\ \'\"\&\<\>\$\`\|\;\(\)\*]*)
     echo "❌ 路徑含空白或特殊字元,plist 產生器不支援:" >&2
     echo "   REPO=$REPO" >&2
     echo "   DART=$DART" >&2
@@ -36,6 +38,7 @@ for job in daily intraday; do
       -e "s|/Users/nealchen/Library|$HOME/Library|g" "$src" > "$tmp"
   # 先驗證再落地:直接寫 dst 會在驗證失敗時留下半殘的 plist
   plutil -lint "$tmp" > /dev/null
+  chmod 644 "$tmp"          # mktemp 產生 0600,保持與手裝時一致
   mv "$tmp" "$dst"
   launchctl bootout "gui/$UID_NUM/com.neo.daredevil.$job" 2>/dev/null || true
   launchctl bootstrap "gui/$UID_NUM" "$dst"
@@ -43,8 +46,19 @@ for job in daily intraday; do
 done
 
 echo
-echo "殘留檢查(應無輸出):"
-grep -l "/Users/nealchen" "$HOME/Library/LaunchAgents/com.neo.daredevil."*.plist 2>/dev/null \
-  | grep -v "^$HOME" || true
+# 殘留檢查:找「不屬於本機 HOME 的硬編碼家目錄」。
+# (2026-08-08 三次審查 F-3:前一版用 `grep -l | grep -v "^$HOME"`,而
+#  grep -l 印的是**檔名**、必然位於 $HOME 底下,所以永遠被濾光——一個
+#  標著「應無輸出」卻結構上不可能有輸出的檢查,正是它要防的假成功。)
+residual=0
+for f in "$HOME/Library/LaunchAgents/com.neo.daredevil."*.plist; do
+  # 抓 /Users/<某人> 但不是自己的 HOME
+  if grep -oE '/Users/[A-Za-z0-9._-]+' "$f" 2>/dev/null | grep -v "^$HOME\$" | grep -q .; then
+    echo "⚠️  $f 仍含其他使用者的硬編碼路徑:"
+    grep -oE '/Users/[A-Za-z0-9._-]+[^<"]*' "$f" | grep -v "^$HOME" | sort -u | sed 's/^/     /'
+    residual=1
+  fi
+done
+[ "$residual" -eq 0 ] && echo "✅ 殘留檢查通過(無其他使用者的路徑)"
 echo "驗證:launchctl print gui/$UID_NUM/com.neo.daredevil.intraday | grep -E 'runs|exit'"
 echo "日誌:$HOME/Library/Logs/daredevil-*.log"

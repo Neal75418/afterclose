@@ -33,7 +33,7 @@ Future<void> main(List<String> args) async {
   // 心跳:每輪都留一行帶時戳的紀錄。原本非交易時段靜默 exit,結果
   // 「正常 no-op」與「dart 啟動就炸」在日誌上長得一模一樣——那正是本
   // 專案自動更新靜默斷 13 天的形狀(2026-08-08 端到端驗證指出)。
-  // 55 次/日 × ~40 bytes ≈ 2 KB/日,配 newsyslog 輪替可接受。
+  // 55 次/日;輪替由 LogRotation 自己做(見檔首 import)。
   void beat(String state) => print(
     '[intraday_alert] ${now.toIso8601String().substring(0, 16)} $state',
   );

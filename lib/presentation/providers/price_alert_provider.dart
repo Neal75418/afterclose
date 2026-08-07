@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:drift/drift.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -485,12 +486,14 @@ class PriceAlertNotifier extends Notifier<PriceAlertState> {
       final triggeredIds = <int>{};
       final now = DateTime.now();
 
-      // 在資料庫標記已觸發的警示
+      // 只保留「本次真的搶到」的——呼叫端(today_provider)會為回傳清單
+      // 的每一筆發通知,回傳未過濾的等於沒去重(2026-08-08 三次審查 F-1:
+      // 上一輪只跳過 triggeredIds.add,卻仍回傳原清單,宣稱修好但沒修)。
+      final claimedAlerts = <PriceAlertEntry>[];
       for (final alert in triggered) {
-        // 與盤中路徑共用同一把原子鎖:否則 daily 這條無條件 UPDATE 會
-        // 蓋掉盤中剛認領的觸發並重複通知一次(2026-08-08 二次審查 F4)
         final claimed = await _db.claimAlertTrigger(alert.id, now: now);
         if (!claimed) continue;
+        claimedAlerts.add(alert);
         triggeredIds.add(alert.id);
       }
 
@@ -526,7 +529,12 @@ class PriceAlertNotifier extends Notifier<PriceAlertState> {
         }).toList(),
       );
 
-      return triggered;
+      // F-2:沒搶到的那些,DB 已被別的 process 標成觸發,但本地 state
+      // 仍顯示「啟用中」——重載一次讓清單與 DB 一致。
+      if (claimedAlerts.length != triggered.length) {
+        unawaited(loadAlerts());
+      }
+      return claimedAlerts;
     } catch (e) {
       AppLogger.warning('PriceAlertNotifier', '檢查警示觸發失敗', e);
       state = state.copyWith(error: ErrorDisplay.message(e));
