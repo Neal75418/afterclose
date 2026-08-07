@@ -8,7 +8,7 @@
 
 **Daredevil** — 本地優先盤後台股掃描 App（Flutter / Dart 3）。所有運算在裝置端完成，無雲端依賴。
 
-> **命名邊界（2026-08-07 由 AfterClose 更名）**：對外名稱、repo、Dart package 皆為 `daredevil`；但 **bundle ID 仍是 `com.neo.afterclose`、DB 檔名仍是 `afterclose.sqlite`** —— 它們決定 macOS 容器路徑（`~/Library/Containers/com.neo.afterclose/Data/Documents/`），改動等同 App 換家、既有資料庫（350 萬列價格）會看似清空。**除非做容器遷移，否則不要動這兩個字串**；文件裡出現它們是實體事實，不是漏改。
+> **命名邊界（2026-08-07 由 AfterClose 更名）**：對外名稱、repo、Dart package 皆為 `daredevil`；但 **bundle ID 仍是 `com.neo.afterclose`、DB 檔名仍是 `afterclose.sqlite`** —— 它們決定 macOS 容器路徑（`~/Library/Containers/com.neo.afterclose/Data/Documents/`），改動等同 App 換家、既有資料庫（約 58.7 萬列價格，2026-08-07 實測）會看似清空。**除非做容器遷移，否則不要動這兩個字串**；文件裡出現它們是實體事實，不是漏改。
 
 ```mermaid
 %%{init: {'theme': 'dark'}}%%
