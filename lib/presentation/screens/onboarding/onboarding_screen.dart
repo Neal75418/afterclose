@@ -10,7 +10,7 @@ import 'package:daredevil/core/theme/semantic_colors.dart';
 
 /// 首次使用引導頁面
 ///
-/// 3 步驟介紹 AfterClose 核心功能，完成後標記已完成並導向主頁面。
+/// 3 步驟介紹 Daredevil 核心功能，完成後標記已完成並導向主頁面。
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
 

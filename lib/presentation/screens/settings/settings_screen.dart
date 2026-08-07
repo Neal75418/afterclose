@@ -503,7 +503,7 @@ class SettingsScreen extends ConsumerWidget {
         Text('settings.aboutDescription'.tr()),
         const SizedBox(height: DesignTokens.spacing16),
         Text(
-          '© ${DateTime.now().year} AfterClose',
+          '© ${DateTime.now().year} Daredevil',
           style: Theme.of(context).textTheme.bodySmall,
         ),
       ],

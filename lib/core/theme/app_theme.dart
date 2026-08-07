@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:daredevil/core/theme/design_tokens.dart';
 import 'package:daredevil/core/theme/semantic_colors.dart';
 
-/// AfterClose 應用程式主題系統
+/// Daredevil 應用程式主題系統
 ///
 /// 設計理念：
 /// - 深色模式優先，搭配鮮豔強調色

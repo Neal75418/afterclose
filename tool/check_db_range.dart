@@ -3,7 +3,7 @@
 // CLI tool — print 為預期輸出，關閉 avoid_print lint。
 // ignore_for_file: avoid_print
 //
-// 盤點 AfterClose 本機 Drift SQLite 的資料現況。
+// 盤點 Daredevil 本機 Drift SQLite 的資料現況。
 //
 // 用途：Scoring Overhaul Phase 0 盤點階段，確認：
 //   1. 原始市場資料（daily_price 等）是否有 ≥ 2 年歷史

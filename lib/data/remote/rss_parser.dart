@@ -24,7 +24,7 @@ class RssParser {
       BaseOptions(
         connectTimeout: const Duration(seconds: ApiConfig.rssConnectTimeoutSec),
         receiveTimeout: const Duration(seconds: ApiConfig.rssReceiveTimeoutSec),
-        headers: {'User-Agent': 'AfterClose/1.0'},
+        headers: {'User-Agent': 'Daredevil/1.0'},
       ),
     );
   }

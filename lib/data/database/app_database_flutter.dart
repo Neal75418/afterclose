@@ -17,6 +17,9 @@ import 'package:drift_flutter/drift_flutter.dart';
 /// 統一管理跨 isolate 連線、預設啟 WAL。
 QueryExecutor openDriftFlutterConnection() {
   return driftDatabase(
+    // 🚫 命名邊界(2026-08-07 更名 Daredevil 時保留):此字串即 DB 檔名
+    // afterclose.sqlite,改動 = App 指向新的空資料庫、既有資料看似消失。
+    // 要改必須配套做檔案遷移,別在改名時順手動它。
     name: 'afterclose',
     native: DriftNativeOptions(
       // 前景 (Riverpod container) 與背景 (WorkManager isolate) 都

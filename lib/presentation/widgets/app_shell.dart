@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:daredevil/core/theme/design_tokens.dart';
 import 'package:daredevil/core/utils/responsive_helper.dart';
 import 'package:daredevil/presentation/providers/connectivity_provider.dart';
+import 'package:daredevil/presentation/widgets/brand_mark.dart';
 
 /// 帶有響應式導覽的外殼 Widget
 ///
@@ -94,19 +95,18 @@ class _AppShellState extends ConsumerState<AppShell> {
                 ? NavigationRailLabelType.none
                 : NavigationRailLabelType.selected,
             leading: isExtended
-                ? Padding(
-                    padding: const EdgeInsets.symmetric(
+                ? const Padding(
+                    padding: EdgeInsets.symmetric(
                       vertical: DesignTokens.spacing16,
                     ),
-                    child: Text(
-                      'AfterClose',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.primary,
-                      ),
-                    ),
+                    child: BrandMark(showWordmark: true),
                   )
-                : const SizedBox(height: DesignTokens.spacing16),
+                : const Padding(
+                    padding: EdgeInsets.symmetric(
+                      vertical: DesignTokens.spacing16,
+                    ),
+                    child: BrandMark(size: 24),
+                  ),
             destinations: _buildRailDestinations(),
           ),
           VerticalDivider(

@@ -3,13 +3,13 @@
   "version": "2026-07-13",
   "generated_at": "2026-07-13T00:00:00.000Z",
   "short": {
-    "url": "https://cdn.jsdelivr.net/gh/Neal75418/afterclose@main/assets/rule_scores_calibrated_short.json",
+    "url": "https://cdn.jsdelivr.net/gh/Neal75418/daredevil@main/assets/rule_scores_calibrated_short.json",
     "sha256": "5c551bc5442ed19c7395ab7ea0ce3ed4b219d881a80340b01a82036574069221",
     "rule_count": 40,
     "filename": "rule_scores_calibrated_short.json"
   },
   "long": {
-    "url": "https://cdn.jsdelivr.net/gh/Neal75418/afterclose@main/assets/rule_scores_calibrated_long.json",
+    "url": "https://cdn.jsdelivr.net/gh/Neal75418/daredevil@main/assets/rule_scores_calibrated_long.json",
     "sha256": "7302d8c35053314c17279349e3085225d0f491a7cb5ac4b86fbea7e7c87e92f6",
     "rule_count": 40,
     "filename": "rule_scores_calibrated_long.json"

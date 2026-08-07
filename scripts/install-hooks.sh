@@ -1,5 +1,5 @@
 #!/bin/bash
-# Install git hooks for AfterClose development
+# Install git hooks for Daredevil development
 # Run once after cloning: ./scripts/install-hooks.sh
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"

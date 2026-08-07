@@ -166,7 +166,7 @@ Future<void> _runApp(ProviderContainer container) async {
       fallbackLocale: const Locale('zh', 'TW'),
       child: UncontrolledProviderScope(
         container: container,
-        child: const AfterCloseApp(),
+        child: const DaredevilApp(),
       ),
     ),
   );
@@ -229,14 +229,14 @@ Future<void> _initializeFinMindToken(ProviderContainer container) async {
   }
 }
 
-class AfterCloseApp extends ConsumerStatefulWidget {
-  const AfterCloseApp({super.key});
+class DaredevilApp extends ConsumerStatefulWidget {
+  const DaredevilApp({super.key});
 
   @override
-  ConsumerState<AfterCloseApp> createState() => _AfterCloseAppState();
+  ConsumerState<DaredevilApp> createState() => _DaredevilAppState();
 }
 
-class _AfterCloseAppState extends ConsumerState<AfterCloseApp>
+class _DaredevilAppState extends ConsumerState<DaredevilApp>
     with WidgetsBindingObserver {
   DateTime? _lastPausedAt;
 
@@ -278,7 +278,7 @@ class _AfterCloseAppState extends ConsumerState<AfterCloseApp>
     final themeMode = ref.watch(themeModeProvider);
 
     return MaterialApp.router(
-      title: 'AfterClose',
+      title: 'Daredevil',
       onGenerateTitle: (context) => 'app.name'.tr(),
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,

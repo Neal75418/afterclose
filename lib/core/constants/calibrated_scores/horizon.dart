@@ -1,6 +1,6 @@
 /// 評分時間範圍（Stage 5a runtime loader）
 ///
-/// AfterClose 支援雙 horizon 評分：
+/// Daredevil 支援雙 horizon 評分：
 /// - [short] 短線（5 個交易日），適合盤中波段
 /// - [long] 長線（60 個交易日），適合季度趨勢
 ///

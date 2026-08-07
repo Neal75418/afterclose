@@ -762,7 +762,7 @@ String computeJsonSha256(String jsonStr) {
 /// Client 端的 `CalibrationUpdater` 會 fetch `${_manifestBaseUrl}/calibration_manifest.json`。
 /// 這個常數只影響寫進 manifest 的 JSON URL 欄位本身，不影響 manifest 檔案的位置。
 const _manifestBaseUrl =
-    'https://cdn.jsdelivr.net/gh/Neal75418/afterclose@main/assets';
+    'https://cdn.jsdelivr.net/gh/Neal75418/daredevil@main/assets';
 
 /// Manifest schema version — 若未來 client 新增強制欄位會遞增
 const _manifestSchemaVersion = 1;

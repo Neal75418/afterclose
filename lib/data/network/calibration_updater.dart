@@ -38,7 +38,7 @@ import 'package:daredevil/data/network/calibration_fetch_result.dart';
 /// The `@main` suffix tracks the default branch. Once a commit lands in
 /// `main`, jsDelivr's CDN pulls the fresh files within 1-3 minutes.
 const String defaultCalibrationManifestUrl =
-    'https://cdn.jsdelivr.net/gh/Neal75418/afterclose@main/assets/calibration_manifest.json';
+    'https://cdn.jsdelivr.net/gh/Neal75418/daredevil@main/assets/calibration_manifest.json';
 
 /// Default interval between OTA checks. Design Q2 = C (non-blocking +
 /// 24h gate). See design doc §2 for rationale.

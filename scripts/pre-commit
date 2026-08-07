@@ -1,5 +1,5 @@
 #!/bin/bash
-# Pre-commit hook for AfterClose
+# Pre-commit hook for Daredevil
 # - Only formats staged .dart files (auto-fix + re-stage)
 # - Only analyzes lib/ (skip test/ info-level noise)
 

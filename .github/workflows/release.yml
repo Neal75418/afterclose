@@ -169,10 +169,10 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v3
         with:
-          name: AfterClose ${{ steps.version.outputs.VERSION }}
+          name: Daredevil ${{ steps.version.outputs.VERSION }}
           generate_release_notes: true
           body: |
-            ## AfterClose ${{ steps.version.outputs.VERSION }}
+            ## Daredevil ${{ steps.version.outputs.VERSION }}
 
             ### Downloads
             - **Android APK**: 直接安裝 (需開啟未知來源)
