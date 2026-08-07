@@ -82,7 +82,9 @@ class IntradayMonitorNotifier extends Notifier<DateTime?> {
       final notifier = ref.read(notificationProvider.notifier);
       await notifier.initialize();
       if (!ref.read(notificationProvider).hasPermission) {
-        AppLogger.debug('IntradayMonitor', '無通知權限,本輪不檢查(避免燒掉提醒)');
+        // warning 而非 debug:這是「功能整個停擺」的狀態,不能只在
+        // debug build 看得到(2026-08-08 二次審查)
+        AppLogger.warning('IntradayMonitor', '無通知權限,盤中提醒全部跳過——使用者不會收到任何通知');
         return;
       }
 

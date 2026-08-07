@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:daredevil/core/utils/number_formatter.dart';
 import 'package:daredevil/data/database/app_database.dart';
 import 'package:daredevil/presentation/widgets/alert_type_icon.dart';
+import 'package:daredevil/presentation/providers/notification_provider.dart';
 import 'package:daredevil/presentation/providers/price_alert_provider.dart';
 import 'package:daredevil/presentation/providers/stock_detail_provider.dart';
 import 'package:daredevil/presentation/widgets/common/drag_handle.dart';
@@ -145,6 +146,11 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
     AlertTarget target,
   ) async {
     final label = 'alert.quickSet.${kind.name}'.tr();
+    // 🚨 建立時就要拿到權限(2026-08-08 二次審查):盤中輪詢的前置守門
+    // 會在無權限時整輪跳過,若這裡不請求,使用者一輩子不會被通知,而且
+    // 完全沒有徵兆。既有的 price_alert_dialog 本來就有這一步,個股頁
+    // 的兩條路徑都漏了。
+    await ref.read(notificationProvider.notifier).ensurePermission();
     final ok = await ref
         .read(priceAlertProvider.notifier)
         .createAlert(
@@ -645,6 +651,9 @@ class _AddAlertSheetState extends ConsumerState<_AddAlertSheet> {
     }
 
     setState(() => _isCreating = true);
+
+    // 同快捷鈕:建立時就要拿到權限,否則盤中輪詢會整輪跳過且無徵兆
+    await ref.read(notificationProvider.notifier).ensurePermission();
 
     final success = await ref
         .read(priceAlertProvider.notifier)
