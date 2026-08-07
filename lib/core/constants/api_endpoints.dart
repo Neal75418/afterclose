@@ -69,6 +69,15 @@ abstract final class ApiEndpoints {
   static String twseQuarterlyReport(String suffix) =>
       '$twseOpenDataBaseUrl/v1/opendata/t187ap06_L_$suffix';
 
+  /// 盤中即時報價(MIS,2026-08-08)。ex_ch 以 `tse_2330.tw|otc_6538.tw`
+  /// 形式串接,前綴依 stock_master.market 決定(**別手猜市場別**)。
+  /// 單次請求上限約 35 檔,超過要分批。
+  static const String twseMisIntraday =
+      'https://mis.twse.com.tw/stock/api/getStockInfo.jsp';
+
+  /// 單次 MIS 請求的最大檔數
+  static const int misBatchSize = 35;
+
   /// 大盤各類指數（每日收盤後更新）
   static const String twseMarketIndex = '/rwd/zh/afterTrading/MI_INDEX';
 

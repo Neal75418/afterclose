@@ -17,6 +17,7 @@ import 'package:daredevil/core/constants/reason_type.dart';
 import 'package:daredevil/core/services/notification_service.dart';
 import 'package:daredevil/core/theme/app_theme.dart';
 import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/presentation/providers/intraday_monitor_provider.dart';
 import 'package:daredevil/presentation/providers/providers.dart';
 import 'package:daredevil/presentation/providers/settings_provider.dart';
 import 'package:daredevil/presentation/providers/today_provider.dart';
@@ -244,6 +245,8 @@ class _DaredevilAppState extends ConsumerState<DaredevilApp>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // 盤中提醒輪詢:僅前景執行(iOS/macOS 不保證背景常駐,見 provider 註解)
+    ref.read(intradayMonitorProvider.notifier).start();
   }
 
   @override
@@ -256,6 +259,7 @@ class _DaredevilAppState extends ConsumerState<DaredevilApp>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused) {
       _lastPausedAt = DateTime.now();
+      ref.read(intradayMonitorProvider.notifier).stop();
       // 配額狀態落盤(2026-08-01 複審):tracker 每 10 次呼叫才自動存,
       // 退背景/被殺前 flush 掉尾端記帳——遺失=低估=放行更多=402 方向
       unawaited(
@@ -270,6 +274,7 @@ class _DaredevilAppState extends ConsumerState<DaredevilApp>
         ref.read(todayProvider.notifier).loadData();
       }
       _lastPausedAt = null;
+      ref.read(intradayMonitorProvider.notifier).start();
     }
   }
 
