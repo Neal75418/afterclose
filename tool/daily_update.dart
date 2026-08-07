@@ -17,7 +17,7 @@
 //   # 一次性手動跑（從 repo root 執行讓 assets/ 找得到）：
 //   dart run tool/daily_update.dart
 //
-//   # launchd 自動排程（com.neo.afterclose.daily.plist）每天 15:30
+//   # launchd 自動排程（com.neo.daredevil.daily.plist）每天 15:30
 //   # 跑同一條指令。
 //
 // ## 環境變數

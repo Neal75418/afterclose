@@ -71,7 +71,7 @@ REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$REPO_ROOT"
 
 if [ ! -f "pubspec.yaml" ]; then
-  echo "❌ 找不到 pubspec.yaml — scripts/calibrate.sh 必須從 AfterClose repo root 執行"
+  echo "❌ 找不到 pubspec.yaml — scripts/calibrate.sh 必須從 Daredevil repo root 執行"
   exit 1
 fi
 

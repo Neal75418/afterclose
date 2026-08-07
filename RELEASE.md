@@ -48,8 +48,8 @@ flutter build ipa --release --obfuscate --split-debug-info=build/debug-info --da
 
 ```bash
 cd android
-keytool -genkey -v -keystore afterclose-release.jks \
-  -keyalg RSA -keysize 2048 -validity 10000 -alias afterclose
+keytool -genkey -v -keystore daredevil-release.jks \
+  -keyalg RSA -keysize 2048 -validity 10000 -alias daredevil
 ```
 
 **2. 設定 key.properties**

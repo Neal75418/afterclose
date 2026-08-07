@@ -12,7 +12,7 @@
 
 ### Design Guidelines
 
-**AfterClose App Icon Design:**
+**Daredevil App Icon Design:**
 - Background: Gradient from #6C63FF (purple) to #4C46B6 (darker purple)
 - Foreground: White/Light colored stock chart icon
 - Shape: Rounded square (following iOS/Android guidelines)
@@ -20,7 +20,7 @@
 **Visual Elements:**
 - A simplified candlestick or line chart
 - Arrow pointing upward (representing growth/analysis)
-- "AC" monogram optional
+- radar-arc mark (see lib/presentation/widgets/brand_mark.dart)
 
 **Color Palette:**
 - Primary: #6C63FF (Purple)
