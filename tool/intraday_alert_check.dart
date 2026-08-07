@@ -23,8 +23,16 @@ Future<void> main(List<String> args) async {
   final now = TaiwanTime.now();
   final force = args.contains('--force');
 
+  // 心跳:每輪都留一行帶時戳的紀錄。原本非交易時段靜默 exit,結果
+  // 「正常 no-op」與「dart 啟動就炸」在日誌上長得一模一樣——那正是本
+  // 專案自動更新靜默斷 13 天的形狀(2026-08-08 端到端驗證指出)。
+  // 55 次/日 × ~40 bytes ≈ 2 KB/日,配 newsyslog 輪替可接受。
+  void beat(String state) => print(
+    '[intraday_alert] ${now.toIso8601String().substring(0, 16)} $state',
+  );
+
   if (!force && !IntradayPollSchedule.isMarketHours(now)) {
-    // 非交易時段是常態(一天 288 次喚醒裡約 234 次落在這裡),不印噪音
+    beat('skip(非交易時段)');
     exit(0);
   }
 
@@ -73,12 +81,13 @@ Future<void> main(List<String> args) async {
       );
     }
     if (result.symbolsWanted > 0 && result.quotesFetched == 0) {
+      beat('FAIL(報價全滅)');
       // 報價全滅 ≠ 沒到價:這是故障,要能從 exit code 看出來
       stderr.writeln('[intraday_alert] 報價全數失敗,本輪判定不可信');
       exit(1);
     }
     if (fired.isEmpty) {
-      if (force) print('[intraday_alert] 本輪無觸價');
+      beat('ok(無觸價,報價 ${result.quotesFetched}/${result.symbolsWanted})');
       exit(0);
     }
 
@@ -96,11 +105,12 @@ Future<void> main(List<String> args) async {
       );
       if (ok) notified++;
     }
-    print('[intraday_alert] 觸價 ${fired.length} 筆,已通知 $notified 筆');
+    beat('觸價 ${fired.length} 筆,已通知 $notified 筆');
     exit(notified == fired.length ? 0 : 1);
   } catch (e, s) {
     // AppLogger 在 `dart run` 下是 no-op(輸出包在 assert 內、asserts
     // 未啟用)——堆疊必須自己印,否則故障現場只剩一行訊息
+    beat('FAILED');
     stderr.writeln('[intraday_alert] FAILED: $e');
     stderr.writeln(s);
     exit(1);
