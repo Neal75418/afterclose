@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import 'package:daredevil/core/theme/design_tokens.dart';
+import 'package:daredevil/data/database/app_database.dart';
 import 'package:daredevil/domain/services/alert/alert_target_calculator.dart';
 
 /// 快捷提醒鈕(2026-08-07)。
@@ -23,6 +24,19 @@ class AlertQuickSet extends StatelessWidget {
   final List<Ohlc> bars;
 
   final void Function(AlertKind kind, AlertTarget target) onSelected;
+
+  /// DB 價格列 → 計算用單位。**明確依日期升冪排序**,不假設 DAO 的
+  /// 回傳方向(2026-08-07 實機 bug:接線處誤以為是降冪而多 reversed 一次,
+  /// 均線改用最舊的幾根算出來——緯創現價 183.5 卻顯示 5MA 122.8、
+  /// 「20 日高」128.0 低於現價)。OHLC 任一缺值或收盤 ≤0 的列略過(停牌)。
+  static List<Ohlc> toOhlc(List<DailyPriceEntry> history) {
+    final sorted = [...history]..sort((a, b) => a.date.compareTo(b.date));
+    return [
+      for (final p in sorted)
+        if (p.high != null && p.low != null && p.close != null && p.close! > 0)
+          Ohlc(high: p.high!, low: p.low!, close: p.close!),
+    ];
+  }
 
   /// 顯示順序:由緊到鬆的支撐,再到突破,守門價殿後(它是風控不是機會)
   static const _order = [

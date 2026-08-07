@@ -80,4 +80,30 @@ void main() {
     expect(t[AlertKind.breakAboveMa20]!.alertTypeValue, 'ABOVE');
     expect(t[AlertKind.stopGate]!.alertTypeValue, 'BELOW');
   });
+
+  test('🚨 順序契約:最後一筆必須是最新——反了會用到最舊的幾根算均線', () {
+    // 2026-08-07 實機 bug:priceHistory 是升冪(最舊在前),接線處卻多
+    // reversed 一次 → 5MA 用最舊 5 根算,緯創現價 183.5 卻顯示 122.8、
+    // 「20 日高」128.0 低於現價(數學上不可能)。此測試鎖住方向。
+    final ascending = bars(30); // close 100..129,最後一筆最新
+    final t = AlertTargetCalculator.compute(ascending);
+    final latestClose = ascending.last.close; // 129
+
+    expect(
+      t[AlertKind.breakBelowMa5]!.price,
+      greaterThan(latestClose - 5),
+      reason: '5MA 應貼近最新價,不是幾十元外的舊價',
+    );
+    expect(
+      t[AlertKind.breakAbove20DayHigh]!.price,
+      greaterThanOrEqualTo(latestClose),
+      reason: '20 日高不可能低於最新收盤',
+    );
+    expect(t[AlertKind.stopGate]!.price, lessThan(latestClose));
+    expect(
+      t[AlertKind.stopGate]!.price,
+      greaterThan(latestClose * 0.7),
+      reason: '守門價應在最新價下方合理範圍,不是舊價區',
+    );
+  });
 }

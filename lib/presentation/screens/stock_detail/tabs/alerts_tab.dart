@@ -67,7 +67,7 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
           // 快捷提醒(2026-08-07):價位 app 算好,使用者點一下就掛——
           // 主動權仍在使用者,app 不自動決定要盯什麼
           AlertQuickSet(
-            bars: _toOhlc(priceHistory),
+            bars: AlertQuickSet.toOhlc(priceHistory),
             onSelected: (kind, target) =>
                 _createQuickAlert(context, ref, kind, target),
           ),
@@ -135,18 +135,6 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
         ],
       ),
     );
-  }
-
-  /// 價格歷史 → 計算用的最小單位。DB 依日期**降冪**回傳(最新在前),
-  /// 計算器要求升冪,故 reversed;OHLC 任一缺值的列直接略過(停牌等)。
-  List<Ohlc> _toOhlc(List<DailyPriceEntry> history) {
-    final out = <Ohlc>[];
-    for (final p in history.reversed) {
-      final h = p.high, l = p.low, c = p.close;
-      if (h == null || l == null || c == null || c <= 0) continue;
-      out.add(Ohlc(high: h, low: l, close: c));
-    }
-    return out;
   }
 
   Future<void> _createQuickAlert(

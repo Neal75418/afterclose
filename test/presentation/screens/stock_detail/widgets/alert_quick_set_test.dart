@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:daredevil/data/database/app_database.dart';
 import 'package:daredevil/domain/services/alert/alert_target_calculator.dart';
 import 'package:daredevil/presentation/screens/stock_detail/widgets/alert_quick_set.dart';
 
@@ -70,5 +71,53 @@ void main() {
     );
     expect(find.byType(ActionChip), findsNothing);
     expect(tester.takeException(), isNull);
+  });
+
+  group('toOhlc 排序契約(2026-08-07 實機 bug 迴歸鎖)', () {
+    DailyPriceEntry entry(DateTime d, double c) => DailyPriceEntry(
+      symbol: '3231',
+      date: d,
+      open: c,
+      high: c + 2,
+      low: c - 2,
+      close: c,
+      volume: 1000,
+    );
+
+    test('🚨 不論輸入順序,輸出恆為升冪(最後一筆最新)', () {
+      final old = entry(DateTime(2026, 1, 2), 120);
+      final mid = entry(DateTime(2026, 5, 2), 150);
+      final recent = entry(DateTime(2026, 8, 7), 183.5);
+
+      for (final input in [
+        [old, mid, recent], // 升冪(DAO 實際行為)
+        [recent, mid, old], // 降冪
+        [mid, recent, old], // 亂序
+      ]) {
+        final out = AlertQuickSet.toOhlc(input);
+        expect(
+          out.map((o) => o.close).toList(),
+          [120, 150, 183.5],
+          reason: '輸入 \${input.map((e) => e.close).toList()} 應一律排成升冪',
+        );
+      }
+    });
+
+    test('OHLC 缺值或收盤 ≤0 的列略過(停牌)', () {
+      final ok = entry(DateTime(2026, 8, 7), 183.5);
+      final zero = entry(DateTime(2026, 8, 6), 0);
+      final nullHigh = DailyPriceEntry(
+        symbol: '3231',
+        date: DateTime(2026, 8, 5),
+        open: 180,
+        high: null,
+        low: 178,
+        close: 179,
+        volume: 1000,
+      );
+      final out = AlertQuickSet.toOhlc([ok, zero, nullHigh]);
+      expect(out.length, 1);
+      expect(out.single.close, 183.5);
+    });
   });
 }
