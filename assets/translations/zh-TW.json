@@ -944,7 +944,8 @@
       "breakAbove20DayHigh": "突破20日高",
       "stopGate": "跌破守門價",
       "created": "已設定提醒:{label} {price}",
-      "alreadyMet": "已成立"
+      "alreadyMet": "已成立",
+      "alreadySet": "已設定"
     }
   },
   "notification": {

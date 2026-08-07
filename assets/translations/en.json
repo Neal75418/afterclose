@@ -944,7 +944,8 @@
       "breakAbove20DayHigh": "Above 20d high",
       "stopGate": "Below stop gate",
       "created": "Alert set: {label} {price}",
-      "alreadyMet": "already met"
+      "alreadyMet": "already met",
+      "alreadySet": "already set"
     }
   },
   "notification": {

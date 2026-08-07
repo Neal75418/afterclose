@@ -19,6 +19,7 @@ class AlertQuickSet extends StatelessWidget {
     required this.bars,
     required this.onSelected,
     this.currentPrice,
+    this.existingTargets = const {},
   });
 
   /// 日線(依日期升冪,最後一筆最新)
@@ -30,6 +31,10 @@ class AlertQuickSet extends StatelessWidget {
   /// 就結束,是純噪音(2026-08-07 實機:緯創 183.5 已在 5MA 189.4 之下、
   /// 月線 166.3 之上,兩顆按鈕形同陷阱)。null=不臆測,全部可點。
   final double? currentPrice;
+
+  /// 本檔已存在的提醒目標價。命中者停用——同一顆點兩次會建出兩筆一模
+  /// 一樣的提醒(2026-08-08 實機重現),而兩筆都會各叫一次。
+  final Set<double> existingTargets;
 
   /// DB 價格列 → 計算用單位。**明確依日期升冪排序**,不假設 DAO 的
   /// 回傳方向(2026-08-07 實機 bug:接線處誤以為是降冪而多 reversed 一次,
@@ -55,6 +60,10 @@ class AlertQuickSet extends StatelessWidget {
   ];
 
   /// 條件是否已成立(向上型:現價已在目標之上;向下型:已在其下)
+  /// 已有同價位的提醒?浮點比較用 0.005 容差(顯示精度是兩位小數)
+  bool _alreadySet(AlertTarget t) =>
+      existingTargets.any((e) => (e - t.price).abs() < 0.005);
+
   bool _isAlreadyMet(AlertTarget t) {
     final p = currentPrice;
     if (p == null) return false;
@@ -86,9 +95,10 @@ class AlertQuickSet extends StatelessWidget {
                 Builder(
                   builder: (context) {
                     final met = _isAlreadyMet(t);
+                    final dup = _alreadySet(t);
                     return ActionChip(
                       avatar: Icon(
-                        met
+                        (met || dup)
                             ? Icons.check_circle_outline
                             : (t.isUpward
                                   ? Icons.trending_up
@@ -97,7 +107,11 @@ class AlertQuickSet extends StatelessWidget {
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
                       label: Text(
-                        met
+                        dup
+                            ? '${'alert.quickSet.${kind.name}'.tr()} '
+                                  '${t.price.toStringAsFixed(2)} · '
+                                  '${'alert.quickSet.alreadySet'.tr()}'
+                            : met
                             ? '${'alert.quickSet.${kind.name}'.tr()} '
                                   '${t.price.toStringAsFixed(2)} · '
                                   '${'alert.quickSet.alreadyMet'.tr()}'
@@ -106,7 +120,9 @@ class AlertQuickSet extends StatelessWidget {
                       ),
                       // 條件已成立 → 停用。標籤仍顯示,讓這排按鈕同時
                       // 是「現價相對各條線在哪」的狀態讀數。
-                      onPressed: met ? null : () => onSelected(kind, t),
+                      onPressed: (met || dup)
+                          ? null
+                          : () => onSelected(kind, t),
                     );
                   },
                 ),

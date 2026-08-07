@@ -70,6 +70,11 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
           AlertQuickSet(
             bars: AlertQuickSet.toOhlc(priceHistory),
             currentPrice: currentPrice,
+            // 已存在的目標價 → 該種類停用,避免建出一模一樣的第二筆
+            existingTargets: {
+              for (final a in stockAlerts)
+                if (a.isActive && a.triggeredAt == null) a.targetValue,
+            },
             onSelected: (kind, target) =>
                 _createQuickAlert(context, ref, kind, target),
           ),

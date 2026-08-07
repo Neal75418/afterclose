@@ -161,4 +161,40 @@ void main() {
       expect(chips.every((c) => c.onPressed != null), isTrue);
     });
   });
+
+  group('🚨 已存在同種提醒 → 停用(2026-08-08 實機:同一顆點兩次建出兩筆)', () {
+    testWidgets('existingTargets 命中的種類不可再點', (tester) async {
+      widen(tester);
+      await tester.pumpWidget(
+        buildTestApp(
+          AlertQuickSet(
+            bars: bars(30),
+            currentPrice: null, // 不給現價,單測 existingTargets 的效果
+            existingTargets: {127.0}, // 5MA
+            onSelected: (_, __) {},
+          ),
+        ),
+      );
+      final chips = tester.widgetList<ActionChip>(find.byType(ActionChip));
+      final disabled = chips.where((c) => c.onPressed == null).length;
+      expect(disabled, greaterThanOrEqualTo(1), reason: '5MA 已存在,不可重複建立');
+    });
+
+    testWidgets('existingTargets 為空 → 不受影響', (tester) async {
+      widen(tester);
+      await tester.pumpWidget(
+        buildTestApp(
+          AlertQuickSet(
+            bars: bars(30),
+            // 不給現價:避免與「已成立」邏輯糾纏,單測 existingTargets
+            currentPrice: null,
+            existingTargets: const <double>{},
+            onSelected: (_, __) {},
+          ),
+        ),
+      );
+      final chips = tester.widgetList<ActionChip>(find.byType(ActionChip));
+      expect(chips.every((c) => c.onPressed != null), isTrue);
+    });
+  });
 }
