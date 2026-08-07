@@ -37,6 +37,11 @@ class IntradayQuoteClient {
         final response = await _dio.get(
           ApiEndpoints.twseMisIntraday,
           queryParameters: {'ex_ch': exCh, 'json': 1, 'delay': 0},
+          // 一律取原始字串自行解碼(2026-08-08 code review):讓 Dio 解析
+          // 有兩個坑——①MIS 回應前綴帶空行,json 模式會解析失敗;②限流
+          // 時回 HTML,若 Dio 先拋解析錯,就會被下面的 catch 吞成「這批
+          // 失敗」而繼續猛打。交給 decodeResponseData 才看得出是限流。
+          options: Options(responseType: ResponseType.plain),
         );
         if (response.statusCode != 200) {
           throw ApiException(
