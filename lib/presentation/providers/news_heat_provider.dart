@@ -1,16 +1,16 @@
 // lib/presentation/providers/news_heat_provider.dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:afterclose/core/constants/news_heat_params.dart';
-import 'package:afterclose/core/constants/scoring_mode.dart';
-import 'package:afterclose/domain/services/price_calculator.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/domain/services/news/heat_calculator.dart';
-import 'package:afterclose/domain/services/news/stock_name_matcher.dart';
-import 'package:afterclose/domain/services/news/theme_matcher.dart';
-import 'package:afterclose/presentation/providers/data_update_epoch_provider.dart';
-import 'package:afterclose/presentation/providers/mode_recommendation_provider.dart';
-import 'package:afterclose/presentation/providers/providers.dart';
+import 'package:daredevil/core/constants/news_heat_params.dart';
+import 'package:daredevil/core/constants/scoring_mode.dart';
+import 'package:daredevil/domain/services/price_calculator.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/domain/services/news/heat_calculator.dart';
+import 'package:daredevil/domain/services/news/stock_name_matcher.dart';
+import 'package:daredevil/domain/services/news/theme_matcher.dart';
+import 'package:daredevil/presentation/providers/data_update_epoch_provider.dart';
+import 'package:daredevil/presentation/providers/mode_recommendation_provider.dart';
+import 'package:daredevil/presentation/providers/providers.dart';
 
 /// 熱度分析結果（新聞頁「熱度分析」Tab 的完整狀態）
 class NewsHeatAnalysis {

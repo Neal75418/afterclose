@@ -22,11 +22,11 @@
 
 import 'dart:io';
 
-import 'package:afterclose/core/constants/exit_params.dart';
-import 'package:afterclose/core/utils/price_limit.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/domain/services/analysis_service.dart';
-import 'package:afterclose/domain/services/rule_engine.dart';
+import 'package:daredevil/core/constants/exit_params.dart';
+import 'package:daredevil/core/utils/price_limit.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/domain/services/analysis_service.dart';
+import 'package:daredevil/domain/services/rule_engine.dart';
 
 import 'replay_calibrator.dart';
 

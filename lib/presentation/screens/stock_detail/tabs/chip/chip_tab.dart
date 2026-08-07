@@ -2,15 +2,15 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
-import 'package:afterclose/presentation/screens/stock_detail/widgets/chip_strength_indicator.dart';
-import 'package:afterclose/presentation/screens/stock_detail/widgets/day_trading_section.dart';
-import 'package:afterclose/presentation/screens/stock_detail/widgets/shareholding_section.dart';
+import 'package:daredevil/presentation/providers/stock_detail_provider.dart';
+import 'package:daredevil/presentation/screens/stock_detail/widgets/chip_strength_indicator.dart';
+import 'package:daredevil/presentation/screens/stock_detail/widgets/day_trading_section.dart';
+import 'package:daredevil/presentation/screens/stock_detail/widgets/shareholding_section.dart';
 
-import 'package:afterclose/presentation/screens/stock_detail/tabs/chip/distribution_section.dart';
-import 'package:afterclose/presentation/screens/stock_detail/tabs/chip/insider_section.dart';
-import 'package:afterclose/presentation/screens/stock_detail/tabs/chip/institutional_section.dart';
-import 'package:afterclose/presentation/screens/stock_detail/tabs/chip/margin_trading_section.dart';
+import 'package:daredevil/presentation/screens/stock_detail/tabs/chip/distribution_section.dart';
+import 'package:daredevil/presentation/screens/stock_detail/tabs/chip/insider_section.dart';
+import 'package:daredevil/presentation/screens/stock_detail/tabs/chip/institutional_section.dart';
+import 'package:daredevil/presentation/screens/stock_detail/tabs/chip/margin_trading_section.dart';
 
 /// 籌碼分析分頁 - 含 7 個區塊
 class ChipTab extends ConsumerStatefulWidget {

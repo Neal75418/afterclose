@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-import 'package:afterclose/core/theme/semantic_colors.dart';
+import 'package:daredevil/core/theme/semantic_colors.dart';
 
-import 'package:afterclose/core/theme/design_tokens.dart';
-import 'package:afterclose/core/utils/number_formatter.dart';
-import 'package:afterclose/core/utils/price_limit.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
+import 'package:daredevil/core/utils/number_formatter.dart';
+import 'package:daredevil/core/utils/price_limit.dart';
 
 /// 股票卡片的價格區塊 Widget
 ///

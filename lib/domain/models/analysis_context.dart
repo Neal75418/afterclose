@@ -1,6 +1,6 @@
-import 'package:afterclose/core/constants/rule_params.dart';
-import 'package:afterclose/domain/models/scoring_batch_data.dart';
-import 'package:afterclose/domain/models/technical_indicators.dart';
+import 'package:daredevil/core/constants/rule_params.dart';
+import 'package:daredevil/domain/models/scoring_batch_data.dart';
+import 'package:daredevil/domain/models/technical_indicators.dart';
 
 /// 傳遞給所有規則的評估上下文
 class AnalysisContext {

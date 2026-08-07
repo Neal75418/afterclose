@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/domain/models/signal_names.dart';
+import 'package:daredevil/domain/models/signal_names.dart';
 
 /// MA 四階段優先序(2026-07-31):自選 tags 前置排序的契約。
 /// 跌破(風控)必須最前——ReasonTags 只顯示 1-2 個,排序錯=風控被擠出視窗。

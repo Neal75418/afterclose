@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/domain/services/portfolio_analytics_service.dart';
-import 'package:afterclose/presentation/screens/portfolio/widgets/performance_card.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
+import 'package:daredevil/domain/services/portfolio_analytics_service.dart';
+import 'package:daredevil/presentation/screens/portfolio/widgets/performance_card.dart';
 
 import '../../../../helpers/widget_test_helpers.dart';
 

@@ -1,8 +1,8 @@
-import 'package:afterclose/core/constants/rule_params.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/remote/tpex_client.dart';
-import 'package:afterclose/data/remote/twse_client.dart';
-import 'package:afterclose/data/repositories/insider_repository.dart';
+import 'package:daredevil/core/constants/rule_params.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/data/remote/tpex_client.dart';
+import 'package:daredevil/data/remote/twse_client.dart';
+import 'package:daredevil/data/repositories/insider_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 

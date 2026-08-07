@@ -1,4 +1,4 @@
-import 'package:afterclose/core/constants/api_config.dart';
+import 'package:daredevil/core/constants/api_config.dart';
 
 /// TWSE Open Data 月營收資料
 class TwseMonthlyRevenue {

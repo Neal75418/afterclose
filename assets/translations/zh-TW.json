@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "AfterClose"
+    "name": "Daredevil"
   },
   "common": {
     "loading": "載入中...",
@@ -790,7 +790,7 @@
     "apiTestFailed": "連線失敗: {error}",
     "apiTesting": "測試中...",
     "about": "關於",
-    "aboutApp": "關於 AfterClose",
+    "aboutApp": "關於 Daredevil",
     "aboutDescription": "台股盤後分析工具",
     "version": "版本",
     "dataManagement": "資料管理",

@@ -1,6 +1,6 @@
 # 📦 Release Build Guide
 
-AfterClose 發布建置指南
+Daredevil 發布建置指南
 
 ---
 

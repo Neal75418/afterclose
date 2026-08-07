@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/mappers/finmind_model_mapper.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/data/mappers/finmind_model_mapper.dart';
 
 // ==========================================
 // Test Helpers

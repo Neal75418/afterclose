@@ -9,13 +9,13 @@
 
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/core/constants/reason_type.dart';
-import 'package:afterclose/core/constants/rule_enums.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/domain/models/analysis_context.dart';
-import 'package:afterclose/domain/models/technical_indicators.dart';
-import 'package:afterclose/domain/services/rules/pullback_rules.dart';
-import 'package:afterclose/domain/services/rules/stock_rules.dart';
+import 'package:daredevil/core/constants/reason_type.dart';
+import 'package:daredevil/core/constants/rule_enums.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/domain/models/analysis_context.dart';
+import 'package:daredevil/domain/models/technical_indicators.dart';
+import 'package:daredevil/domain/services/rules/pullback_rules.dart';
+import 'package:daredevil/domain/services/rules/stock_rules.dart';
 
 void main() {
   // --- fixtures ---

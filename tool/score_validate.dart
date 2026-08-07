@@ -26,8 +26,8 @@
 
 import 'dart:io';
 
-import 'package:afterclose/core/constants/exit_params.dart';
-import 'package:afterclose/data/database/app_database.dart';
+import 'package:daredevil/core/constants/exit_params.dart';
+import 'package:daredevil/data/database/app_database.dart';
 
 import 'replay_calibrator.dart';
 

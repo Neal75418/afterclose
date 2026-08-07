@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "AfterClose"
+    "name": "Daredevil"
   },
   "common": {
     "loading": "Loading...",
@@ -790,7 +790,7 @@
     "apiTestFailed": "Failed: {error}",
     "apiTesting": "Testing...",
     "about": "About",
-    "aboutApp": "About AfterClose",
+    "aboutApp": "About Daredevil",
     "aboutDescription": "Taiwan Stock Post-Market Analysis Tool",
     "version": "Version",
     "dataManagement": "Data Management",

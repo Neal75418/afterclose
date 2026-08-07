@@ -1,4 +1,4 @@
-import 'package:afterclose/core/constants/news_heat_params.dart';
+import 'package:daredevil/core/constants/news_heat_params.dart';
 
 /// 從新聞標題匹配台股題材（純函數）
 ///

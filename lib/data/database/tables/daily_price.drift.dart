@@ -1,9 +1,9 @@
 // dart format width=80
 // ignore_for_file: type=lint
 import 'package:drift/drift.dart' as i0;
-import 'package:afterclose/data/database/tables/daily_price.drift.dart' as i1;
-import 'package:afterclose/data/database/tables/daily_price.dart' as i2;
-import 'package:afterclose/data/database/tables/stock_master.drift.dart' as i3;
+import 'package:daredevil/data/database/tables/daily_price.drift.dart' as i1;
+import 'package:daredevil/data/database/tables/daily_price.dart' as i2;
+import 'package:daredevil/data/database/tables/stock_master.drift.dart' as i3;
 import 'package:drift/internal/modular.dart' as i4;
 
 typedef $$DailyPriceTableCreateCompanionBuilder =

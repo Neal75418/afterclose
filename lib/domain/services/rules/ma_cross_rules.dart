@@ -1,10 +1,10 @@
-import 'package:afterclose/core/constants/reason_type.dart';
-import 'package:afterclose/core/constants/rule_params_pullback.dart';
-import 'package:afterclose/core/constants/rule_scores.dart';
-import 'package:afterclose/core/constants/stock_patterns.dart';
-import 'package:afterclose/domain/models/analysis_context.dart';
-import 'package:afterclose/domain/models/triggered_reason.dart';
-import 'package:afterclose/domain/services/rules/stock_rules.dart';
+import 'package:daredevil/core/constants/reason_type.dart';
+import 'package:daredevil/core/constants/rule_params_pullback.dart';
+import 'package:daredevil/core/constants/rule_scores.dart';
+import 'package:daredevil/core/constants/stock_patterns.dart';
+import 'package:daredevil/domain/models/analysis_context.dart';
+import 'package:daredevil/domain/models/triggered_reason.dart';
+import 'package:daredevil/domain/services/rules/stock_rules.dart';
 
 /// MA 穿越事件規則(2026-07-31)。
 ///

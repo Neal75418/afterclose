@@ -4,30 +4,30 @@ import 'dart:async';
 // 之下編譯直接炸(守門:test/tool/daily_update_pure_dart_test.dart)。
 import 'package:meta/meta.dart' show visibleForTesting;
 
-import 'package:afterclose/core/constants/api_config.dart';
-import 'package:afterclose/core/constants/stock_patterns.dart';
-import 'package:afterclose/core/constants/data_freshness.dart';
-import 'package:afterclose/core/constants/default_stocks.dart';
-import 'package:afterclose/core/constants/calibrated_scores/calibrated_scores_registry.dart';
-import 'package:afterclose/core/constants/rule_params.dart';
-import 'package:afterclose/core/exceptions/app_exception.dart';
-import 'package:afterclose/core/utils/clock.dart';
-import 'package:afterclose/core/utils/date_context.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/core/utils/taiwan_calendar.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/remote/finmind_client.dart';
-import 'package:afterclose/domain/repositories/analysis_repository.dart';
-import 'package:afterclose/domain/repositories/price_repository.dart';
-import 'package:afterclose/domain/services/analysis_service.dart';
-import 'package:afterclose/domain/services/rule_accuracy_service.dart';
-import 'package:afterclose/domain/services/thesis/thesis_monitor_service.dart';
-import 'package:afterclose/domain/services/rule_engine.dart';
-import 'package:afterclose/domain/services/scoring_service.dart';
-import 'package:afterclose/domain/services/update/news_mention_snapshot_service.dart';
-import 'package:afterclose/domain/services/update/update.dart';
-import 'package:afterclose/domain/services/update/zeroing_impact_reporter.dart';
-import 'package:afterclose/domain/services/update_service_deps.dart';
+import 'package:daredevil/core/constants/api_config.dart';
+import 'package:daredevil/core/constants/stock_patterns.dart';
+import 'package:daredevil/core/constants/data_freshness.dart';
+import 'package:daredevil/core/constants/default_stocks.dart';
+import 'package:daredevil/core/constants/calibrated_scores/calibrated_scores_registry.dart';
+import 'package:daredevil/core/constants/rule_params.dart';
+import 'package:daredevil/core/exceptions/app_exception.dart';
+import 'package:daredevil/core/utils/clock.dart';
+import 'package:daredevil/core/utils/date_context.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/core/utils/taiwan_calendar.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/data/remote/finmind_client.dart';
+import 'package:daredevil/domain/repositories/analysis_repository.dart';
+import 'package:daredevil/domain/repositories/price_repository.dart';
+import 'package:daredevil/domain/services/analysis_service.dart';
+import 'package:daredevil/domain/services/rule_accuracy_service.dart';
+import 'package:daredevil/domain/services/thesis/thesis_monitor_service.dart';
+import 'package:daredevil/domain/services/rule_engine.dart';
+import 'package:daredevil/domain/services/scoring_service.dart';
+import 'package:daredevil/domain/services/update/news_mention_snapshot_service.dart';
+import 'package:daredevil/domain/services/update/update.dart';
+import 'package:daredevil/domain/services/update/zeroing_impact_reporter.dart';
+import 'package:daredevil/domain/services/update_service_deps.dart';
 
 /// 每日市場資料更新協調服務
 ///

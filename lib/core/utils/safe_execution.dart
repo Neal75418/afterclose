@@ -1,5 +1,5 @@
-import 'package:afterclose/core/exceptions/app_exception.dart';
-import 'package:afterclose/core/utils/logger.dart';
+import 'package:daredevil/core/exceptions/app_exception.dart';
+import 'package:daredevil/core/utils/logger.dart';
 
 /// 平行執行的錯誤隔離工具
 ///

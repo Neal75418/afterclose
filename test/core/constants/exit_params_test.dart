@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:afterclose/core/constants/exit_params.dart';
-import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:daredevil/core/constants/exit_params.dart';
+import 'package:daredevil/core/constants/rule_params.dart';
 
 void main() {
   test('ExitParams 常數值（spec §2 起始值，gate 後可調）', () {

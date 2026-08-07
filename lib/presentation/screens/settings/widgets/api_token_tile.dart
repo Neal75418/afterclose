@@ -4,10 +4,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import 'package:afterclose/core/constants/api_endpoints.dart';
-import 'package:afterclose/data/remote/finmind_client.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
-import 'package:afterclose/presentation/providers/providers.dart';
+import 'package:daredevil/core/constants/api_endpoints.dart';
+import 'package:daredevil/data/remote/finmind_client.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
+import 'package:daredevil/presentation/providers/providers.dart';
 
 /// API Token 設定項目
 class ApiTokenTile extends ConsumerStatefulWidget {

@@ -1,6 +1,6 @@
 import 'package:meta/meta.dart';
 
-import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
+import 'package:daredevil/core/constants/calibrated_scores/horizon.dart';
 
 /// Scoring isolate 使用的 calibrated scores 查詢 context
 ///

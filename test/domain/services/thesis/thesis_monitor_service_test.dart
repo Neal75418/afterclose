@@ -5,8 +5,8 @@
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/domain/services/thesis/thesis_monitor_service.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/domain/services/thesis/thesis_monitor_service.dart';
 
 void main() {
   late AppDatabase db;

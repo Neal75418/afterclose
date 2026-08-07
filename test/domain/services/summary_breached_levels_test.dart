@@ -38,9 +38,9 @@
 // 實測影響面：754 列中壓力已突破 133、支撐已跌破 43。
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
-import 'package:afterclose/domain/models/stock_summary.dart';
-import 'package:afterclose/domain/services/analysis_summary_service.dart';
+import 'package:daredevil/core/constants/calibrated_scores/horizon.dart';
+import 'package:daredevil/domain/models/stock_summary.dart';
+import 'package:daredevil/domain/services/analysis_summary_service.dart';
 
 import '../../helpers/analysis_data_generators.dart';
 import '../../helpers/price_data_generators.dart';

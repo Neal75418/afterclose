@@ -1,7 +1,7 @@
-import 'package:afterclose/core/constants/rule_params.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/domain/models/models.dart';
-import 'package:afterclose/domain/services/rules/fundamental_scan_rules.dart';
+import 'package:daredevil/core/constants/rule_params.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/domain/models/models.dart';
+import 'package:daredevil/domain/services/rules/fundamental_scan_rules.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../helpers/price_data_generators.dart';

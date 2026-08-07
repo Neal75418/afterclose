@@ -1,17 +1,17 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/chart_indicators.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/domain/services/ohlcv_data.dart';
-import 'package:afterclose/domain/services/technical_indicator_service.dart';
+import 'package:daredevil/presentation/screens/stock_detail/tabs/technical/chart_indicators.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/domain/services/ohlcv_data.dart';
+import 'package:daredevil/domain/services/technical_indicator_service.dart';
 
-import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/cards/rsi_card.dart';
-import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/cards/kd_card.dart';
-import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/cards/macd_card.dart';
-import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/cards/bollinger_card.dart';
-import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/cards/obv_card.dart';
-import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/cards/atr_card.dart';
+import 'package:daredevil/presentation/screens/stock_detail/tabs/technical/cards/rsi_card.dart';
+import 'package:daredevil/presentation/screens/stock_detail/tabs/technical/cards/kd_card.dart';
+import 'package:daredevil/presentation/screens/stock_detail/tabs/technical/cards/macd_card.dart';
+import 'package:daredevil/presentation/screens/stock_detail/tabs/technical/cards/bollinger_card.dart';
+import 'package:daredevil/presentation/screens/stock_detail/tabs/technical/cards/obv_card.dart';
+import 'package:daredevil/presentation/screens/stock_detail/tabs/technical/cards/atr_card.dart';
 
 /// 從 priceHistory 提取的 OHLCV 快取，避免每次 build 重複 filter/map
 ///

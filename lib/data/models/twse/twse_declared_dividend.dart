@@ -1,6 +1,6 @@
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/core/constants/api_config.dart';
-import 'package:afterclose/core/utils/tw_parse_utils.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/core/constants/api_config.dart';
+import 'package:daredevil/core/utils/tw_parse_utils.dart';
 
 /// TWSE 已宣告股利資料（來源：證交所 ap45_L API）
 ///

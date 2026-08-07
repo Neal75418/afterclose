@@ -9,7 +9,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/core/l10n/app_strings.dart';
+import 'package:daredevil/core/l10n/app_strings.dart';
 
 import '../../helpers/widget_test_helpers.dart';
 

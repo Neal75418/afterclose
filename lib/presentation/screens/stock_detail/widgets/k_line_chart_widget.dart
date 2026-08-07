@@ -3,16 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:k_chart_plus/k_chart_plus.dart';
 
 // k_chart_plus 也匯出名為 `S` 的類別，需前綴避免衝突
-import 'package:afterclose/core/l10n/app_strings.dart' as l10n;
-import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/core/theme/indicator_colors.dart';
-import 'package:afterclose/core/theme/semantic_colors.dart';
-import 'package:afterclose/core/utils/number_formatter.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
-import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/chart_indicators.dart';
-import 'package:afterclose/presentation/screens/stock_detail/widgets/chart_indicator_styles.dart';
-import 'package:afterclose/presentation/screens/stock_detail/widgets/k_chart_detail_popup.dart';
+import 'package:daredevil/core/l10n/app_strings.dart' as l10n;
+import 'package:daredevil/core/theme/app_theme.dart';
+import 'package:daredevil/core/theme/indicator_colors.dart';
+import 'package:daredevil/core/theme/semantic_colors.dart';
+import 'package:daredevil/core/utils/number_formatter.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
+import 'package:daredevil/presentation/screens/stock_detail/tabs/technical/chart_indicators.dart';
+import 'package:daredevil/presentation/screens/stock_detail/widgets/chart_indicator_styles.dart';
+import 'package:daredevil/presentation/screens/stock_detail/widgets/k_chart_detail_popup.dart';
 
 /// 使用 k_chart_plus 套件的 K 線圖 Widget，
 /// 支援 MA、BOLL、SAR、RSI、KDJ、MACD、WR、CCI 指標。

@@ -41,8 +41,8 @@ void main() {
       final violations = <String>[];
 
       String? toLocalPath(String uri) {
-        if (uri.startsWith('package:afterclose/')) {
-          return 'lib/${uri.substring('package:afterclose/'.length)}';
+        if (uri.startsWith('package:daredevil/')) {
+          return 'lib/${uri.substring('package:daredevil/'.length)}';
         }
         if (!uri.contains(':')) return null; // 相對 import 由呼叫端組
         return null; // 其他 package / dart: 不展開

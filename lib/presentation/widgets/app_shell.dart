@@ -4,9 +4,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:afterclose/core/theme/design_tokens.dart';
-import 'package:afterclose/core/utils/responsive_helper.dart';
-import 'package:afterclose/presentation/providers/connectivity_provider.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
+import 'package:daredevil/core/utils/responsive_helper.dart';
+import 'package:daredevil/presentation/providers/connectivity_provider.dart';
 
 /// 帶有響應式導覽的外殼 Widget
 ///

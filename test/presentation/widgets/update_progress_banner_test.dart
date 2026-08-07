@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/presentation/providers/today_provider.dart';
-import 'package:afterclose/presentation/widgets/update_progress_banner.dart';
+import 'package:daredevil/presentation/providers/today_provider.dart';
+import 'package:daredevil/presentation/widgets/update_progress_banner.dart';
 
 import '../../helpers/widget_test_helpers.dart';
 

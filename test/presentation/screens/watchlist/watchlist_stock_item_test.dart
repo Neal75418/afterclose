@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/presentation/providers/watchlist_types.dart';
-import 'package:afterclose/presentation/widgets/warning_badge.dart';
-import 'package:afterclose/presentation/screens/watchlist/watchlist_stock_item.dart';
-import 'package:afterclose/presentation/widgets/stock_card.dart';
+import 'package:daredevil/presentation/providers/watchlist_types.dart';
+import 'package:daredevil/presentation/widgets/warning_badge.dart';
+import 'package:daredevil/presentation/screens/watchlist/watchlist_stock_item.dart';
+import 'package:daredevil/presentation/widgets/stock_card.dart';
 
 import '../../../helpers/widget_test_helpers.dart';
 

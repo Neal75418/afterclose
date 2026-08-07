@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart';
 
-import 'package:afterclose/data/database/app_database.drift.dart';
-import 'package:afterclose/data/database/tables/user_tables.drift.dart';
+import 'package:daredevil/data/database/app_database.drift.dart';
+import 'package:daredevil/data/database/tables/user_tables.drift.dart';
 
 /// 釘選論點 DAO（出場層）
 ///

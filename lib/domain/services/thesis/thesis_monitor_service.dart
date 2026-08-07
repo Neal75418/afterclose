@@ -1,6 +1,6 @@
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/domain/services/thesis/thesis_invalidation_rules.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/domain/services/thesis/thesis_invalidation_rules.dart';
 
 /// 釘選論點監控服務（出場層 Phase 2）
 ///

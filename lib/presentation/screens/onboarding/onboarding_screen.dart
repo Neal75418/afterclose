@@ -2,11 +2,11 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:afterclose/app/router.dart' show completeOnboarding;
-import 'package:afterclose/core/constants/animations.dart';
-import 'package:afterclose/core/constants/app_routes.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
-import 'package:afterclose/core/theme/semantic_colors.dart';
+import 'package:daredevil/app/router.dart' show completeOnboarding;
+import 'package:daredevil/core/constants/animations.dart';
+import 'package:daredevil/core/constants/app_routes.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
+import 'package:daredevil/core/theme/semantic_colors.dart';
 
 /// 首次使用引導頁面
 ///

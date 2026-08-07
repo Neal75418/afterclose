@@ -6,15 +6,15 @@ import 'package:go_router/go_router.dart';
 
 import 'package:package_info_plus/package_info_plus.dart';
 
-import 'package:afterclose/app/background_update_service.dart';
-import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/presentation/providers/providers.dart';
-import 'package:afterclose/presentation/providers/settings_provider.dart';
-import 'package:afterclose/presentation/screens/settings/widgets/api_token_tile.dart';
-import 'package:afterclose/presentation/screens/settings/widgets/data_management_tile.dart';
-import 'package:afterclose/presentation/widgets/common/radio_selection_dialog.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:daredevil/app/background_update_service.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/presentation/providers/providers.dart';
+import 'package:daredevil/presentation/providers/settings_provider.dart';
+import 'package:daredevil/presentation/screens/settings/widgets/api_token_tile.dart';
+import 'package:daredevil/presentation/screens/settings/widgets/data_management_tile.dart';
+import 'package:daredevil/presentation/widgets/common/radio_selection_dialog.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
 
 /// App 版本資訊（從 pubspec.yaml 自動讀取，不需手動維護）
 final _packageInfoProvider = FutureProvider<PackageInfo>(

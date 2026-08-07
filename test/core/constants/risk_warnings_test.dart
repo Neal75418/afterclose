@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/core/constants/reason_type.dart';
-import 'package:afterclose/core/constants/risk_warnings.dart';
-import 'package:afterclose/core/constants/scoring_mode.dart';
+import 'package:daredevil/core/constants/reason_type.dart';
+import 'package:daredevil/core/constants/risk_warnings.dart';
+import 'package:daredevil/core/constants/scoring_mode.dart';
 
 void main() {
   group('RiskWarnings 集合界定', () {

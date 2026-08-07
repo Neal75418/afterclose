@@ -1,14 +1,14 @@
 import 'package:drift/drift.dart';
 
-import 'package:afterclose/data/database/app_database.drift.dart';
-import 'package:afterclose/data/database/dao/batch_query_mixin.dart';
-import 'package:afterclose/data/database/tables/user_tables.drift.dart';
-import 'package:afterclose/data/database/tables/market_data_tables.drift.dart';
-import 'package:afterclose/data/database/tables/daily_price.drift.dart';
-import 'package:afterclose/core/constants/data_freshness.dart';
-import 'package:afterclose/core/constants/rule_enums.dart';
-import 'package:afterclose/core/constants/rule_params_alert.dart';
-import 'package:afterclose/domain/services/alert_evaluation_service.dart';
+import 'package:daredevil/data/database/app_database.drift.dart';
+import 'package:daredevil/data/database/dao/batch_query_mixin.dart';
+import 'package:daredevil/data/database/tables/user_tables.drift.dart';
+import 'package:daredevil/data/database/tables/market_data_tables.drift.dart';
+import 'package:daredevil/data/database/tables/daily_price.drift.dart';
+import 'package:daredevil/core/constants/data_freshness.dart';
+import 'package:daredevil/core/constants/rule_enums.dart';
+import 'package:daredevil/core/constants/rule_params_alert.dart';
+import 'package:daredevil/domain/services/alert_evaluation_service.dart';
 
 /// 自選股條目 + 其所屬分組名稱（未分組則 [groupName] 為 null）
 ///

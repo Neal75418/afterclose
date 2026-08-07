@@ -1,7 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import 'package:afterclose/core/constants/score_tier.dart';
+import 'package:daredevil/core/constants/score_tier.dart';
 
 /// 分級徽章 + 小字數字（評分改進 #5）
 ///

@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart';
 
-import 'package:afterclose/data/database/app_database.drift.dart';
-import 'package:afterclose/data/database/tables/market_index_tables.drift.dart';
+import 'package:daredevil/data/database/app_database.drift.dart';
+import 'package:daredevil/data/database/tables/market_index_tables.drift.dart';
 
 /// 大盤指數歷史資料存取
 mixin MarketIndexDaoMixin on $AppDatabase {

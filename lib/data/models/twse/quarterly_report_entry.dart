@@ -1,4 +1,4 @@
-import 'package:afterclose/core/utils/logger.dart';
+import 'package:daredevil/core/utils/logger.dart';
 
 /// 季度綜合損益表快照(TWSE t187ap06_L_* / TPEx mopsfin_t187ap06_O_*,
 /// 六業別 × 兩市場,2026-08-06 最新一季財報總覽)。

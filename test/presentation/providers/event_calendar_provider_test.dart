@@ -4,11 +4,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:afterclose/core/utils/clock.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/repositories/event_repository.dart';
-import 'package:afterclose/presentation/providers/providers.dart';
-import 'package:afterclose/presentation/providers/event_calendar_provider.dart';
+import 'package:daredevil/core/utils/clock.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/data/repositories/event_repository.dart';
+import 'package:daredevil/presentation/providers/providers.dart';
+import 'package:daredevil/presentation/providers/event_calendar_provider.dart';
 
 // ==========================================
 // Mocks

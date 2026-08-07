@@ -1,4 +1,4 @@
-import 'package:afterclose/core/constants/reason_type.dart';
+import 'package:daredevil/core/constants/reason_type.dart';
 
 /// 風險嚴重度 — Today 卡片警示徽章的分級
 enum RiskSeverity {

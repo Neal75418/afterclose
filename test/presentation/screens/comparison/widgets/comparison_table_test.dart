@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/domain/models/stock_summary.dart';
-import 'package:afterclose/presentation/providers/comparison_provider.dart';
-import 'package:afterclose/presentation/screens/comparison/widgets/comparison_table.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/domain/models/stock_summary.dart';
+import 'package:daredevil/presentation/providers/comparison_provider.dart';
+import 'package:daredevil/presentation/screens/comparison/widgets/comparison_table.dart';
 
 import '../../../../helpers/widget_test_helpers.dart';
 

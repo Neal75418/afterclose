@@ -1,4 +1,4 @@
-import 'package:afterclose/core/utils/logger.dart';
+import 'package:daredevil/core/utils/logger.dart';
 
 /// 台灣股市交易日曆
 ///

@@ -1,9 +1,9 @@
 import 'package:drift/drift.dart';
 
-import 'package:afterclose/core/constants/rule_params_indicator.dart';
-import 'package:afterclose/core/utils/date_context.dart';
-import 'package:afterclose/data/database/app_database.drift.dart';
-import 'package:afterclose/data/database/tables/daily_price.drift.dart';
+import 'package:daredevil/core/constants/rule_params_indicator.dart';
+import 'package:daredevil/core/utils/date_context.dart';
+import 'package:daredevil/data/database/app_database.drift.dart';
+import 'package:daredevil/data/database/tables/daily_price.drift.dart';
 
 /// 日價格操作
 mixin PriceDaoMixin on $AppDatabase {

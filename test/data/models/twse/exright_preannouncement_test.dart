@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/data/models/twse/exright_preannouncement.dart';
+import 'package:daredevil/data/models/twse/exright_preannouncement.dart';
 
 /// 除權息預告模型(2026-08-01)。欄位值取自兩端點當日實際回應
 /// (2886 兆豐金 1150813 除息 1.75 為停券預告 8/7-8/12 的因果對照組)。

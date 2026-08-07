@@ -1,4 +1,4 @@
-import 'package:afterclose/data/remote/tdcc_client.dart';
+import 'package:daredevil/data/remote/tdcc_client.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

@@ -1,4 +1,4 @@
-name: afterclose
+name: daredevil
 description: "Local-first post-market Taiwan stock scanner — scans the entire market after hours, surfacing only what changed."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.

@@ -1,6 +1,6 @@
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/domain/models/analysis_context.dart';
-import 'package:afterclose/domain/models/scoring_data_groups.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/domain/models/analysis_context.dart';
+import 'package:daredevil/domain/models/scoring_data_groups.dart';
 
 /// 外資持股資料
 class ShareholdingData {

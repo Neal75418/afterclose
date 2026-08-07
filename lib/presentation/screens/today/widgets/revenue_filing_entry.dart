@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:afterclose/core/constants/api_config.dart';
-import 'package:afterclose/core/constants/app_routes.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
-import 'package:afterclose/core/utils/taiwan_time.dart';
-import 'package:afterclose/presentation/providers/revenue_overview_provider.dart';
-import 'package:afterclose/presentation/providers/watchlist_provider.dart';
+import 'package:daredevil/core/constants/api_config.dart';
+import 'package:daredevil/core/constants/app_routes.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
+import 'package:daredevil/core/utils/taiwan_time.dart';
+import 'package:daredevil/presentation/providers/revenue_overview_provider.dart';
+import 'package:daredevil/presentation/providers/watchlist_provider.dart';
 
 /// 今日頁的「月營收公布中」入口(僅每月 1~[ApiConfig.mopsRevenueWindowLastDay]
 /// 日顯示)。

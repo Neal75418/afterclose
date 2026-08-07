@@ -2,13 +2,13 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:afterclose/core/constants/rule_params_institutional.dart';
-import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/presentation/providers/market_overview_provider.dart';
-import 'package:afterclose/core/constants/app_routes.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
-import 'package:afterclose/core/theme/semantic_colors.dart';
-import 'package:afterclose/presentation/widgets/market_dashboard/mini_bar_chart.dart';
+import 'package:daredevil/core/constants/rule_params_institutional.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
+import 'package:daredevil/presentation/providers/market_overview_provider.dart';
+import 'package:daredevil/core/constants/app_routes.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
+import 'package:daredevil/core/theme/semantic_colors.dart';
+import 'package:daredevil/presentation/widgets/market_dashboard/mini_bar_chart.dart';
 
 /// 格式化金額（元 → 億/千萬/百萬）
 String _formatAmount(double value) {

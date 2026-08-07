@@ -1,4 +1,4 @@
-import 'package:afterclose/core/utils/tw_parse_utils.dart';
+import 'package:daredevil/core/utils/tw_parse_utils.dart';
 
 /// TWSE 每日價格資料
 class TwseDailyPrice {

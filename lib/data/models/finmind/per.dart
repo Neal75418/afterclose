@@ -1,4 +1,4 @@
-import 'package:afterclose/core/utils/json_parsers.dart';
+import 'package:daredevil/core/utils/json_parsers.dart';
 
 /// FinMind 本益比/股價淨值比資料
 class FinMindPER {

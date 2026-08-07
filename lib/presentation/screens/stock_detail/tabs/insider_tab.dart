@@ -2,15 +2,15 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:afterclose/core/constants/rule_params.dart';
-import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
-import 'package:afterclose/core/theme/semantic_colors.dart';
-import 'package:afterclose/core/utils/localized_number_format.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
-import 'package:afterclose/presentation/widgets/metric_card.dart';
-import 'package:afterclose/presentation/widgets/section_header.dart';
+import 'package:daredevil/core/constants/rule_params.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
+import 'package:daredevil/core/theme/semantic_colors.dart';
+import 'package:daredevil/core/utils/localized_number_format.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/presentation/providers/stock_detail_provider.dart';
+import 'package:daredevil/presentation/widgets/metric_card.dart';
+import 'package:daredevil/presentation/widgets/section_header.dart';
 
 // ==================================================
 // UI 常數

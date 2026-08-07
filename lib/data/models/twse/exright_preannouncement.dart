@@ -1,4 +1,4 @@
-import 'package:afterclose/core/utils/tw_parse_utils.dart';
+import 'package:daredevil/core/utils/tw_parse_utils.dart';
 
 /// 除權除息預告（TWSE TWT48U_ALL / TPEx tpex_exright_prepost 共用模型）
 ///

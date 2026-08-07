@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/core/constants/reason_type.dart';
-import 'package:afterclose/core/constants/risk_warnings.dart';
-import 'package:afterclose/presentation/providers/mode_recommendation_provider.dart';
+import 'package:daredevil/core/constants/reason_type.dart';
+import 'package:daredevil/core/constants/risk_warnings.dart';
+import 'package:daredevil/presentation/providers/mode_recommendation_provider.dart';
 
 /// [ModeRecommendation.topSeverity] 把 warningReasons 委派給
 /// [RiskWarnings.topSeverity] — 守護 model ↔ 警訊徽章的 wiring。

@@ -1,12 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:afterclose/core/utils/clock.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/remote/finmind_client.dart';
-import 'package:afterclose/data/repositories/insider_repository.dart';
-import 'package:afterclose/core/constants/data_freshness.dart';
-import 'package:afterclose/data/loaders/stock_chip_loader.dart';
+import 'package:daredevil/core/utils/clock.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/data/remote/finmind_client.dart';
+import 'package:daredevil/data/repositories/insider_repository.dart';
+import 'package:daredevil/core/constants/data_freshness.dart';
+import 'package:daredevil/data/loaders/stock_chip_loader.dart';
 
 // ==========================================
 // Mocks

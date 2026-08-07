@@ -17,10 +17,10 @@
 // `loadChipData` 自身的「已載入」哨兵同源。
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/core/constants/chip_strength.dart';
-import 'package:afterclose/presentation/providers/stock_detail_state.dart';
-import 'package:afterclose/presentation/screens/stock_detail/widgets/stock_detail_header.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/core/constants/chip_strength.dart';
+import 'package:daredevil/presentation/providers/stock_detail_state.dart';
+import 'package:daredevil/presentation/screens/stock_detail/widgets/stock_detail_header.dart';
 
 void main() {
   StockMasterEntry stock(String symbol) => StockMasterEntry(

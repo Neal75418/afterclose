@@ -4,20 +4,20 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:afterclose/core/constants/app_routes.dart';
-import 'package:afterclose/core/theme/breakpoints.dart';
-import 'package:afterclose/core/utils/error_display.dart';
-import 'package:afterclose/core/l10n/app_strings.dart';
-import 'package:afterclose/presentation/providers/portfolio_provider.dart';
-import 'package:afterclose/presentation/widgets/empty_state.dart';
-import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
-import 'package:afterclose/presentation/screens/portfolio/widgets/allocation_pie_chart.dart';
-import 'package:afterclose/presentation/screens/portfolio/widgets/dividend_analysis_card.dart';
-import 'package:afterclose/presentation/screens/portfolio/widgets/industry_allocation_card.dart';
-import 'package:afterclose/presentation/screens/portfolio/widgets/performance_card.dart';
-import 'package:afterclose/presentation/screens/portfolio/widgets/portfolio_summary_card.dart';
-import 'package:afterclose/presentation/screens/portfolio/widgets/position_card.dart';
-import 'package:afterclose/presentation/screens/portfolio/widgets/add_transaction_sheet.dart';
+import 'package:daredevil/core/constants/app_routes.dart';
+import 'package:daredevil/core/theme/breakpoints.dart';
+import 'package:daredevil/core/utils/error_display.dart';
+import 'package:daredevil/core/l10n/app_strings.dart';
+import 'package:daredevil/presentation/providers/portfolio_provider.dart';
+import 'package:daredevil/presentation/widgets/empty_state.dart';
+import 'package:daredevil/presentation/widgets/shimmer_loading.dart';
+import 'package:daredevil/presentation/screens/portfolio/widgets/allocation_pie_chart.dart';
+import 'package:daredevil/presentation/screens/portfolio/widgets/dividend_analysis_card.dart';
+import 'package:daredevil/presentation/screens/portfolio/widgets/industry_allocation_card.dart';
+import 'package:daredevil/presentation/screens/portfolio/widgets/performance_card.dart';
+import 'package:daredevil/presentation/screens/portfolio/widgets/portfolio_summary_card.dart';
+import 'package:daredevil/presentation/screens/portfolio/widgets/position_card.dart';
+import 'package:daredevil/presentation/screens/portfolio/widgets/add_transaction_sheet.dart';
 
 /// 投資組合 Tab（嵌入 Watchlist 頁面）
 class PortfolioTab extends ConsumerStatefulWidget {

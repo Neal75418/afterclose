@@ -1,9 +1,9 @@
-import 'package:afterclose/core/constants/news_heat_params.dart';
-import 'package:afterclose/core/utils/clock.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/domain/repositories/news_repository.dart';
-import 'package:afterclose/domain/services/news/stock_name_matcher.dart';
-import 'package:afterclose/domain/services/news/theme_matcher.dart';
+import 'package:daredevil/core/constants/news_heat_params.dart';
+import 'package:daredevil/core/utils/clock.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/domain/repositories/news_repository.dart';
+import 'package:daredevil/domain/services/news/stock_name_matcher.dart';
+import 'package:daredevil/domain/services/news/theme_matcher.dart';
 
 /// 每日提及數快照（新聞熱度發現層）
 ///

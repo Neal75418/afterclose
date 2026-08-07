@@ -4,13 +4,13 @@ import 'package:flutter/foundation.dart' show visibleForTesting;
 
 import 'package:easy_localization/easy_localization.dart';
 
-import 'package:afterclose/core/services/notification_service.dart';
-import 'package:afterclose/core/utils/error_display.dart';
-import 'package:afterclose/presentation/providers/settings_provider.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/core/utils/sentinel.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/presentation/providers/price_alert_provider.dart';
+import 'package:daredevil/core/services/notification_service.dart';
+import 'package:daredevil/core/utils/error_display.dart';
+import 'package:daredevil/presentation/providers/settings_provider.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/core/utils/sentinel.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/presentation/providers/price_alert_provider.dart';
 
 /// 通知狀態
 class NotificationState {

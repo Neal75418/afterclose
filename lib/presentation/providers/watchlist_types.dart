@@ -1,7 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 
-import 'package:afterclose/core/constants/rule_enums.dart';
-import 'package:afterclose/presentation/widgets/warning_badge.dart';
+import 'package:daredevil/core/constants/rule_enums.dart';
+import 'package:daredevil/presentation/widgets/warning_badge.dart';
 
 // ==================================================
 // 自選股排序選項

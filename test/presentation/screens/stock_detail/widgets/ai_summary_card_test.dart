@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/domain/models/stock_summary.dart';
-import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
-import 'package:afterclose/presentation/screens/stock_detail/widgets/ai_summary_card.dart';
+import 'package:daredevil/domain/models/stock_summary.dart';
+import 'package:daredevil/presentation/providers/stock_detail_provider.dart';
+import 'package:daredevil/presentation/screens/stock_detail/widgets/ai_summary_card.dart';
 
 import '../../../../helpers/provider_test_helpers.dart';
 import '../../../../helpers/widget_test_helpers.dart';

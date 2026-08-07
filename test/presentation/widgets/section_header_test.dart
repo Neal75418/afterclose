@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/presentation/widgets/section_header.dart';
+import 'package:daredevil/presentation/widgets/section_header.dart';
 
 import '../../helpers/widget_test_helpers.dart';
 

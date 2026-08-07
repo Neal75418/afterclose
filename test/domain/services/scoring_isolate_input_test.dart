@@ -1,5 +1,5 @@
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/domain/services/scoring_isolate.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/domain/services/scoring_isolate.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

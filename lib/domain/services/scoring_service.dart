@@ -1,19 +1,19 @@
 import 'dart:convert';
 
-import 'package:afterclose/core/constants/calibrated_scores/calibrated_scores_registry.dart';
-import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
-import 'package:afterclose/core/constants/rule_params.dart';
-import 'package:afterclose/core/exceptions/app_exception.dart';
-import 'package:afterclose/domain/services/price_calculator.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/domain/repositories/analysis_repository.dart';
-import 'package:afterclose/domain/models/models.dart';
-import 'package:afterclose/domain/services/analysis_service.dart';
-import 'package:afterclose/domain/services/rule_engine.dart';
-import 'package:afterclose/domain/services/rules/stock_rules.dart';
-import 'package:afterclose/domain/services/scoring_isolate.dart';
-import 'package:afterclose/domain/services/scoring_pipeline.dart';
+import 'package:daredevil/core/constants/calibrated_scores/calibrated_scores_registry.dart';
+import 'package:daredevil/core/constants/calibrated_scores/horizon.dart';
+import 'package:daredevil/core/constants/rule_params.dart';
+import 'package:daredevil/core/exceptions/app_exception.dart';
+import 'package:daredevil/domain/services/price_calculator.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/domain/repositories/analysis_repository.dart';
+import 'package:daredevil/domain/models/models.dart';
+import 'package:daredevil/domain/services/analysis_service.dart';
+import 'package:daredevil/domain/services/rule_engine.dart';
+import 'package:daredevil/domain/services/rules/stock_rules.dart';
+import 'package:daredevil/domain/services/scoring_isolate.dart';
+import 'package:daredevil/domain/services/scoring_pipeline.dart';
 
 /// 股票候選評分服務
 ///

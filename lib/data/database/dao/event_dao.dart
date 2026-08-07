@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart';
 
-import 'package:afterclose/data/database/app_database.drift.dart';
-import 'package:afterclose/data/database/tables/event_tables.drift.dart';
+import 'package:daredevil/data/database/app_database.drift.dart';
+import 'package:daredevil/data/database/tables/event_tables.drift.dart';
 
 /// 事件行事曆相關資料存取
 mixin EventDaoMixin on $AppDatabase {

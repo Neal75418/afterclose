@@ -1,5 +1,5 @@
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/domain/services/data_sync_service.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/domain/services/data_sync_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../helpers/price_data_generators.dart';

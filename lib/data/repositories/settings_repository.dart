@@ -4,8 +4,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/data/database/app_database.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/data/database/app_database.dart';
 
 /// Secure Storage Key 常數
 class _SecureKeys {

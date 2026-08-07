@@ -2,9 +2,9 @@ import 'dart:convert';
 
 import 'package:meta/meta.dart';
 
-import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
-import 'package:afterclose/core/constants/calibration_thresholds.dart';
-import 'package:afterclose/core/constants/rule_scores.dart';
+import 'package:daredevil/core/constants/calibrated_scores/horizon.dart';
+import 'package:daredevil/core/constants/calibration_thresholds.dart';
+import 'package:daredevil/core/constants/rule_scores.dart';
 
 /// `parseJson` 的回傳結構：table + 解析過程中產生的 warning 列表
 ///

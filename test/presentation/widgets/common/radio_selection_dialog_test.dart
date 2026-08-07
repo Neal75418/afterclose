@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/presentation/widgets/common/radio_selection_dialog.dart';
+import 'package:daredevil/presentation/widgets/common/radio_selection_dialog.dart';
 
 import '../../../helpers/widget_test_helpers.dart';
 

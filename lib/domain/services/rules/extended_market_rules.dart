@@ -1,8 +1,8 @@
-import 'package:afterclose/core/constants/data_freshness.dart';
-import 'package:afterclose/core/constants/rule_params.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/domain/models/models.dart';
-import 'package:afterclose/domain/services/rules/stock_rules.dart';
+import 'package:daredevil/core/constants/data_freshness.dart';
+import 'package:daredevil/core/constants/rule_params.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/domain/models/models.dart';
+import 'package:daredevil/domain/services/rules/stock_rules.dart';
 
 // ==================================================
 // 第 4 階段：擴展市場資料規則

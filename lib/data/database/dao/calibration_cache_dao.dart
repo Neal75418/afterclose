@@ -1,5 +1,5 @@
-import 'package:afterclose/data/database/app_database.drift.dart';
-import 'package:afterclose/data/database/tables/user_tables.drift.dart';
+import 'package:daredevil/data/database/app_database.drift.dart';
+import 'package:daredevil/data/database/tables/user_tables.drift.dart';
 
 /// OTA calibration 快取的目前狀態
 ///

@@ -1,5 +1,5 @@
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/remote/finmind_client.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/data/remote/finmind_client.dart';
 
 /// 建立測試用 DailyReasonEntry
 ///

@@ -1,14 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/core/constants/market_index_names.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/core/constants/rule_params.dart';
-import 'package:afterclose/core/utils/date_context.dart';
-import 'package:afterclose/domain/models/industry_ranking.dart';
-import 'package:afterclose/domain/services/analysis/industry_ranking_service.dart';
-import 'package:afterclose/presentation/providers/data_update_epoch_provider.dart';
-import 'package:afterclose/presentation/providers/providers.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/core/constants/market_index_names.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/core/constants/rule_params.dart';
+import 'package:daredevil/core/utils/date_context.dart';
+import 'package:daredevil/domain/models/industry_ranking.dart';
+import 'package:daredevil/domain/services/analysis/industry_ranking_service.dart';
+import 'package:daredevil/presentation/providers/data_update_epoch_provider.dart';
+import 'package:daredevil/presentation/providers/providers.dart';
 
 /// 族群排行（今日頁族群 section），family 參數 = 動能視窗（20日/5日）
 ///

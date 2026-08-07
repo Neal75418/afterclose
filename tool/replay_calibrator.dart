@@ -53,13 +53,13 @@ import 'dart:math' as math;
 
 import 'package:drift/drift.dart' show Value, Variable;
 
-import 'package:afterclose/core/constants/calibration_thresholds.dart';
-import 'package:afterclose/core/constants/rule_params.dart';
-import 'package:afterclose/core/constants/scoring_mode.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/domain/services/analysis_service.dart';
-import 'package:afterclose/domain/services/rule_engine.dart';
-import 'package:afterclose/domain/services/rules/stock_rules.dart';
+import 'package:daredevil/core/constants/calibration_thresholds.dart';
+import 'package:daredevil/core/constants/rule_params.dart';
+import 'package:daredevil/core/constants/scoring_mode.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/domain/services/analysis_service.dart';
+import 'package:daredevil/domain/services/rule_engine.dart';
+import 'package:daredevil/domain/services/rules/stock_rules.dart';
 
 // ============================================================================
 // Public data models (importable by tests)

@@ -1,14 +1,14 @@
-export 'package:afterclose/core/constants/reason_type.dart';
-export 'package:afterclose/core/constants/rule_enums.dart';
-export 'package:afterclose/core/constants/rule_params_alert.dart';
-export 'package:afterclose/core/constants/rule_params_fundamental.dart';
-export 'package:afterclose/core/constants/rule_params_indicator.dart';
-export 'package:afterclose/core/constants/rule_params_institutional.dart';
-export 'package:afterclose/core/constants/rule_params_pattern.dart';
-export 'package:afterclose/core/constants/rule_params_pullback.dart';
-export 'package:afterclose/core/constants/rule_params_sector.dart';
-export 'package:afterclose/core/constants/rule_params_trend.dart';
-export 'package:afterclose/core/constants/rule_scores.dart';
+export 'package:daredevil/core/constants/reason_type.dart';
+export 'package:daredevil/core/constants/rule_enums.dart';
+export 'package:daredevil/core/constants/rule_params_alert.dart';
+export 'package:daredevil/core/constants/rule_params_fundamental.dart';
+export 'package:daredevil/core/constants/rule_params_indicator.dart';
+export 'package:daredevil/core/constants/rule_params_institutional.dart';
+export 'package:daredevil/core/constants/rule_params_pattern.dart';
+export 'package:daredevil/core/constants/rule_params_pullback.dart';
+export 'package:daredevil/core/constants/rule_params_sector.dart';
+export 'package:daredevil/core/constants/rule_params_trend.dart';
+export 'package:daredevil/core/constants/rule_scores.dart';
 
 /// 規則引擎通用參數
 ///

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
 
 /// 自選股分組標題 Widget
 ///

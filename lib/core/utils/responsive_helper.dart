@@ -2,8 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
 
-import 'package:afterclose/core/theme/breakpoints.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:daredevil/core/theme/breakpoints.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
 
 /// BuildContext 響應式擴展
 ///

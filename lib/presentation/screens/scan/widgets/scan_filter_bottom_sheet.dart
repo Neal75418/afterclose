@@ -2,9 +2,9 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'package:afterclose/core/theme/breakpoints.dart';
-import 'package:afterclose/domain/models/scan_models.dart';
-import 'package:afterclose/presentation/widgets/common/drag_handle.dart';
+import 'package:daredevil/core/theme/breakpoints.dart';
+import 'package:daredevil/domain/models/scan_models.dart';
+import 'package:daredevil/presentation/widgets/common/drag_handle.dart';
 
 /// 顯示分組篩選條件的底部選單
 ///

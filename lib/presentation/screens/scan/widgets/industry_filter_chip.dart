@@ -2,8 +2,8 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'package:afterclose/core/theme/breakpoints.dart';
-import 'package:afterclose/presentation/widgets/common/drag_handle.dart';
+import 'package:daredevil/core/theme/breakpoints.dart';
+import 'package:daredevil/presentation/widgets/common/drag_handle.dart';
 
 /// 產業篩選 Chip — 點擊展開下拉選單
 class IndustryFilterChip extends StatelessWidget {

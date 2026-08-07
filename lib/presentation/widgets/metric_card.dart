@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
 
 /// 共用指標卡片 Widget
 ///

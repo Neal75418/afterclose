@@ -12,15 +12,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:afterclose/core/utils/clock.dart';
-import 'package:afterclose/core/utils/lru_cache.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/database/cached_accessor.dart';
-import 'package:afterclose/data/repositories/analysis_repository.dart';
-import 'package:afterclose/domain/services/data_sync_service.dart';
-import 'package:afterclose/domain/services/update_service.dart';
-import 'package:afterclose/presentation/providers/providers.dart';
-import 'package:afterclose/presentation/providers/today_provider.dart';
+import 'package:daredevil/core/utils/clock.dart';
+import 'package:daredevil/core/utils/lru_cache.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/data/database/cached_accessor.dart';
+import 'package:daredevil/data/repositories/analysis_repository.dart';
+import 'package:daredevil/domain/services/data_sync_service.dart';
+import 'package:daredevil/domain/services/update_service.dart';
+import 'package:daredevil/presentation/providers/providers.dart';
+import 'package:daredevil/presentation/providers/today_provider.dart';
 
 // ==========================================
 // Mocks（僅 mock 無法使用真實實例的依賴）

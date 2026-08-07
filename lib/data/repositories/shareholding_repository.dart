@@ -1,12 +1,12 @@
 import 'package:drift/drift.dart';
 
-import 'package:afterclose/core/constants/chip_scoring_params.dart';
-import 'package:afterclose/core/utils/clock.dart';
-import 'package:afterclose/core/utils/date_context.dart';
-import 'package:afterclose/core/exceptions/app_exception.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/remote/finmind_client.dart';
+import 'package:daredevil/core/constants/chip_scoring_params.dart';
+import 'package:daredevil/core/utils/clock.dart';
+import 'package:daredevil/core/utils/date_context.dart';
+import 'package:daredevil/core/exceptions/app_exception.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/data/remote/finmind_client.dart';
 
 /// 持股相關 Repository
 ///

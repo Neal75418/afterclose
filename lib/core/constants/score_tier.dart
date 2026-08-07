@@ -1,4 +1,4 @@
-import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:daredevil/core/constants/rule_params.dart';
 
 /// 分數分級（呈現層）
 ///

@@ -4,7 +4,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqlite3/sqlite3.dart' as raw;
 
-import 'package:afterclose/data/database/app_database.dart';
+import 'package:daredevil/data/database/app_database.dart';
 
 /// Schema fingerprint reset 的回歸測試（2026-07-15 生產事故）。
 ///

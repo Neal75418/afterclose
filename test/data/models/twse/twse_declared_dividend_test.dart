@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/data/models/twse/twse_declared_dividend.dart';
+import 'package:daredevil/data/models/twse/twse_declared_dividend.dart';
 
 void main() {
   group('TwseDeclaredDividend.fromJson', () {

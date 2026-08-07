@@ -1,7 +1,7 @@
-import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/domain/models/scan_models.dart';
-import 'package:afterclose/domain/services/scan_filter_service.dart';
+import 'package:daredevil/core/constants/calibrated_scores/horizon.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/domain/models/scan_models.dart';
+import 'package:daredevil/domain/services/scan_filter_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

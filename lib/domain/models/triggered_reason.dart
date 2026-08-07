@@ -1,4 +1,4 @@
-import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:daredevil/core/constants/rule_params.dart';
 
 /// 特定規則觸發的原因
 class TriggeredReason {

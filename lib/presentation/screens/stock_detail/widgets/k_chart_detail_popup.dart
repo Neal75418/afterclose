@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' as intl;
 import 'package:k_chart_plus/k_chart_plus.dart';
 
-import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
-import 'package:afterclose/core/utils/localized_number_format.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
+import 'package:daredevil/core/utils/localized_number_format.dart';
 
 /// 長按 K 棒時顯示的詳情浮層。
 ///

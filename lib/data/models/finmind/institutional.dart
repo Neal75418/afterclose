@@ -1,4 +1,4 @@
-import 'package:afterclose/core/utils/json_parsers.dart';
+import 'package:daredevil/core/utils/json_parsers.dart';
 
 /// FinMind API 原始法人資料列
 /// 註: API 每種法人類型回傳一列，需要彙整

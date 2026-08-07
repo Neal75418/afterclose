@@ -1,6 +1,6 @@
 import 'package:drift/drift.dart';
 
-import 'package:afterclose/data/database/tables/stock_master.dart';
+import 'package:daredevil/data/database/tables/stock_master.dart';
 
 /// 外資持股資料 Table
 @DataClassName('ShareholdingEntry')

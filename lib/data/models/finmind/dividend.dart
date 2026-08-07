@@ -1,4 +1,4 @@
-import 'package:afterclose/core/utils/json_parsers.dart';
+import 'package:daredevil/core/utils/json_parsers.dart';
 
 /// FinMind 股利資料
 class FinMindDividend {

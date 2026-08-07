@@ -1,8 +1,8 @@
 import 'package:drift/drift.dart';
 
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/models/finmind/institutional.dart';
-import 'package:afterclose/data/models/twse/twse_market_index.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/data/models/finmind/institutional.dart';
+import 'package:daredevil/data/models/twse/twse_market_index.dart';
 
 /// FinMind 法人資料轉換 Extension
 ///

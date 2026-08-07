@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/data/models/tpex/tpex_declared_dividend.dart';
+import 'package:daredevil/data/models/tpex/tpex_declared_dividend.dart';
 
 void main() {
   group('TpexDeclaredDividend.fromJson', () {

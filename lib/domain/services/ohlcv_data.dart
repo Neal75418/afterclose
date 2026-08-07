@@ -1,4 +1,4 @@
-import 'package:afterclose/data/database/app_database.dart';
+import 'package:daredevil/data/database/app_database.dart';
 
 /// OHLCV 資料記錄
 ///

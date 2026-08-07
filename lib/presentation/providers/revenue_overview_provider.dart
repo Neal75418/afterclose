@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:afterclose/core/utils/error_display.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/data/database/dao/revenue_dao.dart';
-import 'package:afterclose/presentation/providers/providers.dart';
+import 'package:daredevil/core/utils/error_display.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/data/database/dao/revenue_dao.dart';
+import 'package:daredevil/presentation/providers/providers.dart';
 
 /// 營收總覽的排序鍵(全部基於資料庫真實存在的欄位——「公布順序」
 /// 因無公布日欄位而刻意不提供,見 2026-08-05 設計討論)

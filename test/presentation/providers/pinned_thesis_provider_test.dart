@@ -9,9 +9,9 @@ import 'package:drift/drift.dart' show Value;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/presentation/providers/pinned_thesis_provider.dart';
-import 'package:afterclose/presentation/providers/providers.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/presentation/providers/pinned_thesis_provider.dart';
+import 'package:daredevil/presentation/providers/providers.dart';
 
 void main() {
   late AppDatabase db;

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import 'package:afterclose/core/constants/rule_enums.dart';
-import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/core/theme/semantic_colors.dart';
+import 'package:daredevil/core/constants/rule_enums.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
+import 'package:daredevil/core/theme/semantic_colors.dart';
 
 /// 趨勢狀態擴展
 ///

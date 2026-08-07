@@ -1,8 +1,8 @@
 import 'dart:math' as math;
 
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/domain/models/technical_indicators.dart';
-import 'package:afterclose/domain/services/technical_indicator_service.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/domain/models/technical_indicators.dart';
+import 'package:daredevil/domain/services/technical_indicator_service.dart';
 
 /// 測試資料生成工具
 ///

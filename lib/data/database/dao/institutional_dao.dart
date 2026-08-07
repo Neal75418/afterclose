@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart';
 
-import 'package:afterclose/data/database/app_database.drift.dart';
-import 'package:afterclose/data/database/tables/daily_institutional.drift.dart';
+import 'package:daredevil/data/database/app_database.drift.dart';
+import 'package:daredevil/data/database/tables/daily_institutional.drift.dart';
 
 /// 法人買賣超排行(單一機構視角的一列)
 class InstitutionalRankingRow {

@@ -1,20 +1,20 @@
-import 'package:afterclose/core/constants/market_codes.dart';
-import 'package:afterclose/core/constants/rule_params.dart';
-import 'package:afterclose/core/constants/data_freshness.dart';
-import 'package:afterclose/core/utils/clock.dart';
-import 'package:afterclose/core/exceptions/app_exception.dart';
-import 'package:afterclose/core/utils/date_context.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/core/utils/request_deduplicator.dart';
-import 'package:afterclose/core/utils/safe_execution.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/remote/finmind_client.dart';
-import 'package:afterclose/data/remote/tpex_client.dart';
-import 'package:afterclose/data/remote/twse_client.dart';
-import 'package:afterclose/data/repositories/price_candidate_filter.dart';
-import 'package:afterclose/data/repositories/twse_price_source.dart';
-import 'package:afterclose/data/repositories/tpex_price_source.dart';
-import 'package:afterclose/domain/repositories/price_repository.dart';
+import 'package:daredevil/core/constants/market_codes.dart';
+import 'package:daredevil/core/constants/rule_params.dart';
+import 'package:daredevil/core/constants/data_freshness.dart';
+import 'package:daredevil/core/utils/clock.dart';
+import 'package:daredevil/core/exceptions/app_exception.dart';
+import 'package:daredevil/core/utils/date_context.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/core/utils/request_deduplicator.dart';
+import 'package:daredevil/core/utils/safe_execution.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/data/remote/finmind_client.dart';
+import 'package:daredevil/data/remote/tpex_client.dart';
+import 'package:daredevil/data/remote/twse_client.dart';
+import 'package:daredevil/data/repositories/price_candidate_filter.dart';
+import 'package:daredevil/data/repositories/twse_price_source.dart';
+import 'package:daredevil/data/repositories/tpex_price_source.dart';
+import 'package:daredevil/domain/repositories/price_repository.dart';
 
 /// 每日價格資料 Repository
 ///

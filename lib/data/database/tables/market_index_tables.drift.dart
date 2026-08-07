@@ -1,9 +1,9 @@
 // dart format width=80
 // ignore_for_file: type=lint
 import 'package:drift/drift.dart' as i0;
-import 'package:afterclose/data/database/tables/market_index_tables.drift.dart'
+import 'package:daredevil/data/database/tables/market_index_tables.drift.dart'
     as i1;
-import 'package:afterclose/data/database/tables/market_index_tables.dart' as i2;
+import 'package:daredevil/data/database/tables/market_index_tables.dart' as i2;
 import 'package:drift/src/runtime/query_builder/query_builder.dart' as i3;
 
 typedef $$MarketIndexTableCreateCompanionBuilder =

@@ -1,6 +1,6 @@
 import 'dart:ui';
 
-import 'package:afterclose/core/theme/semantic_colors.dart';
+import 'package:daredevil/core/theme/semantic_colors.dart';
 
 /// 技術指標圖表與相關元件的色彩常數
 ///

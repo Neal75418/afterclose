@@ -1,11 +1,11 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import 'package:afterclose/core/constants/market_codes.dart';
-import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/core/theme/semantic_colors.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
-import 'package:afterclose/domain/services/market_sentiment_service.dart';
+import 'package:daredevil/core/constants/market_codes.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
+import 'package:daredevil/core/theme/semantic_colors.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
+import 'package:daredevil/domain/services/market_sentiment_service.dart';
 
 /// 市場情緒儀表板
 ///

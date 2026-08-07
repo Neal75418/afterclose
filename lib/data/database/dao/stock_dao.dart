@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart';
 
-import 'package:afterclose/data/database/app_database.drift.dart';
-import 'package:afterclose/data/database/tables/stock_master.drift.dart';
+import 'package:daredevil/data/database/app_database.drift.dart';
+import 'package:daredevil/data/database/tables/stock_master.drift.dart';
 
 /// 股票主檔操作
 mixin StockDaoMixin on $AppDatabase {

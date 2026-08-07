@@ -3,14 +3,14 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:xml/xml.dart';
 
-import 'package:afterclose/core/constants/api_config.dart';
-import 'package:afterclose/core/exceptions/app_exception.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/domain/models/news_feed.dart';
+import 'package:daredevil/core/constants/api_config.dart';
+import 'package:daredevil/core/exceptions/app_exception.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/domain/models/news_feed.dart';
 
 // Re-export domain value objects so existing data-layer callers can keep
 // importing them via this file.
-export 'package:afterclose/domain/models/news_feed.dart'
+export 'package:daredevil/domain/models/news_feed.dart'
     show NewsFeedError, NewsFeedSource;
 
 /// 台灣財經新聞 RSS feed 解析器

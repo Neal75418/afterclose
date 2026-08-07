@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart' show Brightness;
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/presentation/screens/comparison/utils/comparison_calculator.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/presentation/screens/comparison/utils/comparison_calculator.dart';
 
 void main() {
   final defaultDate = DateTime(2026, 2, 13);

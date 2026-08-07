@@ -1,6 +1,6 @@
-import 'package:afterclose/core/constants/rule_params.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/data/database/app_database.dart';
+import 'package:daredevil/core/constants/rule_params.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/data/database/app_database.dart';
 
 /// 候選股票篩選服務
 ///

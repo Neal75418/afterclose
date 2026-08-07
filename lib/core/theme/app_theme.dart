@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'package:afterclose/core/theme/design_tokens.dart';
-import 'package:afterclose/core/theme/semantic_colors.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
+import 'package:daredevil/core/theme/semantic_colors.dart';
 
 /// AfterClose 應用程式主題系統
 ///

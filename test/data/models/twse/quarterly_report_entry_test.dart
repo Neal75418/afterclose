@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/data/models/twse/quarterly_report_entry.dart';
+import 'package:daredevil/data/models/twse/quarterly_report_entry.dart';
 
 /// 季報 t187ap06 解析(2026-08-06 最新一季財報總覽)。
 ///

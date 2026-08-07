@@ -1,11 +1,11 @@
 import 'package:drift/drift.dart';
 import 'package:intl/intl.dart';
 
-import 'package:afterclose/core/exceptions/app_exception.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/remote/tpex_client.dart';
-import 'package:afterclose/data/remote/twse_client.dart';
+import 'package:daredevil/core/exceptions/app_exception.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/data/remote/tpex_client.dart';
+import 'package:daredevil/data/remote/twse_client.dart';
 
 /// 已宣告股利 + 股東會同步器
 ///

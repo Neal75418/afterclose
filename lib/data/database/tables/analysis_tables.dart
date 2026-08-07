@@ -1,6 +1,6 @@
 import 'package:drift/drift.dart';
 
-import 'package:afterclose/data/database/tables/stock_master.dart';
+import 'package:daredevil/data/database/tables/stock_master.dart';
 
 /// 每日分析結果 Table（每日資料不可變）
 ///

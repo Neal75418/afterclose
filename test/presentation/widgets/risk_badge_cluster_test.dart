@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/core/constants/reason_type.dart';
-import 'package:afterclose/core/theme/semantic_colors.dart';
-import 'package:afterclose/presentation/widgets/risk_badge_cluster.dart';
+import 'package:daredevil/core/constants/reason_type.dart';
+import 'package:daredevil/core/theme/semantic_colors.dart';
+import 'package:daredevil/presentation/widgets/risk_badge_cluster.dart';
 
 import '../../helpers/widget_test_helpers.dart';
 

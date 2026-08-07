@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/data/database/dao/revenue_dao.dart';
-import 'package:afterclose/presentation/providers/revenue_overview_provider.dart';
+import 'package:daredevil/data/database/dao/revenue_dao.dart';
+import 'package:daredevil/presentation/providers/revenue_overview_provider.dart';
 
 /// 營收總覽的排序/過濾純函式(2026-08-05)。
 ///

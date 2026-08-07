@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/core/constants/market_codes.dart';
-import 'package:afterclose/core/constants/ui_constants.dart';
-import 'package:afterclose/domain/services/market_sentiment_service.dart';
-import 'package:afterclose/presentation/widgets/market_dashboard/sentiment_gauge_section.dart';
+import 'package:daredevil/core/constants/market_codes.dart';
+import 'package:daredevil/core/constants/ui_constants.dart';
+import 'package:daredevil/domain/services/market_sentiment_service.dart';
+import 'package:daredevil/presentation/widgets/market_dashboard/sentiment_gauge_section.dart';
 
 import '../../../helpers/widget_test_helpers.dart';
 

@@ -1,6 +1,6 @@
 import 'package:drift/drift.dart';
 
-import 'package:afterclose/data/database/tables/stock_master.dart';
+import 'package:daredevil/data/database/tables/stock_master.dart';
 
 /// 使用者自訂分組 Table（資料夾模式：一檔股票只歸屬一個分組）
 ///

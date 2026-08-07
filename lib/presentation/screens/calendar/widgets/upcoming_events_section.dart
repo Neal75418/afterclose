@@ -2,9 +2,9 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/material.dart';
 
-import 'package:afterclose/core/theme/design_tokens.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/presentation/providers/event_calendar_provider.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/presentation/providers/event_calendar_provider.dart';
 
 /// 即將到來事件摘要
 ///

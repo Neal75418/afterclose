@@ -1,6 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 
-import 'package:afterclose/domain/models/stock_summary.dart';
+import 'package:daredevil/domain/models/stock_summary.dart';
 
 /// 將 domain 層的 [SummaryData] 翻譯為 UI 可直接顯示的 [StockSummary]
 ///

@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
 
-import 'package:afterclose/core/exceptions/app_exception.dart';
-import 'package:afterclose/core/utils/clock.dart';
-import 'package:afterclose/core/utils/logger.dart';
+import 'package:daredevil/core/exceptions/app_exception.dart';
+import 'package:daredevil/core/utils/clock.dart';
+import 'package:daredevil/core/utils/logger.dart';
 
 /// API 供應商列舉（per-vendor budget）。
 enum ApiVendor { finMind, twse, tpex, tdcc }

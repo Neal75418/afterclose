@@ -2,7 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/presentation/widgets/stock_card_sparkline.dart';
+import 'package:daredevil/presentation/widgets/stock_card_sparkline.dart';
 
 import '../../helpers/widget_test_helpers.dart';
 

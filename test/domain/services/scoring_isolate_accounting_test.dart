@@ -5,8 +5,8 @@
 // reasons.isEmpty）。前者更是靜默失敗——技術分析失敗的股票直接消失，
 // 無 log 無計數，與同檔案「fail-loud 比 silent fallback 更安全」的既定
 // 原則矛盾。此測試釘住「帳目必須平」的不變量。
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/domain/services/scoring_isolate.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/domain/services/scoring_isolate.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

@@ -1,11 +1,11 @@
-import 'package:afterclose/core/constants/rule_params.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/domain/models/models.dart';
-import 'package:afterclose/domain/services/ohlcv_data.dart';
-import 'package:afterclose/domain/services/technical_indicator_service.dart';
-import 'package:afterclose/domain/services/analysis/trend_detection_service.dart';
-import 'package:afterclose/domain/services/analysis/reversal_detection_service.dart';
-import 'package:afterclose/domain/services/analysis/support_resistance_service.dart';
+import 'package:daredevil/core/constants/rule_params.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/domain/models/models.dart';
+import 'package:daredevil/domain/services/ohlcv_data.dart';
+import 'package:daredevil/domain/services/technical_indicator_service.dart';
+import 'package:daredevil/domain/services/analysis/trend_detection_service.dart';
+import 'package:daredevil/domain/services/analysis/reversal_detection_service.dart';
+import 'package:daredevil/domain/services/analysis/support_resistance_service.dart';
 
 /// 分析協調服務
 ///

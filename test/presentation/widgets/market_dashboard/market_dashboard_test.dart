@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/core/constants/market_codes.dart';
-import 'package:afterclose/core/constants/market_index_names.dart';
-import 'package:afterclose/data/models/twse/twse_market_index.dart';
-import 'package:afterclose/presentation/providers/market_overview_provider.dart';
-import 'package:afterclose/presentation/widgets/market_dashboard/market_dashboard.dart';
-import 'package:afterclose/presentation/widgets/market_dashboard/market_reading_line.dart';
-import 'package:afterclose/presentation/widgets/market_dashboard/sentiment_gauge_section.dart';
+import 'package:daredevil/core/constants/market_codes.dart';
+import 'package:daredevil/core/constants/market_index_names.dart';
+import 'package:daredevil/data/models/twse/twse_market_index.dart';
+import 'package:daredevil/presentation/providers/market_overview_provider.dart';
+import 'package:daredevil/presentation/widgets/market_dashboard/market_dashboard.dart';
+import 'package:daredevil/presentation/widgets/market_dashboard/market_reading_line.dart';
+import 'package:daredevil/presentation/widgets/market_dashboard/sentiment_gauge_section.dart';
 
 import '../../../helpers/widget_test_helpers.dart';
 

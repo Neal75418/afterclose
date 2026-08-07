@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:afterclose/presentation/providers/price_alert_provider.dart';
+import 'package:daredevil/presentation/providers/price_alert_provider.dart';
 
 /// AlertType → 圖示的單一來源
 ///

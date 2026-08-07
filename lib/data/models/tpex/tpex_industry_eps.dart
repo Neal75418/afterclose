@@ -1,5 +1,5 @@
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/core/constants/api_config.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/core/constants/api_config.dart';
 
 /// TPEX 產業別 EPS 資料（來源：櫃買中心 ap14_O API）
 ///

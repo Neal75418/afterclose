@@ -1,6 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 
-import 'package:afterclose/core/utils/number_formatter.dart';
+import 'package:daredevil/core/utils/number_formatter.dart';
 
 /// 應用程式字串集中管理（基於 easy_localization）
 ///

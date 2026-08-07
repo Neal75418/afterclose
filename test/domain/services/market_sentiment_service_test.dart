@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/domain/models/market_overview_models.dart';
-import 'package:afterclose/domain/services/market_sentiment_service.dart';
+import 'package:daredevil/domain/models/market_overview_models.dart';
+import 'package:daredevil/domain/services/market_sentiment_service.dart';
 
 void main() {
   group('MarketSentimentService.calculate', () {

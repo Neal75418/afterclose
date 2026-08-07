@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/core/utils/quarterly_filing_calendar.dart';
+import 'package:daredevil/core/utils/quarterly_filing_calendar.dart';
 
 /// 季報法定申報窗口(2026-08-06 季報總覽入口的顯示 gate)。
 ///

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
-import 'package:afterclose/core/constants/animations.dart';
-import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:daredevil/core/constants/animations.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
 
 /// 帶有漸層裝飾線的區塊標題
 ///

@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:afterclose/core/theme/breakpoints.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
-import 'package:afterclose/presentation/providers/watchlist_provider.dart';
-import 'package:afterclose/presentation/widgets/common/drag_handle.dart';
+import 'package:daredevil/core/theme/breakpoints.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
+import 'package:daredevil/presentation/providers/watchlist_provider.dart';
+import 'package:daredevil/presentation/widgets/common/drag_handle.dart';
 
 /// 顯示「移到分組」picker（股票長按 → 移到分組）
 ///

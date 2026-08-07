@@ -1,16 +1,16 @@
-import 'package:afterclose/core/constants/calibrated_scores/calibrated_scores_registry.dart';
-import 'package:afterclose/core/constants/reason_type.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/core/utils/taiwan_calendar.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/remote/api_budget_tracker.dart';
-import 'package:afterclose/data/remote/finmind_client.dart';
-import 'package:afterclose/data/remote/rss_parser.dart';
-import 'package:afterclose/data/remote/tdcc_client.dart';
-import 'package:afterclose/data/remote/tpex_client.dart';
-import 'package:afterclose/data/remote/twse_client.dart';
-import 'package:afterclose/domain/services/update_service.dart';
-import 'package:afterclose/domain/services/update_service_factory.dart';
+import 'package:daredevil/core/constants/calibrated_scores/calibrated_scores_registry.dart';
+import 'package:daredevil/core/constants/reason_type.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/core/utils/taiwan_calendar.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/data/remote/api_budget_tracker.dart';
+import 'package:daredevil/data/remote/finmind_client.dart';
+import 'package:daredevil/data/remote/rss_parser.dart';
+import 'package:daredevil/data/remote/tdcc_client.dart';
+import 'package:daredevil/data/remote/tpex_client.dart';
+import 'package:daredevil/data/remote/twse_client.dart';
+import 'package:daredevil/domain/services/update_service.dart';
+import 'package:daredevil/domain/services/update_service_factory.dart';
 
 const _tag = 'HeadlessUpdateRunner';
 

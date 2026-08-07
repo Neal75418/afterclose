@@ -1,11 +1,11 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
-import 'package:afterclose/core/utils/taiwan_date_formatter.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/presentation/screens/stock_detail/tabs/fundamentals/fundamentals_helpers.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
+import 'package:daredevil/core/utils/taiwan_date_formatter.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/presentation/screens/stock_detail/tabs/fundamentals/fundamentals_helpers.dart';
 
 /// 顯示近 8 季 EPS 資料表，附季對季成長率標章。
 class EpsTable extends StatelessWidget {

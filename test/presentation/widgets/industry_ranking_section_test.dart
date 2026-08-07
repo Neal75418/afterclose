@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/domain/models/industry_ranking.dart';
-import 'package:afterclose/presentation/providers/industry_ranking_provider.dart';
-import 'package:afterclose/presentation/widgets/industry_ranking_section.dart';
+import 'package:daredevil/domain/models/industry_ranking.dart';
+import 'package:daredevil/presentation/providers/industry_ranking_provider.dart';
+import 'package:daredevil/presentation/widgets/industry_ranking_section.dart';
 
 import '../../helpers/widget_test_helpers.dart';
 

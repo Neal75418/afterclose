@@ -1,6 +1,6 @@
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/domain/models/analysis_context.dart';
-import 'package:afterclose/domain/models/scoring_batch_data.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/domain/models/analysis_context.dart';
+import 'package:daredevil/domain/models/scoring_batch_data.dart';
 
 /// 法人與籌碼面資料群組
 ///

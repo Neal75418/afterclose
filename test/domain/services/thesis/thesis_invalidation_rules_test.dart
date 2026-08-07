@@ -5,8 +5,8 @@
 // referencePrice → 失效、觸發日 = 首個滿足日。
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/core/constants/exit_params.dart';
-import 'package:afterclose/domain/services/thesis/thesis_invalidation_rules.dart';
+import 'package:daredevil/core/constants/exit_params.dart';
+import 'package:daredevil/domain/services/thesis/thesis_invalidation_rules.dart';
 
 void main() {
   // closes[0] = 釘選日（t0）；序列可含 null（停牌列）

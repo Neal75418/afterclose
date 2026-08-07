@@ -1,6 +1,6 @@
-import 'package:afterclose/core/constants/chip_strength.dart';
-import 'package:afterclose/domain/services/chip_analysis_service.dart';
-import 'package:afterclose/data/database/app_database.dart';
+import 'package:daredevil/core/constants/chip_strength.dart';
+import 'package:daredevil/domain/services/chip_analysis_service.dart';
+import 'package:daredevil/data/database/app_database.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

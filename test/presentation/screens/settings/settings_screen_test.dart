@@ -4,11 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/presentation/providers/providers.dart';
-import 'package:afterclose/presentation/providers/settings_provider.dart';
-import 'package:afterclose/presentation/screens/settings/settings_screen.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/presentation/providers/providers.dart';
+import 'package:daredevil/presentation/providers/settings_provider.dart';
+import 'package:daredevil/presentation/screens/settings/settings_screen.dart';
 
 /// 共享測試 DB（避免 Drift multiple-database warning）
 final _testDb = AppDatabase.forTesting();

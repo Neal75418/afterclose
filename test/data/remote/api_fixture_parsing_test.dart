@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:afterclose/core/constants/api_endpoints.dart';
-import 'package:afterclose/data/remote/finmind_client.dart';
-import 'package:afterclose/data/remote/tdcc_client.dart';
-import 'package:afterclose/data/remote/tpex_client.dart';
-import 'package:afterclose/data/remote/twse_client.dart';
+import 'package:daredevil/core/constants/api_endpoints.dart';
+import 'package:daredevil/data/remote/finmind_client.dart';
+import 'package:daredevil/data/remote/tdcc_client.dart';
+import 'package:daredevil/data/remote/tpex_client.dart';
+import 'package:daredevil/data/remote/twse_client.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';

@@ -1,13 +1,13 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import 'package:afterclose/core/constants/api_config.dart';
-import 'package:afterclose/core/constants/calibrated_scores/calibrated_scores_registry.dart';
-import 'package:afterclose/domain/models/signal_names.dart';
-import 'package:afterclose/core/constants/reason_type.dart';
-import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/core/theme/semantic_colors.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:daredevil/core/constants/api_config.dart';
+import 'package:daredevil/core/constants/calibrated_scores/calibrated_scores_registry.dart';
+import 'package:daredevil/domain/models/signal_names.dart';
+import 'package:daredevil/core/constants/reason_type.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
+import 'package:daredevil/core/theme/semantic_colors.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
 
 /// 推薦原因標籤的尺寸變體
 enum ReasonTagSize {

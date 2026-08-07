@@ -5,9 +5,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 
-import 'package:afterclose/core/constants/animations.dart';
-import 'package:afterclose/presentation/providers/watchlist_provider.dart';
-import 'package:afterclose/presentation/widgets/stock_card.dart';
+import 'package:daredevil/core/constants/animations.dart';
+import 'package:daredevil/presentation/providers/watchlist_provider.dart';
+import 'package:daredevil/presentation/widgets/stock_card.dart';
 
 /// 自選股列表項目（含左右滑動操作）
 ///

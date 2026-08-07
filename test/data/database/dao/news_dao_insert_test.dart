@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/data/database/app_database.dart';
+import 'package:daredevil/data/database/app_database.dart';
 
 /// insertNewsWithMappings 的重跑冪等守門：穩定 id + insertOrIgnore
 /// 是重大訊息每日檔累積不重複的載體，必須有真 DB 驗證（審查 i 項）。

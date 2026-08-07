@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/data/database/dao/quarterly_report_dao.dart';
-import 'package:afterclose/presentation/providers/quarterly_report_overview_provider.dart';
+import 'package:daredevil/data/database/dao/quarterly_report_dao.dart';
+import 'package:daredevil/presentation/providers/quarterly_report_overview_provider.dart';
 
 /// 季報總覽的過濾+排序純函式(2026-08-06)。
 ///

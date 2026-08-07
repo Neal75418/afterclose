@@ -1,11 +1,11 @@
 import 'package:drift/drift.dart';
 
-import 'package:afterclose/core/constants/data_freshness.dart';
-import 'package:afterclose/core/utils/clock.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/remote/rss_parser.dart';
-import 'package:afterclose/data/remote/twse_client.dart';
-import 'package:afterclose/domain/repositories/news_repository.dart';
+import 'package:daredevil/core/constants/data_freshness.dart';
+import 'package:daredevil/core/utils/clock.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/data/remote/rss_parser.dart';
+import 'package:daredevil/data/remote/twse_client.dart';
+import 'package:daredevil/domain/repositories/news_repository.dart';
 
 /// 新聞資料 Repository
 class NewsRepository implements INewsRepository {

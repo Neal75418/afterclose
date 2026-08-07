@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:afterclose/core/utils/clock.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/domain/repositories/news_repository.dart';
-import 'package:afterclose/domain/services/update/news_mention_snapshot_service.dart';
+import 'package:daredevil/core/utils/clock.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/domain/repositories/news_repository.dart';
+import 'package:daredevil/domain/services/update/news_mention_snapshot_service.dart';
 
 class MockNewsRepository extends Mock implements INewsRepository {}
 

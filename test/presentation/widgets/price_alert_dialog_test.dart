@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/presentation/providers/price_alert_provider.dart';
-import 'package:afterclose/presentation/widgets/price_alert_dialog.dart';
+import 'package:daredevil/presentation/providers/price_alert_provider.dart';
+import 'package:daredevil/presentation/widgets/price_alert_dialog.dart';
 
 import '../../helpers/provider_test_helpers.dart';
 import '../../helpers/widget_test_helpers.dart';

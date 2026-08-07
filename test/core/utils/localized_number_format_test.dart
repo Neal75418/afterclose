@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/core/utils/localized_number_format.dart';
+import 'package:daredevil/core/utils/localized_number_format.dart';
 
 /// LocalizedNumberFormat.compact 的邊界測試(2026-08-01 審查補課)。
 ///

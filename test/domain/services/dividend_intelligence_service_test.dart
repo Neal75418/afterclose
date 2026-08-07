@@ -1,5 +1,5 @@
-import 'package:afterclose/core/utils/clock.dart';
-import 'package:afterclose/domain/services/dividend_intelligence_service.dart';
+import 'package:daredevil/core/utils/clock.dart';
+import 'package:daredevil/domain/services/dividend_intelligence_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../helpers/portfolio_data_builders.dart';

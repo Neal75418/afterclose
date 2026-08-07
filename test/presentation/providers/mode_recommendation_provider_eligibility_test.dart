@@ -6,10 +6,10 @@
 
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/core/constants/scoring_mode.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/database/dao/analysis_dao.dart';
-import 'package:afterclose/presentation/providers/mode_recommendation_provider.dart';
+import 'package:daredevil/core/constants/scoring_mode.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/data/database/dao/analysis_dao.dart';
+import 'package:daredevil/presentation/providers/mode_recommendation_provider.dart';
 
 void main() {
   group('isEligibleForMode — Mode A (momentumEntry) — 乖離率 gate', () {

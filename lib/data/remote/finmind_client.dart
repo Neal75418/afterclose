@@ -2,15 +2,15 @@ import 'dart:math' show Random;
 
 import 'package:dio/dio.dart';
 
-import 'package:afterclose/core/constants/api_config.dart';
-import 'package:afterclose/core/constants/api_endpoints.dart';
-import 'package:afterclose/core/constants/data_freshness.dart';
-import 'package:afterclose/core/exceptions/app_exception.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/core/utils/lru_cache.dart';
-import 'package:afterclose/data/models/finmind/models.dart';
-import 'package:afterclose/data/remote/api_budget_tracker.dart';
-export 'package:afterclose/data/models/finmind/models.dart';
+import 'package:daredevil/core/constants/api_config.dart';
+import 'package:daredevil/core/constants/api_endpoints.dart';
+import 'package:daredevil/core/constants/data_freshness.dart';
+import 'package:daredevil/core/exceptions/app_exception.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/core/utils/lru_cache.dart';
+import 'package:daredevil/data/models/finmind/models.dart';
+import 'package:daredevil/data/remote/api_budget_tracker.dart';
+export 'package:daredevil/data/models/finmind/models.dart';
 
 /// FinMind API 客戶端（台股市場資料）
 ///

@@ -1,6 +1,6 @@
-import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/core/theme/color_contrast.dart';
-import 'package:afterclose/core/theme/semantic_colors.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
+import 'package:daredevil/core/theme/color_contrast.dart';
+import 'package:daredevil/core/theme/semantic_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

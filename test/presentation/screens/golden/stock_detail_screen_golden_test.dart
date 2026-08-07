@@ -7,10 +7,10 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/presentation/providers/price_alert_provider.dart';
-import 'package:afterclose/presentation/providers/settings_provider.dart';
-import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
-import 'package:afterclose/presentation/screens/stock_detail/stock_detail_screen.dart';
+import 'package:daredevil/presentation/providers/price_alert_provider.dart';
+import 'package:daredevil/presentation/providers/settings_provider.dart';
+import 'package:daredevil/presentation/providers/stock_detail_provider.dart';
+import 'package:daredevil/presentation/screens/stock_detail/stock_detail_screen.dart';
 
 import '../../../helpers/provider_test_helpers.dart';
 import '../../../helpers/widget_test_helpers.dart';

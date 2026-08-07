@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/domain/services/chip_anomaly_service.dart'
+import 'package:daredevil/domain/services/chip_anomaly_service.dart'
     show ChipAnomaly, ChipAnomalyType, ChipSeverity, kZeroInsiderTransfer;
-import 'package:afterclose/presentation/providers/market_overview_provider.dart'
+import 'package:daredevil/presentation/providers/market_overview_provider.dart'
     show WarningCounts;
-import 'package:afterclose/presentation/widgets/market_dashboard/chip_anomaly_row.dart';
+import 'package:daredevil/presentation/widgets/market_dashboard/chip_anomaly_row.dart';
 
 import '../../../helpers/widget_test_helpers.dart';
 

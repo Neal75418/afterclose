@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/core/theme/semantic_colors.dart';
-import 'package:afterclose/core/constants/chip_strength.dart';
-import 'package:afterclose/presentation/screens/stock_detail/widgets/chip_strength_indicator.dart';
+import 'package:daredevil/core/theme/semantic_colors.dart';
+import 'package:daredevil/core/constants/chip_strength.dart';
+import 'package:daredevil/presentation/screens/stock_detail/widgets/chip_strength_indicator.dart';
 
 import '../../../../helpers/widget_test_helpers.dart';
 

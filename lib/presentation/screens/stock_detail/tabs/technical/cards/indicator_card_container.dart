@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
 
 /// 所有技術指標卡片共用的半透明容器。
 class IndicatorCardContainer extends StatelessWidget {

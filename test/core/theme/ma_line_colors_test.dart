@@ -2,10 +2,10 @@ import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/core/theme/color_contrast.dart';
-import 'package:afterclose/core/theme/indicator_colors.dart';
-import 'package:afterclose/core/theme/semantic_colors.dart';
-import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/chart_indicators.dart';
+import 'package:daredevil/core/theme/color_contrast.dart';
+import 'package:daredevil/core/theme/indicator_colors.dart';
+import 'package:daredevil/core/theme/semantic_colors.dart';
+import 'package:daredevil/presentation/screens/stock_detail/tabs/technical/chart_indicators.dart';
 
 /// K 線圖四條均線的配色守門(2026-08-03)。
 ///

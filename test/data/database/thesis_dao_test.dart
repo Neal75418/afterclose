@@ -7,8 +7,8 @@
 //   4. touchLastChecked 批次更新（updatedAt 僅於 status 變更時動）
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/core/constants/exit_params.dart';
-import 'package:afterclose/data/database/app_database.dart';
+import 'package:daredevil/core/constants/exit_params.dart';
+import 'package:daredevil/data/database/app_database.dart';
 
 void main() {
   late AppDatabase db;

@@ -1,5 +1,5 @@
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/core/utils/tw_parse_utils.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/core/utils/tw_parse_utils.dart';
 
 /// TPEX 內部人轉讓持股資料（來源：櫃買中心 ap12_O API）
 ///

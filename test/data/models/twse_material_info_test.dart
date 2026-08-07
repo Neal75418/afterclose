@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/data/models/twse/twse_material_info.dart';
+import 'package:daredevil/data/models/twse/twse_material_info.dart';
 
 void main() {
   group('investorConferenceDate 標準函式（供已存新聞重用）', () {

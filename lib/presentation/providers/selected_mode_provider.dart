@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:afterclose/core/constants/scoring_mode.dart';
+import 'package:daredevil/core/constants/scoring_mode.dart';
 
 /// 當前使用者在 Today screen 選擇的 mode（3-tab UI 主軸）
 ///

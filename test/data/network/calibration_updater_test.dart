@@ -34,10 +34,10 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:afterclose/core/utils/clock.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/network/calibration_fetch_result.dart';
-import 'package:afterclose/data/network/calibration_updater.dart';
+import 'package:daredevil/core/utils/clock.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/data/network/calibration_fetch_result.dart';
+import 'package:daredevil/data/network/calibration_updater.dart';
 
 // ============================================================================
 // Test doubles

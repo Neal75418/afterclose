@@ -1,5 +1,5 @@
-import 'package:afterclose/core/utils/clock.dart';
-import 'package:afterclose/core/utils/taiwan_time.dart';
+import 'package:daredevil/core/utils/clock.dart';
+import 'package:daredevil/core/utils/taiwan_time.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

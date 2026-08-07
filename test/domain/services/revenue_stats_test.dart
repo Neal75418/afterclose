@@ -1,4 +1,4 @@
-import 'package:afterclose/domain/services/revenue_stats.dart';
+import 'package:daredevil/domain/services/revenue_stats.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

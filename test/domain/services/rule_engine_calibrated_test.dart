@@ -6,11 +6,11 @@
 //
 // 這些測試是 Stage 5b Commit 3 的 TDD 起點：驗證邏輯正確性，
 // 並鎖定 Stage 5a 的 fallback 語意（empty context = 舊行為）。
-import 'package:afterclose/core/constants/calibrated_scores/calibrated_score_context.dart';
-import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
-import 'package:afterclose/core/constants/rule_params.dart';
-import 'package:afterclose/domain/models/models.dart';
-import 'package:afterclose/domain/services/rule_engine.dart';
+import 'package:daredevil/core/constants/calibrated_scores/calibrated_score_context.dart';
+import 'package:daredevil/core/constants/calibrated_scores/horizon.dart';
+import 'package:daredevil/core/constants/rule_params.dart';
+import 'package:daredevil/domain/models/models.dart';
+import 'package:daredevil/domain/services/rule_engine.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

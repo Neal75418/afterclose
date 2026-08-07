@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/domain/services/technical_indicator_service.dart';
-import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/cards/atr_card.dart';
+import 'package:daredevil/domain/services/technical_indicator_service.dart';
+import 'package:daredevil/presentation/screens/stock_detail/tabs/technical/cards/atr_card.dart';
 
 import '../../../../../../helpers/widget_test_helpers.dart';
 

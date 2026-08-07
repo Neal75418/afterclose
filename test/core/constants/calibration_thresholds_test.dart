@@ -11,7 +11,7 @@
 // 重新定義 const 造成的 unused field warning。
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/core/constants/calibration_thresholds.dart';
+import 'package:daredevil/core/constants/calibration_thresholds.dart';
 
 void main() {
   group('CalibrationThresholds canonical values', () {

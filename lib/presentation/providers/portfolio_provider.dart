@@ -1,13 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:afterclose/core/utils/error_display.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/core/utils/sentinel.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/repositories/portfolio_repository.dart';
-import 'package:afterclose/domain/services/dividend_intelligence_service.dart';
-import 'package:afterclose/domain/services/portfolio_analytics_service.dart';
-import 'package:afterclose/presentation/providers/providers.dart';
+import 'package:daredevil/core/utils/error_display.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/core/utils/sentinel.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/data/repositories/portfolio_repository.dart';
+import 'package:daredevil/domain/services/dividend_intelligence_service.dart';
+import 'package:daredevil/domain/services/portfolio_analytics_service.dart';
+import 'package:daredevil/presentation/providers/providers.dart';
 
 // ==================================================
 // 交易類型

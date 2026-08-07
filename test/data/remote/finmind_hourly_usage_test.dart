@@ -26,8 +26,8 @@
 // 「未評分股票宣稱盤整」同一個病。
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/data/remote/api_budget_tracker.dart';
-import 'package:afterclose/data/remote/finmind_client.dart';
+import 'package:daredevil/data/remote/api_budget_tracker.dart';
+import 'package:daredevil/data/remote/finmind_client.dart';
 
 void main() {
   test('🚨 hourlyUsage 須反映 tracker 的實際計數', () {

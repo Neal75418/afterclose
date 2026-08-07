@@ -8,13 +8,13 @@
 // - Symbols whitelist 優先於 stock master 查詢
 //
 // 不測試真實 TWSE/FinMind API — 那些由 operational run 驗證。
-import 'package:afterclose/core/exceptions/app_exception.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/domain/repositories/fundamental_repository.dart';
-import 'package:afterclose/domain/repositories/institutional_repository.dart';
-import 'package:afterclose/domain/repositories/price_repository.dart';
-import 'package:afterclose/domain/repositories/stock_repository.dart';
-import 'package:afterclose/domain/repositories/trading_repository.dart';
+import 'package:daredevil/core/exceptions/app_exception.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/domain/repositories/fundamental_repository.dart';
+import 'package:daredevil/domain/repositories/institutional_repository.dart';
+import 'package:daredevil/domain/repositories/price_repository.dart';
+import 'package:daredevil/domain/repositories/stock_repository.dart';
+import 'package:daredevil/domain/repositories/trading_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 

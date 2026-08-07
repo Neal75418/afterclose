@@ -1,4 +1,4 @@
-import 'package:afterclose/data/database/app_database.dart';
+import 'package:daredevil/data/database/app_database.dart';
 
 // ==================================================
 // Isolate 序列化 Extension Methods

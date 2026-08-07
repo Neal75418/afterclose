@@ -1,6 +1,6 @@
 <div align="center">
 
-# AfterClose
+# Daredevil
 
 **Local-First 盤後台股掃描 App**
 
@@ -11,8 +11,8 @@ _See what changed, without noise._
 [![Flutter](https://img.shields.io/badge/Flutter-3.38-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
 [![Dart](https://img.shields.io/badge/Dart-3.10-0175C2?logo=dart&logoColor=white)](https://dart.dev)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![CI](https://github.com/Neal75418/afterclose/actions/workflows/flutter.yml/badge.svg)](https://github.com/Neal75418/afterclose/actions/workflows/flutter.yml)
-[![codecov](https://codecov.io/gh/Neal75418/afterclose/branch/main/graph/badge.svg)](https://codecov.io/gh/Neal75418/afterclose)
+[![CI](https://github.com/Neal75418/daredevil/actions/workflows/flutter.yml/badge.svg)](https://github.com/Neal75418/daredevil/actions/workflows/flutter.yml)
+[![codecov](https://codecov.io/gh/Neal75418/daredevil/branch/main/graph/badge.svg)](https://codecov.io/gh/Neal75418/daredevil)
 
 </div>
 
@@ -200,8 +200,8 @@ pie showData title 依類別分佈（66 reason / 64 規則）
 ### 安裝與啟動
 
 ```bash
-git clone https://github.com/Neal75418/afterclose.git
-cd afterclose
+git clone https://github.com/Neal75418/daredevil.git
+cd daredevil
 flutter pub get
 dart run build_runner build --delete-conflicting-outputs
 flutter run
@@ -221,8 +221,8 @@ dart run build_runner build --delete-conflicting-outputs        # 程式碼生�
 
 ## 測試
 
-測試數量與覆蓋率以 [CI](https://github.com/Neal75418/afterclose/actions/workflows/flutter.yml) 與
-[Codecov](https://codecov.io/gh/Neal75418/afterclose) 為準；各層覆蓋率目標與現況快照見
+測試數量與覆蓋率以 [CI](https://github.com/Neal75418/daredevil/actions/workflows/flutter.yml) 與
+[Codecov](https://codecov.io/gh/Neal75418/daredevil) 為準；各層覆蓋率目標與現況快照見
 [docs/TEST_COVERAGE_PLAN.md](docs/TEST_COVERAGE_PLAN.md)。
 
 ```bash
@@ -260,7 +260,7 @@ flutter test test/domain/services/ # 測試特定目錄
 
 <div align="center">
 
-**AfterClose** — _See what changed, without noise._
+**Daredevil** — _See what changed, without noise._
 
 Made with ❤️ for Taiwan Stock Market
 

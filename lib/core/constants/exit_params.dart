@@ -1,4 +1,4 @@
-import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:daredevil/core/constants/rule_params.dart';
 
 /// 出場/論點失效參數（評分改進 #3）
 ///

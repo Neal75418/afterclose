@@ -1,7 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
 
 /// ScoreRing 的預設尺寸變體
 enum ScoreRingSize {

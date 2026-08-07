@@ -1,17 +1,17 @@
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:afterclose/core/constants/risk_warnings.dart';
-import 'package:afterclose/core/constants/rule_params.dart';
-import 'package:afterclose/core/constants/scoring_mode.dart';
-import 'package:afterclose/core/utils/date_context.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/domain/services/price_calculator.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/database/dao/analysis_dao.dart';
-import 'package:afterclose/domain/services/analysis/sector_strength_service.dart';
-import 'package:afterclose/presentation/providers/data_update_epoch_provider.dart';
-import 'package:afterclose/presentation/providers/providers.dart';
+import 'package:daredevil/core/constants/risk_warnings.dart';
+import 'package:daredevil/core/constants/rule_params.dart';
+import 'package:daredevil/core/constants/scoring_mode.dart';
+import 'package:daredevil/core/utils/date_context.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/domain/services/price_calculator.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/data/database/dao/analysis_dao.dart';
+import 'package:daredevil/domain/services/analysis/sector_strength_service.dart';
+import 'package:daredevil/presentation/providers/data_update_epoch_provider.dart';
+import 'package:daredevil/presentation/providers/providers.dart';
 
 /// Mode-based 推薦項目（每檔包含 5D 跟 60D 雙 score）
 ///

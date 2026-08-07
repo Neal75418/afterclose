@@ -1,10 +1,10 @@
-import 'package:afterclose/core/exceptions/app_exception.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/remote/finmind_client.dart';
-import 'package:afterclose/data/remote/mops_client.dart';
-import 'package:afterclose/data/remote/tpex_client.dart';
-import 'package:afterclose/data/remote/twse_client.dart';
-import 'package:afterclose/data/repositories/fundamental_repository.dart';
+import 'package:daredevil/core/exceptions/app_exception.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/data/remote/finmind_client.dart';
+import 'package:daredevil/data/remote/mops_client.dart';
+import 'package:daredevil/data/remote/tpex_client.dart';
+import 'package:daredevil/data/remote/twse_client.dart';
+import 'package:daredevil/data/repositories/fundamental_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 

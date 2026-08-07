@@ -3,8 +3,8 @@ import 'dart:io';
 
 import 'package:easy_localization/easy_localization.dart';
 
-import 'package:afterclose/core/exceptions/app_exception.dart';
-import 'package:afterclose/core/utils/logger.dart';
+import 'package:daredevil/core/exceptions/app_exception.dart';
+import 'package:daredevil/core/utils/logger.dart';
 
 /// 將例外轉換為使用者友善的錯誤訊息
 ///

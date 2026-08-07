@@ -1,6 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 
-import 'package:afterclose/core/utils/number_formatter.dart';
+import 'package:daredevil/core/utils/number_formatter.dart';
 
 /// 需要 i18n(`.tr()`)的數字格式化——**presentation 專用**。
 ///

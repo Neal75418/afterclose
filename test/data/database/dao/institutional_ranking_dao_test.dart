@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/data/database/app_database.dart';
+import 'package:daredevil/data/database/app_database.dart';
 
 /// 法人買賣超排行查詢(2026-08-05,盤後籌碼排行頁的資料層)。
 ///

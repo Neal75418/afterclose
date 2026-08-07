@@ -4,10 +4,10 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/domain/models/stock_summary.dart';
-import 'package:afterclose/presentation/providers/comparison_provider.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/domain/models/stock_summary.dart';
+import 'package:daredevil/presentation/providers/comparison_provider.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
 
 /// 雷達圖，跨 6 個維度比較股票。
 ///

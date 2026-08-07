@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/domain/services/signal_confluence.dart';
+import 'package:daredevil/domain/services/signal_confluence.dart';
 
 import '../../helpers/analysis_data_generators.dart';
 

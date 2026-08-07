@@ -23,8 +23,8 @@
 // 不動（它先於本功能存在，且重跑時 needy 為空、不是壓力來源）。
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/core/constants/api_config.dart';
-import 'package:afterclose/domain/services/update_service.dart';
+import 'package:daredevil/core/constants/api_config.dart';
+import 'package:daredevil/domain/services/update_service.dart';
 
 void main() {
   const max = ApiConfig.otcFinancialSyncMaxCount;

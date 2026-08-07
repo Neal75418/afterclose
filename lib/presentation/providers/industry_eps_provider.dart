@@ -1,11 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:afterclose/core/utils/error_display.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/core/utils/sentinel.dart';
-import 'package:afterclose/data/models/tpex/tpex_industry_eps.dart';
-import 'package:afterclose/presentation/providers/data_update_epoch_provider.dart';
-import 'package:afterclose/presentation/providers/providers.dart';
+import 'package:daredevil/core/utils/error_display.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/core/utils/sentinel.dart';
+import 'package:daredevil/data/models/tpex/tpex_industry_eps.dart';
+import 'package:daredevil/presentation/providers/data_update_epoch_provider.dart';
+import 'package:daredevil/presentation/providers/providers.dart';
 
 // ==================================================
 // 產業 EPS 狀態

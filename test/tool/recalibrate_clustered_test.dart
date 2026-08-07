@@ -11,7 +11,7 @@ import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/core/constants/calibration_thresholds.dart';
+import 'package:daredevil/core/constants/calibration_thresholds.dart';
 
 import '../../tool/recalibrate.dart';
 

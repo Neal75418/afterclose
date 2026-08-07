@@ -1,6 +1,6 @@
 import 'dart:ui';
 
-import 'package:afterclose/core/theme/color_contrast.dart';
+import 'package:daredevil/core/theme/color_contrast.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

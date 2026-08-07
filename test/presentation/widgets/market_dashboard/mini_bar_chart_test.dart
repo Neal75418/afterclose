@@ -10,8 +10,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/presentation/widgets/market_dashboard/mini_bar_chart.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
+import 'package:daredevil/presentation/widgets/market_dashboard/mini_bar_chart.dart';
 
 void main() {
   const up = Color(0xFFFF4757);

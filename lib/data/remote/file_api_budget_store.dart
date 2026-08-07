@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:afterclose/data/remote/api_budget_tracker.dart';
+import 'package:daredevil/data/remote/api_budget_tracker.dart';
 
 /// [ApiBudgetStore] 的純 Dart 檔案實作——launchd CLI 專用。
 ///

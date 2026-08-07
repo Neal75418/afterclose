@@ -3,24 +3,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:afterclose/core/constants/app_routes.dart';
-import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
-import 'package:afterclose/core/utils/error_display.dart';
-import 'package:afterclose/presentation/providers/pinned_thesis_provider.dart';
-import 'package:afterclose/presentation/providers/stock_browsing_context_provider.dart';
-import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
-import 'package:afterclose/presentation/widgets/stock_nav_bar.dart';
-import 'package:afterclose/presentation/screens/stock_detail/tabs/alerts_tab.dart';
-import 'package:afterclose/presentation/screens/stock_detail/tabs/chip_tab.dart';
-import 'package:afterclose/presentation/screens/stock_detail/tabs/fundamentals_tab.dart';
-import 'package:afterclose/presentation/screens/stock_detail/tabs/insider_tab.dart';
-import 'package:afterclose/presentation/screens/stock_detail/tabs/technical_tab.dart';
-import 'package:afterclose/presentation/screens/stock_detail/widgets/ai_summary_card.dart';
-import 'package:afterclose/presentation/screens/stock_detail/widgets/stock_detail_header.dart';
-import 'package:afterclose/presentation/widgets/empty_state.dart';
-import 'package:afterclose/presentation/widgets/frosted_bar.dart';
-import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
+import 'package:daredevil/core/constants/app_routes.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
+import 'package:daredevil/core/utils/error_display.dart';
+import 'package:daredevil/presentation/providers/pinned_thesis_provider.dart';
+import 'package:daredevil/presentation/providers/stock_browsing_context_provider.dart';
+import 'package:daredevil/presentation/providers/stock_detail_provider.dart';
+import 'package:daredevil/presentation/widgets/stock_nav_bar.dart';
+import 'package:daredevil/presentation/screens/stock_detail/tabs/alerts_tab.dart';
+import 'package:daredevil/presentation/screens/stock_detail/tabs/chip_tab.dart';
+import 'package:daredevil/presentation/screens/stock_detail/tabs/fundamentals_tab.dart';
+import 'package:daredevil/presentation/screens/stock_detail/tabs/insider_tab.dart';
+import 'package:daredevil/presentation/screens/stock_detail/tabs/technical_tab.dart';
+import 'package:daredevil/presentation/screens/stock_detail/widgets/ai_summary_card.dart';
+import 'package:daredevil/presentation/screens/stock_detail/widgets/stock_detail_header.dart';
+import 'package:daredevil/presentation/widgets/empty_state.dart';
+import 'package:daredevil/presentation/widgets/frosted_bar.dart';
+import 'package:daredevil/presentation/widgets/shimmer_loading.dart';
 
 /// 個股詳情畫面 - 以分頁顯示完整股票資訊
 class StockDetailScreen extends ConsumerStatefulWidget {

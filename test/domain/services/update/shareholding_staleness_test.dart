@@ -13,9 +13,9 @@
 //
 // 門檻用**交易日**而非日曆天：週一評估用週五資料是 3 日曆天但只隔 1 交易日，
 // 用日曆天會誤殺合法資料。
-import 'package:afterclose/core/utils/taiwan_calendar.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/domain/services/update/batch_data_builder.dart';
+import 'package:daredevil/core/utils/taiwan_calendar.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/domain/services/update/batch_data_builder.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

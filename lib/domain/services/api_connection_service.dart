@@ -1,5 +1,5 @@
-import 'package:afterclose/core/exceptions/app_exception.dart';
-import 'package:afterclose/data/remote/finmind_client.dart';
+import 'package:daredevil/core/exceptions/app_exception.dart';
+import 'package:daredevil/data/remote/finmind_client.dart';
 
 /// API 連線測試服務
 ///

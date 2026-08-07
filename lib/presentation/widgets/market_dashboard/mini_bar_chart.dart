@@ -4,8 +4,8 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/core/theme/semantic_colors.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
+import 'package:daredevil/core/theme/semantic_colors.dart';
 
 /// 依數值取柱色——嚴格三分法（與 institutional_flow_chart 一致）
 ///

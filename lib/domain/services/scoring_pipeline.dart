@@ -7,13 +7,13 @@
 //
 // 本檔對 Flutter SDK 零依賴、無狀態，isolate 可直接使用。
 
-import 'package:afterclose/core/constants/calibrated_scores/calibrated_score_context.dart';
-import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
-import 'package:afterclose/core/constants/rule_params.dart';
-import 'package:afterclose/domain/services/liquidity_checker.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/domain/models/models.dart';
-import 'package:afterclose/domain/services/rule_engine.dart';
+import 'package:daredevil/core/constants/calibrated_scores/calibrated_score_context.dart';
+import 'package:daredevil/core/constants/calibrated_scores/horizon.dart';
+import 'package:daredevil/core/constants/rule_params.dart';
+import 'package:daredevil/domain/services/liquidity_checker.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/domain/models/models.dart';
+import 'package:daredevil/domain/services/rule_engine.dart';
 
 /// 豁免落庫門檻的 MA 階段穿越訊號。
 ///

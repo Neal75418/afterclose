@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
-import 'package:afterclose/core/l10n/app_strings.dart';
-import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/core/theme/semantic_colors.dart';
+import 'package:daredevil/core/l10n/app_strings.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
+import 'package:daredevil/core/theme/semantic_colors.dart';
 
 // ==================================================
 // 微光效果尺寸常數

@@ -6,61 +6,61 @@ import 'package:drift/native.dart';
 // `dart run`,不可引入 dart:ui 依賴鏈,見 forToolFile doc)
 import 'package:meta/meta.dart' show visibleForTesting;
 
-import 'package:afterclose/core/utils/logger.dart';
+import 'package:daredevil/core/utils/logger.dart';
 
-import 'package:afterclose/data/database/tables/stock_master.dart';
-import 'package:afterclose/data/database/tables/daily_price.dart';
-import 'package:afterclose/data/database/tables/daily_institutional.dart';
-import 'package:afterclose/data/database/tables/news_tables.dart';
-import 'package:afterclose/data/database/tables/analysis_tables.dart';
-import 'package:afterclose/data/database/tables/user_tables.dart';
-import 'package:afterclose/data/database/tables/market_data_tables.dart';
-import 'package:afterclose/data/database/tables/portfolio_tables.dart';
-import 'package:afterclose/data/database/tables/event_tables.dart';
-import 'package:afterclose/data/database/tables/market_index_tables.dart';
+import 'package:daredevil/data/database/tables/stock_master.dart';
+import 'package:daredevil/data/database/tables/daily_price.dart';
+import 'package:daredevil/data/database/tables/daily_institutional.dart';
+import 'package:daredevil/data/database/tables/news_tables.dart';
+import 'package:daredevil/data/database/tables/analysis_tables.dart';
+import 'package:daredevil/data/database/tables/user_tables.dart';
+import 'package:daredevil/data/database/tables/market_data_tables.dart';
+import 'package:daredevil/data/database/tables/portfolio_tables.dart';
+import 'package:daredevil/data/database/tables/event_tables.dart';
+import 'package:daredevil/data/database/tables/market_index_tables.dart';
 
 // Drift modular generated code
-import 'package:afterclose/data/database/app_database.drift.dart';
+import 'package:daredevil/data/database/app_database.drift.dart';
 
 // Re-export generated types for backward compatibility
-export 'package:afterclose/data/database/app_database.drift.dart';
-export 'package:afterclose/data/database/dao/price_dao.dart' show PriceCoverage;
-export 'package:afterclose/data/database/tables/stock_master.drift.dart';
-export 'package:afterclose/data/database/tables/daily_price.drift.dart';
-export 'package:afterclose/data/database/tables/daily_institutional.drift.dart';
-export 'package:afterclose/data/database/tables/news_tables.drift.dart';
-export 'package:afterclose/data/database/tables/analysis_tables.drift.dart';
-export 'package:afterclose/data/database/tables/user_tables.drift.dart';
-export 'package:afterclose/data/database/tables/market_data_tables.drift.dart';
-export 'package:afterclose/data/database/tables/portfolio_tables.drift.dart';
-export 'package:afterclose/data/database/tables/event_tables.drift.dart';
-export 'package:afterclose/data/database/tables/market_index_tables.drift.dart';
+export 'package:daredevil/data/database/app_database.drift.dart';
+export 'package:daredevil/data/database/dao/price_dao.dart' show PriceCoverage;
+export 'package:daredevil/data/database/tables/stock_master.drift.dart';
+export 'package:daredevil/data/database/tables/daily_price.drift.dart';
+export 'package:daredevil/data/database/tables/daily_institutional.drift.dart';
+export 'package:daredevil/data/database/tables/news_tables.drift.dart';
+export 'package:daredevil/data/database/tables/analysis_tables.drift.dart';
+export 'package:daredevil/data/database/tables/user_tables.drift.dart';
+export 'package:daredevil/data/database/tables/market_data_tables.drift.dart';
+export 'package:daredevil/data/database/tables/portfolio_tables.drift.dart';
+export 'package:daredevil/data/database/tables/event_tables.drift.dart';
+export 'package:daredevil/data/database/tables/market_index_tables.drift.dart';
 
 // DAO files (standalone)
-import 'package:afterclose/data/database/dao/analysis_dao.dart';
-import 'package:afterclose/data/database/dao/calibration_cache_dao.dart';
-import 'package:afterclose/data/database/dao/day_trading_dao.dart';
-import 'package:afterclose/data/database/dao/dividend_dao.dart';
-import 'package:afterclose/data/database/dao/event_dao.dart';
-import 'package:afterclose/data/database/dao/financial_data_dao.dart';
-import 'package:afterclose/data/database/dao/holding_distribution_dao.dart';
-import 'package:afterclose/data/database/dao/insider_holding_dao.dart';
-import 'package:afterclose/data/database/dao/insider_transfer_dao.dart';
-import 'package:afterclose/data/database/dao/institutional_dao.dart';
-import 'package:afterclose/data/database/dao/margin_trading_dao.dart';
-import 'package:afterclose/data/database/dao/market_index_dao.dart';
-import 'package:afterclose/data/database/dao/market_overview_dao.dart';
-import 'package:afterclose/data/database/dao/news_dao.dart';
-import 'package:afterclose/data/database/dao/portfolio_dao.dart';
-import 'package:afterclose/data/database/dao/price_dao.dart';
-import 'package:afterclose/data/database/dao/quarterly_report_dao.dart';
-import 'package:afterclose/data/database/dao/revenue_dao.dart';
-import 'package:afterclose/data/database/dao/shareholding_dao.dart';
-import 'package:afterclose/data/database/dao/stock_dao.dart';
-import 'package:afterclose/data/database/dao/trading_warning_dao.dart';
-import 'package:afterclose/data/database/dao/thesis_dao.dart';
-import 'package:afterclose/data/database/dao/user_dao.dart';
-import 'package:afterclose/data/database/dao/valuation_dao.dart';
+import 'package:daredevil/data/database/dao/analysis_dao.dart';
+import 'package:daredevil/data/database/dao/calibration_cache_dao.dart';
+import 'package:daredevil/data/database/dao/day_trading_dao.dart';
+import 'package:daredevil/data/database/dao/dividend_dao.dart';
+import 'package:daredevil/data/database/dao/event_dao.dart';
+import 'package:daredevil/data/database/dao/financial_data_dao.dart';
+import 'package:daredevil/data/database/dao/holding_distribution_dao.dart';
+import 'package:daredevil/data/database/dao/insider_holding_dao.dart';
+import 'package:daredevil/data/database/dao/insider_transfer_dao.dart';
+import 'package:daredevil/data/database/dao/institutional_dao.dart';
+import 'package:daredevil/data/database/dao/margin_trading_dao.dart';
+import 'package:daredevil/data/database/dao/market_index_dao.dart';
+import 'package:daredevil/data/database/dao/market_overview_dao.dart';
+import 'package:daredevil/data/database/dao/news_dao.dart';
+import 'package:daredevil/data/database/dao/portfolio_dao.dart';
+import 'package:daredevil/data/database/dao/price_dao.dart';
+import 'package:daredevil/data/database/dao/quarterly_report_dao.dart';
+import 'package:daredevil/data/database/dao/revenue_dao.dart';
+import 'package:daredevil/data/database/dao/shareholding_dao.dart';
+import 'package:daredevil/data/database/dao/stock_dao.dart';
+import 'package:daredevil/data/database/dao/trading_warning_dao.dart';
+import 'package:daredevil/data/database/dao/thesis_dao.dart';
+import 'package:daredevil/data/database/dao/user_dao.dart';
+import 'package:daredevil/data/database/dao/valuation_dao.dart';
 
 @DriftDatabase(
   tables: [

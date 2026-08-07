@@ -8,18 +8,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
-import 'package:afterclose/app/router.dart';
-import 'package:afterclose/core/constants/app_routes.dart';
-import 'package:afterclose/core/constants/calibrated_scores/calibrated_scores_registry.dart';
-import 'package:afterclose/core/constants/data_freshness.dart';
-import 'package:afterclose/app/background_update_service.dart';
-import 'package:afterclose/core/constants/reason_type.dart';
-import 'package:afterclose/core/services/notification_service.dart';
-import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/presentation/providers/providers.dart';
-import 'package:afterclose/presentation/providers/settings_provider.dart';
-import 'package:afterclose/presentation/providers/today_provider.dart';
+import 'package:daredevil/app/router.dart';
+import 'package:daredevil/core/constants/app_routes.dart';
+import 'package:daredevil/core/constants/calibrated_scores/calibrated_scores_registry.dart';
+import 'package:daredevil/core/constants/data_freshness.dart';
+import 'package:daredevil/app/background_update_service.dart';
+import 'package:daredevil/core/constants/reason_type.dart';
+import 'package:daredevil/core/services/notification_service.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/presentation/providers/providers.dart';
+import 'package:daredevil/presentation/providers/settings_provider.dart';
+import 'package:daredevil/presentation/providers/today_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

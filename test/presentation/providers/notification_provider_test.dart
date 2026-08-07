@@ -2,9 +2,9 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/presentation/providers/notification_provider.dart';
-import 'package:afterclose/presentation/providers/price_alert_provider.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/presentation/providers/notification_provider.dart';
+import 'package:daredevil/presentation/providers/price_alert_provider.dart';
 
 void main() {
   setUpAll(() async {

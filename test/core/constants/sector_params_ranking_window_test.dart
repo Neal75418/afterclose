@@ -5,8 +5,8 @@
 // UI 標「法人3日」但實際只加總 1 日（靜默低估，審查發現）。
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/core/constants/rule_params.dart';
-import 'package:afterclose/core/utils/taiwan_calendar.dart';
+import 'package:daredevil/core/constants/rule_params.dart';
+import 'package:daredevil/core/utils/taiwan_calendar.dart';
 
 void main() {
   int tradingDaysInWindow(DateTime analysisDate, int calendarDays) {

@@ -1,9 +1,9 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/data/remote/twse_client.dart';
-import 'package:afterclose/presentation/widgets/market_dashboard/hero_index_section.dart';
-import 'package:afterclose/presentation/screens/stock_detail/widgets/mini_trend_chart.dart';
+import 'package:daredevil/data/remote/twse_client.dart';
+import 'package:daredevil/presentation/widgets/market_dashboard/hero_index_section.dart';
+import 'package:daredevil/presentation/screens/stock_detail/widgets/mini_trend_chart.dart';
 
 import '../../../helpers/widget_test_helpers.dart';
 

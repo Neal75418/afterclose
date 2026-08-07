@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/core/l10n/app_strings.dart';
-import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/presentation/widgets/stock_preview_sheet.dart';
+import 'package:daredevil/core/l10n/app_strings.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
+import 'package:daredevil/presentation/widgets/stock_preview_sheet.dart';
 
 import '../../helpers/widget_test_helpers.dart';
 

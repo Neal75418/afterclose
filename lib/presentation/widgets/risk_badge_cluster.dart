@@ -1,13 +1,13 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import 'package:afterclose/core/constants/reason_type.dart';
-import 'package:afterclose/core/constants/risk_warnings.dart';
-import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/core/theme/breakpoints.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
-import 'package:afterclose/core/theme/semantic_colors.dart';
-import 'package:afterclose/presentation/widgets/reason_tags.dart';
+import 'package:daredevil/core/constants/reason_type.dart';
+import 'package:daredevil/core/constants/risk_warnings.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
+import 'package:daredevil/core/theme/breakpoints.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
+import 'package:daredevil/core/theme/semantic_colors.dart';
+import 'package:daredevil/presentation/widgets/reason_tags.dart';
 
 /// 風險警示聚合徽章（option B）
 ///

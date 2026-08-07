@@ -20,7 +20,7 @@
 // 100%，而現行邏輯恆為 88 檔、永不成長。
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/domain/services/update/market_data_updater.dart';
+import 'package:daredevil/domain/services/update/market_data_updater.dart';
 
 void main() {
   final freshnessDate = DateTime(2026, 7, 24);

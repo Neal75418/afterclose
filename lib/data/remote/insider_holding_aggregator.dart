@@ -1,5 +1,5 @@
-import 'package:afterclose/core/utils/tw_parse_utils.dart';
-import 'package:afterclose/data/models/tpex/insider_aggregation.dart';
+import 'package:daredevil/core/utils/tw_parse_utils.dart';
+import 'package:daredevil/data/models/tpex/insider_aggregation.dart';
 
 /// 董監持股比例的共用中間結果（各 client 自行 map 回自家 model）
 typedef InsiderHoldingRatios = ({

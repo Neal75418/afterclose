@@ -1,12 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:afterclose/core/exceptions/app_exception.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/models/tpex/tpex_insider_transfer.dart';
-import 'package:afterclose/data/remote/tpex_client.dart';
-import 'package:afterclose/data/remote/twse_client.dart';
-import 'package:afterclose/domain/services/update/insider_transfer_syncer.dart';
+import 'package:daredevil/core/exceptions/app_exception.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/data/models/tpex/tpex_insider_transfer.dart';
+import 'package:daredevil/data/remote/tpex_client.dart';
+import 'package:daredevil/data/remote/twse_client.dart';
+import 'package:daredevil/domain/services/update/insider_transfer_syncer.dart';
 
 class MockAppDatabase extends Mock implements AppDatabase {}
 

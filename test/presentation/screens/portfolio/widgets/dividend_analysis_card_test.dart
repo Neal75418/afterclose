@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/domain/services/dividend_intelligence_service.dart';
-import 'package:afterclose/presentation/screens/portfolio/widgets/dividend_analysis_card.dart';
+import 'package:daredevil/domain/services/dividend_intelligence_service.dart';
+import 'package:daredevil/presentation/screens/portfolio/widgets/dividend_analysis_card.dart';
 
 import '../../../../helpers/widget_test_helpers.dart';
 

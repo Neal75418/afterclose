@@ -14,10 +14,10 @@
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/core/constants/calibration_thresholds.dart';
-import 'package:afterclose/core/utils/taiwan_calendar.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/domain/services/rule_accuracy_service.dart';
+import 'package:daredevil/core/constants/calibration_thresholds.dart';
+import 'package:daredevil/core/utils/taiwan_calendar.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/domain/services/rule_accuracy_service.dart';
 
 void main() {
   late AppDatabase db;

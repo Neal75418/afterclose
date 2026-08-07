@@ -3,12 +3,12 @@ import 'dart:io';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/core/constants/calibrated_scores/calibrated_scores_registry.dart';
-import 'package:afterclose/core/constants/calibrated_scores/calibrated_scores_table.dart';
-import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
-import 'package:afterclose/core/constants/calibration_thresholds.dart';
-import 'package:afterclose/core/constants/reason_type.dart';
-import 'package:afterclose/core/constants/rule_scores.dart';
+import 'package:daredevil/core/constants/calibrated_scores/calibrated_scores_registry.dart';
+import 'package:daredevil/core/constants/calibrated_scores/calibrated_scores_table.dart';
+import 'package:daredevil/core/constants/calibrated_scores/horizon.dart';
+import 'package:daredevil/core/constants/calibration_thresholds.dart';
+import 'package:daredevil/core/constants/reason_type.dart';
+import 'package:daredevil/core/constants/rule_scores.dart';
 
 /// Helper: 建 happy-path JSON 字串
 String _buildJson({

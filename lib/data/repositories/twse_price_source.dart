@@ -1,13 +1,13 @@
 import 'package:drift/drift.dart';
 
-import 'package:afterclose/core/constants/api_config.dart';
-import 'package:afterclose/core/constants/market_codes.dart';
-import 'package:afterclose/core/constants/stock_patterns.dart';
-import 'package:afterclose/core/exceptions/app_exception.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/remote/twse_client.dart';
-import 'package:afterclose/data/repositories/price_candidate_filter.dart';
+import 'package:daredevil/core/constants/api_config.dart';
+import 'package:daredevil/core/constants/market_codes.dart';
+import 'package:daredevil/core/constants/stock_patterns.dart';
+import 'package:daredevil/core/exceptions/app_exception.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/data/remote/twse_client.dart';
+import 'package:daredevil/data/repositories/price_candidate_filter.dart';
 
 /// TWSE 上市股票價格資料來源
 ///

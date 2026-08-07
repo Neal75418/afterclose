@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/core/utils/tw_parse_utils.dart';
+import 'package:daredevil/core/utils/tw_parse_utils.dart';
 
 void main() {
   group('TwParseUtils', () {

@@ -1,22 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'package:afterclose/core/constants/animations.dart';
-import 'package:afterclose/core/constants/market_codes.dart';
-import 'package:afterclose/core/constants/ui_constants.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
-import 'package:afterclose/core/extensions/trend_state_extension.dart';
-import 'package:afterclose/core/l10n/app_strings.dart';
-import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/core/utils/number_formatter.dart';
-import 'package:afterclose/core/utils/price_limit.dart';
-import 'package:afterclose/core/constants/reason_type.dart';
-import 'package:afterclose/presentation/widgets/reason_tags.dart';
-import 'package:afterclose/presentation/widgets/risk_badge_cluster.dart';
-import 'package:afterclose/presentation/widgets/score_tier_badge.dart';
-import 'package:afterclose/presentation/widgets/stock_card_price.dart';
-import 'package:afterclose/presentation/widgets/stock_card_sparkline.dart';
-import 'package:afterclose/presentation/widgets/warning_badge.dart';
+import 'package:daredevil/core/constants/animations.dart';
+import 'package:daredevil/core/constants/market_codes.dart';
+import 'package:daredevil/core/constants/ui_constants.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
+import 'package:daredevil/core/extensions/trend_state_extension.dart';
+import 'package:daredevil/core/l10n/app_strings.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
+import 'package:daredevil/core/utils/number_formatter.dart';
+import 'package:daredevil/core/utils/price_limit.dart';
+import 'package:daredevil/core/constants/reason_type.dart';
+import 'package:daredevil/presentation/widgets/reason_tags.dart';
+import 'package:daredevil/presentation/widgets/risk_badge_cluster.dart';
+import 'package:daredevil/presentation/widgets/score_tier_badge.dart';
+import 'package:daredevil/presentation/widgets/stock_card_price.dart';
+import 'package:daredevil/presentation/widgets/stock_card_sparkline.dart';
+import 'package:daredevil/presentation/widgets/warning_badge.dart';
 
 /// 現代化股票資訊卡片 Widget
 ///

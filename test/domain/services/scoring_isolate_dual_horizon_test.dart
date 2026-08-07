@@ -2,9 +2,9 @@
 //
 // 驗證 [ScoringIsolateInput] / [ScoringIsolateOutput] / [IsolateReasonOutput]
 // 在新增 dual-horizon 欄位後的序列化正確性。
-import 'package:afterclose/core/constants/calibrated_scores/calibrated_score_context.dart';
-import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
-import 'package:afterclose/domain/services/scoring_isolate.dart';
+import 'package:daredevil/core/constants/calibrated_scores/calibrated_score_context.dart';
+import 'package:daredevil/core/constants/calibrated_scores/horizon.dart';
+import 'package:daredevil/domain/services/scoring_isolate.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

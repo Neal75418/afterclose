@@ -1,20 +1,20 @@
 import 'dart:convert';
-import 'package:afterclose/core/utils/number_formatter.dart';
+import 'package:daredevil/core/utils/number_formatter.dart';
 
 import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
 
-import 'package:afterclose/core/constants/analysis_params.dart';
-import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
-import 'package:afterclose/core/constants/rule_enums.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/core/utils/price_limit.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/remote/finmind_client.dart';
-import 'package:afterclose/domain/models/stock_summary.dart';
-import 'package:afterclose/domain/services/signal_confluence.dart';
-import 'package:afterclose/domain/services/technical_indicator_service.dart';
-import 'package:afterclose/domain/models/signal_names.dart';
+import 'package:daredevil/core/constants/analysis_params.dart';
+import 'package:daredevil/core/constants/calibrated_scores/horizon.dart';
+import 'package:daredevil/core/constants/rule_enums.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/core/utils/price_limit.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/data/remote/finmind_client.dart';
+import 'package:daredevil/domain/models/stock_summary.dart';
+import 'package:daredevil/domain/services/signal_confluence.dart';
+import 'package:daredevil/domain/services/technical_indicator_service.dart';
+import 'package:daredevil/domain/models/signal_names.dart';
 
 /// 個股 AI 智慧分析摘要生成服務
 ///

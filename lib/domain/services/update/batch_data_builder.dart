@@ -1,10 +1,10 @@
-import 'package:afterclose/core/constants/rule_params.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/core/utils/taiwan_calendar.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/repositories/insider_repository.dart';
-import 'package:afterclose/domain/models/analysis_context.dart';
-import 'package:afterclose/domain/models/scoring_batch_data.dart';
+import 'package:daredevil/core/constants/rule_params.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/core/utils/taiwan_calendar.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/data/repositories/insider_repository.dart';
+import 'package:daredevil/domain/models/analysis_context.dart';
+import 'package:daredevil/domain/models/scoring_batch_data.dart';
 
 /// 批次資料轉換工具
 ///

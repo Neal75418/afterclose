@@ -1,24 +1,24 @@
-import 'package:afterclose/data/repositories/analysis_repository.dart';
-import 'package:afterclose/data/repositories/fundamental_repository.dart';
-import 'package:afterclose/data/repositories/insider_repository.dart';
-import 'package:afterclose/data/repositories/institutional_repository.dart';
-import 'package:afterclose/data/repositories/market_data_repository.dart';
-import 'package:afterclose/data/repositories/news_repository.dart';
-import 'package:afterclose/data/repositories/price_repository.dart';
-import 'package:afterclose/data/repositories/shareholding_repository.dart';
-import 'package:afterclose/data/repositories/stock_repository.dart';
-import 'package:afterclose/data/repositories/trading_repository.dart';
-import 'package:afterclose/data/repositories/warning_repository.dart';
-import 'package:afterclose/data/remote/finmind_client.dart';
-import 'package:afterclose/data/remote/tdcc_client.dart';
-import 'package:afterclose/data/remote/tpex_client.dart';
-import 'package:afterclose/data/remote/twse_client.dart';
-import 'package:afterclose/domain/services/analysis_service.dart';
-import 'package:afterclose/domain/services/rule_engine.dart';
-import 'package:afterclose/domain/services/rule_accuracy_service.dart';
-import 'package:afterclose/domain/services/thesis/thesis_monitor_service.dart';
-import 'package:afterclose/domain/services/scoring_service.dart';
-import 'package:afterclose/domain/services/update/news_mention_snapshot_service.dart';
+import 'package:daredevil/data/repositories/analysis_repository.dart';
+import 'package:daredevil/data/repositories/fundamental_repository.dart';
+import 'package:daredevil/data/repositories/insider_repository.dart';
+import 'package:daredevil/data/repositories/institutional_repository.dart';
+import 'package:daredevil/data/repositories/market_data_repository.dart';
+import 'package:daredevil/data/repositories/news_repository.dart';
+import 'package:daredevil/data/repositories/price_repository.dart';
+import 'package:daredevil/data/repositories/shareholding_repository.dart';
+import 'package:daredevil/data/repositories/stock_repository.dart';
+import 'package:daredevil/data/repositories/trading_repository.dart';
+import 'package:daredevil/data/repositories/warning_repository.dart';
+import 'package:daredevil/data/remote/finmind_client.dart';
+import 'package:daredevil/data/remote/tdcc_client.dart';
+import 'package:daredevil/data/remote/tpex_client.dart';
+import 'package:daredevil/data/remote/twse_client.dart';
+import 'package:daredevil/domain/services/analysis_service.dart';
+import 'package:daredevil/domain/services/rule_engine.dart';
+import 'package:daredevil/domain/services/rule_accuracy_service.dart';
+import 'package:daredevil/domain/services/thesis/thesis_monitor_service.dart';
+import 'package:daredevil/domain/services/scoring_service.dart';
+import 'package:daredevil/domain/services/update/news_mention_snapshot_service.dart';
 
 /// [UpdateService] 的 Repository 依賴群組
 class UpdateRepositories {

@@ -2,19 +2,19 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 
-import 'package:afterclose/core/constants/calibrated_scores/calibrated_scores_registry.dart';
-import 'package:afterclose/core/theme/semantic_colors.dart';
+import 'package:daredevil/core/constants/calibrated_scores/calibrated_scores_registry.dart';
+import 'package:daredevil/core/theme/semantic_colors.dart';
 
-import 'package:afterclose/core/constants/market_codes.dart';
-import 'package:afterclose/core/constants/stock_patterns.dart';
-import 'package:afterclose/core/extensions/trend_state_extension.dart';
-import 'package:afterclose/core/l10n/app_strings.dart';
-import 'package:afterclose/core/utils/date_context.dart';
-import 'package:afterclose/core/utils/number_formatter.dart';
-import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
-import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
-import 'package:afterclose/presentation/widgets/reason_tags.dart';
+import 'package:daredevil/core/constants/market_codes.dart';
+import 'package:daredevil/core/constants/stock_patterns.dart';
+import 'package:daredevil/core/extensions/trend_state_extension.dart';
+import 'package:daredevil/core/l10n/app_strings.dart';
+import 'package:daredevil/core/utils/date_context.dart';
+import 'package:daredevil/core/utils/number_formatter.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
+import 'package:daredevil/presentation/providers/stock_detail_provider.dart';
+import 'package:daredevil/presentation/widgets/reason_tags.dart';
 
 /// Header 所需的最小資料集，用於 `.select()` 精確 rebuild
 class StockHeaderData {

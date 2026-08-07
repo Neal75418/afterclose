@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/data/repositories/price_candidate_filter.dart';
+import 'package:daredevil/data/repositories/price_candidate_filter.dart';
 
 /// Simple test data class to exercise the generic filter
 class _MockPrice {

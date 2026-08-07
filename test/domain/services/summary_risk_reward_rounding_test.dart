@@ -35,10 +35,10 @@
 // 捨去對報酬取保守估計，也是風險評估該有的方向；文案本就寫「估算…約」。
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/core/constants/analysis_params.dart';
-import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
-import 'package:afterclose/domain/models/stock_summary.dart';
-import 'package:afterclose/domain/services/analysis_summary_service.dart';
+import 'package:daredevil/core/constants/analysis_params.dart';
+import 'package:daredevil/core/constants/calibrated_scores/horizon.dart';
+import 'package:daredevil/domain/models/stock_summary.dart';
+import 'package:daredevil/domain/services/analysis_summary_service.dart';
 
 import '../../helpers/analysis_data_generators.dart';
 import '../../helpers/price_data_generators.dart';

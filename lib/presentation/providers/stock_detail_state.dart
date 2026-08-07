@@ -1,9 +1,9 @@
-import 'package:afterclose/domain/services/price_calculator.dart';
-import 'package:afterclose/core/utils/sentinel.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/remote/finmind_client.dart';
-import 'package:afterclose/core/constants/chip_strength.dart';
-import 'package:afterclose/domain/models/stock_summary.dart';
+import 'package:daredevil/domain/services/price_calculator.dart';
+import 'package:daredevil/core/utils/sentinel.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/data/remote/finmind_client.dart';
+import 'package:daredevil/core/constants/chip_strength.dart';
+import 'package:daredevil/domain/models/stock_summary.dart';
 
 // ==================================================
 // 子狀態類別

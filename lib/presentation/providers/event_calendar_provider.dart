@@ -2,16 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:table_calendar/table_calendar.dart';
 
-import 'package:afterclose/core/constants/data_freshness.dart';
-import 'package:afterclose/core/theme/semantic_colors.dart';
-import 'package:afterclose/core/utils/clock.dart';
-import 'package:afterclose/core/utils/date_context.dart';
-import 'package:afterclose/core/utils/error_display.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/core/utils/sentinel.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/repositories/event_repository.dart';
-import 'package:afterclose/presentation/providers/providers.dart';
+import 'package:daredevil/core/constants/data_freshness.dart';
+import 'package:daredevil/core/theme/semantic_colors.dart';
+import 'package:daredevil/core/utils/clock.dart';
+import 'package:daredevil/core/utils/date_context.dart';
+import 'package:daredevil/core/utils/error_display.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/core/utils/sentinel.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/data/repositories/event_repository.dart';
+import 'package:daredevil/presentation/providers/providers.dart';
 
 // ==================================================
 // 狀態模型

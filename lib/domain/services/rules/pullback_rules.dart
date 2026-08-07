@@ -19,15 +19,15 @@
 // - 過去強勢確認用 `_wasStrongOverPeriod`（20 日累積漲幅 ≥ 5%）
 // - 跌停日（pct ≤ -9.5%）一律 short-circuit return null（避免恐慌下殺誤判）
 
-import 'package:afterclose/core/constants/reason_type.dart';
-import 'package:afterclose/core/constants/stock_patterns.dart';
-import 'package:afterclose/core/constants/rule_params_pullback.dart';
-import 'package:afterclose/core/constants/rule_scores.dart';
-import 'package:afterclose/domain/models/analysis_context.dart';
-import 'package:afterclose/domain/models/triggered_reason.dart';
-import 'package:afterclose/domain/services/rules/candlestick_rules.dart'
+import 'package:daredevil/core/constants/reason_type.dart';
+import 'package:daredevil/core/constants/stock_patterns.dart';
+import 'package:daredevil/core/constants/rule_params_pullback.dart';
+import 'package:daredevil/core/constants/rule_scores.dart';
+import 'package:daredevil/domain/models/analysis_context.dart';
+import 'package:daredevil/domain/models/triggered_reason.dart';
+import 'package:daredevil/domain/services/rules/candlestick_rules.dart'
     show isHammerShape;
-import 'package:afterclose/domain/services/rules/stock_rules.dart';
+import 'package:daredevil/domain/services/rules/stock_rules.dart';
 
 // ============================================
 // Shared helpers — pullback rules 共用

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/presentation/providers/market_overview_provider.dart';
-import 'package:afterclose/presentation/widgets/market_dashboard/trading_turnover_row.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
+import 'package:daredevil/presentation/providers/market_overview_provider.dart';
+import 'package:daredevil/presentation/widgets/market_dashboard/trading_turnover_row.dart';
 
 import '../../../helpers/widget_test_helpers.dart';
 

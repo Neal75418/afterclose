@@ -4,9 +4,9 @@ import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/core/constants/data_freshness.dart';
-import 'package:afterclose/core/constants/rule_enums.dart';
-import 'package:afterclose/data/database/app_database.dart';
+import 'package:daredevil/core/constants/data_freshness.dart';
+import 'package:daredevil/core/constants/rule_enums.dart';
+import 'package:daredevil/data/database/app_database.dart';
 
 /// 孤兒 RUNNING run 的啟動清理(2026-07-30 審查)。
 ///

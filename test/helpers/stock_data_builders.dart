@@ -1,5 +1,5 @@
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/domain/services/rules/stock_rules.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/domain/services/rules/stock_rules.dart';
 
 /// StockData 測試建構工具
 ///

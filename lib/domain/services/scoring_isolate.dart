@@ -1,17 +1,17 @@
 import 'dart:convert';
 import 'dart:isolate';
 
-import 'package:afterclose/core/constants/calibrated_scores/calibrated_score_context.dart';
-import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
-import 'package:afterclose/core/constants/rule_params_sector.dart';
-import 'package:afterclose/domain/services/price_calculator.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/domain/models/models.dart';
-import 'package:afterclose/domain/services/analysis_service.dart';
-import 'package:afterclose/domain/services/isolate_map_extensions.dart';
-import 'package:afterclose/domain/services/rule_engine.dart';
-import 'package:afterclose/domain/services/rules/stock_rules.dart';
-import 'package:afterclose/domain/services/scoring_pipeline.dart';
+import 'package:daredevil/core/constants/calibrated_scores/calibrated_score_context.dart';
+import 'package:daredevil/core/constants/calibrated_scores/horizon.dart';
+import 'package:daredevil/core/constants/rule_params_sector.dart';
+import 'package:daredevil/domain/services/price_calculator.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/domain/models/models.dart';
+import 'package:daredevil/domain/services/analysis_service.dart';
+import 'package:daredevil/domain/services/isolate_map_extensions.dart';
+import 'package:daredevil/domain/services/rule_engine.dart';
+import 'package:daredevil/domain/services/rules/stock_rules.dart';
+import 'package:daredevil/domain/services/scoring_pipeline.dart';
 
 /// Isolate 評分輸入資料
 ///

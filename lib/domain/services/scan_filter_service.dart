@@ -1,10 +1,10 @@
-import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
-import 'package:afterclose/core/utils/date_context.dart';
-import 'package:afterclose/domain/services/price_calculator.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/database/cached_accessor.dart';
-import 'package:afterclose/domain/models/scan_models.dart';
-import 'package:afterclose/domain/models/signal_names.dart';
+import 'package:daredevil/core/constants/calibrated_scores/horizon.dart';
+import 'package:daredevil/core/utils/date_context.dart';
+import 'package:daredevil/domain/services/price_calculator.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/data/database/cached_accessor.dart';
+import 'package:daredevil/domain/models/scan_models.dart';
+import 'package:daredevil/domain/models/signal_names.dart';
 
 /// 掃描畫面的純業務邏輯服務
 ///

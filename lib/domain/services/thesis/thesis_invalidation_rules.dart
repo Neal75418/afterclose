@@ -1,4 +1,4 @@
-import 'package:afterclose/core/constants/exit_params.dart';
+import 'package:daredevil/core/constants/exit_params.dart';
 
 /// 失效判定結果
 typedef InvalidationResult = ({

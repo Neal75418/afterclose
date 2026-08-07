@@ -1,5 +1,5 @@
-import 'package:afterclose/core/constants/rule_params.dart';
-import 'package:afterclose/data/database/app_database.dart';
+import 'package:daredevil/core/constants/rule_params.dart';
+import 'package:daredevil/data/database/app_database.dart';
 
 /// 流動性檢查工具 - 統一候選股票的流動性過濾邏輯
 abstract final class LiquidityChecker {

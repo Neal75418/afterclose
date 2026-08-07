@@ -1,13 +1,13 @@
-import 'package:afterclose/core/constants/api_config.dart';
-import 'package:afterclose/core/constants/market_codes.dart';
-import 'package:afterclose/core/constants/data_freshness.dart';
-import 'package:afterclose/core/constants/rule_params.dart';
-import 'package:afterclose/core/exceptions/app_exception.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/core/utils/date_context.dart';
-import 'package:afterclose/core/utils/taiwan_calendar.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/repositories/price_repository.dart';
+import 'package:daredevil/core/constants/api_config.dart';
+import 'package:daredevil/core/constants/market_codes.dart';
+import 'package:daredevil/core/constants/data_freshness.dart';
+import 'package:daredevil/core/constants/rule_params.dart';
+import 'package:daredevil/core/exceptions/app_exception.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/core/utils/date_context.dart';
+import 'package:daredevil/core/utils/taiwan_calendar.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/data/repositories/price_repository.dart';
 
 /// 歷史價格資料同步器
 ///

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/core/theme/color_contrast.dart';
-import 'package:afterclose/presentation/widgets/themed_refresh_indicator.dart';
+import 'package:daredevil/core/theme/color_contrast.dart';
+import 'package:daredevil/presentation/widgets/themed_refresh_indicator.dart';
 
 import '../../helpers/widget_test_helpers.dart';
 

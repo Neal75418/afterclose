@@ -2,22 +2,22 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:afterclose/core/constants/api_config.dart';
-import 'package:afterclose/core/constants/data_freshness.dart';
-import 'package:afterclose/core/utils/error_display.dart';
-import 'package:afterclose/core/utils/sentinel.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/core/utils/taiwan_calendar.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/database/cached_accessor.dart';
-import 'package:afterclose/data/repositories/market_data_repository.dart';
-import 'package:afterclose/domain/services/data_sync_service.dart';
-import 'package:afterclose/domain/services/update_service.dart';
-import 'package:afterclose/presentation/providers/data_update_epoch_provider.dart';
-import 'package:afterclose/presentation/providers/market_overview_provider.dart';
-import 'package:afterclose/presentation/providers/notification_provider.dart';
-import 'package:afterclose/presentation/providers/price_alert_provider.dart';
-import 'package:afterclose/presentation/providers/providers.dart';
+import 'package:daredevil/core/constants/api_config.dart';
+import 'package:daredevil/core/constants/data_freshness.dart';
+import 'package:daredevil/core/utils/error_display.dart';
+import 'package:daredevil/core/utils/sentinel.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/core/utils/taiwan_calendar.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/data/database/cached_accessor.dart';
+import 'package:daredevil/data/repositories/market_data_repository.dart';
+import 'package:daredevil/domain/services/data_sync_service.dart';
+import 'package:daredevil/domain/services/update_service.dart';
+import 'package:daredevil/presentation/providers/data_update_epoch_provider.dart';
+import 'package:daredevil/presentation/providers/market_overview_provider.dart';
+import 'package:daredevil/presentation/providers/notification_provider.dart';
+import 'package:daredevil/presentation/providers/price_alert_provider.dart';
+import 'package:daredevil/presentation/providers/providers.dart';
 
 /// 每日更新作業的最大執行時間
 const _updateTimeout = Duration(minutes: ApiConfig.updateTimeoutMin);

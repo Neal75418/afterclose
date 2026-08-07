@@ -1,12 +1,12 @@
-import 'package:afterclose/core/constants/data_freshness.dart';
-import 'package:afterclose/core/utils/clock.dart';
-import 'package:afterclose/core/utils/date_context.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/remote/finmind_client.dart';
-import 'package:afterclose/data/repositories/insider_repository.dart';
-import 'package:afterclose/core/constants/chip_strength.dart';
-import 'package:afterclose/domain/services/chip_analysis_service.dart';
+import 'package:daredevil/core/constants/data_freshness.dart';
+import 'package:daredevil/core/utils/clock.dart';
+import 'package:daredevil/core/utils/date_context.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/data/remote/finmind_client.dart';
+import 'package:daredevil/data/repositories/insider_repository.dart';
+import 'package:daredevil/core/constants/chip_strength.dart';
+import 'package:daredevil/domain/services/chip_analysis_service.dart';
 
 /// 完整籌碼資料載入結果
 typedef ChipDataResult = ({

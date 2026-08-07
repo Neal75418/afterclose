@@ -14,8 +14,8 @@
 // 關鍵判準：**市場當日是否有任何股票有法人列**。
 //   有 → 同步涵蓋該日，該股缺列 = 當日無進出 → 補 0
 //   無 → 該日在資料窗外，我們一無所知 → 不得捏造
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/domain/services/update/batch_data_builder.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/domain/services/update/batch_data_builder.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 DailyInstitutionalEntry _inst(String symbol, DateTime date, double foreign) =>

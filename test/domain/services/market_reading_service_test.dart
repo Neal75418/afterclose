@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/core/constants/market_codes.dart';
-import 'package:afterclose/domain/services/market_reading_service.dart';
-import 'package:afterclose/domain/services/technical_indicator_service.dart'
+import 'package:daredevil/core/constants/market_codes.dart';
+import 'package:daredevil/domain/services/market_reading_service.dart';
+import 'package:daredevil/domain/services/technical_indicator_service.dart'
     show MarketStage;
 
 void main() {

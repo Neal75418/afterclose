@@ -9,8 +9,8 @@
 // ⚠️ 修法陷阱：表無 market 欄，若粗暴地「把舊日期全部失效」，在只同步上櫃
 // 的情境（非交易日 TWSE 端點被跳過）會誤殺全部上市注意股。故失效必須
 // **限定在本輪成功同步的市場**。以下測試釘住此不變量。
-import 'package:afterclose/core/constants/market_codes.dart';
-import 'package:afterclose/data/database/app_database.dart';
+import 'package:daredevil/core/constants/market_codes.dart';
+import 'package:daredevil/data/database/app_database.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter_test/flutter_test.dart';
 

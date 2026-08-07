@@ -2,8 +2,8 @@
 //
 // These live in the domain layer so that both presentation (providers/screens)
 // and domain services can reference them without violating layer boundaries.
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/domain/models/signal_names.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/domain/models/signal_names.dart';
 
 /// 掃描畫面篩選選項
 enum ScanFilter {

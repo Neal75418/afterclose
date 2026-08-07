@@ -2,17 +2,17 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:afterclose/core/constants/api_config.dart';
-import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/core/theme/semantic_colors.dart';
-import 'package:afterclose/core/theme/breakpoints.dart';
-import 'package:afterclose/core/utils/error_display.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/core/utils/number_formatter.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/presentation/providers/portfolio_provider.dart';
-import 'package:afterclose/presentation/screens/portfolio/widgets/add_transaction_sheet.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:daredevil/core/constants/api_config.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
+import 'package:daredevil/core/theme/semantic_colors.dart';
+import 'package:daredevil/core/theme/breakpoints.dart';
+import 'package:daredevil/core/utils/error_display.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/core/utils/number_formatter.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/presentation/providers/portfolio_provider.dart';
+import 'package:daredevil/presentation/screens/portfolio/widgets/add_transaction_sheet.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
 
 /// 持倉明細頁面
 class PositionDetailScreen extends ConsumerWidget {

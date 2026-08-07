@@ -1,6 +1,6 @@
 import 'package:drift/drift.dart';
 
-import 'package:afterclose/data/database/tables/stock_master.dart';
+import 'package:daredevil/data/database/tables/stock_master.dart';
 
 /// 新聞資料 Table（來自 RSS feeds）
 @DataClassName('NewsItemEntry')

@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:afterclose/data/remote/tpex_client.dart';
+import 'package:daredevil/data/remote/tpex_client.dart';
 
 class MockDio extends Mock implements Dio {}
 

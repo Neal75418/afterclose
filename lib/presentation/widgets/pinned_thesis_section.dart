@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:afterclose/core/constants/app_routes.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
-import 'package:afterclose/core/theme/semantic_colors.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/presentation/providers/pinned_thesis_provider.dart';
-import 'package:afterclose/presentation/providers/stock_browsing_context_provider.dart';
+import 'package:daredevil/core/constants/app_routes.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
+import 'package:daredevil/core/theme/semantic_colors.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/presentation/providers/pinned_thesis_provider.dart';
+import 'package:daredevil/presentation/providers/stock_browsing_context_provider.dart';
 
 /// 釘選論點追蹤區（出場層 Phase 2，今日頁頂部 / 警示頁共用）
 ///

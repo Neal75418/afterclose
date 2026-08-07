@@ -1,11 +1,11 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:afterclose/core/constants/app_routes.dart';
+import 'package:daredevil/core/constants/app_routes.dart';
 import 'package:flutter/material.dart';
 
-import 'package:afterclose/core/theme/design_tokens.dart';
-import 'package:afterclose/data/database/app_database.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
+import 'package:daredevil/data/database/app_database.dart';
 
 /// 水平 Chip 列：顯示已選股票並提供移除按鈕
 class ComparisonHeader extends StatelessWidget {

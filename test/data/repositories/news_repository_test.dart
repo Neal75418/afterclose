@@ -1,9 +1,9 @@
-import 'package:afterclose/data/database/app_database.dart';
+import 'package:daredevil/data/database/app_database.dart';
 import 'package:drift/drift.dart' hide isNull, isNotNull;
-import 'package:afterclose/data/remote/rss_parser.dart';
-import 'package:afterclose/data/remote/twse_client.dart';
-import 'package:afterclose/data/repositories/news_repository.dart';
-import 'package:afterclose/domain/repositories/news_repository.dart';
+import 'package:daredevil/data/remote/rss_parser.dart';
+import 'package:daredevil/data/remote/twse_client.dart';
+import 'package:daredevil/data/repositories/news_repository.dart';
+import 'package:daredevil/domain/repositories/news_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 

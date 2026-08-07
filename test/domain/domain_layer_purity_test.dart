@@ -17,7 +17,7 @@ void main() {
     final importRe = RegExp(
       // 2026-08-05 複審補強:原 regex 只攔 import+package: 形式——
       // export 與相對路徑('../presentation/…')都能無聲穿透守門。
-      r'''(import|export)\s+['"](package:afterclose/presentation/|\.[^'"]*/presentation/)''',
+      r'''(import|export)\s+['"](package:daredevil/presentation/|\.[^'"]*/presentation/)''',
     );
     final violations = <String>[];
     for (final entity in Directory('lib/domain').listSync(recursive: true)) {

@@ -1,4 +1,4 @@
-import 'package:afterclose/core/constants/api_endpoints.dart';
+import 'package:daredevil/core/constants/api_endpoints.dart';
 
 /// 新聞 feed 來源設定
 ///

@@ -1,8 +1,8 @@
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/database/dao/quarterly_report_dao.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/data/database/dao/quarterly_report_dao.dart';
 
 /// 季報總覽查詢(2026-08-06,最新一季財報總覽頁的資料層)。
 ///

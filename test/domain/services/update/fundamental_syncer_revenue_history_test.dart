@@ -8,11 +8,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:afterclose/core/exceptions/app_exception.dart';
-import 'package:afterclose/core/utils/clock.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/repositories/fundamental_repository.dart';
-import 'package:afterclose/domain/services/update/fundamental_syncer.dart';
+import 'package:daredevil/core/exceptions/app_exception.dart';
+import 'package:daredevil/core/utils/clock.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/data/repositories/fundamental_repository.dart';
+import 'package:daredevil/domain/services/update/fundamental_syncer.dart';
 
 class MockAppDatabase extends Mock implements AppDatabase {}
 

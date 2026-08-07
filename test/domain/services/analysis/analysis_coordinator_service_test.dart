@@ -1,7 +1,7 @@
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/domain/services/analysis/analysis_coordinator_service.dart';
-import 'package:afterclose/domain/services/ohlcv_data.dart';
-import 'package:afterclose/domain/services/technical_indicator_service.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/domain/services/analysis/analysis_coordinator_service.dart';
+import 'package:daredevil/domain/services/ohlcv_data.dart';
+import 'package:daredevil/domain/services/technical_indicator_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../helpers/price_data_generators.dart';

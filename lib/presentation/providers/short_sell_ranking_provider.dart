@@ -1,10 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:afterclose/core/utils/error_display.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/core/utils/sentinel.dart';
-import 'package:afterclose/data/models/tpex/tpex_short_sell_ranking.dart';
-import 'package:afterclose/presentation/providers/providers.dart';
+import 'package:daredevil/core/utils/error_display.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/core/utils/sentinel.dart';
+import 'package:daredevil/data/models/tpex/tpex_short_sell_ranking.dart';
+import 'package:daredevil/presentation/providers/providers.dart';
 
 // ==================================================
 // 融券排行狀態

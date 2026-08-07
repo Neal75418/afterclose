@@ -1,5 +1,5 @@
-import 'package:afterclose/core/constants/rule_scores.dart';
-import 'package:afterclose/core/constants/scoring_mode.dart';
+import 'package:daredevil/core/constants/rule_scores.dart';
+import 'package:daredevil/core/constants/scoring_mode.dart';
 
 /// 推薦理由類型
 enum ReasonType {

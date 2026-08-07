@@ -15,8 +15,8 @@
 // 少於 2 筆時恆為 false，而 DB 裡 shares_change 1965 筆全是 NULL。
 // 正因為它「看起來像保險絲、其實雙重無效」，更該移除——留著只會讓
 // 下一個讀 code 的人以為有保護。此測試釘住單位不得混用。
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/domain/services/update/batch_data_builder.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/domain/services/update/batch_data_builder.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

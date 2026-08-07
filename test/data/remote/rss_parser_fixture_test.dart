@@ -4,7 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:afterclose/data/remote/rss_parser.dart';
+import 'package:daredevil/data/remote/rss_parser.dart';
 
 /// RssParser 對真實 feed 形狀的解析測試(2026-07-30 審查)。
 ///

@@ -1,4 +1,4 @@
-import 'package:afterclose/domain/services/analysis/sector_strength_service.dart';
+import 'package:daredevil/domain/services/analysis/sector_strength_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

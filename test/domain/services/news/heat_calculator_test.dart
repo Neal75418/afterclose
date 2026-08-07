@@ -1,7 +1,7 @@
 // test/domain/services/news/heat_calculator_test.dart
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/domain/services/news/heat_calculator.dart';
+import 'package:daredevil/domain/services/news/heat_calculator.dart';
 
 ArticleTags article(
   String id,

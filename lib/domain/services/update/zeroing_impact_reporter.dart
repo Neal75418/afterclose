@@ -1,6 +1,6 @@
-import 'package:afterclose/core/constants/rule_params.dart';
-import 'package:afterclose/core/constants/scoring_mode.dart';
-import 'package:afterclose/data/database/app_database.dart';
+import 'package:daredevil/core/constants/rule_params.dart';
+import 'package:daredevil/core/constants/scoring_mode.dart';
+import 'package:daredevil/data/database/app_database.dart';
 
 /// 負證據歸零的每日影響摘要(2026-07-29 三態 lookup 配套觀測)。
 ///

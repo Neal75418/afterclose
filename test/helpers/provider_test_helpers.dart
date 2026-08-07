@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/presentation/providers/providers.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/presentation/providers/providers.dart';
 import 'package:flutter_riverpod/misc.dart';
 
 /// 測試用共享 in-memory DB（整個 test process 只建立一次）

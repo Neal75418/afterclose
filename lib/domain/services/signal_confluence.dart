@@ -1,5 +1,5 @@
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/domain/models/signal_names.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/domain/models/signal_names.dart';
 
 /// 訊號匯流模式定義
 ///

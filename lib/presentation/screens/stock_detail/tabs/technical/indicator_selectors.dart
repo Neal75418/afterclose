@@ -1,10 +1,10 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/chart_indicators.dart';
-import 'package:afterclose/core/constants/animations.dart';
-import 'package:afterclose/core/theme/indicator_colors.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:daredevil/presentation/screens/stock_detail/tabs/technical/chart_indicators.dart';
+import 'package:daredevil/core/constants/animations.dart';
+import 'package:daredevil/core/theme/indicator_colors.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
 
 /// 主圖指標選擇器（MA、BOLL、SAR）
 class MainIndicatorSelector extends StatelessWidget {

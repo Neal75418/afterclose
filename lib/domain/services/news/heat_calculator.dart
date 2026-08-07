@@ -1,6 +1,6 @@
 import 'dart:math';
 
-import 'package:afterclose/core/constants/news_heat_params.dart';
+import 'package:daredevil/core/constants/news_heat_params.dart';
 
 /// 一篇新聞的標籤（matcher 輸出的彙整）
 class ArticleTags {

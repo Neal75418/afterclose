@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'package:afterclose/core/exceptions/app_exception.dart';
-import 'package:afterclose/core/utils/safe_execution.dart';
+import 'package:daredevil/core/exceptions/app_exception.dart';
+import 'package:daredevil/core/utils/safe_execution.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

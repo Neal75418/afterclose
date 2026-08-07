@@ -1,6 +1,6 @@
-import 'package:afterclose/core/constants/rule_params.dart';
-import 'package:afterclose/core/constants/stock_patterns.dart';
-import 'package:afterclose/data/database/app_database.dart';
+import 'package:daredevil/core/constants/rule_params.dart';
+import 'package:daredevil/core/constants/stock_patterns.dart';
+import 'package:daredevil/data/database/app_database.dart';
 
 /// 從市場資料快篩候選股（泛型版本）
 ///

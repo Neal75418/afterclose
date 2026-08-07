@@ -13,10 +13,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:afterclose/core/constants/api_config.dart';
-import 'package:afterclose/core/exceptions/app_exception.dart';
-import 'package:afterclose/data/repositories/institutional_repository.dart';
-import 'package:afterclose/domain/services/update/institutional_syncer.dart';
+import 'package:daredevil/core/constants/api_config.dart';
+import 'package:daredevil/core/exceptions/app_exception.dart';
+import 'package:daredevil/data/repositories/institutional_repository.dart';
+import 'package:daredevil/domain/services/update/institutional_syncer.dart';
 
 class MockInstitutionalRepository extends Mock
     implements InstitutionalRepository {}

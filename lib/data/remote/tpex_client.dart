@@ -1,21 +1,21 @@
 import 'package:dio/dio.dart';
 
-import 'package:afterclose/core/constants/api_config.dart';
-import 'package:afterclose/core/constants/api_endpoints.dart';
-import 'package:afterclose/core/constants/stock_patterns.dart';
-import 'package:afterclose/core/exceptions/app_exception.dart';
-import 'package:afterclose/core/utils/date_context.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/core/utils/lru_cache.dart';
-import 'package:afterclose/core/utils/tw_parse_utils.dart';
-import 'package:afterclose/data/models/tpex/models.dart';
-import 'package:afterclose/data/models/twse/exright_preannouncement.dart';
-import 'package:afterclose/data/models/twse/quarterly_report_entry.dart';
-import 'package:afterclose/data/models/twse/twse_market_index.dart';
-import 'package:afterclose/data/remote/insider_holding_aggregator.dart';
-import 'package:afterclose/data/remote/market_client_mixin.dart';
+import 'package:daredevil/core/constants/api_config.dart';
+import 'package:daredevil/core/constants/api_endpoints.dart';
+import 'package:daredevil/core/constants/stock_patterns.dart';
+import 'package:daredevil/core/exceptions/app_exception.dart';
+import 'package:daredevil/core/utils/date_context.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/core/utils/lru_cache.dart';
+import 'package:daredevil/core/utils/tw_parse_utils.dart';
+import 'package:daredevil/data/models/tpex/models.dart';
+import 'package:daredevil/data/models/twse/exright_preannouncement.dart';
+import 'package:daredevil/data/models/twse/quarterly_report_entry.dart';
+import 'package:daredevil/data/models/twse/twse_market_index.dart';
+import 'package:daredevil/data/remote/insider_holding_aggregator.dart';
+import 'package:daredevil/data/remote/market_client_mixin.dart';
 
-export 'package:afterclose/data/models/tpex/models.dart';
+export 'package:daredevil/data/models/tpex/models.dart';
 
 /// 台灣證券櫃檯買賣中心 (TPEX/OTC) API 客戶端
 ///

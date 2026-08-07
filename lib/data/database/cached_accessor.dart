@@ -1,5 +1,5 @@
-import 'package:afterclose/core/utils/lru_cache.dart';
-import 'package:afterclose/data/database/app_database.dart';
+import 'package:daredevil/core/utils/lru_cache.dart';
+import 'package:daredevil/data/database/app_database.dart';
 
 /// 批次 Database 查詢的快取存取器
 ///

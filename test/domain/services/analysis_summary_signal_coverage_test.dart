@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/core/constants/reason_type.dart';
-import 'package:afterclose/domain/services/analysis_summary_service.dart';
+import 'package:daredevil/core/constants/reason_type.dart';
+import 'package:daredevil/domain/services/analysis_summary_service.dart';
 
 /// 結構守門(2026-08-01 複審):每個 ReasonType 都必須有 summary builder。
 ///

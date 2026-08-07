@@ -1,4 +1,4 @@
-import 'package:afterclose/data/database/app_database.dart';
+import 'package:daredevil/data/database/app_database.dart';
 
 /// 交易資料儲存庫介面
 ///

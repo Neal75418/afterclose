@@ -7,8 +7,8 @@
 // ≥ minScoreThreshold)的股票。
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/domain/services/update/zeroing_impact_reporter.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/domain/services/update/zeroing_impact_reporter.dart';
 
 DailyReasonEntry row(
   String symbol,

@@ -2,8 +2,8 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/core/exceptions/app_exception.dart';
-import 'package:afterclose/data/remote/mops_client.dart';
+import 'package:daredevil/core/exceptions/app_exception.dart';
+import 'package:daredevil/data/remote/mops_client.dart';
 
 /// MOPS 公布期營收 CSV 解析與資料檢核(2026-08-03)。
 ///

@@ -1,7 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
-import 'package:afterclose/core/l10n/app_strings.dart';
+import 'package:daredevil/core/l10n/app_strings.dart';
 
 /// 優化的迷你走勢圖 Widget
 ///

@@ -2,15 +2,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:afterclose/core/utils/clock.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/remote/finmind_client.dart';
-import 'package:afterclose/data/repositories/insider_repository.dart';
-import 'package:afterclose/domain/services/data_sync_service.dart';
-import 'package:afterclose/domain/services/rule_accuracy_service.dart';
-import 'package:afterclose/presentation/providers/providers.dart';
-import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
-import 'package:afterclose/presentation/providers/watchlist_provider.dart';
+import 'package:daredevil/core/utils/clock.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/data/remote/finmind_client.dart';
+import 'package:daredevil/data/repositories/insider_repository.dart';
+import 'package:daredevil/domain/services/data_sync_service.dart';
+import 'package:daredevil/domain/services/rule_accuracy_service.dart';
+import 'package:daredevil/presentation/providers/providers.dart';
+import 'package:daredevil/presentation/providers/stock_detail_provider.dart';
+import 'package:daredevil/presentation/providers/watchlist_provider.dart';
 
 // ==========================================
 // Mocks

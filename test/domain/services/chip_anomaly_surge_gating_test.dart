@@ -36,10 +36,10 @@
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/core/constants/chip_scoring_params.dart';
-import 'package:afterclose/core/constants/rule_params.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/domain/services/chip_anomaly_service.dart';
+import 'package:daredevil/core/constants/chip_scoring_params.dart';
+import 'package:daredevil/core/constants/rule_params.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/domain/services/chip_anomaly_service.dart';
 
 void main() {
   late AppDatabase db;

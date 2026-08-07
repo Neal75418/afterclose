@@ -2,10 +2,10 @@ import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/core/theme/color_contrast.dart';
-import 'package:afterclose/core/theme/semantic_colors.dart';
-import 'package:afterclose/presentation/screens/stock_detail/widgets/chart_indicator_styles.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
+import 'package:daredevil/core/theme/color_contrast.dart';
+import 'package:daredevil/core/theme/semantic_colors.dart';
+import 'package:daredevil/presentation/screens/stock_detail/widgets/chart_indicator_styles.dart';
 
 /// 副圖指標色彩守門(2026-08-05 複審 High #3 迴歸鎖)。
 ///

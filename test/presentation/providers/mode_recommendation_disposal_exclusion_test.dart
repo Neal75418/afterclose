@@ -25,13 +25,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:afterclose/core/constants/scoring_mode.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/database/cached_accessor.dart';
-import 'package:afterclose/data/database/dao/analysis_dao.dart';
-import 'package:afterclose/data/repositories/analysis_repository.dart';
-import 'package:afterclose/presentation/providers/mode_recommendation_provider.dart';
-import 'package:afterclose/presentation/providers/providers.dart';
+import 'package:daredevil/core/constants/scoring_mode.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/data/database/cached_accessor.dart';
+import 'package:daredevil/data/database/dao/analysis_dao.dart';
+import 'package:daredevil/data/repositories/analysis_repository.dart';
+import 'package:daredevil/presentation/providers/mode_recommendation_provider.dart';
+import 'package:daredevil/presentation/providers/providers.dart';
 
 import '../../helpers/warning_data_generators.dart';
 

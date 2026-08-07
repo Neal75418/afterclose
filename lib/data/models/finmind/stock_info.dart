@@ -1,5 +1,5 @@
-import 'package:afterclose/core/constants/market_codes.dart';
-import 'package:afterclose/core/utils/json_parsers.dart';
+import 'package:daredevil/core/constants/market_codes.dart';
+import 'package:daredevil/core/utils/json_parsers.dart';
 
 /// FinMind 股票資訊
 class FinMindStockInfo {

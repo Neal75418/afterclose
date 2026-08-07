@@ -1,4 +1,4 @@
-import 'package:afterclose/data/database/app_database.dart';
+import 'package:daredevil/data/database/app_database.dart';
 
 /// K 線型態測試資料產生器
 ///

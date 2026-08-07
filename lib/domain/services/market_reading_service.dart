@@ -1,6 +1,6 @@
-import 'package:afterclose/core/constants/analysis_params.dart';
-import 'package:afterclose/core/constants/market_codes.dart';
-import 'package:afterclose/domain/services/technical_indicator_service.dart'
+import 'package:daredevil/core/constants/analysis_params.dart';
+import 'package:daredevil/core/constants/market_codes.dart';
+import 'package:daredevil/domain/services/technical_indicator_service.dart'
     show MarketStage;
 
 /// 判讀文字的語氣（決定 UI 的強調色）

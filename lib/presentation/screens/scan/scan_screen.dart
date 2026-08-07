@@ -6,26 +6,26 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:afterclose/core/constants/animations.dart';
-import 'package:afterclose/core/constants/app_routes.dart';
-import 'package:afterclose/core/utils/error_display.dart';
-import 'package:afterclose/presentation/screens/scan/filter_metadata.dart';
-import 'package:afterclose/core/constants/ui_constants.dart';
-import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
-import 'package:afterclose/core/utils/responsive_helper.dart';
-import 'package:afterclose/presentation/providers/pinned_thesis_provider.dart';
-import 'package:afterclose/presentation/providers/scan_provider.dart';
-import 'package:afterclose/presentation/providers/stock_browsing_context_provider.dart';
-import 'package:afterclose/presentation/providers/settings_provider.dart';
-import 'package:afterclose/presentation/screens/scan/widgets/industry_filter_chip.dart';
-import 'package:afterclose/presentation/screens/scan/widgets/scan_filter_bottom_sheet.dart';
-import 'package:afterclose/presentation/widgets/empty_state.dart';
-import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
-import 'package:afterclose/presentation/widgets/stock_card.dart';
-import 'package:afterclose/presentation/widgets/stock_preview_sheet.dart';
-import 'package:afterclose/presentation/widgets/stock_search_delegate.dart';
-import 'package:afterclose/presentation/widgets/themed_refresh_indicator.dart';
+import 'package:daredevil/core/constants/animations.dart';
+import 'package:daredevil/core/constants/app_routes.dart';
+import 'package:daredevil/core/utils/error_display.dart';
+import 'package:daredevil/presentation/screens/scan/filter_metadata.dart';
+import 'package:daredevil/core/constants/ui_constants.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
+import 'package:daredevil/core/utils/responsive_helper.dart';
+import 'package:daredevil/presentation/providers/pinned_thesis_provider.dart';
+import 'package:daredevil/presentation/providers/scan_provider.dart';
+import 'package:daredevil/presentation/providers/stock_browsing_context_provider.dart';
+import 'package:daredevil/presentation/providers/settings_provider.dart';
+import 'package:daredevil/presentation/screens/scan/widgets/industry_filter_chip.dart';
+import 'package:daredevil/presentation/screens/scan/widgets/scan_filter_bottom_sheet.dart';
+import 'package:daredevil/presentation/widgets/empty_state.dart';
+import 'package:daredevil/presentation/widgets/shimmer_loading.dart';
+import 'package:daredevil/presentation/widgets/stock_card.dart';
+import 'package:daredevil/presentation/widgets/stock_preview_sheet.dart';
+import 'package:daredevil/presentation/widgets/stock_search_delegate.dart';
+import 'package:daredevil/presentation/widgets/themed_refresh_indicator.dart';
 
 /// 掃描畫面 - 顯示所有已分析股票與篩選功能
 class ScanScreen extends ConsumerStatefulWidget {

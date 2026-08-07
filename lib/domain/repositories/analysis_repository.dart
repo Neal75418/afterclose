@@ -1,6 +1,6 @@
-import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/database/dao/analysis_dao.dart';
+import 'package:daredevil/core/constants/calibrated_scores/horizon.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/data/database/dao/analysis_dao.dart';
 
 /// 分析結果與推薦的資料儲存庫介面
 ///

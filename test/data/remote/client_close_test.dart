@@ -10,10 +10,10 @@
 
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/data/remote/rss_parser.dart';
-import 'package:afterclose/data/remote/tdcc_client.dart';
-import 'package:afterclose/data/remote/tpex_client.dart';
-import 'package:afterclose/data/remote/twse_client.dart';
+import 'package:daredevil/data/remote/rss_parser.dart';
+import 'package:daredevil/data/remote/tdcc_client.dart';
+import 'package:daredevil/data/remote/tpex_client.dart';
+import 'package:daredevil/data/remote/twse_client.dart';
 
 void main() {
   group('client close() smoke tests', () {

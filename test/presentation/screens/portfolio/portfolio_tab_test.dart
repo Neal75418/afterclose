@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/domain/services/portfolio_analytics_service.dart';
-import 'package:afterclose/presentation/providers/portfolio_provider.dart';
-import 'package:afterclose/presentation/screens/portfolio/portfolio_tab.dart';
-import 'package:afterclose/presentation/widgets/empty_state.dart';
-import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
+import 'package:daredevil/domain/services/portfolio_analytics_service.dart';
+import 'package:daredevil/presentation/providers/portfolio_provider.dart';
+import 'package:daredevil/presentation/screens/portfolio/portfolio_tab.dart';
+import 'package:daredevil/presentation/widgets/empty_state.dart';
+import 'package:daredevil/presentation/widgets/shimmer_loading.dart';
 
 import '../../../helpers/provider_test_helpers.dart';
 import '../../../helpers/widget_test_helpers.dart';

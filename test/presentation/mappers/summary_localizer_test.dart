@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/domain/models/stock_summary.dart';
-import 'package:afterclose/presentation/mappers/summary_localizer.dart';
+import 'package:daredevil/domain/models/stock_summary.dart';
+import 'package:daredevil/presentation/mappers/summary_localizer.dart';
 
 void main() {
   const localizer = SummaryLocalizer();

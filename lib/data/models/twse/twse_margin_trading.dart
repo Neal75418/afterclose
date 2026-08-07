@@ -1,5 +1,5 @@
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/data/models/twse/twse_daily_price.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/data/models/twse/twse_daily_price.dart';
 
 /// TWSE 融資融券資料
 class TwseMarginTrading {

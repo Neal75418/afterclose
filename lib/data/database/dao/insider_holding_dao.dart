@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart';
 
-import 'package:afterclose/data/database/app_database.drift.dart';
-import 'package:afterclose/data/database/tables/market_data_tables.drift.dart';
+import 'package:daredevil/data/database/app_database.drift.dart';
+import 'package:daredevil/data/database/tables/market_data_tables.drift.dart';
 
 /// 董監事持股操作
 mixin InsiderHoldingDaoMixin on $AppDatabase {

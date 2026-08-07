@@ -1,4 +1,4 @@
-import 'package:afterclose/data/database/app_database.dart';
+import 'package:daredevil/data/database/app_database.dart';
 
 /// 測試資料生成工具 - Warning & Insider
 ///

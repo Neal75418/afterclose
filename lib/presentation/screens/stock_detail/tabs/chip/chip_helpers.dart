@@ -1,10 +1,10 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
 
-export 'package:afterclose/presentation/screens/stock_detail/tabs/fundamentals/fundamentals_helpers.dart'
+export 'package:daredevil/presentation/screens/stock_detail/tabs/fundamentals/fundamentals_helpers.dart'
     show buildEmptyState;
 
 /// 籌碼 Tab 各區塊共用的輔助 Widget 與格式化工具。

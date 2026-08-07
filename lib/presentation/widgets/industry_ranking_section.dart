@@ -4,14 +4,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:afterclose/core/constants/app_routes.dart';
-import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
-import 'package:afterclose/core/utils/number_formatter.dart';
-import 'package:afterclose/domain/models/industry_ranking.dart';
-import 'package:afterclose/presentation/providers/industry_ranking_provider.dart';
-import 'package:afterclose/presentation/providers/stock_browsing_context_provider.dart';
-import 'package:afterclose/presentation/widgets/section_header.dart';
+import 'package:daredevil/core/constants/app_routes.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
+import 'package:daredevil/core/utils/number_formatter.dart';
+import 'package:daredevil/domain/models/industry_ranking.dart';
+import 'package:daredevil/presentation/providers/industry_ranking_provider.dart';
+import 'package:daredevil/presentation/providers/stock_browsing_context_provider.dart';
+import 'package:daredevil/presentation/widgets/section_header.dart';
 
 /// 今日頁族群排行 section（使用者選股法則 L1：族群決定 80%）
 ///

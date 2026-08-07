@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/domain/services/news/theme_matcher.dart';
+import 'package:daredevil/domain/services/news/theme_matcher.dart';
 
 void main() {
   final matcher = ThemeMatcher();

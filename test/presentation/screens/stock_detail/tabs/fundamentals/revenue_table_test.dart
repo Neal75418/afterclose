@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/data/models/finmind/revenue.dart';
-import 'package:afterclose/presentation/screens/stock_detail/tabs/fundamentals/revenue_table.dart';
+import 'package:daredevil/data/models/finmind/revenue.dart';
+import 'package:daredevil/presentation/screens/stock_detail/tabs/fundamentals/revenue_table.dart';
 
 import '../../../../../helpers/widget_test_helpers.dart';
 

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/presentation/providers/scan_provider.dart';
-import 'package:afterclose/presentation/providers/settings_provider.dart';
-import 'package:afterclose/presentation/screens/scan/scan_screen.dart';
-import 'package:afterclose/presentation/widgets/empty_state.dart';
-import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
+import 'package:daredevil/presentation/providers/scan_provider.dart';
+import 'package:daredevil/presentation/providers/settings_provider.dart';
+import 'package:daredevil/presentation/screens/scan/scan_screen.dart';
+import 'package:daredevil/presentation/widgets/empty_state.dart';
+import 'package:daredevil/presentation/widgets/shimmer_loading.dart';
 
 import '../../../helpers/provider_test_helpers.dart';
 import '../../../helpers/widget_test_helpers.dart';

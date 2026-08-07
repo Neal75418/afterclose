@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/presentation/screens/stock_detail/tabs/chip/insider_section.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/presentation/screens/stock_detail/tabs/chip/insider_section.dart';
 
 import '../../../../../helpers/widget_test_helpers.dart';
 

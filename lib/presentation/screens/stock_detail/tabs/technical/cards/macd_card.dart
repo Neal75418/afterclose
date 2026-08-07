@@ -1,11 +1,11 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
-import 'package:afterclose/core/theme/indicator_colors.dart';
-import 'package:afterclose/core/utils/number_formatter.dart';
-import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/cards/indicator_card_container.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
+import 'package:daredevil/core/theme/indicator_colors.dart';
+import 'package:daredevil/core/utils/number_formatter.dart';
+import 'package:daredevil/presentation/screens/stock_detail/tabs/technical/cards/indicator_card_container.dart';
 
 class MACDCard extends StatelessWidget {
   const MACDCard({super.key, required this.macd});

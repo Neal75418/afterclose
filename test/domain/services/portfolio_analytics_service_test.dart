@@ -1,4 +1,4 @@
-import 'package:afterclose/domain/services/portfolio_analytics_service.dart';
+import 'package:daredevil/domain/services/portfolio_analytics_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../helpers/portfolio_data_builders.dart';

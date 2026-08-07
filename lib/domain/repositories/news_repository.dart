@@ -1,6 +1,6 @@
-import 'package:afterclose/core/constants/data_freshness.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/domain/models/news_feed.dart';
+import 'package:daredevil/core/constants/data_freshness.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/domain/models/news_feed.dart';
 
 /// 新聞資料儲存庫介面
 ///

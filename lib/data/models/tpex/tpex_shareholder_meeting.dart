@@ -1,5 +1,5 @@
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/core/utils/tw_parse_utils.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/core/utils/tw_parse_utils.dart';
 
 /// TPEX 股東會資料（來源：櫃買中心 ap41_O API）
 ///

@@ -4,16 +4,16 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:workmanager/workmanager.dart';
 
-import 'package:afterclose/app/headless_update_runner.dart';
-import 'package:afterclose/data/remote/shared_prefs_api_budget_store.dart';
-import 'package:afterclose/core/constants/api_config.dart';
-import 'package:afterclose/core/constants/calibrated_scores/calibrated_scores_registry.dart';
-import 'package:afterclose/core/services/notification_service.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/database/app_database_flutter.dart';
-import 'package:afterclose/data/repositories/settings_repository.dart';
-import 'package:afterclose/domain/services/update_service.dart';
+import 'package:daredevil/app/headless_update_runner.dart';
+import 'package:daredevil/data/remote/shared_prefs_api_budget_store.dart';
+import 'package:daredevil/core/constants/api_config.dart';
+import 'package:daredevil/core/constants/calibrated_scores/calibrated_scores_registry.dart';
+import 'package:daredevil/core/services/notification_service.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/data/database/app_database_flutter.dart';
+import 'package:daredevil/data/repositories/settings_repository.dart';
+import 'package:daredevil/domain/services/update_service.dart';
 
 /// 背景更新任務名稱
 const kBackgroundUpdateTask = 'afterclose_daily_update';

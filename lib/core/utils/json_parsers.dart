@@ -1,4 +1,4 @@
-import 'package:afterclose/core/utils/logger.dart';
+import 'package:daredevil/core/utils/logger.dart';
 
 /// JSON 值解析工具函數
 abstract final class JsonParsers {

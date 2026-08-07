@@ -1,14 +1,14 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import 'package:afterclose/core/constants/chip_scoring_params.dart';
-import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/presentation/screens/stock_detail/widgets/mini_trend_chart.dart';
-import 'package:afterclose/presentation/widgets/section_header.dart';
+import 'package:daredevil/core/constants/chip_scoring_params.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/presentation/screens/stock_detail/widgets/mini_trend_chart.dart';
+import 'package:daredevil/presentation/widgets/section_header.dart';
 
-import 'package:afterclose/presentation/screens/stock_detail/tabs/chip/chip_helpers.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:daredevil/presentation/screens/stock_detail/tabs/chip/chip_helpers.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
 
 /// 顯示融資融券資料：摘要卡片、趨勢圖與明細表。
 class MarginTradingSection extends StatelessWidget {

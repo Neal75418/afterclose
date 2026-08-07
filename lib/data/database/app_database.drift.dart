@@ -1,20 +1,20 @@
 // dart format width=80
 // ignore_for_file: type=lint
 import 'package:drift/drift.dart' as i0;
-import 'package:afterclose/data/database/tables/stock_master.drift.dart' as i1;
-import 'package:afterclose/data/database/tables/daily_price.drift.dart' as i2;
-import 'package:afterclose/data/database/tables/daily_institutional.drift.dart'
+import 'package:daredevil/data/database/tables/stock_master.drift.dart' as i1;
+import 'package:daredevil/data/database/tables/daily_price.drift.dart' as i2;
+import 'package:daredevil/data/database/tables/daily_institutional.drift.dart'
     as i3;
-import 'package:afterclose/data/database/tables/news_tables.drift.dart' as i4;
-import 'package:afterclose/data/database/tables/analysis_tables.drift.dart'
+import 'package:daredevil/data/database/tables/news_tables.drift.dart' as i4;
+import 'package:daredevil/data/database/tables/analysis_tables.drift.dart'
     as i5;
-import 'package:afterclose/data/database/tables/user_tables.drift.dart' as i6;
-import 'package:afterclose/data/database/tables/market_data_tables.drift.dart'
+import 'package:daredevil/data/database/tables/user_tables.drift.dart' as i6;
+import 'package:daredevil/data/database/tables/market_data_tables.drift.dart'
     as i7;
-import 'package:afterclose/data/database/tables/portfolio_tables.drift.dart'
+import 'package:daredevil/data/database/tables/portfolio_tables.drift.dart'
     as i8;
-import 'package:afterclose/data/database/tables/event_tables.drift.dart' as i9;
-import 'package:afterclose/data/database/tables/market_index_tables.drift.dart'
+import 'package:daredevil/data/database/tables/event_tables.drift.dart' as i9;
+import 'package:daredevil/data/database/tables/market_index_tables.drift.dart'
     as i10;
 
 abstract class $AppDatabase extends i0.GeneratedDatabase {

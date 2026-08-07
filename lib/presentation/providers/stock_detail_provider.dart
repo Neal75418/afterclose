@@ -2,32 +2,32 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:afterclose/core/constants/api_config.dart';
-import 'package:afterclose/core/l10n/app_strings.dart';
-import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
-import 'package:afterclose/core/constants/rule_params.dart';
-import 'package:afterclose/core/utils/date_context.dart';
-import 'package:afterclose/core/utils/error_display.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/domain/services/price_calculator.dart';
+import 'package:daredevil/core/constants/api_config.dart';
+import 'package:daredevil/core/l10n/app_strings.dart';
+import 'package:daredevil/core/constants/calibrated_scores/horizon.dart';
+import 'package:daredevil/core/constants/rule_params.dart';
+import 'package:daredevil/core/utils/date_context.dart';
+import 'package:daredevil/core/utils/error_display.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/domain/services/price_calculator.dart';
 
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/remote/finmind_client.dart';
-import 'package:afterclose/data/repositories/market_data_repository.dart';
-import 'package:afterclose/domain/services/data_sync_service.dart';
-import 'package:afterclose/domain/services/analysis_summary_service.dart';
-import 'package:afterclose/domain/services/technical_indicator_service.dart';
-import 'package:afterclose/presentation/mappers/summary_localizer.dart';
-import 'package:afterclose/presentation/providers/providers.dart';
-import 'package:afterclose/presentation/providers/watchlist_provider.dart';
-import 'package:afterclose/presentation/providers/data_update_epoch_provider.dart';
-import 'package:afterclose/presentation/providers/market_overview_provider.dart';
-import 'package:afterclose/presentation/providers/stock_detail_state.dart';
-import 'package:afterclose/data/loaders/stock_fundamentals_loader.dart';
-import 'package:afterclose/data/loaders/stock_chip_loader.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/data/remote/finmind_client.dart';
+import 'package:daredevil/data/repositories/market_data_repository.dart';
+import 'package:daredevil/domain/services/data_sync_service.dart';
+import 'package:daredevil/domain/services/analysis_summary_service.dart';
+import 'package:daredevil/domain/services/technical_indicator_service.dart';
+import 'package:daredevil/presentation/mappers/summary_localizer.dart';
+import 'package:daredevil/presentation/providers/providers.dart';
+import 'package:daredevil/presentation/providers/watchlist_provider.dart';
+import 'package:daredevil/presentation/providers/data_update_epoch_provider.dart';
+import 'package:daredevil/presentation/providers/market_overview_provider.dart';
+import 'package:daredevil/presentation/providers/stock_detail_state.dart';
+import 'package:daredevil/data/loaders/stock_fundamentals_loader.dart';
+import 'package:daredevil/data/loaders/stock_chip_loader.dart';
 
 // Re-export 狀態類別供外部使用
-export 'package:afterclose/presentation/providers/stock_detail_state.dart';
+export 'package:daredevil/presentation/providers/stock_detail_state.dart';
 
 // ==================================================
 // 股票詳情 Notifier

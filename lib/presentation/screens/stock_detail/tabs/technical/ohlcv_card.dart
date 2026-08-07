@@ -1,13 +1,13 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import 'package:afterclose/core/theme/semantic_colors.dart';
+import 'package:daredevil/core/theme/semantic_colors.dart';
 
-import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/core/utils/number_formatter.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
-import 'package:afterclose/presentation/screens/stock_detail/tabs/chip/chip_helpers.dart'
+import 'package:daredevil/core/theme/app_theme.dart';
+import 'package:daredevil/core/utils/number_formatter.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
+import 'package:daredevil/presentation/screens/stock_detail/tabs/chip/chip_helpers.dart'
     show formatLots;
 
 /// 顯示今日 OHLCV（開盤、最高、最低、收盤、成交量）交易資料。

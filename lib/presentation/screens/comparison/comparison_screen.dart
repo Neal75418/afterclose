@@ -2,18 +2,18 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:afterclose/core/l10n/app_strings.dart';
-import 'package:afterclose/core/theme/breakpoints.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
-import 'package:afterclose/core/utils/error_display.dart';
-import 'package:afterclose/presentation/providers/comparison_provider.dart';
-import 'package:afterclose/presentation/widgets/empty_state.dart';
-import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
-import 'package:afterclose/presentation/screens/comparison/widgets/comparison_header.dart';
-import 'package:afterclose/presentation/screens/comparison/widgets/comparison_table.dart';
-import 'package:afterclose/presentation/screens/comparison/widgets/price_overlay_chart.dart';
-import 'package:afterclose/presentation/screens/comparison/widgets/radar_comparison_chart.dart';
-import 'package:afterclose/presentation/screens/comparison/widgets/stock_picker_sheet.dart';
+import 'package:daredevil/core/l10n/app_strings.dart';
+import 'package:daredevil/core/theme/breakpoints.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
+import 'package:daredevil/core/utils/error_display.dart';
+import 'package:daredevil/presentation/providers/comparison_provider.dart';
+import 'package:daredevil/presentation/widgets/empty_state.dart';
+import 'package:daredevil/presentation/widgets/shimmer_loading.dart';
+import 'package:daredevil/presentation/screens/comparison/widgets/comparison_header.dart';
+import 'package:daredevil/presentation/screens/comparison/widgets/comparison_table.dart';
+import 'package:daredevil/presentation/screens/comparison/widgets/price_overlay_chart.dart';
+import 'package:daredevil/presentation/screens/comparison/widgets/radar_comparison_chart.dart';
+import 'package:daredevil/presentation/screens/comparison/widgets/stock_picker_sheet.dart';
 
 /// 比較畫面 - 並排顯示多檔股票分析
 class ComparisonScreen extends ConsumerStatefulWidget {

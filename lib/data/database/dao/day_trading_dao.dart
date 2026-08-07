@@ -1,9 +1,9 @@
 import 'package:drift/drift.dart';
 
-import 'package:afterclose/core/constants/data_freshness.dart';
-import 'package:afterclose/core/utils/date_context.dart';
-import 'package:afterclose/data/database/app_database.drift.dart';
-import 'package:afterclose/data/database/tables/market_data_tables.drift.dart';
+import 'package:daredevil/core/constants/data_freshness.dart';
+import 'package:daredevil/core/utils/date_context.dart';
+import 'package:daredevil/data/database/app_database.drift.dart';
+import 'package:daredevil/data/database/tables/market_data_tables.drift.dart';
 
 /// 當沖操作
 mixin DayTradingDaoMixin on $AppDatabase {

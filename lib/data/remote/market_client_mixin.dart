@@ -4,10 +4,10 @@ import 'dart:math';
 
 import 'package:dio/dio.dart';
 
-import 'package:afterclose/core/constants/api_config.dart';
-import 'package:afterclose/core/exceptions/app_exception.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/core/utils/tw_parse_utils.dart';
+import 'package:daredevil/core/constants/api_config.dart';
+import 'package:daredevil/core/exceptions/app_exception.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/core/utils/tw_parse_utils.dart';
 
 /// TWSE / TPEX client 的共用工具。
 ///

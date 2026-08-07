@@ -16,11 +16,11 @@
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/core/constants/calibrated_scores/calibrated_scores_registry.dart';
-import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
-import 'package:afterclose/core/constants/reason_type.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/database/dao/calibration_cache_dao.dart';
+import 'package:daredevil/core/constants/calibrated_scores/calibrated_scores_registry.dart';
+import 'package:daredevil/core/constants/calibrated_scores/horizon.dart';
+import 'package:daredevil/core/constants/reason_type.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/data/database/dao/calibration_cache_dao.dart';
 
 const _shortJsonOta = '''
 {

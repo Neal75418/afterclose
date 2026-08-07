@@ -1,4 +1,4 @@
-import 'package:afterclose/presentation/providers/short_sell_ranking_provider.dart';
+import 'package:daredevil/presentation/providers/short_sell_ranking_provider.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

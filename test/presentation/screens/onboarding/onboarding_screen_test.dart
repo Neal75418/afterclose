@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:afterclose/presentation/screens/onboarding/onboarding_screen.dart';
+import 'package:daredevil/presentation/screens/onboarding/onboarding_screen.dart';
 
 import '../../../helpers/widget_test_helpers.dart';
 

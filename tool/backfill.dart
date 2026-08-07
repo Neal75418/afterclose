@@ -65,27 +65,27 @@ import 'dart:io';
 import 'package:drift/drift.dart' show Value;
 import 'package:sqlite3/sqlite3.dart';
 
-import 'package:afterclose/core/utils/date_context.dart';
-import 'package:afterclose/core/constants/data_freshness.dart';
-import 'package:afterclose/core/constants/market_codes.dart';
-import 'package:afterclose/core/exceptions/app_exception.dart';
-import 'package:afterclose/core/utils/clock.dart';
-import 'package:afterclose/core/utils/taiwan_calendar.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/remote/finmind_client.dart';
-import 'package:afterclose/data/remote/mops_client.dart';
-import 'package:afterclose/data/remote/tpex_client.dart';
-import 'package:afterclose/data/remote/twse_client.dart';
-import 'package:afterclose/data/repositories/fundamental_repository.dart';
-import 'package:afterclose/data/repositories/institutional_repository.dart';
-import 'package:afterclose/data/repositories/price_repository.dart';
-import 'package:afterclose/data/repositories/stock_repository.dart';
-import 'package:afterclose/data/repositories/trading_repository.dart';
-import 'package:afterclose/domain/repositories/fundamental_repository.dart';
-import 'package:afterclose/domain/repositories/institutional_repository.dart';
-import 'package:afterclose/domain/repositories/price_repository.dart';
-import 'package:afterclose/domain/repositories/stock_repository.dart';
-import 'package:afterclose/domain/repositories/trading_repository.dart';
+import 'package:daredevil/core/utils/date_context.dart';
+import 'package:daredevil/core/constants/data_freshness.dart';
+import 'package:daredevil/core/constants/market_codes.dart';
+import 'package:daredevil/core/exceptions/app_exception.dart';
+import 'package:daredevil/core/utils/clock.dart';
+import 'package:daredevil/core/utils/taiwan_calendar.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/data/remote/finmind_client.dart';
+import 'package:daredevil/data/remote/mops_client.dart';
+import 'package:daredevil/data/remote/tpex_client.dart';
+import 'package:daredevil/data/remote/twse_client.dart';
+import 'package:daredevil/data/repositories/fundamental_repository.dart';
+import 'package:daredevil/data/repositories/institutional_repository.dart';
+import 'package:daredevil/data/repositories/price_repository.dart';
+import 'package:daredevil/data/repositories/stock_repository.dart';
+import 'package:daredevil/data/repositories/trading_repository.dart';
+import 'package:daredevil/domain/repositories/fundamental_repository.dart';
+import 'package:daredevil/domain/repositories/institutional_repository.dart';
+import 'package:daredevil/domain/repositories/price_repository.dart';
+import 'package:daredevil/domain/repositories/stock_repository.dart';
+import 'package:daredevil/domain/repositories/trading_repository.dart';
 
 // ============================================================================
 // Public data models (importable by tests)

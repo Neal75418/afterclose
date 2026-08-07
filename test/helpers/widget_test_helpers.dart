@@ -2,7 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
 
 /// 建立測試用的 MaterialApp 包裝
 ///

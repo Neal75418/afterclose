@@ -1,8 +1,8 @@
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/repositories/event_repository.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/data/repositories/event_repository.dart';
 
 /// syncInvestorConferenceEvents 累積路徑的真 DB 守門(2026-08-01 複審)。
 ///

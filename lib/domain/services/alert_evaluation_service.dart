@@ -1,9 +1,9 @@
-import 'package:afterclose/core/constants/rule_params.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/domain/services/analysis/support_resistance_service.dart';
-import 'package:afterclose/domain/services/ohlcv_data.dart';
-import 'package:afterclose/domain/services/technical_indicator_service.dart';
+import 'package:daredevil/core/constants/rule_params.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/domain/services/analysis/support_resistance_service.dart';
+import 'package:daredevil/domain/services/ohlcv_data.dart';
+import 'package:daredevil/domain/services/technical_indicator_service.dart';
 
 /// 警示評估所需的上下文資料
 class AlertEvaluationContext {

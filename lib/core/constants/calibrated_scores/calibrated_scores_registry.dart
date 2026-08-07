@@ -1,10 +1,10 @@
 import 'package:meta/meta.dart';
 
-import 'package:afterclose/core/constants/calibrated_scores/calibrated_score_context.dart';
-import 'package:afterclose/core/constants/calibrated_scores/calibrated_scores_table.dart';
-import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
-import 'package:afterclose/core/constants/scoring_mode.dart';
-import 'package:afterclose/core/utils/logger.dart';
+import 'package:daredevil/core/constants/calibrated_scores/calibrated_score_context.dart';
+import 'package:daredevil/core/constants/calibrated_scores/calibrated_scores_table.dart';
+import 'package:daredevil/core/constants/calibrated_scores/horizon.dart';
+import 'package:daredevil/core/constants/scoring_mode.dart';
+import 'package:daredevil/core/utils/logger.dart';
 
 /// Asset 載入 delegate — 不直接依賴 `package:flutter/services.dart` 讓
 /// registry 維持純 Dart（C 方案 refactor 2026-06-19）。

@@ -4,8 +4,8 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
 
 /// 疊合價格走勢圖 - 將所有股票正規化為相對第一天的漲跌幅（%）
 class PriceOverlayChart extends StatelessWidget {

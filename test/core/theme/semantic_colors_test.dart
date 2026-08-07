@@ -1,13 +1,13 @@
 import 'dart:ui';
 
-import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/core/theme/color_contrast.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
-import 'package:afterclose/core/theme/indicator_colors.dart';
-import 'package:afterclose/core/theme/semantic_colors.dart';
-import 'package:afterclose/core/constants/chip_strength.dart';
-import 'package:afterclose/presentation/providers/event_calendar_provider.dart';
-import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
+import 'package:daredevil/core/theme/color_contrast.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
+import 'package:daredevil/core/theme/indicator_colors.dart';
+import 'package:daredevil/core/theme/semantic_colors.dart';
+import 'package:daredevil/core/constants/chip_strength.dart';
+import 'package:daredevil/presentation/providers/event_calendar_provider.dart';
+import 'package:daredevil/presentation/widgets/shimmer_loading.dart';
 import 'package:flutter/material.dart' show HSLColor, ThemeData;
 import 'package:flutter_test/flutter_test.dart';
 

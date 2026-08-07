@@ -4,11 +4,11 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/presentation/providers/providers.dart';
-import 'package:afterclose/presentation/providers/watchlist_provider.dart';
-import 'package:afterclose/presentation/widgets/common/drag_handle.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/presentation/providers/providers.dart';
+import 'package:daredevil/presentation/providers/watchlist_provider.dart';
+import 'package:daredevil/presentation/widgets/common/drag_handle.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
 
 /// 股票搜尋與選擇 Bottom Sheet - 用於比較功能
 class StockPickerSheet extends ConsumerStatefulWidget {

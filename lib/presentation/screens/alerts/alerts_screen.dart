@@ -4,22 +4,22 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:afterclose/core/constants/animations.dart';
-import 'package:afterclose/core/utils/error_display.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/core/theme/semantic_colors.dart';
-import 'package:afterclose/core/utils/responsive_helper.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/presentation/widgets/alert_type_icon.dart';
-import 'package:afterclose/presentation/widgets/pinned_thesis_section.dart';
-import 'package:afterclose/presentation/providers/price_alert_provider.dart';
-import 'package:afterclose/presentation/providers/providers.dart';
-import 'package:afterclose/presentation/widgets/empty_state.dart';
-import 'package:afterclose/presentation/widgets/price_alert_dialog.dart';
-import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
-import 'package:afterclose/presentation/widgets/themed_refresh_indicator.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:daredevil/core/constants/animations.dart';
+import 'package:daredevil/core/utils/error_display.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
+import 'package:daredevil/core/theme/semantic_colors.dart';
+import 'package:daredevil/core/utils/responsive_helper.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/presentation/widgets/alert_type_icon.dart';
+import 'package:daredevil/presentation/widgets/pinned_thesis_section.dart';
+import 'package:daredevil/presentation/providers/price_alert_provider.dart';
+import 'package:daredevil/presentation/providers/providers.dart';
+import 'package:daredevil/presentation/widgets/empty_state.dart';
+import 'package:daredevil/presentation/widgets/price_alert_dialog.dart';
+import 'package:daredevil/presentation/widgets/shimmer_loading.dart';
+import 'package:daredevil/presentation/widgets/themed_refresh_indicator.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
 
 /// 價格警示管理畫面
 class AlertsScreen extends ConsumerStatefulWidget {

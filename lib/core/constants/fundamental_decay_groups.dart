@@ -1,4 +1,4 @@
-import 'package:afterclose/core/constants/reason_type.dart';
+import 'package:daredevil/core/constants/reason_type.dart';
 
 /// 基本面訊號的相關性分組與遞減計分
 ///

@@ -3,10 +3,10 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:afterclose/core/theme/breakpoints.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/presentation/providers/update_history_provider.dart';
+import 'package:daredevil/core/theme/breakpoints.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/presentation/providers/update_history_provider.dart';
 
 /// Today screen 上 tap 「最後更新時間」會彈出此 sheet
 ///

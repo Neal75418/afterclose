@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart';
 
-import 'package:afterclose/data/database/app_database.drift.dart';
-import 'package:afterclose/data/database/tables/market_data_tables.drift.dart';
+import 'package:daredevil/data/database/app_database.drift.dart';
+import 'package:daredevil/data/database/tables/market_data_tables.drift.dart';
 
 /// 股票估值（PER / PBR / 殖利率）資料操作
 mixin ValuationDaoMixin on $AppDatabase {

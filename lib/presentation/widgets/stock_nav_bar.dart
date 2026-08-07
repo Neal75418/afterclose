@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
 
 /// 詳情頁底部「上一檔/下一檔」導航列
 ///

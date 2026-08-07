@@ -1,10 +1,10 @@
 import 'package:drift/drift.dart';
 
-import 'package:afterclose/core/constants/chip_scoring_params.dart';
-import 'package:afterclose/core/constants/market_codes.dart';
-import 'package:afterclose/core/constants/rule_params.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/data/database/app_database.dart';
+import 'package:daredevil/core/constants/chip_scoring_params.dart';
+import 'package:daredevil/core/constants/market_codes.dart';
+import 'package:daredevil/core/constants/rule_params.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/data/database/app_database.dart';
 
 /// 籌碼異動類型
 enum ChipAnomalyType {

@@ -1,8 +1,8 @@
 // test/domain/services/news/stock_name_matcher_test.dart
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/domain/services/news/stock_name_matcher.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/domain/services/news/stock_name_matcher.dart';
 
 StockMasterEntry stock(String symbol, String name) => StockMasterEntry(
   symbol: symbol,

@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'package:afterclose/core/constants/api_config.dart';
-import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:daredevil/core/constants/api_config.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
 
 /// 重新整理操作的預設逾時時間
 const _defaultTimeout = Duration(seconds: ApiConfig.refreshTimeoutSec);

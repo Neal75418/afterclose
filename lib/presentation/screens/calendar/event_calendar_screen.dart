@@ -3,16 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:table_calendar/table_calendar.dart';
 
-import 'package:afterclose/core/theme/breakpoints.dart';
-import 'package:afterclose/core/utils/date_context.dart';
-import 'package:afterclose/core/utils/error_display.dart';
-import 'package:afterclose/presentation/widgets/empty_state.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/presentation/providers/event_calendar_provider.dart';
-import 'package:afterclose/presentation/screens/calendar/widgets/add_event_sheet.dart';
-import 'package:afterclose/presentation/screens/calendar/widgets/event_detail_sheet.dart';
-import 'package:afterclose/presentation/screens/calendar/widgets/event_list_tile.dart';
-import 'package:afterclose/presentation/screens/calendar/widgets/upcoming_events_section.dart';
+import 'package:daredevil/core/theme/breakpoints.dart';
+import 'package:daredevil/core/utils/date_context.dart';
+import 'package:daredevil/core/utils/error_display.dart';
+import 'package:daredevil/presentation/widgets/empty_state.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/presentation/providers/event_calendar_provider.dart';
+import 'package:daredevil/presentation/screens/calendar/widgets/add_event_sheet.dart';
+import 'package:daredevil/presentation/screens/calendar/widgets/event_detail_sheet.dart';
+import 'package:daredevil/presentation/screens/calendar/widgets/event_list_tile.dart';
+import 'package:daredevil/presentation/screens/calendar/widgets/upcoming_events_section.dart';
 
 /// 事件行事曆頁面
 class EventCalendarScreen extends ConsumerStatefulWidget {

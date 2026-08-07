@@ -38,7 +38,7 @@ import 'dart:math';
 import 'package:crypto/crypto.dart';
 import 'package:sqlite3/sqlite3.dart';
 
-import 'package:afterclose/core/constants/calibration_thresholds.dart';
+import 'package:daredevil/core/constants/calibration_thresholds.dart';
 
 // ============================================================================
 // Public data models (importable by tests)

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/core/constants/stock_patterns.dart';
+import 'package:daredevil/core/constants/stock_patterns.dart';
 
 void main() {
   group('StockPatterns 上櫃 ETF 判定（2026-07-23 稽核修復）', () {

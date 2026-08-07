@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart';
 
-import 'package:afterclose/data/database/app_database.drift.dart';
-import 'package:afterclose/data/database/tables/market_data_tables.drift.dart';
+import 'package:daredevil/data/database/app_database.drift.dart';
+import 'package:daredevil/data/database/tables/market_data_tables.drift.dart';
 
 /// 季報總覽清單(最新一季全部已申報公司,2026-08-06)
 class QuarterlyReportOverview {

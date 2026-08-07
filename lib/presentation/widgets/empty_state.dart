@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:easy_localization/easy_localization.dart';
 
-import 'package:afterclose/core/constants/animations.dart';
-import 'package:afterclose/core/l10n/app_strings.dart';
-import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:daredevil/core/constants/animations.dart';
+import 'package:daredevil/core/l10n/app_strings.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
 
 /// 可重用的空狀態 Widget，附有動畫插圖
 class EmptyState extends StatelessWidget {

@@ -3,14 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:afterclose/core/constants/app_routes.dart';
-import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/core/theme/semantic_colors.dart';
-import 'package:afterclose/domain/models/stock_summary.dart';
-import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
-import 'package:afterclose/core/constants/animations.dart';
-import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:daredevil/core/constants/app_routes.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
+import 'package:daredevil/core/theme/semantic_colors.dart';
+import 'package:daredevil/domain/models/stock_summary.dart';
+import 'package:daredevil/presentation/providers/stock_detail_provider.dart';
+import 'package:daredevil/core/constants/animations.dart';
+import 'package:daredevil/presentation/widgets/shimmer_loading.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
 
 /// AI 智慧分析摘要卡片
 ///

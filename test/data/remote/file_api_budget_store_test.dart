@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/data/remote/file_api_budget_store.dart';
+import 'package:daredevil/data/remote/file_api_budget_store.dart';
 
 /// FileApiBudgetStore(launchd CLI 配額持久化)的檔案語意(2026-08-01 複審)。
 void main() {

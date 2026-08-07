@@ -1,6 +1,6 @@
 import 'package:drift/drift.dart';
 
-import 'package:afterclose/data/database/tables/stock_master.dart';
+import 'package:daredevil/data/database/tables/stock_master.dart';
 
 /// 三大法人每日買賣超 Table
 @DataClassName('DailyInstitutionalEntry')

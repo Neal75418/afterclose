@@ -2,14 +2,14 @@ import 'dart:async';
 
 import 'package:drift/drift.dart';
 
-import 'package:afterclose/core/constants/data_freshness.dart';
-import 'package:afterclose/core/exceptions/app_exception.dart';
-import 'package:afterclose/core/utils/clock.dart';
-import 'package:afterclose/core/utils/date_context.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/remote/finmind_client.dart';
-import 'package:afterclose/data/mappers/finmind_model_mapper.dart';
+import 'package:daredevil/core/constants/data_freshness.dart';
+import 'package:daredevil/core/exceptions/app_exception.dart';
+import 'package:daredevil/core/utils/clock.dart';
+import 'package:daredevil/core/utils/date_context.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/data/remote/finmind_client.dart';
+import 'package:daredevil/data/mappers/finmind_model_mapper.dart';
 
 /// 基本面資料的載入結果
 typedef FundamentalsResult = ({

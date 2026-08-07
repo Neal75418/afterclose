@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:afterclose/core/constants/app_routes.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
-import 'package:afterclose/core/utils/quarterly_filing_calendar.dart';
-import 'package:afterclose/core/utils/taiwan_time.dart';
-import 'package:afterclose/presentation/providers/quarterly_report_overview_provider.dart';
-import 'package:afterclose/presentation/providers/watchlist_provider.dart';
+import 'package:daredevil/core/constants/app_routes.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
+import 'package:daredevil/core/utils/quarterly_filing_calendar.dart';
+import 'package:daredevil/core/utils/taiwan_time.dart';
+import 'package:daredevil/presentation/providers/quarterly_report_overview_provider.dart';
+import 'package:daredevil/presentation/providers/watchlist_provider.dart';
 
 /// 今日頁的季報入口——**常駐**,文案隨申報窗口切換(2026-08-06 定案):
 ///

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:k_chart_plus/k_chart_plus.dart';
 
-import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/core/theme/indicator_colors.dart';
-import 'package:afterclose/core/theme/semantic_colors.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
+import 'package:daredevil/core/theme/indicator_colors.dart';
+import 'package:daredevil/core/theme/semantic_colors.dart';
 
 /// 副圖指標樣式的唯一出口(2026-08-05 複審 High #3 的修復)。
 ///

@@ -1,19 +1,19 @@
 import 'package:dio/dio.dart';
 import 'package:meta/meta.dart';
 
-import 'package:afterclose/core/constants/api_config.dart';
-import 'package:afterclose/core/constants/api_endpoints.dart';
-import 'package:afterclose/core/exceptions/app_exception.dart';
-import 'package:afterclose/core/utils/date_context.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/core/utils/lru_cache.dart';
-import 'package:afterclose/core/utils/tw_parse_utils.dart';
-import 'package:afterclose/data/models/tpex/tpex_insider_transfer.dart';
-import 'package:afterclose/data/models/twse/models.dart';
-import 'package:afterclose/data/remote/insider_holding_aggregator.dart';
-import 'package:afterclose/data/remote/market_client_mixin.dart';
+import 'package:daredevil/core/constants/api_config.dart';
+import 'package:daredevil/core/constants/api_endpoints.dart';
+import 'package:daredevil/core/exceptions/app_exception.dart';
+import 'package:daredevil/core/utils/date_context.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/core/utils/lru_cache.dart';
+import 'package:daredevil/core/utils/tw_parse_utils.dart';
+import 'package:daredevil/data/models/tpex/tpex_insider_transfer.dart';
+import 'package:daredevil/data/models/twse/models.dart';
+import 'package:daredevil/data/remote/insider_holding_aggregator.dart';
+import 'package:daredevil/data/remote/market_client_mixin.dart';
 
-export 'package:afterclose/data/models/twse/models.dart';
+export 'package:daredevil/data/models/twse/models.dart';
 
 /// 台灣證券交易所 (TWSE) API 客戶端
 ///

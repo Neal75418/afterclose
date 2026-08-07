@@ -9,8 +9,8 @@
 // fixture 取自真實回應削減版。
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/data/remote/tpex_client.dart';
-import 'package:afterclose/data/remote/twse_client.dart';
+import 'package:daredevil/data/remote/tpex_client.dart';
+import 'package:daredevil/data/remote/twse_client.dart';
 
 void main() {
   group('TwseClient.parseMiIndexDailyPrices', () {

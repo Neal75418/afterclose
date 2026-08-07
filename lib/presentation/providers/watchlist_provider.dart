@@ -3,25 +3,25 @@ import 'dart:async';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:afterclose/core/constants/pagination.dart';
-import 'package:afterclose/core/constants/rule_params.dart';
-import 'package:afterclose/core/utils/date_context.dart';
-import 'package:afterclose/core/utils/error_display.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/domain/services/price_calculator.dart';
-import 'package:afterclose/core/utils/sentinel.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/domain/models/signal_names.dart';
-import 'package:afterclose/data/database/cached_accessor.dart';
-import 'package:afterclose/data/repositories/insider_repository.dart';
-import 'package:afterclose/data/repositories/warning_repository.dart';
-import 'package:afterclose/presentation/providers/data_update_epoch_provider.dart';
-import 'package:afterclose/presentation/providers/settings_provider.dart';
-import 'package:afterclose/presentation/providers/providers.dart';
-import 'package:afterclose/presentation/providers/watchlist_types.dart';
-import 'package:afterclose/presentation/widgets/warning_badge.dart';
+import 'package:daredevil/core/constants/pagination.dart';
+import 'package:daredevil/core/constants/rule_params.dart';
+import 'package:daredevil/core/utils/date_context.dart';
+import 'package:daredevil/core/utils/error_display.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/domain/services/price_calculator.dart';
+import 'package:daredevil/core/utils/sentinel.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/domain/models/signal_names.dart';
+import 'package:daredevil/data/database/cached_accessor.dart';
+import 'package:daredevil/data/repositories/insider_repository.dart';
+import 'package:daredevil/data/repositories/warning_repository.dart';
+import 'package:daredevil/presentation/providers/data_update_epoch_provider.dart';
+import 'package:daredevil/presentation/providers/settings_provider.dart';
+import 'package:daredevil/presentation/providers/providers.dart';
+import 'package:daredevil/presentation/providers/watchlist_types.dart';
+import 'package:daredevil/presentation/widgets/warning_badge.dart';
 
-export 'package:afterclose/presentation/providers/watchlist_types.dart';
+export 'package:daredevil/presentation/providers/watchlist_types.dart';
 
 // ==================================================
 // 自選股頁面狀態

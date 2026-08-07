@@ -3,17 +3,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:afterclose/core/constants/app_routes.dart';
-import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/core/theme/breakpoints.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
-import 'package:afterclose/core/theme/semantic_colors.dart';
-import 'package:afterclose/data/database/dao/institutional_dao.dart';
-import 'package:afterclose/presentation/providers/institutional_ranking_provider.dart';
-import 'package:afterclose/presentation/providers/watchlist_provider.dart';
-import 'package:afterclose/presentation/widgets/empty_state.dart';
-import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
-import 'package:afterclose/presentation/widgets/themed_refresh_indicator.dart';
+import 'package:daredevil/core/constants/app_routes.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
+import 'package:daredevil/core/theme/breakpoints.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
+import 'package:daredevil/core/theme/semantic_colors.dart';
+import 'package:daredevil/data/database/dao/institutional_dao.dart';
+import 'package:daredevil/presentation/providers/institutional_ranking_provider.dart';
+import 'package:daredevil/presentation/providers/watchlist_provider.dart';
+import 'package:daredevil/presentation/widgets/empty_state.dart';
+import 'package:daredevil/presentation/widgets/shimmer_loading.dart';
+import 'package:daredevil/presentation/widgets/themed_refresh_indicator.dart';
 
 /// 法人買賣超排行——外資/投信 × 買超/賣超 四視角,各 Top 50。
 ///

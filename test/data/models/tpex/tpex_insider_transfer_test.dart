@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/data/models/tpex/tpex_insider_transfer.dart';
+import 'package:daredevil/data/models/tpex/tpex_insider_transfer.dart';
 
 void main() {
   group('TpexInsiderTransfer.fromJson', () {

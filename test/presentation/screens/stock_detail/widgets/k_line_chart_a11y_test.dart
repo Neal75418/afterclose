@@ -26,9 +26,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/presentation/screens/stock_detail/widgets/k_line_chart_widget.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/presentation/screens/stock_detail/widgets/k_line_chart_widget.dart';
 
 /// 供給預先讀好的翻譯 map（避開 rootBundle 在 fake async 下不 resolve）
 class _PreloadedAssetLoader extends AssetLoader {

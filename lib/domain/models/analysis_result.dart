@@ -1,4 +1,4 @@
-import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:daredevil/core/constants/rule_params.dart';
 
 /// 股票分析結果
 class AnalysisResult {

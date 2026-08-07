@@ -1,15 +1,15 @@
 import 'package:drift/drift.dart';
 
-import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
-import 'package:afterclose/core/constants/rule_params.dart';
-import 'package:afterclose/core/utils/clock.dart';
-import 'package:afterclose/core/utils/date_context.dart';
-import 'package:afterclose/core/utils/request_deduplicator.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/database/dao/analysis_dao.dart';
-import 'package:afterclose/domain/repositories/analysis_repository.dart';
+import 'package:daredevil/core/constants/calibrated_scores/horizon.dart';
+import 'package:daredevil/core/constants/rule_params.dart';
+import 'package:daredevil/core/utils/clock.dart';
+import 'package:daredevil/core/utils/date_context.dart';
+import 'package:daredevil/core/utils/request_deduplicator.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/data/database/dao/analysis_dao.dart';
+import 'package:daredevil/domain/repositories/analysis_repository.dart';
 
-import 'package:afterclose/core/utils/taiwan_calendar.dart';
+import 'package:daredevil/core/utils/taiwan_calendar.dart';
 
 /// 分析結果與推薦股 Repository 實作
 class AnalysisRepository implements IAnalysisRepository {

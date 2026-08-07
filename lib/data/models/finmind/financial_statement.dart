@@ -1,4 +1,4 @@
-import 'package:afterclose/core/utils/json_parsers.dart';
+import 'package:daredevil/core/utils/json_parsers.dart';
 
 /// FinMind 綜合損益表資料
 /// 註: 財務報表以 type/value 配對呈現，這是簡化版本

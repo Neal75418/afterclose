@@ -1,15 +1,15 @@
-import 'package:afterclose/core/constants/data_freshness.dart';
-import 'package:afterclose/core/constants/rule_params.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/repositories/insider_repository.dart';
-import 'package:afterclose/data/repositories/institutional_repository.dart';
-import 'package:afterclose/data/repositories/news_repository.dart';
-import 'package:afterclose/data/repositories/shareholding_repository.dart';
-import 'package:afterclose/domain/models/analysis_context.dart';
-import 'package:afterclose/domain/models/scoring_batch_data.dart';
-import 'package:afterclose/domain/models/scoring_data_groups.dart';
-import 'package:afterclose/domain/services/update/batch_data_builder.dart';
+import 'package:daredevil/core/constants/data_freshness.dart';
+import 'package:daredevil/core/constants/rule_params.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/data/repositories/insider_repository.dart';
+import 'package:daredevil/data/repositories/institutional_repository.dart';
+import 'package:daredevil/data/repositories/news_repository.dart';
+import 'package:daredevil/data/repositories/shareholding_repository.dart';
+import 'package:daredevil/domain/models/analysis_context.dart';
+import 'package:daredevil/domain/models/scoring_batch_data.dart';
+import 'package:daredevil/domain/models/scoring_data_groups.dart';
+import 'package:daredevil/domain/services/update/batch_data_builder.dart';
 
 /// 評分用批次資料載入器
 ///

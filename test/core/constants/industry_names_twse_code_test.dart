@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/core/constants/industry_names.dart';
-import 'package:afterclose/data/remote/twse_client.dart';
+import 'package:daredevil/core/constants/industry_names.dart';
+import 'package:daredevil/data/remote/twse_client.dart';
 
 /// TWSE 官方產業別代碼對照(2026-08-01)。
 ///

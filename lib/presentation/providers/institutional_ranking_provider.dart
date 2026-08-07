@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:afterclose/core/utils/error_display.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/data/database/dao/institutional_dao.dart';
-import 'package:afterclose/presentation/providers/providers.dart';
+import 'package:daredevil/core/utils/error_display.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/data/database/dao/institutional_dao.dart';
+import 'package:daredevil/presentation/providers/providers.dart';
 
 /// 法人排行的四個視角(自營刻意不提供——避險盤污染+持續性差,
 /// 2026-08-05 設計定稿;雙買 badge 補足「外資投信同買」的共識視角)

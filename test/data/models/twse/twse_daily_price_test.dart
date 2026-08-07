@@ -1,4 +1,4 @@
-import 'package:afterclose/data/models/twse/twse_daily_price.dart';
+import 'package:daredevil/data/models/twse/twse_daily_price.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

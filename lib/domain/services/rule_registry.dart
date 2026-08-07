@@ -1,17 +1,17 @@
-import 'package:afterclose/domain/services/rules/stock_rules.dart';
-import 'package:afterclose/domain/services/rules/technical_rules.dart';
-import 'package:afterclose/domain/services/rules/volume_rules.dart';
-import 'package:afterclose/domain/services/rules/indicator_rules.dart';
-import 'package:afterclose/domain/services/rules/candlestick_rules.dart';
-import 'package:afterclose/domain/services/rules/institutional_rules.dart';
-import 'package:afterclose/domain/services/rules/extended_market_rules.dart';
-import 'package:afterclose/domain/services/rules/divergence_rules.dart';
-import 'package:afterclose/domain/services/rules/fundamental_rules.dart';
-import 'package:afterclose/domain/services/rules/fundamental_scan_rules.dart';
-import 'package:afterclose/domain/services/rules/insider_rules.dart';
-import 'package:afterclose/domain/services/rules/ma_cross_rules.dart';
-import 'package:afterclose/domain/services/rules/pullback_rules.dart';
-import 'package:afterclose/domain/services/rules/warning_rules.dart';
+import 'package:daredevil/domain/services/rules/stock_rules.dart';
+import 'package:daredevil/domain/services/rules/technical_rules.dart';
+import 'package:daredevil/domain/services/rules/volume_rules.dart';
+import 'package:daredevil/domain/services/rules/indicator_rules.dart';
+import 'package:daredevil/domain/services/rules/candlestick_rules.dart';
+import 'package:daredevil/domain/services/rules/institutional_rules.dart';
+import 'package:daredevil/domain/services/rules/extended_market_rules.dart';
+import 'package:daredevil/domain/services/rules/divergence_rules.dart';
+import 'package:daredevil/domain/services/rules/fundamental_rules.dart';
+import 'package:daredevil/domain/services/rules/fundamental_scan_rules.dart';
+import 'package:daredevil/domain/services/rules/insider_rules.dart';
+import 'package:daredevil/domain/services/rules/ma_cross_rules.dart';
+import 'package:daredevil/domain/services/rules/pullback_rules.dart';
+import 'package:daredevil/domain/services/rules/warning_rules.dart';
 
 /// 規則註冊表 — 集中管理所有可用規則
 abstract final class RuleRegistry {

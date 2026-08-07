@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:afterclose/core/exceptions/app_exception.dart';
-import 'package:afterclose/data/repositories/news_repository.dart';
-import 'package:afterclose/domain/repositories/news_repository.dart' as repo_if;
-import 'package:afterclose/domain/services/update/news_syncer.dart';
+import 'package:daredevil/core/exceptions/app_exception.dart';
+import 'package:daredevil/data/repositories/news_repository.dart';
+import 'package:daredevil/domain/repositories/news_repository.dart' as repo_if;
+import 'package:daredevil/domain/services/update/news_syncer.dart';
 
 class MockNewsRepository extends Mock implements NewsRepository {}
 

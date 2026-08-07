@@ -3,17 +3,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:afterclose/core/constants/app_routes.dart';
-import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/core/theme/breakpoints.dart';
-import 'package:afterclose/core/utils/number_formatter.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/presentation/providers/event_calendar_provider.dart';
-import 'package:afterclose/presentation/providers/providers.dart';
-import 'package:afterclose/presentation/screens/calendar/widgets/add_event_sheet.dart';
-import 'package:afterclose/presentation/widgets/common/drag_handle.dart';
+import 'package:daredevil/core/constants/app_routes.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
+import 'package:daredevil/core/theme/breakpoints.dart';
+import 'package:daredevil/core/utils/number_formatter.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/presentation/providers/event_calendar_provider.dart';
+import 'package:daredevil/presentation/providers/providers.dart';
+import 'package:daredevil/presentation/screens/calendar/widgets/add_event_sheet.dart';
+import 'package:daredevil/presentation/widgets/common/drag_handle.dart';
 
 /// 顯示事件詳情 Bottom Sheet
 void showEventDetailSheet(

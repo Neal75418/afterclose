@@ -1,8 +1,8 @@
-import 'package:afterclose/core/constants/rule_params.dart';
-import 'package:afterclose/core/utils/list_helper.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/domain/services/technical_indicator_service.dart';
+import 'package:daredevil/core/constants/rule_params.dart';
+import 'package:daredevil/core/utils/list_helper.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/domain/services/technical_indicator_service.dart';
 
 /// 趨勢檢測服務
 ///

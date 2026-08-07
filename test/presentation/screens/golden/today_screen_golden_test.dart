@@ -7,13 +7,13 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/presentation/providers/market_overview_provider.dart';
-import 'package:afterclose/presentation/providers/mode_recommendation_provider.dart';
-import 'package:afterclose/presentation/providers/settings_provider.dart';
-import 'package:afterclose/presentation/providers/today_provider.dart';
-import 'package:afterclose/presentation/providers/watchlist_provider.dart';
+import 'package:daredevil/presentation/providers/market_overview_provider.dart';
+import 'package:daredevil/presentation/providers/mode_recommendation_provider.dart';
+import 'package:daredevil/presentation/providers/settings_provider.dart';
+import 'package:daredevil/presentation/providers/today_provider.dart';
+import 'package:daredevil/presentation/providers/watchlist_provider.dart';
 import 'package:flutter/foundation.dart';
-import 'package:afterclose/presentation/screens/today/today_screen.dart';
+import 'package:daredevil/presentation/screens/today/today_screen.dart';
 
 import '../../../helpers/provider_test_helpers.dart';
 import '../../../helpers/widget_test_helpers.dart';

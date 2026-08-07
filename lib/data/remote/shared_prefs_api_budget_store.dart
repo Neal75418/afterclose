@@ -1,6 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:afterclose/data/remote/api_budget_tracker.dart';
+import 'package:daredevil/data/remote/api_budget_tracker.dart';
 
 /// [ApiBudgetStore] 的 SharedPreferences 實作。
 ///

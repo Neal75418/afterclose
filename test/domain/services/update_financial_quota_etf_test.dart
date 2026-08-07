@@ -29,9 +29,9 @@
 // （實際 386），故 severity 由 high 降為 medium。
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/core/constants/api_config.dart';
-import 'package:afterclose/core/constants/stock_patterns.dart';
-import 'package:afterclose/domain/services/update_service.dart';
+import 'package:daredevil/core/constants/api_config.dart';
+import 'package:daredevil/core/constants/stock_patterns.dart';
+import 'package:daredevil/domain/services/update_service.dart';
 
 void main() {
   /// 重現快取路徑的 symbol 升冪退化：ETF 全在前段

@@ -4,7 +4,7 @@ import 'package:drift/drift.dart' hide isNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/data/database/app_database.dart';
+import 'package:daredevil/data/database/app_database.dart';
 
 /// 索引衛生 ensure-step 的回歸測試(2026-07-29 多角色審查 Fix 1)。
 ///

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:afterclose/core/theme/semantic_colors.dart';
+import 'package:daredevil/core/theme/semantic_colors.dart';
 
 /// 設計系統核心常數
 ///

@@ -1,10 +1,10 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/core/utils/number_formatter.dart';
-import 'package:afterclose/presentation/providers/portfolio_provider.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
+import 'package:daredevil/core/utils/number_formatter.dart';
+import 'package:daredevil/presentation/providers/portfolio_provider.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
 
 /// 單一持倉卡片
 class PositionCard extends StatelessWidget {

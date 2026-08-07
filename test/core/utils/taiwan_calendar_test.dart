@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/core/utils/taiwan_calendar.dart';
+import 'package:daredevil/core/utils/taiwan_calendar.dart';
 
 void main() {
   group('TaiwanCalendar.isTradingDay', () {

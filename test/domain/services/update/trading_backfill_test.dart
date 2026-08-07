@@ -10,16 +10,16 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:afterclose/core/constants/api_config.dart';
-import 'package:afterclose/core/constants/data_freshness.dart';
-import 'package:afterclose/core/constants/market_codes.dart';
-import 'package:afterclose/core/exceptions/app_exception.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/repositories/insider_repository.dart';
-import 'package:afterclose/data/repositories/shareholding_repository.dart';
-import 'package:afterclose/data/repositories/trading_repository.dart';
-import 'package:afterclose/data/repositories/warning_repository.dart';
-import 'package:afterclose/domain/services/update/market_data_updater.dart';
+import 'package:daredevil/core/constants/api_config.dart';
+import 'package:daredevil/core/constants/data_freshness.dart';
+import 'package:daredevil/core/constants/market_codes.dart';
+import 'package:daredevil/core/exceptions/app_exception.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/data/repositories/insider_repository.dart';
+import 'package:daredevil/data/repositories/shareholding_repository.dart';
+import 'package:daredevil/data/repositories/trading_repository.dart';
+import 'package:daredevil/data/repositories/warning_repository.dart';
+import 'package:daredevil/domain/services/update/market_data_updater.dart';
 
 class MockAppDatabase extends Mock implements AppDatabase {}
 

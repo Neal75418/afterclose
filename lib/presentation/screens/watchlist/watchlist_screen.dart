@@ -6,25 +6,25 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:afterclose/core/constants/animations.dart';
-import 'package:afterclose/core/l10n/app_strings.dart';
-import 'package:afterclose/core/constants/api_config.dart';
-import 'package:afterclose/core/constants/app_routes.dart';
-import 'package:afterclose/core/utils/error_display.dart';
-import 'package:afterclose/core/constants/ui_constants.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
-import 'package:afterclose/core/utils/responsive_helper.dart';
-import 'package:afterclose/presentation/providers/settings_provider.dart';
-import 'package:afterclose/presentation/providers/stock_browsing_context_provider.dart';
-import 'package:afterclose/presentation/providers/watchlist_provider.dart';
-import 'package:afterclose/presentation/screens/watchlist/add_stock_dialog.dart';
-import 'package:afterclose/presentation/screens/watchlist/watchlist_group_header.dart';
-import 'package:afterclose/presentation/screens/watchlist/watchlist_group_sheets.dart';
-import 'package:afterclose/presentation/screens/watchlist/watchlist_stock_item.dart';
-import 'package:afterclose/presentation/widgets/empty_state.dart';
-import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
-import 'package:afterclose/presentation/widgets/stock_preview_sheet.dart';
-import 'package:afterclose/presentation/widgets/themed_refresh_indicator.dart';
+import 'package:daredevil/core/constants/animations.dart';
+import 'package:daredevil/core/l10n/app_strings.dart';
+import 'package:daredevil/core/constants/api_config.dart';
+import 'package:daredevil/core/constants/app_routes.dart';
+import 'package:daredevil/core/utils/error_display.dart';
+import 'package:daredevil/core/constants/ui_constants.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
+import 'package:daredevil/core/utils/responsive_helper.dart';
+import 'package:daredevil/presentation/providers/settings_provider.dart';
+import 'package:daredevil/presentation/providers/stock_browsing_context_provider.dart';
+import 'package:daredevil/presentation/providers/watchlist_provider.dart';
+import 'package:daredevil/presentation/screens/watchlist/add_stock_dialog.dart';
+import 'package:daredevil/presentation/screens/watchlist/watchlist_group_header.dart';
+import 'package:daredevil/presentation/screens/watchlist/watchlist_group_sheets.dart';
+import 'package:daredevil/presentation/screens/watchlist/watchlist_stock_item.dart';
+import 'package:daredevil/presentation/widgets/empty_state.dart';
+import 'package:daredevil/presentation/widgets/shimmer_loading.dart';
+import 'package:daredevil/presentation/widgets/stock_preview_sheet.dart';
+import 'package:daredevil/presentation/widgets/themed_refresh_indicator.dart';
 
 /// 自選股畫面 - 顯示使用者收藏的股票清單
 class WatchlistScreen extends ConsumerStatefulWidget {

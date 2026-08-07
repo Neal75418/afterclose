@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/data/models/finmind/revenue.dart';
+import 'package:daredevil/data/models/finmind/revenue.dart';
 
 void main() {
   group('FinMindRevenue.fromJson 單位轉換', () {

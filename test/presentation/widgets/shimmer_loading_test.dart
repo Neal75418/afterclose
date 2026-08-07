@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shimmer/shimmer.dart';
 
-import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
+import 'package:daredevil/presentation/widgets/shimmer_loading.dart';
 
 import '../../helpers/widget_test_helpers.dart';
 

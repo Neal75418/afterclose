@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/core/constants/calibrated_scores/calibrated_score_context.dart';
-import 'package:afterclose/core/constants/calibrated_scores/calibrated_scores_registry.dart';
-import 'package:afterclose/core/constants/calibrated_scores/calibrated_scores_table.dart';
-import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
+import 'package:daredevil/core/constants/calibrated_scores/calibrated_score_context.dart';
+import 'package:daredevil/core/constants/calibrated_scores/calibrated_scores_registry.dart';
+import 'package:daredevil/core/constants/calibrated_scores/calibrated_scores_table.dart';
+import 'package:daredevil/core/constants/calibrated_scores/horizon.dart';
 
 void main() {
   group('isCalibrationBacked', () {

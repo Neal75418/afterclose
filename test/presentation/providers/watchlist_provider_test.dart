@@ -4,14 +4,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:afterclose/core/constants/pagination.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/database/cached_accessor.dart';
-import 'package:afterclose/data/repositories/warning_repository.dart';
-import 'package:afterclose/data/repositories/analysis_repository.dart';
-import 'package:afterclose/data/repositories/insider_repository.dart';
-import 'package:afterclose/presentation/providers/providers.dart';
-import 'package:afterclose/presentation/providers/watchlist_provider.dart';
+import 'package:daredevil/core/constants/pagination.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/data/database/cached_accessor.dart';
+import 'package:daredevil/data/repositories/warning_repository.dart';
+import 'package:daredevil/data/repositories/analysis_repository.dart';
+import 'package:daredevil/data/repositories/insider_repository.dart';
+import 'package:daredevil/presentation/providers/providers.dart';
+import 'package:daredevil/presentation/providers/watchlist_provider.dart';
 
 // ==========================================
 // Mocks

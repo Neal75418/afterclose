@@ -1,20 +1,20 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import 'package:afterclose/core/theme/semantic_colors.dart';
+import 'package:daredevil/core/theme/semantic_colors.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
-import 'package:afterclose/core/constants/animations.dart';
-import 'package:afterclose/core/extensions/trend_state_extension.dart';
-import 'package:afterclose/core/theme/breakpoints.dart';
-import 'package:afterclose/core/l10n/app_strings.dart';
-import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/core/utils/number_formatter.dart';
-import 'package:afterclose/presentation/widgets/common/drag_handle.dart';
-import 'package:afterclose/presentation/widgets/reason_tags.dart';
-import 'package:afterclose/presentation/widgets/score_ring.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:daredevil/core/constants/animations.dart';
+import 'package:daredevil/core/extensions/trend_state_extension.dart';
+import 'package:daredevil/core/theme/breakpoints.dart';
+import 'package:daredevil/core/l10n/app_strings.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
+import 'package:daredevil/core/utils/number_formatter.dart';
+import 'package:daredevil/presentation/widgets/common/drag_handle.dart';
+import 'package:daredevil/presentation/widgets/reason_tags.dart';
+import 'package:daredevil/presentation/widgets/score_ring.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
 
 /// 股票預覽資料
 class StockPreviewData {

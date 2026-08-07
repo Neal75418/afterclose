@@ -1,18 +1,18 @@
 import 'package:drift/drift.dart';
 
-import 'package:afterclose/core/constants/data_freshness.dart';
-import 'package:afterclose/core/constants/rule_params.dart';
-import 'package:afterclose/core/utils/clock.dart';
-import 'package:afterclose/core/utils/date_context.dart';
-import 'package:afterclose/core/exceptions/app_exception.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/core/utils/safe_execution.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/models/extensions/dto_extensions.dart';
-import 'package:afterclose/data/remote/finmind_client.dart';
-import 'package:afterclose/data/remote/tpex_client.dart';
-import 'package:afterclose/data/remote/twse_client.dart';
-import 'package:afterclose/domain/repositories/institutional_repository.dart';
+import 'package:daredevil/core/constants/data_freshness.dart';
+import 'package:daredevil/core/constants/rule_params.dart';
+import 'package:daredevil/core/utils/clock.dart';
+import 'package:daredevil/core/utils/date_context.dart';
+import 'package:daredevil/core/exceptions/app_exception.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/core/utils/safe_execution.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/data/models/extensions/dto_extensions.dart';
+import 'package:daredevil/data/remote/finmind_client.dart';
+import 'package:daredevil/data/remote/tpex_client.dart';
+import 'package:daredevil/data/remote/twse_client.dart';
+import 'package:daredevil/domain/repositories/institutional_repository.dart';
 
 /// 三大法人買賣超資料 Repository
 class InstitutionalRepository implements IInstitutionalRepository {

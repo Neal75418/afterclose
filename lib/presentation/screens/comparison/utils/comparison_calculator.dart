@@ -2,11 +2,11 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
-import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/core/theme/semantic_colors.dart';
-import 'package:afterclose/core/utils/number_formatter.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/domain/models/stock_summary.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
+import 'package:daredevil/core/theme/semantic_colors.dart';
+import 'package:daredevil/core/utils/number_formatter.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/domain/models/stock_summary.dart';
 
 /// 比較表的純計算工具。
 ///

@@ -5,8 +5,8 @@
 // 約對應 19% / 40% / 41% 的訊號區組成。
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/core/constants/rule_params.dart';
-import 'package:afterclose/core/constants/score_tier.dart';
+import 'package:daredevil/core/constants/rule_params.dart';
+import 'package:daredevil/core/constants/score_tier.dart';
 
 void main() {
   group('ScoreTier.fromScore', () {

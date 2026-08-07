@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:afterclose/core/constants/api_config.dart';
-import 'package:afterclose/presentation/providers/notification_provider.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/presentation/providers/price_alert_provider.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:daredevil/core/constants/api_config.dart';
+import 'package:daredevil/presentation/providers/notification_provider.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/presentation/providers/price_alert_provider.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
 
 /// 顯示建立或編輯價格警示的對話框
 ///

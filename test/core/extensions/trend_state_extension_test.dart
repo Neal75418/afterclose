@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/core/extensions/trend_state_extension.dart';
-import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:daredevil/core/extensions/trend_state_extension.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
 
 void main() {
   group('TrendStateExtension', () {

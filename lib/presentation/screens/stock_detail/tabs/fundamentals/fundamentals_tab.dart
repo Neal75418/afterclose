@@ -2,18 +2,18 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:afterclose/core/theme/design_tokens.dart';
-import 'package:afterclose/core/theme/semantic_colors.dart';
-import 'package:afterclose/presentation/providers/settings_provider.dart';
-import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
-import 'package:afterclose/presentation/widgets/section_header.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
+import 'package:daredevil/core/theme/semantic_colors.dart';
+import 'package:daredevil/presentation/providers/settings_provider.dart';
+import 'package:daredevil/presentation/providers/stock_detail_provider.dart';
+import 'package:daredevil/presentation/widgets/section_header.dart';
 
-import 'package:afterclose/presentation/screens/stock_detail/tabs/fundamentals/dividend_table.dart';
-import 'package:afterclose/presentation/screens/stock_detail/tabs/fundamentals/eps_table.dart';
-import 'package:afterclose/presentation/screens/stock_detail/tabs/fundamentals/fundamentals_helpers.dart';
-import 'package:afterclose/presentation/screens/stock_detail/tabs/fundamentals/profitability_card.dart';
-import 'package:afterclose/presentation/screens/stock_detail/tabs/fundamentals/revenue_table.dart';
-import 'package:afterclose/presentation/widgets/metric_card.dart';
+import 'package:daredevil/presentation/screens/stock_detail/tabs/fundamentals/dividend_table.dart';
+import 'package:daredevil/presentation/screens/stock_detail/tabs/fundamentals/eps_table.dart';
+import 'package:daredevil/presentation/screens/stock_detail/tabs/fundamentals/fundamentals_helpers.dart';
+import 'package:daredevil/presentation/screens/stock_detail/tabs/fundamentals/profitability_card.dart';
+import 'package:daredevil/presentation/screens/stock_detail/tabs/fundamentals/revenue_table.dart';
+import 'package:daredevil/presentation/widgets/metric_card.dart';
 
 /// 關鍵指標卡片的 accentColor（圖示＋裝飾邊框）。
 ///

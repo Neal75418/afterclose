@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:afterclose/core/utils/error_display.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/data/database/dao/quarterly_report_dao.dart';
-import 'package:afterclose/presentation/providers/providers.dart';
+import 'package:daredevil/core/utils/error_display.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/data/database/dao/quarterly_report_dao.dart';
+import 'package:daredevil/presentation/providers/providers.dart';
 
 /// 季報總覽的排序鍵。
 ///

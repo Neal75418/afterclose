@@ -1,11 +1,11 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import 'package:afterclose/core/theme/design_tokens.dart';
-import 'package:afterclose/core/utils/taiwan_date_formatter.dart';
-import 'package:afterclose/data/remote/finmind_client.dart';
-import 'package:afterclose/domain/services/revenue_stats.dart';
-import 'package:afterclose/presentation/screens/stock_detail/tabs/fundamentals/fundamentals_helpers.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
+import 'package:daredevil/core/utils/taiwan_date_formatter.dart';
+import 'package:daredevil/data/remote/finmind_client.dart';
+import 'package:daredevil/domain/services/revenue_stats.dart';
+import 'package:daredevil/presentation/screens/stock_detail/tabs/fundamentals/fundamentals_helpers.dart';
 
 /// 顯示近 12 個月營收資料表，附月增率與年增率成長標章。
 class RevenueTable extends StatelessWidget {

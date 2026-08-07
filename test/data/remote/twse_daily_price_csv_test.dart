@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/data/remote/twse_client.dart';
+import 'package:daredevil/data/remote/twse_client.dart';
 
 /// TWSE 於 2026-06 把 STOCK_DAY_ALL 回應從 JSON 改成 CSV（同端點、僅格式變）。
 /// 驗證 CSV → 與 JSON 同 shape 的 Map 轉換，確保下游沿用的 parser 讀得到正確欄位。

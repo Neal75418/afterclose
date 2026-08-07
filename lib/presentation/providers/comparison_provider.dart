@@ -1,20 +1,20 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
-import 'package:afterclose/core/constants/data_freshness.dart';
-import 'package:afterclose/core/constants/rule_params.dart';
-import 'package:afterclose/core/utils/date_context.dart';
-import 'package:afterclose/core/utils/error_display.dart';
-import 'package:afterclose/core/utils/sentinel.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/domain/services/price_calculator.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/database/cached_accessor.dart';
-import 'package:afterclose/domain/models/stock_summary.dart';
-import 'package:afterclose/domain/services/analysis_summary_service.dart';
-import 'package:afterclose/data/mappers/finmind_model_mapper.dart';
-import 'package:afterclose/presentation/mappers/summary_localizer.dart';
-import 'package:afterclose/presentation/providers/providers.dart';
+import 'package:daredevil/core/constants/calibrated_scores/horizon.dart';
+import 'package:daredevil/core/constants/data_freshness.dart';
+import 'package:daredevil/core/constants/rule_params.dart';
+import 'package:daredevil/core/utils/date_context.dart';
+import 'package:daredevil/core/utils/error_display.dart';
+import 'package:daredevil/core/utils/sentinel.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/domain/services/price_calculator.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/data/database/cached_accessor.dart';
+import 'package:daredevil/domain/models/stock_summary.dart';
+import 'package:daredevil/domain/services/analysis_summary_service.dart';
+import 'package:daredevil/data/mappers/finmind_model_mapper.dart';
+import 'package:daredevil/presentation/mappers/summary_localizer.dart';
+import 'package:daredevil/presentation/providers/providers.dart';
 
 // ==================================================
 // 比較狀態

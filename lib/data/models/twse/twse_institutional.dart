@@ -1,6 +1,6 @@
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/core/utils/tw_parse_utils.dart';
-import 'package:afterclose/data/models/twse/twse_daily_price.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/core/utils/tw_parse_utils.dart';
+import 'package:daredevil/data/models/twse/twse_daily_price.dart';
 
 /// TWSE 法人買賣超資料
 class TwseInstitutional {

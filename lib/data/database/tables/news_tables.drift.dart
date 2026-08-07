@@ -1,11 +1,11 @@
 // dart format width=80
 // ignore_for_file: type=lint
 import 'package:drift/drift.dart' as i0;
-import 'package:afterclose/data/database/tables/news_tables.drift.dart' as i1;
-import 'package:afterclose/data/database/tables/news_tables.dart' as i2;
+import 'package:daredevil/data/database/tables/news_tables.drift.dart' as i1;
+import 'package:daredevil/data/database/tables/news_tables.dart' as i2;
 import 'package:drift/src/runtime/query_builder/query_builder.dart' as i3;
 import 'package:drift/internal/modular.dart' as i4;
-import 'package:afterclose/data/database/tables/stock_master.drift.dart' as i5;
+import 'package:daredevil/data/database/tables/stock_master.drift.dart' as i5;
 
 typedef $$NewsItemTableCreateCompanionBuilder =
     i1.NewsItemCompanion Function({

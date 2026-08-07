@@ -2,13 +2,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:afterclose/core/constants/market_codes.dart';
-import 'package:afterclose/core/constants/market_index_names.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/remote/twse_client.dart';
-import 'package:afterclose/data/remote/tpex_client.dart';
-import 'package:afterclose/presentation/providers/market_overview_provider.dart';
-import 'package:afterclose/presentation/providers/providers.dart';
+import 'package:daredevil/core/constants/market_codes.dart';
+import 'package:daredevil/core/constants/market_index_names.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/data/remote/twse_client.dart';
+import 'package:daredevil/data/remote/tpex_client.dart';
+import 'package:daredevil/presentation/providers/market_overview_provider.dart';
+import 'package:daredevil/presentation/providers/providers.dart';
 
 // ==========================================
 // Mocks

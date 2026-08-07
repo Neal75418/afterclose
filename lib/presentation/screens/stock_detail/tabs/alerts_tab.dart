@@ -3,15 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:afterclose/core/utils/number_formatter.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/presentation/widgets/alert_type_icon.dart';
-import 'package:afterclose/presentation/providers/price_alert_provider.dart';
-import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
-import 'package:afterclose/presentation/widgets/common/drag_handle.dart';
-import 'package:afterclose/presentation/widgets/section_header.dart';
-import 'package:afterclose/core/theme/breakpoints.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:daredevil/core/utils/number_formatter.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/presentation/widgets/alert_type_icon.dart';
+import 'package:daredevil/presentation/providers/price_alert_provider.dart';
+import 'package:daredevil/presentation/providers/stock_detail_provider.dart';
+import 'package:daredevil/presentation/widgets/common/drag_handle.dart';
+import 'package:daredevil/presentation/widgets/section_header.dart';
+import 'package:daredevil/core/theme/breakpoints.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
 
 /// 到價提醒分頁 - 個股價格警示設定
 class AlertsTab extends ConsumerStatefulWidget {

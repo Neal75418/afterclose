@@ -1,5 +1,5 @@
-import 'package:afterclose/core/constants/api_config.dart';
-import 'package:afterclose/core/utils/date_context.dart';
+import 'package:daredevil/core/constants/api_config.dart';
+import 'package:daredevil/core/utils/date_context.dart';
 
 /// 台灣股市 API 回應的共用解析工具
 ///

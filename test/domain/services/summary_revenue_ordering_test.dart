@@ -26,11 +26,11 @@
 // 情緒判定（偏多／中性／偏空標籤）。兩年前的營收在替今天的多空傾向加減分。
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/core/constants/analysis_params.dart';
-import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
-import 'package:afterclose/data/models/finmind/revenue.dart';
-import 'package:afterclose/domain/models/stock_summary.dart';
-import 'package:afterclose/domain/services/analysis_summary_service.dart';
+import 'package:daredevil/core/constants/analysis_params.dart';
+import 'package:daredevil/core/constants/calibrated_scores/horizon.dart';
+import 'package:daredevil/data/models/finmind/revenue.dart';
+import 'package:daredevil/domain/models/stock_summary.dart';
+import 'package:daredevil/domain/services/analysis_summary_service.dart';
 
 import '../../helpers/analysis_data_generators.dart';
 

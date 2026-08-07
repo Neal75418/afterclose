@@ -3,10 +3,10 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:meta/meta.dart';
 
-import 'package:afterclose/core/constants/api_config.dart';
-import 'package:afterclose/core/exceptions/app_exception.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/data/remote/market_client_mixin.dart';
+import 'package:daredevil/core/constants/api_config.dart';
+import 'package:daredevil/core/exceptions/app_exception.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/data/remote/market_client_mixin.dart';
 
 /// MOPS(公開資訊觀測站,舊版 mopsov)月營收 CSV 的市場別
 enum MopsMarket {

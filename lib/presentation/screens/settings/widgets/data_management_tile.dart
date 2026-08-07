@@ -2,11 +2,11 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:afterclose/core/utils/error_display.dart';
-import 'package:afterclose/presentation/widgets/api_rate_limit_dialog.dart';
-import 'package:afterclose/presentation/providers/providers.dart';
-import 'package:afterclose/presentation/providers/today_provider.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:daredevil/core/utils/error_display.dart';
+import 'package:daredevil/presentation/widgets/api_rate_limit_dialog.dart';
+import 'package:daredevil/presentation/providers/providers.dart';
+import 'package:daredevil/presentation/providers/today_provider.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
 
 /// 資料管理項目：強制同步與歷史資料進度
 class DataManagementTile extends ConsumerStatefulWidget {

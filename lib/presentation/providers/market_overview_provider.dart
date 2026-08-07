@@ -2,24 +2,24 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:afterclose/core/constants/api_config.dart';
-import 'package:afterclose/core/constants/data_freshness.dart';
-import 'package:afterclose/core/constants/market_codes.dart';
-import 'package:afterclose/core/constants/industry_names.dart';
-import 'package:afterclose/core/constants/market_index_names.dart';
-import 'package:afterclose/core/constants/rule_params_institutional.dart';
-export 'package:afterclose/core/constants/market_index_names.dart';
-import 'package:afterclose/core/utils/error_display.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/core/utils/sentinel.dart';
-import 'package:afterclose/core/utils/taiwan_calendar.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/remote/tpex_client.dart';
-import 'package:afterclose/data/remote/twse_client.dart';
-import 'package:afterclose/domain/models/market_overview_models.dart';
-export 'package:afterclose/domain/models/market_overview_models.dart';
-import 'package:afterclose/domain/services/chip_anomaly_service.dart';
-import 'package:afterclose/presentation/providers/providers.dart';
+import 'package:daredevil/core/constants/api_config.dart';
+import 'package:daredevil/core/constants/data_freshness.dart';
+import 'package:daredevil/core/constants/market_codes.dart';
+import 'package:daredevil/core/constants/industry_names.dart';
+import 'package:daredevil/core/constants/market_index_names.dart';
+import 'package:daredevil/core/constants/rule_params_institutional.dart';
+export 'package:daredevil/core/constants/market_index_names.dart';
+import 'package:daredevil/core/utils/error_display.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/core/utils/sentinel.dart';
+import 'package:daredevil/core/utils/taiwan_calendar.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/data/remote/tpex_client.dart';
+import 'package:daredevil/data/remote/twse_client.dart';
+import 'package:daredevil/domain/models/market_overview_models.dart';
+export 'package:daredevil/domain/models/market_overview_models.dart';
+import 'package:daredevil/domain/services/chip_anomaly_service.dart';
+import 'package:daredevil/presentation/providers/providers.dart';
 
 // ==================================================
 // 廣度趨勢純函式

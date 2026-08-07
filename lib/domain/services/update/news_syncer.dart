@@ -1,7 +1,7 @@
-import 'package:afterclose/core/constants/data_freshness.dart';
-import 'package:afterclose/core/exceptions/app_exception.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/data/repositories/news_repository.dart';
+import 'package:daredevil/core/constants/data_freshness.dart';
+import 'package:daredevil/core/exceptions/app_exception.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/data/repositories/news_repository.dart';
 
 /// 新聞資料同步器
 ///

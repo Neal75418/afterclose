@@ -2,7 +2,7 @@
 
 > ← [Back to README](../README.md)
 
-AfterClose 推薦規則引擎 — **64 條異常偵測規則**（產生 66 種 reason type；2 條規則各發 2 種）
+Daredevil 推薦規則引擎 — **64 條異常偵測規則**（產生 66 種 reason type；2 條規則各發 2 種）
 
 ---
 

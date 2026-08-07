@@ -7,20 +7,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import 'package:afterclose/core/constants/app_routes.dart';
-import 'package:afterclose/core/theme/breakpoints.dart';
-import 'package:afterclose/core/utils/error_display.dart';
-import 'package:afterclose/core/utils/date_context.dart';
-import 'package:afterclose/core/l10n/app_strings.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/presentation/providers/news_heat_provider.dart';
-import 'package:afterclose/presentation/providers/news_provider.dart';
-import 'package:afterclose/presentation/screens/news/heat_analysis_tab.dart';
-import 'package:afterclose/presentation/widgets/empty_state.dart';
-import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
-import 'package:afterclose/presentation/widgets/common/drag_handle.dart';
-import 'package:afterclose/presentation/widgets/themed_refresh_indicator.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:daredevil/core/constants/app_routes.dart';
+import 'package:daredevil/core/theme/breakpoints.dart';
+import 'package:daredevil/core/utils/error_display.dart';
+import 'package:daredevil/core/utils/date_context.dart';
+import 'package:daredevil/core/l10n/app_strings.dart';
+import 'package:daredevil/data/database/app_database.dart';
+import 'package:daredevil/presentation/providers/news_heat_provider.dart';
+import 'package:daredevil/presentation/providers/news_provider.dart';
+import 'package:daredevil/presentation/screens/news/heat_analysis_tab.dart';
+import 'package:daredevil/presentation/widgets/empty_state.dart';
+import 'package:daredevil/presentation/widgets/shimmer_loading.dart';
+import 'package:daredevil/presentation/widgets/common/drag_handle.dart';
+import 'package:daredevil/presentation/widgets/themed_refresh_indicator.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
 
 /// 新聞畫面 - 顯示近期市場新聞，支援篩選、搜尋與分類
 class NewsScreen extends ConsumerStatefulWidget {

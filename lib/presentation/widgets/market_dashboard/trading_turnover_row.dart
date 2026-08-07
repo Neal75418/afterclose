@@ -1,15 +1,15 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import 'package:afterclose/core/theme/semantic_colors.dart';
+import 'package:daredevil/core/theme/semantic_colors.dart';
 
-import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
-import 'package:afterclose/core/utils/number_formatter.dart';
-import 'package:afterclose/domain/services/market_reading_service.dart';
-import 'package:afterclose/presentation/providers/market_overview_provider.dart';
-import 'package:afterclose/presentation/widgets/market_dashboard/market_reading_line.dart';
-import 'package:afterclose/presentation/widgets/market_dashboard/mini_bar_chart.dart';
+import 'package:daredevil/core/theme/app_theme.dart';
+import 'package:daredevil/core/theme/design_tokens.dart';
+import 'package:daredevil/core/utils/number_formatter.dart';
+import 'package:daredevil/domain/services/market_reading_service.dart';
+import 'package:daredevil/presentation/providers/market_overview_provider.dart';
+import 'package:daredevil/presentation/widgets/market_dashboard/market_reading_line.dart';
+import 'package:daredevil/presentation/widgets/market_dashboard/mini_bar_chart.dart';
 
 /// 成交額統計列
 ///

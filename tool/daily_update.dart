@@ -40,11 +40,11 @@
 
 import 'dart:io';
 
-import 'package:afterclose/app/headless_update_runner.dart';
-import 'package:afterclose/data/remote/file_api_budget_store.dart';
-import 'package:afterclose/core/constants/calibrated_scores/calibrated_scores_registry.dart';
-import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/data/database/app_database.dart';
+import 'package:daredevil/app/headless_update_runner.dart';
+import 'package:daredevil/data/remote/file_api_budget_store.dart';
+import 'package:daredevil/core/constants/calibrated_scores/calibrated_scores_registry.dart';
+import 'package:daredevil/core/utils/logger.dart';
+import 'package:daredevil/data/database/app_database.dart';
 
 Future<void> main(List<String> args) async {
   final start = DateTime.now();

@@ -1,8 +1,8 @@
 import 'package:drift/drift.dart';
 
-import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
-import 'package:afterclose/data/database/app_database.drift.dart';
-import 'package:afterclose/data/database/tables/analysis_tables.drift.dart';
+import 'package:daredevil/core/constants/calibrated_scores/horizon.dart';
+import 'package:daredevil/data/database/app_database.drift.dart';
+import 'package:daredevil/data/database/tables/analysis_tables.drift.dart';
 
 /// Mode-aggregated stock score (per [ScoringMode], summed across mode rules)
 class ModeStockScore {

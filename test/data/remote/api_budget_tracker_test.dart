@@ -1,6 +1,6 @@
-import 'package:afterclose/core/exceptions/app_exception.dart';
-import 'package:afterclose/core/utils/clock.dart';
-import 'package:afterclose/data/remote/api_budget_tracker.dart';
+import 'package:daredevil/core/exceptions/app_exception.dart';
+import 'package:daredevil/core/utils/clock.dart';
+import 'package:daredevil/data/remote/api_budget_tracker.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Fake clock that yields a fixed [DateTime] (test-controlled).
