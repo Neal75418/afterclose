@@ -120,4 +120,43 @@ void main() {
       expect(out.single.close, 183.5);
     });
   });
+
+  group('🚨 條件已成立的種類不可設(設了會立刻觸發)', () {
+    // 2026-08-07 實機(緯創 3231):現價 183.5 已在 5MA 189.4 之下、
+    // 月線 166.3 之上——這兩顆若可點,設完立刻響一次就結束,是純噪音。
+    // 改為停用並在標籤標明現況,讓這排按鈕同時是狀態讀數。
+    testWidgets('已跌破的向下型、已突破的向上型 → 停用', (tester) async {
+      widen(tester);
+      await tester.pumpWidget(
+        buildTestApp(
+          AlertQuickSet(
+            bars: bars(30), // 最新收盤 129
+            currentPrice: 129,
+            onSelected: (_, __) {},
+          ),
+        ),
+      );
+      // 5MA=127 → 現價 129 在其上,跌破尚未成立 → 可點
+      final chips = tester.widgetList<ActionChip>(find.byType(ActionChip));
+      final enabled = chips.where((c) => c.onPressed != null).length;
+      final disabled = chips.length - enabled;
+      expect(disabled, greaterThan(0), reason: '突破月線(119.5)已成立應被停用');
+      expect(enabled, greaterThan(0), reason: '尚未成立的仍可點');
+    });
+
+    testWidgets('未提供現價時全部可點(不臆測狀態)', (tester) async {
+      widen(tester);
+      await tester.pumpWidget(
+        buildTestApp(
+          AlertQuickSet(
+            bars: bars(30),
+            currentPrice: null,
+            onSelected: (_, __) {},
+          ),
+        ),
+      );
+      final chips = tester.widgetList<ActionChip>(find.byType(ActionChip));
+      expect(chips.every((c) => c.onPressed != null), isTrue);
+    });
+  });
 }

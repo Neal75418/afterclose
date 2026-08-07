@@ -68,6 +68,7 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
           // 主動權仍在使用者,app 不自動決定要盯什麼
           AlertQuickSet(
             bars: AlertQuickSet.toOhlc(priceHistory),
+            currentPrice: currentPrice,
             onSelected: (kind, target) =>
                 _createQuickAlert(context, ref, kind, target),
           ),

@@ -943,7 +943,8 @@
       "breakAboveMa20": "Above 20MA",
       "breakAbove20DayHigh": "Above 20d high",
       "stopGate": "Below stop gate",
-      "created": "Alert set: {label} {price}"
+      "created": "Alert set: {label} {price}",
+      "alreadyMet": "already met"
     }
   },
   "notification": {

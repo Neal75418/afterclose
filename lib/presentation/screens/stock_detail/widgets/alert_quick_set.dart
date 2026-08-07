@@ -18,12 +18,18 @@ class AlertQuickSet extends StatelessWidget {
     super.key,
     required this.bars,
     required this.onSelected,
+    this.currentPrice,
   });
 
   /// 日線(依日期升冪,最後一筆最新)
   final List<Ohlc> bars;
 
   final void Function(AlertKind kind, AlertTarget target) onSelected;
+
+  /// 現價;給定時用來停用「條件已成立」的種類——設了會立刻觸發一次
+  /// 就結束,是純噪音(2026-08-07 實機:緯創 183.5 已在 5MA 189.4 之下、
+  /// 月線 166.3 之上,兩顆按鈕形同陷阱)。null=不臆測,全部可點。
+  final double? currentPrice;
 
   /// DB 價格列 → 計算用單位。**明確依日期升冪排序**,不假設 DAO 的
   /// 回傳方向(2026-08-07 實機 bug:接線處誤以為是降冪而多 reversed 一次,
@@ -48,6 +54,13 @@ class AlertQuickSet extends StatelessWidget {
     AlertKind.stopGate,
   ];
 
+  /// 條件是否已成立(向上型:現價已在目標之上;向下型:已在其下)
+  bool _isAlreadyMet(AlertTarget t) {
+    final p = currentPrice;
+    if (p == null) return false;
+    return t.isUpward ? p >= t.price : p <= t.price;
+  }
+
   @override
   Widget build(BuildContext context) {
     final targets = AlertTargetCalculator.compute(bars);
@@ -70,17 +83,32 @@ class AlertQuickSet extends StatelessWidget {
           children: [
             for (final kind in _order)
               if (targets[kind] case final t?)
-                ActionChip(
-                  avatar: Icon(
-                    t.isUpward ? Icons.trending_up : Icons.trending_down,
-                    size: 16,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                  label: Text(
-                    '${'alert.quickSet.${kind.name}'.tr()} '
-                    '${t.price.toStringAsFixed(1)}',
-                  ),
-                  onPressed: () => onSelected(kind, t),
+                Builder(
+                  builder: (context) {
+                    final met = _isAlreadyMet(t);
+                    return ActionChip(
+                      avatar: Icon(
+                        met
+                            ? Icons.check_circle_outline
+                            : (t.isUpward
+                                  ? Icons.trending_up
+                                  : Icons.trending_down),
+                        size: 16,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                      label: Text(
+                        met
+                            ? '${'alert.quickSet.${kind.name}'.tr()} '
+                                  '${t.price.toStringAsFixed(1)} · '
+                                  '${'alert.quickSet.alreadyMet'.tr()}'
+                            : '${'alert.quickSet.${kind.name}'.tr()} '
+                                  '${t.price.toStringAsFixed(1)}',
+                      ),
+                      // 條件已成立 → 停用。標籤仍顯示,讓這排按鈕同時
+                      // 是「現價相對各條線在哪」的狀態讀數。
+                      onPressed: met ? null : () => onSelected(kind, t),
+                    );
+                  },
                 ),
           ],
         ),
