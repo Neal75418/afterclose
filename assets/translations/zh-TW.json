@@ -860,7 +860,7 @@
     "deleted": "提醒已刪除",
     "triggered": "提醒已觸發",
     "noAlerts": "尚無價格提醒",
-    "noAlertsHint": "點擊右下角按鈕新增提醒",
+    "noAlertsHint": "用上方快捷鈕一鍵設定,或按下方「新增提醒」自訂價位",
     "selectStock": "選擇股票",
     "stockSymbol": "股票代號",
     "stockSymbolHint": "例如: 2330",

@@ -860,7 +860,7 @@
     "deleted": "Alert deleted",
     "triggered": "Alert triggered",
     "noAlerts": "No Price Alerts",
-    "noAlertsHint": "Tap the button to add an alert",
+    "noAlertsHint": "Tap a quick alert above, or use “Add alert” below for a custom price",
     "selectStock": "Select Stock",
     "stockSymbol": "Stock Symbol",
     "stockSymbolHint": "e.g., 2330",
