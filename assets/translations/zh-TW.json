@@ -934,6 +934,16 @@
     "unit": {
       "dayMa": "日均線",
       "times": "倍"
+    },
+    "quickSet": {
+      "hint": "快捷提醒——點一下就掛,價位 app 已算好",
+      "breakBelowMa5": "跌破5MA",
+      "breakBelowMa10": "跌破10MA",
+      "breakBelowMa20": "跌破月線",
+      "breakAboveMa20": "突破月線",
+      "breakAbove20DayHigh": "突破20日高",
+      "stopGate": "跌破守門價",
+      "created": "已設定提醒:{label} {price}"
     }
   },
   "notification": {

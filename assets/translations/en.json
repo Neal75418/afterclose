@@ -934,6 +934,16 @@
     "unit": {
       "dayMa": "-day MA",
       "times": "x"
+    },
+    "quickSet": {
+      "hint": "Quick alerts — one tap, prices precomputed",
+      "breakBelowMa5": "Below 5MA",
+      "breakBelowMa10": "Below 10MA",
+      "breakBelowMa20": "Below 20MA",
+      "breakAboveMa20": "Above 20MA",
+      "breakAbove20DayHigh": "Above 20d high",
+      "stopGate": "Below stop gate",
+      "created": "Alert set: {label} {price}"
     }
   },
   "notification": {

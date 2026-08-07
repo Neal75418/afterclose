@@ -12,6 +12,8 @@ import 'package:daredevil/presentation/widgets/common/drag_handle.dart';
 import 'package:daredevil/presentation/widgets/section_header.dart';
 import 'package:daredevil/core/theme/breakpoints.dart';
 import 'package:daredevil/core/theme/design_tokens.dart';
+import 'package:daredevil/domain/services/alert/alert_target_calculator.dart';
+import 'package:daredevil/presentation/screens/stock_detail/widgets/alert_quick_set.dart';
 
 /// 到價提醒分頁 - 個股價格警示設定
 class AlertsTab extends ConsumerStatefulWidget {
@@ -40,6 +42,9 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
         widget.symbol,
       ).select((s) => s.price.latestPrice?.close),
     );
+    final priceHistory = ref.watch(
+      stockDetailProvider(widget.symbol).select((s) => s.price.priceHistory),
+    );
     final alertState = ref.watch(priceAlertProvider);
 
     // 篩選此股票的警示
@@ -58,6 +63,15 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
             _buildCurrentPriceCard(context, currentPrice),
             const SizedBox(height: DesignTokens.spacing24),
           ],
+
+          // 快捷提醒(2026-08-07):價位 app 算好,使用者點一下就掛——
+          // 主動權仍在使用者,app 不自動決定要盯什麼
+          AlertQuickSet(
+            bars: _toOhlc(priceHistory),
+            onSelected: (kind, target) =>
+                _createQuickAlert(context, ref, kind, target),
+          ),
+          const SizedBox(height: DesignTokens.spacing20),
 
           // Alerts list
           SectionHeader(
@@ -119,6 +133,50 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// 價格歷史 → 計算用的最小單位。DB 依日期**降冪**回傳(最新在前),
+  /// 計算器要求升冪,故 reversed;OHLC 任一缺值的列直接略過(停牌等)。
+  List<Ohlc> _toOhlc(List<DailyPriceEntry> history) {
+    final out = <Ohlc>[];
+    for (final p in history.reversed) {
+      final h = p.high, l = p.low, c = p.close;
+      if (h == null || l == null || c == null || c <= 0) continue;
+      out.add(Ohlc(high: h, low: l, close: c));
+    }
+    return out;
+  }
+
+  Future<void> _createQuickAlert(
+    BuildContext context,
+    WidgetRef ref,
+    AlertKind kind,
+    AlertTarget target,
+  ) async {
+    final label = 'alert.quickSet.${kind.name}'.tr();
+    final ok = await ref
+        .read(priceAlertProvider.notifier)
+        .createAlert(
+          symbol: widget.symbol,
+          alertType: target.isUpward ? AlertType.above : AlertType.below,
+          targetValue: target.price,
+          note: label,
+        );
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          ok
+              ? 'alert.quickSet.created'.tr(
+                  namedArgs: {
+                    'label': label,
+                    'price': target.price.toStringAsFixed(1),
+                  },
+                )
+              : 'alert.createFailed'.tr(),
+        ),
       ),
     );
   }
