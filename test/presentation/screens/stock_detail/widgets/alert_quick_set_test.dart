@@ -32,7 +32,9 @@ void main() {
     // 五種:跌破5MA/跌破10MA/跌破月線/突破月線/突破20日高 + 守門價 = 6
     expect(find.byType(ActionChip), findsNWidgets(6));
     // 價位有顯示(5MA=127.0)
-    expect(find.textContaining('127.0'), findsOneWidget);
+    // 精度須與提醒清單一致(2 位小數):同一個數字在按鈕與清單長得不一樣
+    // 會侵蝕信任(2026-08-07 實機:chip 顯示 179.9、清單顯示 179.95)
+    expect(find.textContaining('127.00'), findsOneWidget);
   });
 
   testWidgets('🚨 點擊回傳種類與價位——app 不自己建立,由呼叫端決定', (tester) async {

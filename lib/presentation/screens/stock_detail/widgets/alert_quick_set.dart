@@ -99,10 +99,10 @@ class AlertQuickSet extends StatelessWidget {
                       label: Text(
                         met
                             ? '${'alert.quickSet.${kind.name}'.tr()} '
-                                  '${t.price.toStringAsFixed(1)} · '
+                                  '${t.price.toStringAsFixed(2)} · '
                                   '${'alert.quickSet.alreadyMet'.tr()}'
                             : '${'alert.quickSet.${kind.name}'.tr()} '
-                                  '${t.price.toStringAsFixed(1)}',
+                                  '${t.price.toStringAsFixed(2)}',
                       ),
                       // 條件已成立 → 停用。標籤仍顯示,讓這排按鈕同時
                       // 是「現價相對各條線在哪」的狀態讀數。
