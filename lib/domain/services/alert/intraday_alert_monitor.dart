@@ -4,6 +4,17 @@ import 'package:daredevil/data/database/app_database.dart';
 import 'package:daredevil/data/models/twse/intraday_quote.dart';
 import 'package:daredevil/data/remote/intraday_quote_client.dart';
 
+/// 一輪檢查的結果。
+///
+/// [quotesFetched]/[symbolsWanted] 是診斷關鍵:「本輪無觸價」可能是
+/// 沒到價(正常),也可能是報價全數失敗(要修)——沒有這兩個數字就
+/// 分不出來,而兩者的處置完全不同。
+typedef MonitorResult = ({
+  List<TriggeredAlert> fired,
+  int quotesFetched,
+  int symbolsWanted,
+});
+
 /// 一筆被觸價的提醒 + 當下報價(通知與後續觀察的素材)
 class TriggeredAlert {
   const TriggeredAlert({required this.alert, required this.quote});
@@ -31,7 +42,7 @@ class IntradayAlertMonitor {
   final IntradayQuoteClient _client;
 
   /// 檢查一輪。回傳本輪新觸發的提醒;沒有待監控項目時**完全不打 API**。
-  Future<List<TriggeredAlert>> check({DateTime? now}) async {
+  Future<MonitorResult> check({DateTime? now}) async {
     final pending = (await _db.getActiveAlerts())
         .where((a) => a.triggeredAt == null)
         .where(
@@ -40,7 +51,13 @@ class IntradayAlertMonitor {
               a.alertType == AlertParams.typeBelow,
         )
         .toList();
-    if (pending.isEmpty) return const [];
+    if (pending.isEmpty) {
+      return (
+        fired: const <TriggeredAlert>[],
+        quotesFetched: 0,
+        symbolsWanted: 0,
+      );
+    }
 
     // 市場別一律查主檔,不從代號猜(2026-08-07 實測:大量 3167 是上市)
     final stocks = await _db.getAllActiveStocks();
@@ -50,7 +67,13 @@ class IntradayAlertMonitor {
       final market = marketBySymbol[a.symbol];
       if (market != null) wanted[a.symbol] = market;
     }
-    if (wanted.isEmpty) return const [];
+    if (wanted.isEmpty) {
+      return (
+        fired: const <TriggeredAlert>[],
+        quotesFetched: 0,
+        symbolsWanted: 0,
+      );
+    }
 
     final quotes = await _client.fetchQuotes(wanted);
     final fired = <TriggeredAlert>[];
@@ -76,6 +99,10 @@ class IntradayAlertMonitor {
             '${fired.map((f) => '${f.alert.symbol}@${f.quote.price}').join(', ')}',
       );
     }
-    return fired;
+    return (
+      fired: fired,
+      quotesFetched: quotes.length,
+      symbolsWanted: wanted.length,
+    );
   }
 }

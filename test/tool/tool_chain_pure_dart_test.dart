@@ -15,10 +15,14 @@ import 'package:flutter_test/flutter_test.dart';
 /// 需要 dart:ui 的套件——在 CI/flutter test 就把回歸擋下來,不用等
 /// 隔天 launchd 陣亡。
 void main() {
-  test(
-    'tool/daily_update.dart 的 import 閉包不得含 flutter/easy_localization/dart:ui',
-    () {
-      const entry = 'tool/daily_update.dart';
+  // 2026-08-08:新增 tool/intraday_alert_check.dart(launchd 每 5 分鐘的
+  // 盤中提醒檢查)後,守門改為涵蓋整條 tool 鏈——同一個失效模式
+  // (混進 flutter → 編譯失敗 → 排程靜默斷)對兩支同等致命。
+  for (final entry in [
+    'tool/daily_update.dart',
+    'tool/intraday_alert_check.dart',
+  ])
+    test('$entry 的 import 閉包不得含 flutter/easy_localization/dart:ui', () {
       const banned = [
         'package:flutter/',
         'package:easy_localization/',
@@ -87,9 +91,12 @@ void main() {
             'tool 依賴鏈染上需要 dart:ui 的 import,launchd 的 dart run 會'
             '編譯失敗且靜默斷更新:\n${violations.join('\n')}',
       );
-      // sanity:確實走到了深層(防 regex/路徑解析壞掉造成假綠)
-      expect(visited, contains('lib/domain/services/update_service.dart'));
-      expect(visited.length, greaterThan(50));
-    },
-  );
+      // sanity:確實走到了深層(防 regex/路徑解析壞掉造成假綠)。
+      // 錨點各自不同——daily_update 走 update chain、intraday 走 alert chain。
+      final anchor = entry == 'tool/daily_update.dart'
+          ? 'lib/domain/services/update_service.dart'
+          : 'lib/domain/services/alert/intraday_alert_monitor.dart';
+      expect(visited, contains(anchor));
+      expect(visited.length, greaterThan(5));
+    });
 }

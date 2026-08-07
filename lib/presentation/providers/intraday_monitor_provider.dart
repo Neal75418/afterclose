@@ -70,7 +70,7 @@ class IntradayMonitorNotifier extends Notifier<DateTime?> {
         database: ref.read(databaseProvider),
         client: IntradayQuoteClient(),
       );
-      final fired = await monitor.check(now: now);
+      final fired = (await monitor.check(now: now)).fired;
       state = now;
       for (final f in fired) {
         await ref

@@ -70,7 +70,7 @@ void main() {
       () => client.fetchQuotes(any()),
     ).thenAnswer((_) async => {'3231': quote('3231', 179.5)});
 
-    final fired = await monitor.check();
+    final fired = (await monitor.check()).fired;
 
     expect(fired.length, 1);
     expect(fired.single.alert.id, 1);
@@ -84,7 +84,7 @@ void main() {
       () => client.fetchQuotes(any()),
     ).thenAnswer((_) async => {'3231': quote('3231', 181.0)});
 
-    expect(await monitor.check(), isEmpty);
+    expect((await monitor.check()).fired, isEmpty);
     verifyNever(() => db.triggerAlert(any(), now: any(named: 'now')));
   });
 
@@ -96,7 +96,7 @@ void main() {
       () => client.fetchQuotes(any()),
     ).thenAnswer((_) async => {'3231': quote('3231', 203.0)});
 
-    expect((await monitor.check()).length, 1);
+    expect((await monitor.check()).fired.length, 1);
   });
 
   test('🚨 已觸發過的不重複叫(語意是開始觀察,不是持續嗶)', () async {
@@ -115,14 +115,14 @@ void main() {
       () => client.fetchQuotes(any()),
     ).thenAnswer((_) async => {'3231': quote('3231', 170.0)});
 
-    expect(await monitor.check(), isEmpty);
+    expect((await monitor.check()).fired, isEmpty);
     verifyNever(() => db.triggerAlert(any(), now: any(named: 'now')));
   });
 
   test('沒有待監控提醒 → 完全不打 API(省流量也省被限流)', () async {
     when(() => db.getActiveAlerts()).thenAnswer((_) async => []);
 
-    expect(await monitor.check(), isEmpty);
+    expect((await monitor.check()).fired, isEmpty);
     verifyNever(() => client.fetchQuotes(any()));
   });
 
@@ -130,7 +130,7 @@ void main() {
     when(() => db.getActiveAlerts()).thenAnswer((_) async => [alert()]);
     when(() => client.fetchQuotes(any())).thenAnswer((_) async => const {});
 
-    expect(await monitor.check(), isEmpty);
+    expect((await monitor.check()).fired, isEmpty);
     verifyNever(() => db.triggerAlert(any(), now: any(named: 'now')));
   });
 

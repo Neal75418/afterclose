@@ -43,10 +43,15 @@ class IntradayQuoteClient {
             response.statusCode,
           );
         }
-        final data = response.data;
-        if (data is Map<String, dynamic>) {
-          result.addAll(IntradayQuote.parseResponse(data));
-        }
+        // MIS 回應前面帶一串空行,Dio 的 responseType.json 因此解析失敗
+        // 退回 String(2026-08-08 實測)——走專案既有的統一解碼 helper,
+        // 它同時處理 String 情況與限流時的 HTML 回應。
+        final data = MarketClientMixin.decodeResponseData(
+          response.data,
+          _tag,
+          '盤中報價',
+        );
+        if (data != null) result.addAll(IntradayQuote.parseResponse(data));
       } on RateLimitException {
         rethrow;
       } catch (e) {
