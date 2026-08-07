@@ -53,8 +53,11 @@ abstract final class MarketClientMixin {
     var decoded = data;
     if (decoded is String) {
       // 偵測 HTML 回應（TWSE/TPEX 限流時回傳 HTML 頁面而非 JSON）
-      if (decoded.trimLeft().startsWith('<!DOCTYPE') ||
-          decoded.trimLeft().startsWith('<html')) {
+      // 大小寫不敏感(2026-08-08 二次審查):`<!doctype html>` 與 `<HTML>`
+      // 都是合法 HTML,原本只比對大寫會把限流頁漏判成一般解析失敗 →
+      // 被上層當「這批失敗」吞掉並繼續猛打
+      final head = decoded.trimLeft().toLowerCase();
+      if (head.startsWith('<!doctype') || head.startsWith('<html')) {
         AppLogger.warning(tag, '$operation: 收到 HTML 回應（疑似 API 限流）');
         throw const RateLimitException('API 回傳 HTML 而非 JSON，疑似限流');
       }

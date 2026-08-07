@@ -251,9 +251,10 @@ class _DaredevilAppState extends ConsumerState<DaredevilApp>
 
   @override
   void dispose() {
-    // 容器層的 ref.onDispose 已涵蓋真正的 teardown,但 widget test 若
-    // pump 本 widget 會卡在 pending timer(2026-08-08 code review)
-    ref.read(intradayMonitorProvider.notifier).stop();
+    // ⚠️ 不要在這裡 ref.read:Riverpod 3.x 會拋 StateError,而且因為它是
+    // 第一行,removeObserver 與 super.dispose() 都不會執行 → 死掉的 State
+    // 繼續掛在生命週期觀察者上(2026-08-08 二次審查實測)。計時器的釋放
+    // 由 provider 的 ref.onDispose 負責,本來就涵蓋。
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }

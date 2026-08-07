@@ -60,9 +60,17 @@ class IntradayMonitorNotifier extends Notifier<DateTime?> {
     // priceAlertProvider.alerts 在 loadAlerts() 跑過之前是空的,而全 repo
     // 只有提醒頁會呼叫它——使用者開在「今日」分頁就 armed=0,5 分鐘節奏
     // 靜默退化成一天四次,通知遲到最多兩小時。
-    final armed = (await ref.read(databaseProvider).getActiveAlerts())
-        .where((a) => a.triggeredAt == null)
-        .length;
+    final int armed;
+    try {
+      armed = (await ref.read(databaseProvider).getActiveAlerts())
+          .where((a) => a.triggeredAt == null)
+          .length;
+    } catch (e) {
+      // _tick 是 fire-and-forget:例外不接住會逸出到 Sentry 的 appRunner
+      // zone,而非走本方法其餘部分一致的 warning 路徑(2026-08-08 二次審查)
+      AppLogger.warning('IntradayMonitor', '讀取待監控提醒失敗', e);
+      return;
+    }
     final interval = IntradayPollSchedule.nextInterval(armedCount: armed);
     // 沒掛條件時只在決策時刻檢查;有掛條件則依間隔節流
     final last = state;

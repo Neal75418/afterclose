@@ -65,8 +65,23 @@ class NotificationService {
   }
 
   /// 檢查是否已取得通知權限（不會請求權限）
+  ///
+  /// 🔴 2026-08-08 二次審查:macOS **不能**用 `IOSFlutterLocalNotifications
+  /// Plugin` 解析——flutter_local_notifications 只在 `TargetPlatform.iOS`
+  /// 註冊它,macOS 註冊的是 `MacOSFlutterLocalNotificationsPlugin`。原本
+  /// 兩者共用 iOS 分支,於是 macOS 恆得 null → 恆回 false → 依賴權限的
+  /// 功能(盤中提醒守門)在主力平台整個死掉且無聲。
   Future<bool> hasPermission() async {
-    if (Platform.isIOS || Platform.isMacOS) {
+    if (Platform.isMacOS) {
+      final macPlugin = _notifications
+          .resolvePlatformSpecificImplementation<
+            MacOSFlutterLocalNotificationsPlugin
+          >();
+      final result = await macPlugin?.checkPermissions();
+      return result?.isEnabled ?? false;
+    }
+
+    if (Platform.isIOS) {
       final iosPlugin = _notifications
           .resolvePlatformSpecificImplementation<
             IOSFlutterLocalNotificationsPlugin
@@ -89,8 +104,19 @@ class NotificationService {
   }
 
   /// 請求通知權限（iOS/macOS/Android）
+  ///
+  /// macOS 走 `MacOSFlutterLocalNotificationsPlugin`,理由同 [hasPermission]。
   Future<bool> requestPermissions() async {
-    if (Platform.isIOS || Platform.isMacOS) {
+    if (Platform.isMacOS) {
+      final result = await _notifications
+          .resolvePlatformSpecificImplementation<
+            MacOSFlutterLocalNotificationsPlugin
+          >()
+          ?.requestPermissions(alert: true, badge: true, sound: true);
+      return result ?? false;
+    }
+
+    if (Platform.isIOS) {
       final result = await _notifications
           .resolvePlatformSpecificImplementation<
             IOSFlutterLocalNotificationsPlugin

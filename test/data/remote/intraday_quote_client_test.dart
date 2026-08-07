@@ -28,14 +28,16 @@ class _FakeAdapter implements HttpClientAdapter {
     final url = options.uri.toString();
     requests.add(url);
     final body = handler(requests.length - 1, url);
-    final isHtml = body.trimLeft().toLowerCase().startsWith('<!doctype');
+    // 一律宣稱 JSON——這才是能鎖住 `ResponseType.plain` 的設定:
+    // 若拿掉 plain,Dio 會依 content-type 嘗試 jsonDecode,HTML 就會在
+    // 我們的 HTML 偵測之前先炸成 DioException 並被吞成「這批失敗」
+    // (2026-08-08 二次審查 F8:原本 adapter 誠實標 text/html,導致
+    // 刪掉 plain 測試照樣全綠)
     return ResponseBody.fromString(
       body,
       200,
       headers: {
-        Headers.contentTypeHeader: [
-          isHtml ? 'text/html' : Headers.jsonContentType,
-        ],
+        Headers.contentTypeHeader: [Headers.jsonContentType],
       },
     );
   }
@@ -102,7 +104,8 @@ void main() {
     // MarketClientMixin.decodeResponseData 偵測到就拋 RateLimitException。
     // (adapter 直接拋例外不是真實路徑——Dio 會包成 DioException。)
     final adapter = _FakeAdapter(
-      (_, __) => '<!DOCTYPE html><html><body>Too many requests</body></html>',
+      // 小寫 doctype:2026-08-08 二次審查指出偵測原本大小寫敏感
+      (_, __) => '<!doctype html><html><body>Too many requests</body></html>',
     );
     await expectLater(
       clientWith(adapter).fetchQuotes({'2330': 'TWSE'}),

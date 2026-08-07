@@ -6,7 +6,7 @@ import 'package:daredevil/domain/services/alert/intraday_poll_schedule.dart';
 ///
 /// 升頻的核心決策:**現在該不該打 API**。
 /// 高頻檢查會製造 v3.3「收盤才定案」本來要濾掉的噪音,所以沒掛條件時
-/// 只在四個決策時刻檢查;掛了條件才升 5 分鐘;觸價後才升 1 分鐘。
+/// 只在四個決策時刻檢查;掛了條件才升 5 分鐘(第三段緊盯已於 2026-08-08 移除)。
 void main() {
   DateTime at(int h, int m, {int day = 7}) => DateTime(2026, 8, day, h, m);
 

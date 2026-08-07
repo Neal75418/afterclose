@@ -487,7 +487,10 @@ class PriceAlertNotifier extends Notifier<PriceAlertState> {
 
       // 在資料庫標記已觸發的警示
       for (final alert in triggered) {
-        await _db.triggerAlert(alert.id, now: now);
+        // 與盤中路徑共用同一把原子鎖:否則 daily 這條無條件 UPDATE 會
+        // 蓋掉盤中剛認領的觸發並重複通知一次(2026-08-08 二次審查 F4)
+        final claimed = await _db.claimAlertTrigger(alert.id, now: now);
+        if (!claimed) continue;
         triggeredIds.add(alert.id);
       }
 

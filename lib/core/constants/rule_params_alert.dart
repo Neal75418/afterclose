@@ -111,9 +111,6 @@ abstract final class AlertParams {
   /// 使用者已明示在意這個價位，檔數自限所以噪音有界。
   static const int armedPollMinutes = 5;
 
-  /// 觸價後自動升為緊盯的輪詢間隔（分鐘）
-  static const int watchingPollMinutes = 1;
-
   /// 未掛條件時的背景檢查時刻（台北時間 HH:mm）。
   ///
   /// 對齊決策時刻而非固定頻率：09:15＝跳空是否讓條件單作廢（v3.3 L5）、
