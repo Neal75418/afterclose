@@ -13,7 +13,6 @@
 // 通知因此不能用 flutter_local_notifications,改用 macOS 原生 osascript。
 import 'dart:io';
 
-import 'package:daredevil/core/utils/logger.dart';
 import 'package:daredevil/core/utils/taiwan_time.dart';
 import 'package:daredevil/data/database/app_database.dart';
 import 'package:daredevil/data/remote/intraday_quote_client.dart';
@@ -53,6 +52,14 @@ Future<void> main(List<String> args) async {
       }
     }
 
+    // 🔴 通知管道必須先確認可用,再檢查(2026-08-08 code review A2)。
+    // check() 會把觸價的提醒標成已觸發且停用;若之後才發現 osascript
+    // 發不出去,提醒就被靜默燒掉——使用者沒收到,收盤路徑也看不到它。
+    if (!await _notificationChannelWorks()) {
+      stderr.writeln('[intraday_alert] 通知管道不可用,本輪不檢查(避免燒掉提醒)');
+      exit(1);
+    }
+
     final result = await IntradayAlertMonitor(
       database: database,
       client: IntradayQuoteClient(),
@@ -75,10 +82,11 @@ Future<void> main(List<String> args) async {
       exit(0);
     }
 
+    var notified = 0;
     for (final f in fired) {
       final direction = f.alert.alertType == 'ABOVE' ? '突破' : '跌破';
       final label = f.alert.note ?? '$direction ${f.alert.targetValue}';
-      await _notify(
+      final ok = await _notify(
         title: '${f.quote.symbol} ${f.quote.name} $label',
         body:
             '現價 ${f.quote.price.toStringAsFixed(2)}'
@@ -86,12 +94,15 @@ Future<void> main(List<String> args) async {
             '${f.quote.changePercent.toStringAsFixed(2)}%)'
             ' · ${f.quote.time ?? ''}',
       );
+      if (ok) notified++;
     }
-    print('[intraday_alert] 觸價 ${fired.length} 筆,已通知');
-    exit(0);
+    print('[intraday_alert] 觸價 ${fired.length} 筆,已通知 $notified 筆');
+    exit(notified == fired.length ? 0 : 1);
   } catch (e, s) {
-    AppLogger.error('intraday_alert', 'unhandled', e, s);
+    // AppLogger 在 `dart run` 下是 no-op(輸出包在 assert 內、asserts
+    // 未啟用)——堆疊必須自己印,否則故障現場只剩一行訊息
     stderr.writeln('[intraday_alert] FAILED: $e');
+    stderr.writeln(s);
     exit(1);
   } finally {
     await database?.close();
@@ -103,13 +114,31 @@ Future<void> main(List<String> args) async {
 ///
 /// 字串以雙引號包入 AppleScript,故需轉義 `\` 與 `"`;股票名稱理論上
 /// 不含這些字元,但通知內容來自外部 API,不做假設。
-Future<void> _notify({required String title, required String body}) async {
-  String esc(String s) => s.replaceAll(r'\', r'\\').replaceAll('"', r'\"');
+Future<bool> _notify({required String title, required String body}) async {
+  // 換行會截斷 AppleScript 字串字面值(2026-08-08 code review):note 由
+  // 使用者輸入,不能假設單行
+  String esc(String s) => s
+      .replaceAll(r'\', r'\\')
+      .replaceAll('"', r'\"')
+      .replaceAll('\n', ' ')
+      .replaceAll('\r', ' ');
   final script =
       'display notification "${esc(body)}" '
       'with title "Daredevil" subtitle "${esc(title)}"';
   final result = await Process.run('osascript', ['-e', script]);
   if (result.exitCode != 0) {
     stderr.writeln('[intraday_alert] 通知失敗: ${result.stderr}');
+    return false;
+  }
+  return true;
+}
+
+/// 開跑前先確認 osascript 可用——寧可不檢查,也不要檢查完才發現叫不出來
+Future<bool> _notificationChannelWorks() async {
+  try {
+    final r = await Process.run('osascript', ['-e', 'return 1']);
+    return r.exitCode == 0;
+  } catch (_) {
+    return false;
   }
 }

@@ -149,7 +149,11 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
         .read(priceAlertProvider.notifier)
         .createAlert(
           symbol: widget.symbol,
-          alertType: target.isUpward ? AlertType.above : AlertType.below,
+          // 用 AlertTarget 自己的映射,而非在此重新推導——它的存在理由
+          // 就是防兩套邏輯漂移(2026-08-08 code review 指出原本沒用到)
+          alertType: AlertType.values.firstWhere(
+            (t) => t.value == target.alertTypeValue,
+          ),
           targetValue: target.price,
           note: label,
         );
@@ -161,7 +165,7 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
               ? 'alert.quickSet.created'.tr(
                   namedArgs: {
                     'label': label,
-                    'price': target.price.toStringAsFixed(1),
+                    'price': target.price.toStringAsFixed(2),
                   },
                 )
               : 'alert.createFailed'.tr(),

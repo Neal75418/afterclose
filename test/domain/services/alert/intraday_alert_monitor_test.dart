@@ -56,9 +56,10 @@ void main() {
     db = MockDb();
     client = MockClient();
     monitor = IntradayAlertMonitor(database: db, client: client);
+    // 原子認領:預設搶到(跨 process 去重的行為另有專測)
     when(
-      () => db.triggerAlert(any(), now: any(named: 'now')),
-    ).thenAnswer((_) async {});
+      () => db.claimAlertTrigger(any(), now: any(named: 'now')),
+    ).thenAnswer((_) async => true);
     when(
       () => db.getAllActiveStocks(),
     ).thenAnswer((_) async => [stock('3231', 'TWSE')]);
@@ -75,7 +76,7 @@ void main() {
     expect(fired.length, 1);
     expect(fired.single.alert.id, 1);
     expect(fired.single.quote.price, 179.5);
-    verify(() => db.triggerAlert(1, now: any(named: 'now'))).called(1);
+    verify(() => db.claimAlertTrigger(1, now: any(named: 'now'))).called(1);
   });
 
   test('未達目標 → 不觸發、不寫 DB', () async {
@@ -85,7 +86,7 @@ void main() {
     ).thenAnswer((_) async => {'3231': quote('3231', 181.0)});
 
     expect((await monitor.check()).fired, isEmpty);
-    verifyNever(() => db.triggerAlert(any(), now: any(named: 'now')));
+    verifyNever(() => db.claimAlertTrigger(any(), now: any(named: 'now')));
   });
 
   test('🚨 向上型:突破才觸發', () async {
@@ -116,7 +117,31 @@ void main() {
     ).thenAnswer((_) async => {'3231': quote('3231', 170.0)});
 
     expect((await monitor.check()).fired, isEmpty);
-    verifyNever(() => db.triggerAlert(any(), now: any(named: 'now')));
+    verifyNever(() => db.claimAlertTrigger(any(), now: any(named: 'now')));
+  });
+
+  test('🚨 診斷數字誠實回報(CLI 唯一的故障偵測依據)', () async {
+    // 2026-08-08 變異測試:把 quotesFetched 改成 wanted.length(永遠健康)
+    // 全部測試照樣綠——而 CLI 的 exit-1 分支完全靠這兩個數字,等於故障
+    // 偵測被靜默停用。
+    when(() => db.getActiveAlerts()).thenAnswer((_) async => [alert()]);
+    when(() => client.fetchQuotes(any())).thenAnswer((_) async => const {});
+
+    final r = await monitor.check();
+
+    expect(r.symbolsWanted, 1, reason: '有一檔要查');
+    expect(r.quotesFetched, 0, reason: '報價全滅必須誠實回報 0,不可回報 wanted');
+  });
+
+  test('報價成功時 quotesFetched 反映實際筆數', () async {
+    when(() => db.getActiveAlerts()).thenAnswer((_) async => [alert()]);
+    when(
+      () => client.fetchQuotes(any()),
+    ).thenAnswer((_) async => {'3231': quote('3231', 181.0)});
+
+    final r = await monitor.check();
+    expect(r.quotesFetched, 1);
+    expect(r.symbolsWanted, 1);
   });
 
   test('沒有待監控提醒 → 完全不打 API(省流量也省被限流)', () async {
@@ -131,7 +156,7 @@ void main() {
     when(() => client.fetchQuotes(any())).thenAnswer((_) async => const {});
 
     expect((await monitor.check()).fired, isEmpty);
-    verifyNever(() => db.triggerAlert(any(), now: any(named: 'now')));
+    verifyNever(() => db.claimAlertTrigger(any(), now: any(named: 'now')));
   });
 
   test('市場別由 stock_master 決定,不從代號猜', () async {
@@ -149,5 +174,19 @@ void main() {
         verify(() => client.fetchQuotes(captureAny())).captured.single
             as Map<String, String>;
     expect(captured['6538'], 'TPEx');
+  });
+
+  test('🚨 認領失敗(別的 process 先觸發)→ 不列入 fired,不重複通知', () async {
+    when(() => db.getActiveAlerts()).thenAnswer((_) async => [alert()]);
+    when(
+      () => client.fetchQuotes(any()),
+    ).thenAnswer((_) async => {'3231': quote('3231', 179.5)});
+    when(
+      () => db.claimAlertTrigger(any(), now: any(named: 'now')),
+    ).thenAnswer((_) async => false);
+
+    final r = await monitor.check();
+
+    expect(r.fired, isEmpty, reason: 'launchd CLI 已經叫過了,app 不要再叫一次');
   });
 }

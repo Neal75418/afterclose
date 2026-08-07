@@ -177,7 +177,21 @@ class AppDatabase extends $AppDatabase
   /// 若 [path] 不存在會自動建立，schema 透過既有的 `onCreate` +
   /// fingerprint 機制建好。**純 Dart**：不經 `drift_flutter`，可在
   /// `dart run` 環境正常運作。
-  AppDatabase.forToolFile(String path) : super(NativeDatabase(File(path)));
+  AppDatabase.forToolFile(String path)
+    : super(
+        NativeDatabase(
+          File(path),
+          setup: (db) {
+            // 🔴 2026-08-08 code review 實測重現:預設 busy_timeout=0,
+            // GUI 在盤中做一次手動更新握住寫鎖,launchd 的盤中檢查就整輪
+            // 死在 beforeOpen 的維護 UPDATE(SqliteException(5) database
+            // is locked),連報價都沒抓就 exit 1。WAL 只解決讀寫並行,
+            // 寫寫仍需排隊——給它等,不要當場放棄。
+            db.execute('PRAGMA busy_timeout = 5000');
+            db.execute('PRAGMA journal_mode = WAL');
+          },
+        ),
+      );
 
   /// 產品尚未上線前使用 version 1，所有 table 和 index 在 onCreate 一次建好。
   /// 正式上線後，每次 schema 變更遞增 version 並在 onUpgrade 加 migration。

@@ -88,7 +88,10 @@ class IntradayAlertMonitor {
           : q.price <= a.targetValue;
       if (!hit) continue;
 
-      await _db.triggerAlert(a.id, now: stamp);
+      // 原子認領:app 內輪詢與 launchd CLI 是兩個 process,同時看到同一筆
+      // pending 時只有搶到的那個才通知(2026-08-08 code review)
+      final claimed = await _db.claimAlertTrigger(a.id, now: stamp);
+      if (!claimed) continue;
       fired.add(TriggeredAlert(alert: a, quote: q));
     }
 

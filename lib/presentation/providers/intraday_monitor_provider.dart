@@ -24,9 +24,17 @@ class IntradayMonitorNotifier extends Notifier<DateTime?> {
   Timer? _timer;
   bool _running = false;
 
+  /// 提升為欄位:原本每輪 new 一個(盤中 4.5 小時 ≈ 54 個),每個自帶
+  /// keep-alive 連線池且永不關閉(2026-08-08 code review)。專案其他
+  /// client 一律 provider 持有 + onDispose 關閉,這裡比照。
+  IntradayQuoteClient? _client;
+
   @override
   DateTime? build() {
-    ref.onDispose(() => _timer?.cancel());
+    ref.onDispose(() {
+      _timer?.cancel();
+      _client?.close();
+    });
     return null;
   }
 
@@ -48,14 +56,14 @@ class IntradayMonitorNotifier extends Notifier<DateTime?> {
     final now = TaiwanTime.now();
     if (!IntradayPollSchedule.isMarketHours(now)) return;
 
-    final alerts = ref.read(priceAlertProvider).alerts;
-    final armed = alerts
-        .where((a) => a.isActive && a.triggeredAt == null)
+    // 🚨 armed 必須查 DB,不能讀 UI 快取(2026-08-08 code review):
+    // priceAlertProvider.alerts 在 loadAlerts() 跑過之前是空的,而全 repo
+    // 只有提醒頁會呼叫它——使用者開在「今日」分頁就 armed=0,5 分鐘節奏
+    // 靜默退化成一天四次,通知遲到最多兩小時。
+    final armed = (await ref.read(databaseProvider).getActiveAlerts())
+        .where((a) => a.triggeredAt == null)
         .length;
-    final interval = IntradayPollSchedule.nextInterval(
-      armedCount: armed,
-      watchingCount: 0,
-    );
+    final interval = IntradayPollSchedule.nextInterval(armedCount: armed);
     // 沒掛條件時只在決策時刻檢查;有掛條件則依間隔節流
     final last = state;
     if (interval == null) {
@@ -66,9 +74,21 @@ class IntradayMonitorNotifier extends Notifier<DateTime?> {
 
     _running = true;
     try {
+      // 🚨 通知必須先就緒才可以檢查(2026-08-08 code review HIGH-1)。
+      // check() 會把觸價的提醒標成已觸發且停用——若之後才發現通知發不
+      // 出去(provider 未 initialize / 無權限),提醒就被**靜默燒掉**:
+      // 使用者沒收到通知,而收盤那條路徑也再也看不到它(已非 active)。
+      // 因此順序必須是「先確認能通知 → 再檢查」,不能反過來。
+      final notifier = ref.read(notificationProvider.notifier);
+      await notifier.initialize();
+      if (!ref.read(notificationProvider).hasPermission) {
+        AppLogger.debug('IntradayMonitor', '無通知權限,本輪不檢查(避免燒掉提醒)');
+        return;
+      }
+
       final monitor = IntradayAlertMonitor(
         database: ref.read(databaseProvider),
-        client: IntradayQuoteClient(),
+        client: _client ??= IntradayQuoteClient(),
       );
       final fired = (await monitor.check(now: now)).fired;
       state = now;

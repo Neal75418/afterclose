@@ -4,7 +4,7 @@ import 'package:daredevil/domain/services/alert/intraday_poll_schedule.dart';
 
 /// 盤中輪詢排程(2026-08-07 設計、2026-08-08 實作)。
 ///
-/// 三段升頻的核心決策:**現在該不該打 API**。
+/// 升頻的核心決策:**現在該不該打 API**。
 /// 高頻檢查會製造 v3.3「收盤才定案」本來要濾掉的噪音,所以沒掛條件時
 /// 只在四個決策時刻檢查;掛了條件才升 5 分鐘;觸價後才升 1 分鐘。
 void main() {
@@ -28,26 +28,16 @@ void main() {
     });
   });
 
-  group('三段升頻:下一次該等多久', () {
-    test('有觸價待觀察 → 緊盯(1 分鐘)', () {
+  group('升頻:下一次該等多久', () {
+    test('有掛條件 → 5 分鐘', () {
       expect(
-        IntradayPollSchedule.nextInterval(armedCount: 3, watchingCount: 1),
-        const Duration(minutes: 1),
-      );
-    });
-
-    test('有掛條件但無觸價 → 5 分鐘', () {
-      expect(
-        IntradayPollSchedule.nextInterval(armedCount: 2, watchingCount: 0),
+        IntradayPollSchedule.nextInterval(armedCount: 2),
         const Duration(minutes: 5),
       );
     });
 
     test('🚨 完全沒掛條件 → 不輪詢(null),只走背景決策時刻', () {
-      expect(
-        IntradayPollSchedule.nextInterval(armedCount: 0, watchingCount: 0),
-        isNull,
-      );
+      expect(IntradayPollSchedule.nextInterval(armedCount: 0), isNull);
     });
   });
 

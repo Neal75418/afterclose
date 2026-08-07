@@ -55,11 +55,11 @@ void main() {
     final t = AlertTargetCalculator.compute(b);
     final gate = t[AlertKind.stopGate]!;
     expect(gate.isUpward, isFalse);
-    // ATR 應落在 4~5 之間 → 守門價 = 129 − 2×ATR
-    final atr = (129 - gate.price) / 2;
-    expect(atr, greaterThan(3.5));
-    expect(atr, lessThan(5.5));
-    expect(gate.price, lessThan(129));
+    // 此 fixture 每根 TR 恆為 4(高低差 4、缺口 1)→ ATR(20)=4.0 精確。
+    // **必須斷言精確值**:2026-08-08 變異測試證明,原本的 3.5~5.5 區間
+    // 容忍 k∈[1.75,2.75],把 k 從回測定案的 2.0 改成 2.5 測試照樣全綠
+    // ——那等於這條「k=2.0」的守門完全沒有守。
+    expect(gate.price, closeTo(129 - 2.0 * 4.0, 1e-9));
   });
 
   test('資料不足 20 根 → 只給算得出來的,不硬湊', () {

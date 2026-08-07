@@ -3,11 +3,15 @@ import 'package:daredevil/core/utils/taiwan_calendar.dart';
 
 /// 盤中輪詢排程(2026-08-07 設計、2026-08-08 實作)。
 ///
-/// 三段升頻的決策核心——**現在該不該打 API、多久打一次**:
+/// 決策核心——**現在該不該打 API、多久打一次**:
 /// - 完全沒掛條件 → 不輪詢,只在四個決策時刻檢查一次
 /// - 有掛條件(armed) → [AlertParams.armedPollMinutes],使用者已明示在意
 ///   這些價位,檔數自限所以噪音有界
-/// - 有觸價待觀察(watching) → [AlertParams.watchingPollMinutes] 緊盯
+///
+/// 原設計還有第三段「觸價後升為 1 分鐘緊盯」,**2026-08-08 移除**:觸發
+/// 即停用提醒(`claimAlertTrigger`),結構上不存在「已觸價但仍在監控」的
+/// 狀態,該段永遠不可能啟動。要復活它需要先有「觀察中」的資料模型與
+/// 消費它的 UI,不是調參數的事。
 ///
 /// 為什麼不一律高頻:v3.3 的判定是「收盤才定案」,盤中破了又拉回是常態
 /// (2026-08-07 實例:貿聯盤中 −7.8% 觸 10MA 又收復、緯創破 5MA 又站回)。
@@ -26,13 +30,7 @@ abstract final class IntradayPollSchedule {
   }
 
   /// 下一次輪詢間隔;null=此刻不需要主動輪詢(交給決策時刻)
-  static Duration? nextInterval({
-    required int armedCount,
-    required int watchingCount,
-  }) {
-    if (watchingCount > 0) {
-      return const Duration(minutes: AlertParams.watchingPollMinutes);
-    }
+  static Duration? nextInterval({required int armedCount}) {
     if (armedCount > 0) {
       return const Duration(minutes: AlertParams.armedPollMinutes);
     }

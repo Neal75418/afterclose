@@ -316,6 +316,27 @@ mixin UserDaoMixin on $AppDatabase {
   }
 
   /// 停用股價提醒（標記為已觸發）
+  /// 原子式「認領」觸發(2026-08-08 code review)。
+  ///
+  /// app 內輪詢與 launchd CLI 跑在**兩個 process、同一個 SQLite**;原本的
+  /// 無條件 UPDATE 會讓兩邊都讀到 pending、都發通知(系統通知 + app 通知
+  /// 各一)。條件式 UPDATE + 回傳受影響列數 → 只有搶到的那個 process
+  /// 才通知。
+  ///
+  /// 回傳 true=本次搶到(應發通知)、false=別人先觸發了(不要重複叫)。
+  Future<bool> claimAlertTrigger(int id, {DateTime? now}) async {
+    final affected =
+        await (update(
+          priceAlert,
+        )..where((t) => t.id.equals(id) & t.triggeredAt.isNull())).write(
+          PriceAlertCompanion(
+            isActive: const Value(false),
+            triggeredAt: Value(now ?? DateTime.now()),
+          ),
+        );
+    return affected > 0;
+  }
+
   Future<void> triggerAlert(int id, {DateTime? now}) {
     return (update(priceAlert)..where((t) => t.id.equals(id))).write(
       PriceAlertCompanion(

@@ -251,6 +251,9 @@ class _DaredevilAppState extends ConsumerState<DaredevilApp>
 
   @override
   void dispose() {
+    // 容器層的 ref.onDispose 已涵蓋真正的 teardown,但 widget test 若
+    // pump 本 widget 會卡在 pending timer(2026-08-08 code review)
+    ref.read(intradayMonitorProvider.notifier).stop();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }

@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import 'package:daredevil/core/constants/api_endpoints.dart';
+import 'package:daredevil/core/constants/market_codes.dart';
 import 'package:daredevil/core/exceptions/app_exception.dart';
 import 'package:daredevil/core/utils/logger.dart';
 import 'package:daredevil/data/models/twse/intraday_quote.dart';
@@ -30,7 +31,7 @@ class IntradayQuoteClient {
     for (var i = 0; i < symbols.length; i += ApiEndpoints.misBatchSize) {
       final batch = symbols.skip(i).take(ApiEndpoints.misBatchSize);
       final exCh = batch
-          .map((s) => '${markets[s] == 'TWSE' ? 'tse' : 'otc'}_$s.tw')
+          .map((s) => '${markets[s] == MarketCode.twse ? 'tse' : 'otc'}_$s.tw')
           .join('|');
       try {
         final response = await _dio.get(
@@ -62,4 +63,8 @@ class IntradayQuoteClient {
     AppLogger.debug(_tag, '盤中報價: ${result.length}/${symbols.length} 檔');
     return result;
   }
+
+  /// 釋放底層 HttpClient 連線池(專案其他 5 支 client 皆有,見
+  /// providers.dart 的「避免每次設定變動都洩漏一個底層 socket」)
+  void close() => _dio.close(force: true);
 }

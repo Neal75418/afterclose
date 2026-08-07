@@ -109,10 +109,14 @@ abstract final class AlertTargetCalculator {
     return result;
   }
 
-  /// ATR(period):True Range 的簡單移動平均。
+  /// ATR(period):True Range 的**簡單平均**(非 Wilder 平滑)。
   ///
-  /// 與 [TechnicalIndicatorService.calculateATR] 同一個公式,但這裡只需要
-  /// 最後一個值、且輸入型別不同,不繞道整條序列。
+  /// ⚠️ 與 `TechnicalIndicatorService.calculateATR` **不同口徑**(那支用
+  /// Wilder RMA:SMA seed 後遞迴平滑)——2026-08-08 code review 指出我原本
+  /// 的註解誤稱兩者相同。這裡刻意用簡單平均,因為 **2026-08-07 的 k 值
+  /// 回測就是用簡單平均跑的**(k=2.0 對應 ATR(20) 簡單平均,見 v3.3
+  /// 〔註 I〕);換成 Wilder 會讓實際停損寬度與回測結論脫鉤。
+  /// 若日後要統一口徑,必須連 k 一起重新回測。
   static double? _atr(List<Ohlc> bars, int period) {
     if (bars.length < period + 1) return null;
     var sum = 0.0;

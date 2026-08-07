@@ -447,7 +447,13 @@ class PriceAlertNotifier extends Notifier<PriceAlertState> {
     try {
       await _db.updatePriceAlert(
         id,
-        PriceAlertCompanion(isActive: Value(isActive)),
+        PriceAlertCompanion(
+          isActive: Value(isActive),
+          // 重新啟用 = 重新開始等(2026-08-08 code review):不清 triggeredAt
+          // 的話,盤中監控的 `triggeredAt == null` 過濾會**永久跳過**這筆,
+          // 使用者以為在盯盤、實際只有收盤那條路徑會叫。
+          triggeredAt: isActive ? const Value(null) : const Value.absent(),
+        ),
       );
     } catch (e) {
       // 錯誤時回滾
