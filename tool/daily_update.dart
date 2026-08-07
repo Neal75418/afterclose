@@ -40,6 +40,7 @@
 
 import 'dart:io';
 
+import 'package:daredevil/core/utils/log_rotation.dart';
 import 'package:daredevil/app/headless_update_runner.dart';
 import 'package:daredevil/data/remote/file_api_budget_store.dart';
 import 'package:daredevil/core/constants/calibrated_scores/calibrated_scores_registry.dart';
@@ -47,6 +48,10 @@ import 'package:daredevil/core/utils/logger.dart';
 import 'package:daredevil/data/database/app_database.dart';
 
 Future<void> main(List<String> args) async {
+  LogRotation.rotateIfNeeded(
+    '${Platform.environment['HOME']}/Library/Logs/'
+    'daredevil-daily-update.stdout.log',
+  );
   final start = DateTime.now();
   print('[daily_update] started at ${start.toIso8601String()}');
 

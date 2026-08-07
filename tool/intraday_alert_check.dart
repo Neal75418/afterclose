@@ -13,6 +13,7 @@
 // 通知因此不能用 flutter_local_notifications,改用 macOS 原生 osascript。
 import 'dart:io';
 
+import 'package:daredevil/core/utils/log_rotation.dart';
 import 'package:daredevil/core/utils/taiwan_time.dart';
 import 'package:daredevil/data/database/app_database.dart';
 import 'package:daredevil/data/remote/intraday_quote_client.dart';
@@ -20,6 +21,12 @@ import 'package:daredevil/domain/services/alert/intraday_alert_monitor.dart';
 import 'package:daredevil/domain/services/alert/intraday_poll_schedule.dart';
 
 Future<void> main(List<String> args) async {
+  // 日誌自輪替(2026-08-08):不用 newsyslog——那要在 /etc 放一個未版控、
+  // 換機就消失的設定檔,正是今天咬過我們兩次的那類東西
+  LogRotation.rotateIfNeeded(
+    '${Platform.environment['HOME']}/Library/Logs/daredevil-intraday.log',
+  );
+
   final now = TaiwanTime.now();
   final force = args.contains('--force');
 
