@@ -29,6 +29,20 @@ class _NotificationDiagnosticsTileState
   String? _lastAction;
   bool _busy = false;
 
+  @override
+  void initState() {
+    super.initState();
+    // 開啟面板就解析路徑並寫一行——這樣「路徑對不對」與「檔案寫不寫得
+    // 進去」在使用者按任何按鈕**之前**就有答案。先前路徑只在按下按鈕後
+    // 才解析,導致「還沒按」與「按了沒作用」在畫面上長得一樣,排查
+    // 卡了好幾輪(2026-08-08)。
+    Future.microtask(() async {
+      await _ensureLogPath();
+      _append('◆ 診斷面板開啟(此行由 initState 寫入,與按鈕無關)');
+      if (mounted) setState(() {});
+    });
+  }
+
   /// 診斷紀錄檔——與 DB 同目錄,外部可直接讀。
   ///
   /// 為什麼要落檔(2026-08-08):排查通知問題時我一直卡在「使用者看到
