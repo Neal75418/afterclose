@@ -28,16 +28,43 @@ class _NotificationDiagnosticsTileState
   String? _lastAction;
   bool _busy = false;
 
+  /// 診斷紀錄檔——與 DB 同目錄,外部可直接讀。
+  ///
+  /// 為什麼要落檔(2026-08-08):排查通知問題時我一直卡在「使用者看到
+  /// 什麼、再轉述給我」的迴圈,而畫面上的結果行有時根本沒出現,連
+  /// 「按鈕有沒有真的觸發」都無法確定。寫檔讓每一次按鈕點擊都留下
+  /// 可驗證的痕跡,不必再靠轉述。
+  static String get _logPath =>
+      '${Platform.environment['HOME']}/Library/Containers/com.neo.afterclose'
+      '/Data/Documents/notification_diag.log';
+
+  void _append(String line) {
+    try {
+      File(_logPath).writeAsStringSync(
+        '${DateTime.now().toIso8601String()}  $line\n',
+        mode: FileMode.append,
+      );
+    } catch (_) {
+      // 診斷落檔失敗不可影響畫面
+    }
+  }
+
   Future<void> _run(String label, Future<String> Function() action) async {
+    _append('▶ 按下「$label」');
     setState(() => _busy = true);
     String result;
     try {
       result = await action();
-    } catch (e) {
+    } catch (e, st) {
       // 例外本身就是最有價值的診斷,不可吞
       result = '例外:$e';
+      _append('   stack: $st');
     }
-    if (!mounted) return;
+    _append('◀ $label → $result');
+    if (!mounted) {
+      _append('   ⚠ widget 已卸載,畫面不會更新(但動作已完成)');
+      return;
+    }
     setState(() {
       _busy = false;
       _lastAction = '$label → $result';
