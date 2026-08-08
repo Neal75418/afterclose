@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:daredevil/core/constants/rule_params_alert.dart';
 import 'package:daredevil/presentation/providers/price_alert_provider.dart';
 import 'package:daredevil/presentation/widgets/price_alert_dialog.dart';
 
@@ -86,6 +87,17 @@ void main() {
 
       final implemented = AlertType.values.where((t) => t.isImplemented).length;
       expect(find.byType(ChoiceChip), findsNWidgets(implemented));
+      // 分組必須依 AlertParams.intradayMonitoredTypes(單一事實來源),
+      // 不可在 UI 另外硬編碼一份——兩邊各自維護必然漂移(2026-08-08)
+      final intraday = AlertType.values
+          .where(
+            (t) =>
+                t.isImplemented &&
+                AlertParams.intradayMonitoredTypes.contains(t.value),
+          )
+          .length;
+      expect(intraday, 2, reason: '只有價格高於/低於會被盤中 CLI 每 5 分鐘檢查');
+      expect(implemented - intraday, 21, reason: '其餘只有收盤路徑評估——UI 必須讓使用者看得出差別');
       expect(
         find.byType(SegmentedButton<AlertType>),
         findsNothing,

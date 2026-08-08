@@ -948,6 +948,12 @@
       "created": "已設定提醒:{label} {price}",
       "alreadyMet": "已成立",
       "alreadySet": "已設定"
+    },
+    "typeGroup": {
+      "intraday": "盤中即時",
+      "intradayHint": "盤中每 5 分鐘檢查一次,觸價當下就通知",
+      "daily": "收盤後檢查",
+      "dailyHint": "⚠️ 每日更新後才評估;目前在 macOS 不會發出通知"
     }
   },
   "notification": {

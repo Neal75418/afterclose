@@ -57,11 +57,9 @@ class IntradayAlertMonitor {
   Future<MonitorResult> check({DateTime? now}) async {
     final pending = (await _db.getActiveAlerts())
         .where((a) => a.triggeredAt == null)
-        .where(
-          (a) =>
-              a.alertType == AlertParams.typeAbove ||
-              a.alertType == AlertParams.typeBelow,
-        )
+        // 用共享常數而非就地硬編碼:UI 的分組依同一份清單,兩邊各自
+        // 維護必然漂移(2026-08-08)
+        .where((a) => AlertParams.intradayMonitoredTypes.contains(a.alertType))
         .toList();
     if (pending.isEmpty) {
       return (

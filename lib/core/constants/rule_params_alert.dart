@@ -8,6 +8,13 @@ abstract final class AlertParams {
   // --------------------------------------------------
   static const String typeAbove = 'ABOVE';
   static const String typeBelow = 'BELOW';
+
+  /// 盤中(每 5 分鐘)會被檢查的類型——**單一事實來源**。
+  ///
+  /// 其餘類型只有 app 內的收盤路徑會評估(每日一次)。UI 必須依這份清單
+  /// 分組,否則使用者會以為所有類型都是即時的;而 `IntradayAlertMonitor`
+  /// 也要用同一份,兩邊各自硬編碼必然漂移(2026-08-08)。
+  static const Set<String> intradayMonitoredTypes = {typeAbove, typeBelow};
   static const String typeChangePct = 'CHANGE_PCT';
   static const String typeVolumeSpike = 'VOLUME_SPIKE';
   static const String typeVolumeAbove = 'VOLUME_ABOVE';

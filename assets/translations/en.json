@@ -948,6 +948,12 @@
       "created": "Alert set: {label} {price}",
       "alreadyMet": "already met",
       "alreadySet": "already set"
+    },
+    "typeGroup": {
+      "intraday": "Intraday",
+      "intradayHint": "Checked every 5 minutes during market hours",
+      "daily": "After close",
+      "dailyHint": "⚠️ Evaluated once daily; currently does not notify on macOS"
     }
   },
   "notification": {

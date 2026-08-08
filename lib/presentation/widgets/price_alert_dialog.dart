@@ -7,6 +7,7 @@ import 'package:daredevil/core/constants/api_config.dart';
 import 'package:daredevil/presentation/providers/notification_provider.dart';
 import 'package:daredevil/data/database/app_database.dart';
 import 'package:daredevil/presentation/providers/price_alert_provider.dart';
+import 'package:daredevil/core/constants/rule_params_alert.dart';
 import 'package:daredevil/core/theme/design_tokens.dart';
 
 /// 顯示建立或編輯價格警示的對話框
@@ -139,29 +140,39 @@ class _CreatePriceAlertDialogState
             // RenderFlex overflow,標籤被壓成直排)。SegmentedButton 本質是
             // 一個 **Row——不換行、不捲動**,設計給 2~5 個互斥選項;這裡有
             // 23 種已實作的提醒類型,任何寬度不夠的視窗都必然爆版。
-            // (個股頁那個只放「高於/低於」兩個,用法是對的。)
-            // Wrap + ChoiceChip 會自動依可用寬度換行,任何視窗大小都成立。
-            Wrap(
-              spacing: DesignTokens.spacing8,
-              runSpacing: DesignTokens.spacing8,
-              children: [
-                for (final type in AlertType.values.where(
-                  (t) => t.isImplemented,
-                ))
-                  ChoiceChip(
-                    label: Text(
-                      _getTypeLabel(type),
-                      style: const TextStyle(fontSize: DesignTokens.fontSizeSm),
-                    ),
-                    selected: _selectedType == type,
-                    onSelected: (picked) {
-                      if (!picked) return; // 互斥:不允許取消選取
-                      setState(() => _selectedType = type);
-                    },
-                  ),
-              ],
+            // Wrap + ChoiceChip 會依可用寬度自動換行。
+            //
+            // 分成兩組(2026-08-08):這 23 種**不等價**——只有價格高於/
+            // 低於會被盤中 CLI 每 5 分鐘檢查,其餘 21 種只有 app 內的收盤
+            // 路徑會評估。平鋪成一排會讓人以為全部都是即時的。
+            _buildTypeGroup(
+              context,
+              theme,
+              title: 'alert.typeGroup.intraday'.tr(),
+              subtitle: 'alert.typeGroup.intradayHint'.tr(),
+              types: AlertType.values
+                  .where(
+                    (t) =>
+                        t.isImplemented &&
+                        AlertParams.intradayMonitoredTypes.contains(t.value),
+                  )
+                  .toList(),
             ),
-
+            const SizedBox(height: DesignTokens.spacing12),
+            _buildTypeGroup(
+              context,
+              theme,
+              title: 'alert.typeGroup.daily'.tr(),
+              subtitle: 'alert.typeGroup.dailyHint'.tr(),
+              subtitleIsWarning: true,
+              types: AlertType.values
+                  .where(
+                    (t) =>
+                        t.isImplemented &&
+                        !AlertParams.intradayMonitoredTypes.contains(t.value),
+                  )
+                  .toList(),
+            ),
             const SizedBox(height: DesignTokens.spacing16),
 
             // 目標值輸入
@@ -226,6 +237,54 @@ class _CreatePriceAlertDialogState
               : Text(
                   widget.isEditing ? 'common.save'.tr() : 'alert.create'.tr(),
                 ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTypeGroup(
+    BuildContext context,
+    ThemeData theme, {
+    required String title,
+    required String subtitle,
+    required List<AlertType> types,
+    bool subtitleIsWarning = false,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: theme.textTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        Text(
+          subtitle,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: subtitleIsWarning
+                ? theme.colorScheme.error
+                : theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: DesignTokens.spacing8),
+        Wrap(
+          spacing: DesignTokens.spacing8,
+          runSpacing: DesignTokens.spacing8,
+          children: [
+            for (final type in types)
+              ChoiceChip(
+                label: Text(
+                  _getTypeLabel(type),
+                  style: const TextStyle(fontSize: DesignTokens.fontSizeSm),
+                ),
+                selected: _selectedType == type,
+                onSelected: (picked) {
+                  if (!picked) return; // 互斥:不允許取消選取
+                  setState(() => _selectedType = type);
+                },
+              ),
+          ],
         ),
       ],
     );
