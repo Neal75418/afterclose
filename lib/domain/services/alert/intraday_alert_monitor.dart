@@ -17,10 +17,22 @@ typedef MonitorResult = ({
 
 /// 一筆被觸價的提醒 + 當下報價(通知與後續觀察的素材)
 class TriggeredAlert {
-  const TriggeredAlert({required this.alert, required this.quote});
+  const TriggeredAlert({
+    required this.alert,
+    required this.quote,
+    required this.claimStamp,
+  });
 
   final PriceAlertEntry alert;
   final IntradayQuote quote;
+
+  /// 本次認領寫進 DB 的時戳——釋放時必須帶著它比對。
+  ///
+  /// ⚠️ **不可用 `alert.triggeredAt`**(2026-08-08 四次審查):`alert` 是
+  /// 認領**之前**讀到的 entry,它的 `triggeredAt` 必為 null(那正是它被
+  /// 選為 pending 的條件)。拿它當 stamp 等於退回無條件釋放,會把別人剛
+  /// 寫進去的認領一起抹掉。
+  final DateTime claimStamp;
 }
 
 /// 盤中提醒監控(2026-08-08)。
@@ -92,7 +104,7 @@ class IntradayAlertMonitor {
       // pending 時只有搶到的那個才通知(2026-08-08 code review)
       final claimed = await _db.claimAlertTrigger(a.id, now: stamp);
       if (!claimed) continue;
-      fired.add(TriggeredAlert(alert: a, quote: q));
+      fired.add(TriggeredAlert(alert: a, quote: q, claimStamp: stamp));
     }
 
     if (fired.isNotEmpty) {

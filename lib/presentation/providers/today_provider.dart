@@ -427,16 +427,28 @@ class TodayNotifier extends Notifier<TodayState> {
       // 為每個被觸發的警示發送通知。逐筆獨立 try:一筆失敗不可讓後面的
       // 連 try 都沒 try(它們已經被 claim 掉,漏掉就是永久遺失)。
       var notified = 0;
-      for (final alert in triggered) {
+      for (final c in triggered) {
+        final alert = c.alert;
+        var sent = false;
         try {
-          await notificationNotifier.showPriceAlertNotification(
+          sent = await notificationNotifier.showPriceAlertNotification(
             alert,
             currentPrice: currentPrices[alert.symbol],
           );
-          notified++;
         } catch (e, s) {
-          AppLogger.error('TodayNotifier', '通知失敗,釋放認領:${alert.symbol}', e, s);
-          await ref.read(databaseProvider).releaseAlertClaim(alert.id);
+          AppLogger.error('TodayNotifier', '通知拋例外:${alert.symbol}', e, s);
+        }
+        // 依**回傳值**而非例外(2026-08-08 四次審查 C-1):最常見的失敗
+        // (無權限、設定把該類通知關掉)是靜默 return,靠 catch 補償一次
+        // 都不會啟動。舊版還把靜默 no-op 算進 notified,於是「更新完成」
+        // 通知報的是灌水數字,而該筆提醒被無聲燒掉。
+        if (sent) {
+          notified++;
+          await ref.read(databaseProvider).consumeAlertClaim(alert.id);
+        } else {
+          await ref
+              .read(databaseProvider)
+              .releaseAlertClaim(alert.id, stamp: c.claimStamp);
         }
       }
 

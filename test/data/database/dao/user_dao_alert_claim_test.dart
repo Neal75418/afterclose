@@ -31,11 +31,14 @@ void main() {
     expect(await db.claimAlertTrigger(id), isFalse, reason: '第二個看到已觸發,不重複通知');
   });
 
-  test('搶到後狀態正確:已停用且有觸發時間', () async {
+  test('搶到後寫入觸發時間,但**不**消費提醒', () async {
+    // 2026-08-08 四次審查:舊版認領時一併寫 isActive=false,於是補償
+    // (釋放)也得寫回 true,就會覆蓋使用者中途手動停用的動作。
+    // 新語意:triggeredAt = 機器互斥,isActive = 使用者意圖,兩者分離。
     final id = await seed();
     await db.claimAlertTrigger(id, now: DateTime(2026, 8, 10, 10, 30));
     final a = (await db.getAllAlerts()).firstWhere((x) => x.id == id);
-    expect(a.isActive, isFalse);
+    expect(a.isActive, isTrue, reason: '認領只是取得通知權,還沒送出就不算用掉');
     expect(a.triggeredAt, DateTime(2026, 8, 10, 10, 30));
   });
 
@@ -66,7 +69,62 @@ void main() {
     });
 
     test('釋放不存在的 id → 安靜跳過,不拋例外', () async {
-      expect(() => db.releaseAlertClaim(999999), returnsNormally);
+      // ⚠️ 不可用 `returnsNormally`:releaseAlertClaim 是 async,例外會被
+      // 包進回傳的 Future、**永遠不會同步拋出**,那條斷言在任何實作下都
+      // 會綠(把整個 body 換成 throw 也照樣過)(2026-08-08 四次審查 I-4)
+      await expectLater(db.releaseAlertClaim(999999), completes);
+    });
+
+    test('🚨 不可複活使用者刻意停用的提醒', () async {
+      // 交錯(2026-08-08 四次審查 Q1):CLI 認領後進入 osascript 迴圈
+      // (每筆都是一次 Process.run,N 筆就是 N 次往返),這段真空期間
+      // 使用者在 app 裡把提醒關掉。若釋放無條件寫 isActive=true,
+      // 使用者剛親手關掉的提醒會自己復活,下一輪再叫他一次。
+      final id = await seed();
+      await db.claimAlertTrigger(id, now: DateTime(2026, 8, 10, 10, 30));
+
+      // 使用者停用(只動 isActive,不動 triggeredAt)
+      await db.updatePriceAlert(
+        id,
+        const PriceAlertCompanion(isActive: Value(false)),
+      );
+
+      await db.releaseAlertClaim(id, stamp: DateTime(2026, 8, 10, 10, 30));
+
+      final a = (await db.getAllAlerts()).firstWhere((x) => x.id == id);
+      expect(a.isActive, isFalse, reason: 'isActive 是使用者意圖,機器的補償動作不可覆寫它');
+      expect(a.triggeredAt, isNull, reason: '認領本身仍要撤銷,才不會卡在中間狀態');
+    });
+
+    test('🚨 釋放必須認得自己的認領,不可抹掉別人剛寫的', () async {
+      // 交錯(Q2-b):CLI 認領(T1)→ 使用者把開關撥回 ON(重置)→
+      // GUI 重新認領(T2)並成功通知 → CLI 這時才發現自己失敗、去釋放。
+      // 若釋放不比對 stamp,會把 T2 一起抹掉 → 同一次觸價被通知兩次。
+      final id = await seed();
+      final t1 = DateTime(2026, 8, 10, 10, 30);
+      final t2 = DateTime(2026, 8, 10, 10, 31);
+
+      await db.claimAlertTrigger(id, now: t1);
+      await db.releaseAlertClaim(id, stamp: t1); // 模擬重置
+      await db.claimAlertTrigger(id, now: t2); // 另一方重新認領
+
+      await db.releaseAlertClaim(id, stamp: t1); // 遲來的釋放,帶舊 stamp
+
+      final a = (await db.getAllAlerts()).firstWhere((x) => x.id == id);
+      expect(a.triggeredAt, t2, reason: '別人的認領必須完好,否則會重複通知');
+    });
+
+    test('認領只當互斥鍵,不消費提醒;消費是另一個動作', () async {
+      // isActive 是使用者意圖,triggeredAt 是機器互斥——兩把鑰匙不可共用
+      // 一副鎖(Q4)。認領成功但尚未送出時,提醒仍應是 active。
+      final id = await seed();
+      await db.claimAlertTrigger(id);
+      var a = (await db.getAllAlerts()).firstWhere((x) => x.id == id);
+      expect(a.isActive, isTrue, reason: '認領 ≠ 消費,還沒送出就不算用掉');
+
+      await db.consumeAlertClaim(id);
+      a = (await db.getAllAlerts()).firstWhere((x) => x.id == id);
+      expect(a.isActive, isFalse, reason: '送出成功才消費');
     });
   });
 }

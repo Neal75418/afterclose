@@ -30,8 +30,16 @@ void main() {
     expect(await db.claimAlertTrigger(id), isFalse);
 
     final row = (await db.getAllAlerts()).firstWhere((a) => a.id == id);
-    expect(row.isActive, isFalse);
-    expect(row.triggeredAt, isNotNull);
+    // 2026-08-08 四次審查:認領**不再**寫 isActive——那是使用者意圖欄位。
+    // 認領只寫 triggeredAt(機器互斥),送出成功後才由 consumeAlertClaim
+    // 消費。這樣「通知失敗要釋放」就不必把 isActive 寫回 true,也就不會
+    // 覆蓋使用者在這段期間手動停用的動作。
+    expect(row.isActive, isTrue, reason: '認領 ≠ 消費');
+    expect(row.triggeredAt, isNotNull, reason: '互斥鍵已寫入,別人搶不到');
+
+    await db.consumeAlertClaim(id);
+    final consumed = (await db.getAllAlerts()).firstWhere((a) => a.id == id);
+    expect(consumed.isActive, isFalse, reason: '送出成功才停用');
   });
 
   test('未被認領過的提醒 → 搶得到', () async {

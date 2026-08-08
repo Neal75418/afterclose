@@ -264,6 +264,12 @@ class PriceAlertState {
 }
 
 /// 價格警示 Notifier
+/// 已認領的提醒 + 本次認領寫入的時戳。
+///
+/// 兩者必須成對傳遞:釋放認領時要比對 stamp,否則會抹掉別人剛寫進去的
+/// 認領 → 同一次觸價被通知兩次(2026-08-08 四次審查)。
+typedef ClaimedAlert = ({PriceAlertEntry alert, DateTime claimStamp});
+
 class PriceAlertNotifier extends Notifier<PriceAlertState> {
   late final AppDatabase _db;
 
@@ -472,8 +478,11 @@ class PriceAlertNotifier extends Notifier<PriceAlertState> {
       .map((e) => e.value)
       .toSet();
 
-  /// 根據當前價格檢查警示觸發條件
-  Future<List<PriceAlertEntry>> checkAndTriggerAlerts(
+  /// 根據當前價格檢查警示觸發條件。
+  ///
+  /// 回傳「本次真的搶到認領」的提醒,**連同認領時戳**——釋放時必須帶著
+  /// 它比對(見 `UserDaoMixin.releaseAlertClaim`)。
+  Future<List<ClaimedAlert>> checkAndTriggerAlerts(
     Map<String, double> currentPrices,
     Map<String, double> priceChanges,
   ) async {
@@ -489,11 +498,14 @@ class PriceAlertNotifier extends Notifier<PriceAlertState> {
       // 只保留「本次真的搶到」的——呼叫端(today_provider)會為回傳清單
       // 的每一筆發通知,回傳未過濾的等於沒去重(2026-08-08 三次審查 F-1:
       // 上一輪只跳過 triggeredIds.add,卻仍回傳原清單,宣稱修好但沒修)。
-      final claimedAlerts = <PriceAlertEntry>[];
+      // 帶著本次認領的 stamp 一起回傳:釋放時必須比對它,否則會抹掉
+      // 別人剛寫進去的認領(2026-08-08 四次審查)。不可用 alert.triggeredAt
+      // ——那是認領**之前**讀到的值,必為 null。
+      final claimedAlerts = <ClaimedAlert>[];
       for (final alert in triggered) {
         final claimed = await _db.claimAlertTrigger(alert.id, now: now);
         if (!claimed) continue;
-        claimedAlerts.add(alert);
+        claimedAlerts.add((alert: alert, claimStamp: now));
         triggeredIds.add(alert.id);
       }
 

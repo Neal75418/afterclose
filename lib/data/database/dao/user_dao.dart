@@ -324,17 +324,34 @@ mixin UserDaoMixin on $AppDatabase {
   /// 才通知。
   ///
   /// 回傳 true=本次搶到(應發通知)、false=別人先觸發了(不要重複叫)。
+  /// 認領一筆提醒的「通知權」——**只當互斥鍵,不消費提醒**。
+  ///
+  /// 🔑 兩把鑰匙不可共用一副鎖(2026-08-08 四次審查 Q1/Q4):
+  /// - `triggeredAt` = **機器互斥**,誰寫進去誰負責通知
+  /// - `isActive`    = **使用者意圖**,只有使用者能改
+  ///
+  /// 舊版在認領時一併寫 `isActive=false`,於是補償(釋放)也得把它寫回
+  /// true——那就會覆蓋掉使用者在「認領到通知送出」之間手動關掉的動作,
+  /// 讓他剛親手停用的提醒自己復活。改為認領只碰 `triggeredAt`,送出成功
+  /// 後才由 [consumeAlertClaim] 消費。
   Future<bool> claimAlertTrigger(int id, {DateTime? now}) async {
     final affected =
         await (update(
           priceAlert,
         )..where((t) => t.id.equals(id) & t.triggeredAt.isNull())).write(
-          PriceAlertCompanion(
-            isActive: const Value(false),
-            triggeredAt: Value(now ?? DateTime.now()),
-          ),
+          PriceAlertCompanion(triggeredAt: Value(now ?? DateTime.now())),
         );
     return affected > 0;
+  }
+
+  /// 通知**確實送出後**才消費這筆提醒(一次性提醒就此停用)。
+  ///
+  /// 與 [claimAlertTrigger] 分開的理由見該處:認領只是取得通知權,
+  /// 「用掉」是另一件事,必須等真的送出去才發生。
+  Future<void> consumeAlertClaim(int id) async {
+    await (update(priceAlert)..where((t) => t.id.equals(id))).write(
+      const PriceAlertCompanion(isActive: Value(false)),
+    );
   }
 
   /// 釋放 [claimAlertTrigger] 搶到的認領——通知**沒送出去**時必須呼叫。
@@ -346,13 +363,27 @@ mixin UserDaoMixin on $AppDatabase {
   /// `isActive=false` + `triggeredAt!=null`,而**兩條路徑的 pending 過濾
   /// 都會永久跳過它**:使用者沒收到通知,收盤那條也再看不到,提醒等於
   /// 被靜默燒掉。有了釋放,失敗就退回可重試狀態,下一輪(5 分鐘後)再試。
-  Future<void> releaseAlertClaim(int id) async {
-    await (update(priceAlert)..where((t) => t.id.equals(id))).write(
-      const PriceAlertCompanion(
-        isActive: Value(true),
-        triggeredAt: Value(null),
-      ),
+  /// 撤銷 [claimAlertTrigger] 取得的通知權——通知**沒送出去**時呼叫。
+  ///
+  /// 🔑 **必須帶 [stamp]**(2026-08-08 四次審查 Q2-b):否則會把**別人剛
+  /// 寫進去的**認領一起抹掉。真實交錯:CLI 認領(T1)→ 使用者把開關撥
+  /// 回 ON(重置 triggeredAt)→ GUI 重新認領(T2)並成功通知 → CLI 這時
+  /// 才發現自己失敗去釋放,把 T2 抹掉 → 同一次觸價被通知兩次。
+  ///
+  /// 也**不碰 `isActive`**:那是使用者意圖,不是機器該寫的欄位。
+  ///
+  /// 回傳是否真的撤銷了自己的那筆認領(false = 認領已被別人取代)。
+  Future<bool> releaseAlertClaim(int id, {DateTime? stamp}) async {
+    final q = update(priceAlert)
+      ..where(
+        (t) => stamp == null
+            ? t.id.equals(id)
+            : t.id.equals(id) & t.triggeredAt.equals(stamp),
+      );
+    final affected = await q.write(
+      const PriceAlertCompanion(triggeredAt: Value(null)),
     );
+    return affected > 0;
   }
 
   Future<void> triggerAlert(int id, {DateTime? now}) {

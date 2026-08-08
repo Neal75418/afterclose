@@ -92,11 +92,12 @@ class IntradayMonitorNotifier extends Notifier<DateTime?> {
       if (!ref.read(notificationProvider).hasPermission) {
         // warning 而非 debug:這是「功能整個停擺」的狀態,不能只在
         // debug build 看得到(2026-08-08 二次審查)
-        AppLogger.error(
-          'IntradayMonitor',
-          '無通知權限,盤中提醒全部跳過——使用者不會收到任何通知',
-          StateError('notification permission denied'),
-        );
+        // ⚠️ 必須先前進 state 再 return(2026-08-08 四次審查 I-2):
+        // 節流條件看的是 state,不前進的話 Timer 每分鐘 tick 都會走到
+        // 這裡 → 270 次/交易日的 error + Sentry event,而「使用者主動
+        // 拒絕通知」是**正常穩態**,不是異常。
+        state = now;
+        AppLogger.warning('IntradayMonitor', '無通知權限,盤中提醒全部跳過——使用者不會收到任何通知');
         return;
       }
 
@@ -109,18 +110,23 @@ class IntradayMonitorNotifier extends Notifier<DateTime?> {
       // 逐筆獨立 try:check() 已把 fired 全部認領掉,若第 3 筆丟例外而
       // 讓迴圈中斷,第 4、5 筆連試都沒試就永久遺失(2026-08-08 三次審查)
       for (final f in fired) {
+        var sent = false;
         try {
-          await ref
+          sent = await ref
               .read(notificationProvider.notifier)
               .showPriceAlertNotification(f.alert, currentPrice: f.quote.price);
-        } catch (e, s) {
-          AppLogger.error(
-            'IntradayMonitor',
-            '通知失敗,釋放認領:${f.alert.symbol}',
-            e,
-            s,
-          );
-          await ref.read(databaseProvider).releaseAlertClaim(f.alert.id);
+        } catch (e, st) {
+          AppLogger.error('IntradayMonitor', '通知拋例外:${f.alert.symbol}', e, st);
+        }
+        // 依**回傳值**而非例外決定(2026-08-08 四次審查 C-1):最常見的
+        // 失敗(無權限、設定關掉)是靜默 return,靠 catch 補償一次都不會
+        // 啟動。送出成功才消費,否則撤銷認領讓下一輪重試。
+        if (sent) {
+          await ref.read(databaseProvider).consumeAlertClaim(f.alert.id);
+        } else {
+          await ref
+              .read(databaseProvider)
+              .releaseAlertClaim(f.alert.id, stamp: f.claimStamp);
         }
       }
       if (fired.isNotEmpty) {

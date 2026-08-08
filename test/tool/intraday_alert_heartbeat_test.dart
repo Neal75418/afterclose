@@ -44,6 +44,7 @@ void main() {
       'skip(非交易時段)',
       'FAIL(DB 不存在)',
       'FAIL(通知管道不可用)',
+      'FAIL(報價全滅)',
       'FAILED',
       '無觸價',
       '觸價',

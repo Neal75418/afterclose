@@ -24,7 +24,9 @@ abstract final class LogRotation {
 
   /// 超過 [maxBytes] 時就地截斷,保留最新的約一半內容。
   ///
-  /// 失敗一律吞掉——**輪替永遠不該是主功能失敗的原因**。
+  /// 失敗**不影響主功能**,但一律留痕跡(stderr)——「不該讓主功能失敗」
+  /// 推導不出「失敗不必留紀錄」。呼叫點在兩支 CLI 的 `main()` 第一行且
+  /// 不在 try 內,所以這裡必須真的把所有例外接住(2026-08-08 四次審查 I-5)。
   static void rotateIfNeeded(String path, {int maxBytes = defaultMaxBytes}) {
     try {
       final file = File(path);
@@ -66,7 +68,7 @@ abstract final class LogRotation {
           '--- truncated at ${DateTime.now().toIso8601String()} '
           '(was $length bytes) ---\n';
       file.writeAsBytesSync([...header.codeUnits, ...tail]);
-    } on FileSystemException catch (e) {
+    } catch (e) {
       // 輪替失敗不影響本體——但**不可無聲**(2026-08-08 三次審查)。
       // 舊版是無型別 `catch (_) {}`,正是今天咬人的那個形狀本身。
       //
@@ -78,6 +80,9 @@ abstract final class LogRotation {
       // 用 stderr 而非 AppLogger:兩支 CLI 由 `dart run` 執行,AppLogger
       // 的輸出包在 assert 內、asserts 未啟用時是 no-op(見 logger.dart)。
       // stderr 會落進 launchd 重導的同一份檔案。
+      // 這裡刻意接住**所有**例外(含 Error):呼叫點是 CLI 的第一行、
+      // 不在任何 try 內,逸出會讓 process 死在 beat() 之前 → 空白日誌,
+      // 正是心跳要消滅的形狀。但不再無聲——失敗一定寫進 stderr。
       stderr.writeln('[LogRotation] 輪替失敗 $path: $e');
     }
   }

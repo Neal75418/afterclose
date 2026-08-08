@@ -106,11 +106,15 @@ class NotificationNotifier extends Notifier<NotificationState> {
   /// 根據使用者設定決定是否發送：
   /// - 處置/注意股票警示受 `disposalUrgentAlerts` 設定控制
   /// - 董監持股相關警示受 `insiderNotifications` 設定控制
-  Future<void> showPriceAlertNotification(
+  Future<bool> showPriceAlertNotification(
     PriceAlertEntry alert, {
     double? currentPrice,
   }) async {
-    if (!state.isInitialized || !state.hasPermission) return;
+    // 🚨 回傳 bool 而非 void(2026-08-08 四次審查 C-1):這三個 return
+    // 是**靜默**的,不丟例外。呼叫端原本靠 try/catch 做補償,於是補償對
+    // 真正的失效模式(無權限、設定關掉)一次都不會啟動——一個不會觸發
+    // 的補償機制,比沒有更糟,因為它讓人以為已經處理了。
+    if (!state.isInitialized || !state.hasPermission) return false;
 
     final alertType = AlertType.fromValue(alert.alertType);
     final settings = ref.read(settingsProvider);
@@ -119,7 +123,7 @@ class NotificationNotifier extends Notifier<NotificationState> {
     if ((alertType == AlertType.tradingDisposal ||
             alertType == AlertType.tradingWarning) &&
         !settings.disposalUrgentAlerts) {
-      return;
+      return false;
     }
 
     // 尊重使用者設定：董監持股相關警示
@@ -127,7 +131,7 @@ class NotificationNotifier extends Notifier<NotificationState> {
             alertType == AlertType.insiderBuying ||
             alertType == AlertType.highPledgeRatio) &&
         !settings.insiderNotifications) {
-      return;
+      return false;
     }
 
     final title = getAlertTitle(alert.symbol, alertType);
@@ -151,6 +155,7 @@ class NotificationNotifier extends Notifier<NotificationState> {
         payload: alert.symbol,
       );
     }
+    return true;
   }
 
   /// 顯示更新完成通知

@@ -20,21 +20,34 @@ import 'package:daredevil/data/remote/intraday_quote_client.dart';
 import 'package:daredevil/domain/services/alert/intraday_alert_monitor.dart';
 import 'package:daredevil/domain/services/alert/intraday_poll_schedule.dart';
 
+/// 把 offset 印成 `+8` / `+5:30` —— `inHours` 會截斷半小時時區
+/// (印度 +5:30 印成 +5、紐芬蘭 −3:30 印成 −3),診斷值不精確
+/// (2026-08-08 四次審查)。
+String _offsetLabel(Duration d) {
+  final sign = d.isNegative ? '-' : '+';
+  final a = d.abs();
+  final m = a.inMinutes % 60;
+  return m == 0
+      ? '$sign${a.inHours}'
+      : '$sign${a.inHours}:${m.toString().padLeft(2, '0')}';
+}
+
 Future<void> main(List<String> args) async {
   // 日誌自輪替(2026-08-08):不用 newsyslog——那要在 /etc 放一個未版控、
   // 換機就消失的設定檔,正是今天咬過我們兩次的那類東西
-  // ⚠️ stderr 也要輪替(2026-08-08 三次審查 M-3):launchd 的
-  // StandardErrorPath 是另一個檔案,而**故障訊息正好落在那裡**——最需要
-  // 保護的日誌反而沒被保護。本專案已有前例:舊的 daily stderr 一路長到
-  // 153 MB(7 月自動更新靜默斷 13 天的編譯錯誤洪流)。
-  for (final name in [
-    'daredevil-intraday.log',
-    'daredevil-intraday.launchd.log',
-  ]) {
-    LogRotation.rotateIfNeeded(
-      '${Platform.environment['HOME']}/Library/Logs/$name',
-    );
-  }
+  //
+  // 這支的 stdout 與 stderr **都**落在同一個檔案:plist 的
+  // ProgramArguments 是 `{ ... } >> daredevil-intraday.log 2>&1`,而該
+  // plist 沒有 StandardOutPath(實測 grep 為 0)。StandardErrorPath 指的
+  // `daredevil-intraday.launchd.log` 只收「重導生效之前」launchd/zsh 自己
+  // 的錯誤,實測 0 bytes——所以只需輪替這一個。
+  //
+  // ⚠️ 三次審查時我對這裡下了**相反的結論**(以為 stderr 沒被保護、加了
+  // 一圈對 .launchd.log 的輪替),那是沒查 plist 就推論。daily 那支才真的
+  // 有獨立的 StandardOutPath/StandardErrorPath,兩個都要輪替。
+  LogRotation.rotateIfNeeded(
+    '${Platform.environment['HOME']}/Library/Logs/daredevil-intraday.log',
+  );
 
   final now = TaiwanTime.now();
   final force = args.contains('--force');
@@ -58,8 +71,8 @@ Future<void> main(List<String> args) async {
   void beat(String state) => print(
     '[intraday_alert] ${now.toIso8601String().substring(0, 16)} $state'
     // 時區不符時每一行都帶警告——只印一次會被埋在 55 行裡面
-    '${tzMismatch ? ' ⚠️TZ(本地 UTC${localOffset.isNegative ? '' : '+'}'
-              '${localOffset.inHours},台北 UTC+8'
+    '${tzMismatch ? ' ⚠️TZ(本地 UTC'
+              '${_offsetLabel(localOffset)},台北 UTC+8'
               '——launchd 依本地時間喚醒,喚醒時段已與台股盤中錯開)' : ''}',
   );
 
@@ -132,21 +145,32 @@ Future<void> main(List<String> args) async {
     for (final f in fired) {
       final direction = f.alert.alertType == 'ABOVE' ? '突破' : '跌破';
       final label = f.alert.note ?? '$direction ${f.alert.targetValue}';
-      final ok = await _notify(
-        title: '${f.quote.symbol} ${f.quote.name} $label',
-        body:
-            '現價 ${f.quote.price.toStringAsFixed(2)}'
-            '(${f.quote.changePercent >= 0 ? '+' : ''}'
-            '${f.quote.changePercent.toStringAsFixed(2)}%)'
-            ' · ${f.quote.time ?? ''}',
-      );
+      // 逐筆隔離(2026-08-08 四次審查):`_notify` 內部不 catch,
+      // `Process.run` 會丟 ProcessException(osascript 不存在、fork 失敗、
+      // TCC 直接拒絕 spawn)。若逸出,本輪 fired 裡**尚未處理的每一筆都
+      // 已經被認領**,永遠不會被釋放 → 靜默燒掉。GUI 兩條都補了逐筆
+      // try,唯獨 CLI 漏掉,是同一個 bug class 修一半。
+      var ok = false;
+      try {
+        ok = await _notify(
+          title: '${f.quote.symbol} ${f.quote.name} $label',
+          body:
+              '現價 ${f.quote.price.toStringAsFixed(2)}'
+              '(${f.quote.changePercent >= 0 ? '+' : ''}'
+              '${f.quote.changePercent.toStringAsFixed(2)}%)'
+              ' · ${f.quote.time ?? ''}',
+        );
+      } catch (e) {
+        stderr.writeln('[intraday_alert] 通知拋例外 ${f.alert.symbol}: $e');
+      }
       if (ok) {
         notified++;
+        await database.consumeAlertClaim(f.alert.id);
       } else {
         // 🚨 認領發生在通知之前(跨 process 去重的代價),所以通知失敗
         // 必須退回可重試狀態——否則該筆停在 triggeredAt!=null,兩條
         // 路徑的 pending 過濾都會永久跳過它(2026-08-08 三次審查 C-1)
-        await database.releaseAlertClaim(f.alert.id);
+        await database.releaseAlertClaim(f.alert.id, stamp: f.claimStamp);
         stderr.writeln('[intraday_alert] 通知失敗,已釋放認領: ${f.alert.symbol}');
       }
     }
