@@ -146,4 +146,46 @@ void main() {
       );
     });
   });
+
+  group('🚨 無邊框輸入框必須靠填色與容器區分(2026-08-08 實機)', () {
+    // 深色主題同時做了兩件事:把邊框設成 BorderSide.none,**又**把 fillColor
+    // 設成與 dialogTheme.backgroundColor 同一個常數(SemanticColors.darkSurface)
+    // → 對比度 1.00:1,對話框裡的輸入框整個看不見,只剩懸空的文字,而框的
+    // 內距看起來像莫名其妙的縮排。
+    //
+    // 沒有任何 golden 測試渲染過深色模式的輸入框,所以改壞了也不會紅——
+    // 這條守在主題層,不依賴任何畫面有沒有被拍成 golden。
+
+    double ratio(Color a, Color b) => ColorContrast.ratio(a, b);
+
+    test('深色:輸入框填色 ≠ 對話框底色', () {
+      final t = AppTheme.darkTheme;
+      final fill = t.inputDecorationTheme.fillColor!;
+      final dialogBg = t.dialogTheme.backgroundColor!;
+      expect(fill, isNot(dialogBg), reason: '同色 = 框看不見。這正是 2026-08-08 實機回報的狀況');
+      expect(
+        ratio(fill, dialogBg),
+        greaterThan(1.2),
+        reason: '要看得出邊界,實測 ${ratio(fill, dialogBg).toStringAsFixed(2)}:1',
+      );
+    });
+
+    test('深色:輸入框填色 ≠ 卡片底色(卡片內的欄位同樣要看得見)', () {
+      final t = AppTheme.darkTheme;
+      final fill = t.inputDecorationTheme.fillColor!;
+      expect(fill, isNot(t.cardTheme.color));
+    });
+
+    test('淺色主題靠邊框區分,不受此限', () {
+      // 淺色沒有這個問題:它保留了 BorderSide(color: ...)。記錄下來,
+      // 免得日後有人「統一」成無邊框時把淺色也一起弄壞。
+      final t = AppTheme.lightTheme;
+      final border = t.inputDecorationTheme.enabledBorder as OutlineInputBorder;
+      expect(
+        border.borderSide.style,
+        BorderStyle.solid,
+        reason: '淺色若也改成無邊框,就必須比照深色檢查填色對比',
+      );
+    });
+  });
 }

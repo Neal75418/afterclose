@@ -203,7 +203,16 @@ class AppTheme {
       // 輸入框
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: _cardDark,
+        // 🚨 不可用 _cardDark(2026-08-08 實機):它與 dialogTheme 的
+        // backgroundColor 是**同一個常數**(SemanticColors.darkSurface),
+        // 對比度 1.00:1——對話框裡的輸入框整個看不見,只剩懸空的文字,
+        // 而框的內距看起來像莫名其妙的縮排。
+        //
+        // 深色主題同時做了兩件事才出事:拿掉邊框(BorderSide.none)**又**
+        // 用了與容器同色的填色。淺色主題保留邊框,所以沒有這個問題。
+        // 改用 darkElevated(Zinc 700,1.43:1)——它的語意本來就是「浮起
+        // 的表面」,填色輸入框正是這個角色。
+        fillColor: _cardDarkSurface,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
