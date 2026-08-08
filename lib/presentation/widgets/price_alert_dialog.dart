@@ -90,135 +90,142 @@ class _CreatePriceAlertDialogState
 
     return AlertDialog(
       title: Text(widget.isEditing ? 'alert.edit'.tr() : 'alert.create'.tr()),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 股票資訊
-            Container(
-              padding: const EdgeInsets.all(DesignTokens.spacing12),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
-              ),
-              child: Row(
-                children: [
-                  Text(
-                    widget.symbol,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  if (widget.stockName != null) ...[
-                    const SizedBox(width: DesignTokens.spacing8),
-                    Expanded(
-                      child: Text(
-                        widget.stockName!,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                        overflow: TextOverflow.ellipsis,
+      content: ConstrainedBox(
+        // 對話框需要寬度上限(2026-08-08 實機:3740px 的視窗下整個拉滿,
+        // 「179.95」在最左、「元」在最右,兩者視覺上斷開)。AlertDialog
+        // 本身不限內容寬度,而裡面的 Wrap 會吃滿可用寬度。560 是 Material 3
+        // 對話框的標準上限;窄視窗時它只是上限、不影響收縮。
+        constraints: const BoxConstraints(maxWidth: 560),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 股票資訊
+              Container(
+                padding: const EdgeInsets.all(DesignTokens.spacing12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
+                ),
+                child: Row(
+                  children: [
+                    Text(
+                      widget.symbol,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
+                    if (widget.stockName != null) ...[
+                      const SizedBox(width: DesignTokens.spacing8),
+                      Expanded(
+                        child: Text(
+                          widget.stockName!,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
 
-            const SizedBox(height: DesignTokens.spacing16),
+              const SizedBox(height: DesignTokens.spacing16),
 
-            // 警示類型選擇
-            Text(
-              'alert.type'.tr(),
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: DesignTokens.spacing8),
-            // 🚨 不可用 SegmentedButton(2026-08-08 實機:視窗縮小時
-            // RenderFlex overflow,標籤被壓成直排)。SegmentedButton 本質是
-            // 一個 **Row——不換行、不捲動**,設計給 2~5 個互斥選項;這裡有
-            // 23 種已實作的提醒類型,任何寬度不夠的視窗都必然爆版。
-            // Wrap + ChoiceChip 會依可用寬度自動換行。
-            //
-            // 分成兩組(2026-08-08):這 23 種**不等價**——只有價格高於/
-            // 低於會被盤中 CLI 每 5 分鐘檢查,其餘 21 種只有 app 內的收盤
-            // 路徑會評估。平鋪成一排會讓人以為全部都是即時的。
-            _buildTypeGroup(
-              context,
-              theme,
-              title: 'alert.typeGroup.intraday'.tr(),
-              subtitle: 'alert.typeGroup.intradayHint'.tr(),
-              types: AlertType.values
-                  .where(
-                    (t) =>
-                        t.isImplemented &&
-                        AlertParams.intradayMonitoredTypes.contains(t.value),
-                  )
-                  .toList(),
-            ),
-            const SizedBox(height: DesignTokens.spacing12),
-            _buildTypeGroup(
-              context,
-              theme,
-              title: 'alert.typeGroup.daily'.tr(),
-              subtitle: 'alert.typeGroup.dailyHint'.tr(),
-              subtitleIsWarning: true,
-              types: AlertType.values
-                  .where(
-                    (t) =>
-                        t.isImplemented &&
-                        !AlertParams.intradayMonitoredTypes.contains(t.value),
-                  )
-                  .toList(),
-            ),
-            const SizedBox(height: DesignTokens.spacing16),
-
-            // 目標值輸入
-            TextField(
-              controller: _valueController,
-              decoration: InputDecoration(
-                labelText: _getValueLabel(),
-                hintText: _getValueHint(),
-                suffixText: _selectedType == AlertType.changePct
-                    ? '%'
-                    : 'alert.currency'.tr(),
-                border: const OutlineInputBorder(),
-              ),
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
-              ],
-            ),
-
-            const SizedBox(height: DesignTokens.spacing16),
-
-            // 備註輸入（選填）
-            TextField(
-              controller: _noteController,
-              decoration: InputDecoration(
-                labelText: 'alert.note'.tr(),
-                hintText: 'alert.noteHint'.tr(),
-                border: const OutlineInputBorder(),
-              ),
-              maxLines: 2,
-              maxLength: 500,
-            ),
-
-            // 當前價格提示
-            if (widget.currentPrice case final price?) ...[
-              const SizedBox(height: DesignTokens.spacing12),
+              // 警示類型選擇
               Text(
-                'alert.currentPrice'.tr(args: [price.toStringAsFixed(2)]),
-                style: theme.textTheme.bodySmall?.copyWith(
+                'alert.type'.tr(),
+                style: theme.textTheme.labelMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
+              const SizedBox(height: DesignTokens.spacing8),
+              // 🚨 不可用 SegmentedButton(2026-08-08 實機:視窗縮小時
+              // RenderFlex overflow,標籤被壓成直排)。SegmentedButton 本質是
+              // 一個 **Row——不換行、不捲動**,設計給 2~5 個互斥選項;這裡有
+              // 23 種已實作的提醒類型,任何寬度不夠的視窗都必然爆版。
+              // Wrap + ChoiceChip 會依可用寬度自動換行。
+              //
+              // 分成兩組(2026-08-08):這 23 種**不等價**——只有價格高於/
+              // 低於會被盤中 CLI 每 5 分鐘檢查,其餘 21 種只有 app 內的收盤
+              // 路徑會評估。平鋪成一排會讓人以為全部都是即時的。
+              _buildTypeGroup(
+                context,
+                theme,
+                title: 'alert.typeGroup.intraday'.tr(),
+                subtitle: 'alert.typeGroup.intradayHint'.tr(),
+                types: AlertType.values
+                    .where(
+                      (t) =>
+                          t.isImplemented &&
+                          AlertParams.intradayMonitoredTypes.contains(t.value),
+                    )
+                    .toList(),
+              ),
+              const SizedBox(height: DesignTokens.spacing12),
+              _buildTypeGroup(
+                context,
+                theme,
+                title: 'alert.typeGroup.daily'.tr(),
+                subtitle: 'alert.typeGroup.dailyHint'.tr(),
+                subtitleIsWarning: true,
+                types: AlertType.values
+                    .where(
+                      (t) =>
+                          t.isImplemented &&
+                          !AlertParams.intradayMonitoredTypes.contains(t.value),
+                    )
+                    .toList(),
+              ),
+              const SizedBox(height: DesignTokens.spacing16),
+
+              // 目標值輸入
+              TextField(
+                controller: _valueController,
+                decoration: InputDecoration(
+                  labelText: _getValueLabel(),
+                  hintText: _getValueHint(),
+                  suffixText: _selectedType == AlertType.changePct
+                      ? '%'
+                      : 'alert.currency'.tr(),
+                  border: const OutlineInputBorder(),
+                ),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+                ],
+              ),
+
+              const SizedBox(height: DesignTokens.spacing16),
+
+              // 備註輸入（選填）
+              TextField(
+                controller: _noteController,
+                decoration: InputDecoration(
+                  labelText: 'alert.note'.tr(),
+                  hintText: 'alert.noteHint'.tr(),
+                  border: const OutlineInputBorder(),
+                ),
+                maxLines: 2,
+                maxLength: 500,
+              ),
+
+              // 當前價格提示
+              if (widget.currentPrice case final price?) ...[
+                const SizedBox(height: DesignTokens.spacing12),
+                Text(
+                  'alert.currentPrice'.tr(args: [price.toStringAsFixed(2)]),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
       actions: [

@@ -120,6 +120,32 @@ void main() {
       expect(find.text('3231'), findsOneWidget);
     });
 
+    testWidgets('🚨 超寬視窗下對話框不得無限拉寬', (tester) async {
+      // 2026-08-08 實機(3740px 視窗):對話框整個拉滿,目標價欄位橫跨
+      // 全寬,「179.95」在最左、「元」在最右,視覺上斷開。AlertDialog
+      // 本身不限內容寬度,而裡面的 Wrap 會吃滿可用寬度。
+      //
+      // 這條與「窄視窗不得爆版」是**反方向**的守門:一個測太窄、一個
+      // 測太寬。原本的 widenViewport 慣例只會撐寬,所以這一側從來沒被
+      // 檢查過——爆版看得見,拉太寬看起來只是「有點怪」,更容易忽略。
+      tester.view.physicalSize = const Size(3600, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        buildProviderTestApp(const CreatePriceAlertDialog(symbol: '2330')),
+      );
+      await tester.pump();
+
+      final w = tester.getSize(find.byType(SingleChildScrollView).first).width;
+      expect(
+        w,
+        lessThanOrEqualTo(560.0),
+        reason: '對話框內容寬度必須有上限(Material 3 標準 560dp),實測 $w',
+      );
+    });
+
     testWidgets('🚨 窄視窗不得 RenderFlex overflow', (tester) async {
       // 2026-08-08 實機:視窗縮小時對話框出現黃黑斜紋
       // 「OVERFLOWED BY 25 PIXELS」,類型標籤被壓成直排。
