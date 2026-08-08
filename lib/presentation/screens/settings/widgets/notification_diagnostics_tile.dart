@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
 
 import 'package:daredevil/core/services/notification_service.dart';
 import 'package:daredevil/core/theme/design_tokens.dart';
@@ -32,24 +33,41 @@ class _NotificationDiagnosticsTileState
   ///
   /// 為什麼要落檔(2026-08-08):排查通知問題時我一直卡在「使用者看到
   /// 什麼、再轉述給我」的迴圈,而畫面上的結果行有時根本沒出現,連
-  /// 「按鈕有沒有真的觸發」都無法確定。寫檔讓每一次按鈕點擊都留下
-  /// 可驗證的痕跡,不必再靠轉述。
-  static String get _logPath =>
-      '${Platform.environment['HOME']}/Library/Containers/com.neo.afterclose'
-      '/Data/Documents/notification_diag.log';
+  /// 「按鈕有沒有真的觸發」都無法確定。
+  ///
+  /// ⚠️ 路徑**不可**用 `Platform.environment['HOME']` 組:macOS 沙盒
+  /// 會把 HOME 重導到容器內,自組路徑會變成不存在的巢狀目錄、寫檔靜默
+  /// 失敗(2026-08-08 實機:第一版就是這樣,診斷檔從未產生)。一律用
+  /// path_provider——那也是 DB 自己在用的機制。
+  String? _logPath;
+  String? _logPathError;
+
+  Future<void> _ensureLogPath() async {
+    if (_logPath != null || _logPathError != null) return;
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      _logPath = '${dir.path}/notification_diag.log';
+    } catch (e) {
+      _logPathError = '$e';
+    }
+  }
 
   void _append(String line) {
+    final path = _logPath;
+    if (path == null) return;
     try {
-      File(_logPath).writeAsStringSync(
+      File(path).writeAsStringSync(
         '${DateTime.now().toIso8601String()}  $line\n',
         mode: FileMode.append,
       );
-    } catch (_) {
-      // 診斷落檔失敗不可影響畫面
+    } catch (e) {
+      // 失敗要在畫面上看得見,不可再靜默吞掉
+      _logPathError = '寫檔失敗:$e';
     }
   }
 
   Future<void> _run(String label, Future<String> Function() action) async {
+    await _ensureLogPath();
     _append('▶ 按下「$label」');
     setState(() => _busy = true);
     String result;
@@ -133,6 +151,17 @@ class _NotificationDiagnosticsTileState
             bad: !state.hasPermission,
           ),
           if (state.error != null) row('最後錯誤', state.error!, bad: true),
+          if (_logPath != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                '紀錄檔:$_logPath',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          if (_logPathError != null) row('紀錄檔問題', _logPathError!, bad: true),
           if (_lastAction != null) ...[
             const SizedBox(height: DesignTokens.spacing8),
             Text(
