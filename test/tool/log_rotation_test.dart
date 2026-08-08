@@ -62,5 +62,28 @@ void main() {
     final f = write('d.log', 'x' * 5000);
     LogRotation.rotateIfNeeded(f.path, maxBytes: 1000);
     expect(f.lengthSync(), lessThanOrEqualTo(1000));
+    // 🚨 舊版只斷言「有變小」,於是把保留量吃到 0 也算通過——見下一個測試。
+    expect(f.lengthSync(), greaterThan(100), reason: '截斷不等於清空');
+  });
+
+  test('🚨 超長無換行爆量後才換行 → 保留量不可被「切掉殘句」吃光', () {
+    // 真實事故形狀(2026-08-08):`dart run` 的進度輸出用 \r 不用 \n,
+    // 異常時會一次吐出數十萬位元組的無換行內容。若尾端窗內第一個 \n
+    // 落在很後面,「從第一個換行之後開始」就會丟掉幾乎整個保留區——
+    // 實測 1.2 MB 的日誌輪替後只剩 104 bytes,**異常當下的證據全滅**。
+    // 輪替的目的是限制大小,不是銷毀證據。
+    final burst = 'Running build hooks...\r' * 4000; // 遠超保留量、無 \n
+    final f = write('e.log', '早期\n$burst\n[log] 最後一次執行\n');
+    expect(f.lengthSync(), greaterThan(80000));
+
+    LogRotation.rotateIfNeeded(f.path, maxBytes: 20000);
+
+    final after = f.lengthSync();
+    expect(after, lessThanOrEqualTo(20000), reason: '仍須受上限約束');
+    expect(
+      after,
+      greaterThan(20000 ~/ 4),
+      reason: '保留量至少要有目標的一半以上,不能被殘句修剪吃光(舊版只剩 0.2%)',
+    );
   });
 }
