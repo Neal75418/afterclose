@@ -96,7 +96,9 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
                     ),
                   ],
                 ),
-              Expanded(child: _buildAlertsList(state.alerts, theme)),
+              Expanded(
+                child: _buildAlertsList(state.alerts, state.stockNames, theme),
+              ),
             ],
           );
   }
@@ -109,7 +111,11 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
     );
   }
 
-  Widget _buildAlertsList(List<PriceAlertEntry> alerts, ThemeData theme) {
+  Widget _buildAlertsList(
+    List<PriceAlertEntry> alerts,
+    Map<String, String> stockNames,
+    ThemeData theme,
+  ) {
     // 依股票代號分組警示
     final groupedAlerts = <String, List<PriceAlertEntry>>{};
     for (final alert in alerts) {
@@ -170,6 +176,21 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
                         ),
                       ),
                       const SizedBox(width: 8),
+                      // 名稱:只顯示代碼的話,提醒一多就認不出是哪一檔
+                      // (2026-08-08 實機回報)。查不到名稱時整段省略,
+                      // 不要顯示空白或代碼重複。
+                      if (stockNames[symbol] != null) ...[
+                        Flexible(
+                          child: Text(
+                            stockNames[symbol]!,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
                       Text(
                         '${symbolAlerts.length} ${'alert.title'.tr()}',
                         style: theme.textTheme.bodySmall?.copyWith(

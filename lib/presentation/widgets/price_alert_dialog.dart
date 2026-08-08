@@ -135,27 +135,31 @@ class _CreatePriceAlertDialogState
               ),
             ),
             const SizedBox(height: DesignTokens.spacing8),
-            SegmentedButton<AlertType>(
-              segments: AlertType.values
-                  .where((type) => type.isImplemented) // 只顯示已實作的類型
-                  .map((type) {
-                    return ButtonSegment<AlertType>(
-                      value: type,
-                      label: Text(
-                        _getTypeLabel(type),
-                        style: const TextStyle(
-                          fontSize: DesignTokens.fontSizeSm,
-                        ),
-                      ),
-                    );
-                  })
-                  .toList(),
-              selected: {_selectedType},
-              onSelectionChanged: (selected) {
-                setState(() {
-                  _selectedType = selected.first;
-                });
-              },
+            // 🚨 不可用 SegmentedButton(2026-08-08 實機:視窗縮小時
+            // RenderFlex overflow,標籤被壓成直排)。SegmentedButton 本質是
+            // 一個 **Row——不換行、不捲動**,設計給 2~5 個互斥選項;這裡有
+            // 23 種已實作的提醒類型,任何寬度不夠的視窗都必然爆版。
+            // (個股頁那個只放「高於/低於」兩個,用法是對的。)
+            // Wrap + ChoiceChip 會自動依可用寬度換行,任何視窗大小都成立。
+            Wrap(
+              spacing: DesignTokens.spacing8,
+              runSpacing: DesignTokens.spacing8,
+              children: [
+                for (final type in AlertType.values.where(
+                  (t) => t.isImplemented,
+                ))
+                  ChoiceChip(
+                    label: Text(
+                      _getTypeLabel(type),
+                      style: const TextStyle(fontSize: DesignTokens.fontSizeSm),
+                    ),
+                    selected: _selectedType == type,
+                    onSelected: (picked) {
+                      if (!picked) return; // 互斥:不允許取消選取
+                      setState(() => _selectedType = type);
+                    },
+                  ),
+              ],
             ),
 
             const SizedBox(height: DesignTokens.spacing16),

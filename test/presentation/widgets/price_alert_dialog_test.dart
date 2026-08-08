@@ -77,14 +77,42 @@ void main() {
       expect(find.textContaining('850.00'), findsAtLeastNWidgets(1));
     });
 
-    testWidgets('has SegmentedButton for alert types', (tester) async {
+    testWidgets('提醒類型以可換行的 ChoiceChip 呈現(每種一顆)', (tester) async {
       widenViewport(tester);
       await tester.pumpWidget(
         buildProviderTestApp(const CreatePriceAlertDialog(symbol: '2330')),
       );
       await tester.pump();
 
-      expect(find.byType(SegmentedButton<AlertType>), findsOneWidget);
+      final implemented = AlertType.values.where((t) => t.isImplemented).length;
+      expect(find.byType(ChoiceChip), findsNWidgets(implemented));
+      expect(
+        find.byType(SegmentedButton<AlertType>),
+        findsNothing,
+        reason: 'SegmentedButton 是 Row,不換行不捲動——23 種類型必然爆版',
+      );
+    });
+
+    testWidgets('🚨 窄視窗不得 RenderFlex overflow', (tester) async {
+      // 2026-08-08 實機:視窗縮小時對話框出現黃黑斜紋
+      // 「OVERFLOWED BY 25 PIXELS」,類型標籤被壓成直排。
+      //
+      // ⚠️ 這個 bug 能活下來,是因為**本檔每一條測試都先呼叫
+      // widenViewport**(把視窗撐到 5000×4000 以避開 overflow)——那個
+      // 慣例的用意是好的(避免無關的 overflow 噪音),但副作用是
+      // 「窄視窗爆版」這一整類 bug 在測試裡**結構上不可能被抓到**。
+      // 所以這條刻意**不**撐寬,用接近真實的小視窗跑。
+      tester.view.physicalSize = const Size(800, 1200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        buildProviderTestApp(const CreatePriceAlertDialog(symbol: '2330')),
+      );
+      await tester.pump();
+
+      expect(tester.takeException(), isNull, reason: '800px 寬就爆版的話,一般視窗大小都會爆');
     });
 
     testWidgets('has target value TextField', (tester) async {

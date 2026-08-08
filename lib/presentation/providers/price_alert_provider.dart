@@ -242,21 +242,28 @@ String getAlertDescription(PriceAlertEntry alert, AlertType type) {
 class PriceAlertState {
   const PriceAlertState({
     this.alerts = const [],
+    this.stockNames = const {},
     this.isLoading = false,
     this.error,
   });
 
   final List<PriceAlertEntry> alerts;
+
+  /// 代碼 → 名稱。`price_alert` 只存代碼,名稱在 `stock_master`——清單只顯示
+  /// 「3231」而不是「緯創」,提醒一多就認不出來(2026-08-08 實機回報)。
+  final Map<String, String> stockNames;
   final bool isLoading;
   final String? error;
 
   PriceAlertState copyWith({
     List<PriceAlertEntry>? alerts,
+    Map<String, String>? stockNames,
     bool? isLoading,
     Object? error = sentinel,
   }) {
     return PriceAlertState(
       alerts: alerts ?? this.alerts,
+      stockNames: stockNames ?? this.stockNames,
       isLoading: isLoading ?? this.isLoading,
       error: error == sentinel ? this.error : error as String?,
     );
@@ -288,7 +295,24 @@ class PriceAlertNotifier extends Notifier<PriceAlertState> {
     state = state.copyWith(isLoading: true, error: null);
     try {
       final alerts = await _db.getAllAlerts();
-      state = state.copyWith(alerts: alerts, isLoading: false);
+      // 名稱是**純裝飾**:查不到就不顯示,絕不可讓它拖垮主功能。
+      // 第一版沒包 try,mock DB 沒實作 getStock 就讓整個 loadAlerts 進
+      // catch、清單變空——一個顯示用的加值把核心功能弄壞,正是這個專案
+      // 反覆吃虧的形狀(2026-08-08)。
+      final names = <String, String>{};
+      try {
+        for (final sym in alerts.map((a) => a.symbol).toSet()) {
+          final stock = await _db.getStock(sym);
+          if (stock != null) names[sym] = stock.name;
+        }
+      } catch (e) {
+        AppLogger.warning('PriceAlertNotifier', '查詢股票名稱失敗,清單只顯示代碼', e);
+      }
+      state = state.copyWith(
+        alerts: alerts,
+        stockNames: names,
+        isLoading: false,
+      );
     } catch (e) {
       AppLogger.warning('PriceAlertNotifier', '載入警示失敗', e);
       state = state.copyWith(isLoading: false, error: ErrorDisplay.message(e));
