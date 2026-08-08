@@ -81,23 +81,24 @@ class NotificationService {
   /// 回 null(`?.requestPermissions()` → null → `?? false`)。這支把
   /// 「到底解析到什麼」變成可觀察的事實,不再靠推論。
   String resolveDiagnostics() {
-    final mac = _notifications
-        .resolvePlatformSpecificImplementation<
-          MacOSFlutterLocalNotificationsPlugin
-        >();
-    final ios = _notifications
-        .resolvePlatformSpecificImplementation<
-          IOSFlutterLocalNotificationsPlugin
-        >();
-    final android = _notifications
-        .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >();
+    // ⚠️ resolvePlatformSpecificImplementation 在平台實作尚未註冊時
+    // **會拋 LateInitializationError**,不是回 null(2026-08-08 實測)。
+    // 這正是 requestPermissions 可能在 2ms 內「失敗」的機制:例外被
+    // 上層 catch 吞成 false。逐項包 try 才看得出是 null 還是拋例外。
+    String probe<T extends FlutterLocalNotificationsPlatform>() {
+      try {
+        final impl = _notifications.resolvePlatformSpecificImplementation<T>();
+        return impl == null ? 'null' : 'OK';
+      } catch (e) {
+        return '拋例外(${e.runtimeType})';
+      }
+    }
+
     return 'defaultTargetPlatform=$defaultTargetPlatform '
         'Platform.isMacOS=${Platform.isMacOS} '
-        'macPlugin=${mac == null ? "null" : "OK"} '
-        'iosPlugin=${ios == null ? "null" : "OK"} '
-        'androidPlugin=${android == null ? "null" : "OK"} '
+        'macPlugin=${probe<MacOSFlutterLocalNotificationsPlugin>()} '
+        'iosPlugin=${probe<IOSFlutterLocalNotificationsPlugin>()} '
+        'androidPlugin=${probe<AndroidFlutterLocalNotificationsPlugin>()} '
         'serviceInitialized=$_isInitialized';
   }
 
