@@ -845,6 +845,7 @@
     "noteHint": "Add a note for this alert",
     "currentPrice": "Current price: {0} TWD",
     "created": "Alert created successfully",
+    "createdNoPermission": "Alert created, but notifications are not authorized — no in-app popups; the background schedule still notifies",
     "createFailed": "Failed to create alert",
     "invalidValue": "Please enter a valid value",
     "emptyValue": "Please enter a value",

@@ -48,10 +48,15 @@ import 'package:daredevil/core/utils/logger.dart';
 import 'package:daredevil/data/database/app_database.dart';
 
 Future<void> main(List<String> args) async {
-  LogRotation.rotateIfNeeded(
-    '${Platform.environment['HOME']}/Library/Logs/'
+  // stderr 也要輪替:故障訊息落在那裡,而它曾長到 153 MB(見 intraday 註解)
+  for (final name in [
     'daredevil-daily-update.stdout.log',
-  );
+    'daredevil-daily-update.stderr.log',
+  ]) {
+    LogRotation.rotateIfNeeded(
+      '${Platform.environment['HOME']}/Library/Logs/$name',
+    );
+  }
   final start = DateTime.now();
   print('[daily_update] started at ${start.toIso8601String()}');
 

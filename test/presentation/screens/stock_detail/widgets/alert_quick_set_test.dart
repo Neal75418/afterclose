@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:daredevil/core/constants/rule_params_alert.dart';
 import 'package:daredevil/data/database/app_database.dart';
 import 'package:daredevil/domain/services/alert/alert_target_calculator.dart';
 import 'package:daredevil/presentation/screens/stock_detail/widgets/alert_quick_set.dart';
@@ -170,14 +171,36 @@ void main() {
           AlertQuickSet(
             bars: bars(30),
             currentPrice: null, // 不給現價,單測 existingTargets 的效果
-            existingTargets: {127.0}, // 5MA
+            existingTargets: {(AlertParams.typeBelow, 127.0)}, // 5MA
             onSelected: (_, __) {},
           ),
         ),
       );
       final chips = tester.widgetList<ActionChip>(find.byType(ActionChip));
       final disabled = chips.where((c) => c.onPressed == null).length;
-      expect(disabled, greaterThanOrEqualTo(1), reason: '5MA 已存在,不可重複建立');
+      expect(disabled, 1, reason: '只有 5MA 那顆該停用——區間斷言會讓「六顆全停用」也過');
+    });
+
+    testWidgets('🚨 同價不同向:設了「跌破月線」不可連「突破月線」一起封死', (tester) async {
+      // 2026-08-08 三次審查:breakBelowMa20 與 breakAboveMa20 的目標價
+      // **完全相同**(都是 ma20),只有方向不同。原本去重只比價格,於是
+      // 建了停損型的「跌破月線」之後,語意完全相反的「突破月線」
+      // (回榜資格)會被一起停用,而且 UI 謊稱「已設定」——使用者不會
+      // 發現自己被擋住。closes = 100..129 → ma20 = 119.5。
+      widen(tester);
+      await tester.pumpWidget(
+        buildTestApp(
+          AlertQuickSet(
+            bars: bars(30),
+            currentPrice: null,
+            existingTargets: {(AlertParams.typeBelow, 119.5)},
+            onSelected: (_, __) {},
+          ),
+        ),
+      );
+      final chips = tester.widgetList<ActionChip>(find.byType(ActionChip));
+      final disabled = chips.where((c) => c.onPressed == null).length;
+      expect(disabled, 1, reason: '只有「跌破月線」該停用;「突破月線」同價但反向,必須仍可點');
     });
 
     testWidgets('existingTargets 為空 → 不受影響', (tester) async {
@@ -188,7 +211,7 @@ void main() {
             bars: bars(30),
             // 不給現價:避免與「已成立」邏輯糾纏,單測 existingTargets
             currentPrice: null,
-            existingTargets: const <double>{},
+            existingTargets: const <(String, double)>{},
             onSelected: (_, __) {},
           ),
         ),

@@ -86,8 +86,29 @@ class NotificationService {
           .resolvePlatformSpecificImplementation<
             MacOSFlutterLocalNotificationsPlugin
           >();
-      final result = await macPlugin?.checkPermissions();
-      return result?.isEnabled ?? false;
+      // 🚨 `?? false` 會把「plugin 解析不到」壓成「使用者拒絕」,兩者
+      // 症狀 100% 相同(2026-08-08 三次審查 H-4)。這正是先前 macOS 誤用
+      // iOS plugin 那個 bug 之所以要花一整天、做完八項證偽才定位的機制。
+      // 下次升 Flutter 或 plugin 導致註冊名改變時,這幾行要能自己指認。
+      if (macPlugin == null) {
+        AppLogger.error(
+          'NotificationService',
+          'MacOSFlutterLocalNotificationsPlugin 解析不到——這不是「沒權限」,'
+              '是 plugin 未註冊(Flutter/plugin 版本或平台判定變更)',
+          StateError('macOS notification plugin unresolved'),
+        );
+        return false;
+      }
+      final result = await macPlugin.checkPermissions();
+      if (result == null) {
+        AppLogger.error(
+          'NotificationService',
+          'checkPermissions 回 null(非 denied)——plugin 行為改變',
+          StateError('checkPermissions returned null'),
+        );
+        return false;
+      }
+      return result.isEnabled;
     }
 
     if (Platform.isIOS) {
@@ -132,11 +153,15 @@ class NotificationService {
   /// 的殘留註冊(清掉 1 個 macOS + 2 個 iOS 模擬器死註冊)、`usernoted`
   /// 記憶體快取(重啟)、執行位置不受信任(複製到 `/Applications` 重測)。
   ///
-  /// **影響有限,不必修**:macOS 的盤中提醒由 launchd CLI
+  /// **影響有限**:macOS 的盤中提醒由 launchd CLI
   /// (`tool/intraday_alert_check.dart`)以原生 `osascript` 發送,已驗證可用,
-  /// 且無論 App 開著與否都會執行。GUI 這條是冗餘的第二條路——[hasPermission]
-  /// 回 false 會讓 GUI 輪詢在 claim 前就跳過(見 `intraday_monitor_provider`),
-  /// 因此提醒**不會被燒掉**,只會改由 CLI 送出。iOS 不受影響。
+  /// 且無論 App 開著與否都會執行。GUI 這條是冗餘的第二條路。iOS 不受影響。
+  ///
+  /// ⚠️ **更正(2026-08-08 三次審查)**:本註解原本斷言「提醒不會被燒掉」,
+  /// 那句話當時**只對盤中輪詢成立**——收盤路徑(`today_provider`)當時
+  /// 沒有這道守門,會先認領再發現通知發不出去,提醒兩條路徑都撿不到。
+  /// 該守門與「通知失敗釋放認領」(`releaseAlertClaim`)已於同日補上,
+  /// 但這個錯誤結論值得留著:**它差點讓下一個人直接跳過不修**。
   Future<bool> requestPermissions() async {
     if (Platform.isMacOS) {
       final result = await _notifications

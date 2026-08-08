@@ -845,6 +845,7 @@
     "noteHint": "為這個提醒加上備註",
     "currentPrice": "目前價格: {0} 元",
     "created": "提醒建立成功",
+    "createdNoPermission": "提醒已建立,但系統未授權通知——App 開著時不會跳通知;背景排程仍會送出",
     "createFailed": "建立提醒失敗",
     "invalidValue": "請輸入有效的數值",
     "emptyValue": "請輸入數值",

@@ -92,7 +92,11 @@ class IntradayMonitorNotifier extends Notifier<DateTime?> {
       if (!ref.read(notificationProvider).hasPermission) {
         // warning 而非 debug:這是「功能整個停擺」的狀態,不能只在
         // debug build 看得到(2026-08-08 二次審查)
-        AppLogger.warning('IntradayMonitor', '無通知權限,盤中提醒全部跳過——使用者不會收到任何通知');
+        AppLogger.error(
+          'IntradayMonitor',
+          '無通知權限,盤中提醒全部跳過——使用者不會收到任何通知',
+          StateError('notification permission denied'),
+        );
         return;
       }
 
@@ -102,16 +106,31 @@ class IntradayMonitorNotifier extends Notifier<DateTime?> {
       );
       final fired = (await monitor.check(now: now)).fired;
       state = now;
+      // 逐筆獨立 try:check() 已把 fired 全部認領掉,若第 3 筆丟例外而
+      // 讓迴圈中斷,第 4、5 筆連試都沒試就永久遺失(2026-08-08 三次審查)
       for (final f in fired) {
-        await ref
-            .read(notificationProvider.notifier)
-            .showPriceAlertNotification(f.alert, currentPrice: f.quote.price);
+        try {
+          await ref
+              .read(notificationProvider.notifier)
+              .showPriceAlertNotification(f.alert, currentPrice: f.quote.price);
+        } catch (e, s) {
+          AppLogger.error(
+            'IntradayMonitor',
+            '通知失敗,釋放認領:${f.alert.symbol}',
+            e,
+            s,
+          );
+          await ref.read(databaseProvider).releaseAlertClaim(f.alert.id);
+        }
       }
       if (fired.isNotEmpty) {
         await ref.read(priceAlertProvider.notifier).loadAlerts();
       }
-    } catch (e) {
-      AppLogger.warning('IntradayMonitor', '盤中輪詢失敗', e);
+    } catch (e, s) {
+      // error 而非 warning:AppLogger._log 對**所有等級**在 release build
+      // 都直接 return(輸出包在 assert 內),只有 error 且帶例外物件才會
+      // 走 _sentryCapture 產生真的 Sentry event(2026-08-08 三次審查 H-1)
+      AppLogger.error('IntradayMonitor', '盤中輪詢失敗', e, s);
     } finally {
       _running = false;
     }

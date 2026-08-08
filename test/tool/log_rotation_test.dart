@@ -33,7 +33,10 @@ void main() {
     LogRotation.rotateIfNeeded(f.path, maxBytes: 2000);
 
     final after = f.readAsStringSync();
-    expect(after.length, lessThanOrEqualTo(2000));
+    // ⚠️ 必須用 lengthSync():`after` 是 Dart String,`.length` 算的是
+    // UTF-16 code unit;本測試內容全中文,實測 1041 bytes / 573 units,
+    // 比值 1.82——用 .length 當位元組上限等於容許 1.8 倍超標(2026-08-08)
+    expect(f.lengthSync(), lessThanOrEqualTo(2000));
     expect(after, contains('第 499 行'), reason: '最新的必須留著');
     expect(after, isNot(contains('第 0 行')), reason: '最舊的被丟掉');
     // 第一行是刻意加的截斷提示;它之後的第一行不可以是被切一半的殘句
@@ -80,10 +83,14 @@ void main() {
 
     final after = f.lengthSync();
     expect(after, lessThanOrEqualTo(20000), reason: '仍須受上限約束');
+    // 行為是決定性的:keep = 20000~/2 = 10000;burst 讓尾端窗內第一個
+    // \n 落在 index 9974,maxTrim = 10000~/8 = 1250,9974 > 1250 → 不修剪
+    // → 恆為 10000 + header。用區間斷言的話,把保留區砍到 5001 也會綠——
+    // 而這條測試守的正是今天才炸過的那個 bug(2026-08-08 三次審查)
     expect(
       after,
-      greaterThan(20000 ~/ 4),
-      reason: '保留量至少要有目標的一半以上,不能被殘句修剪吃光(舊版只剩 0.2%)',
+      closeTo(10065, 40),
+      reason: '保留量必須就是 keep(10000)加 header,不可被殘句修剪吃掉',
     );
   });
 }

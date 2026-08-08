@@ -59,6 +59,13 @@ for f in "$HOME/Library/LaunchAgents/com.neo.daredevil."*.plist; do
     residual=1
   fi
 done
-[ "$residual" -eq 0 ] && echo "✅ 殘留檢查通過(無其他使用者的路徑)"
 echo "驗證:launchctl print gui/$UID_NUM/com.neo.daredevil.intraday | grep -E 'runs|exit'"
 echo "日誌:$HOME/Library/Logs/daredevil-*.log"
+
+# 殘留必須讓腳本以非零結束(2026-08-08 三次審查 M-4):否則「裝好了」與
+# 「裝好了但有殘留」的 exit code 相同,被 CI 或其他腳本呼叫時看不出差別。
+if [ "$residual" -ne 0 ]; then
+  echo "❌ 安裝完成,但偵測到殘留路徑(見上)——請確認後重跑" >&2
+  exit 1
+fi
+echo "✅ 殘留檢查通過(無其他使用者的路徑)"

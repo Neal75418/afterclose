@@ -72,8 +72,11 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
             currentPrice: currentPrice,
             // 已存在的目標價 → 該種類停用,避免建出一模一樣的第二筆
             existingTargets: {
+              // 必須帶方向:同一個價位可以同時是「跌破」與「突破」兩種
+              // 提醒(月線最典型),只比價格會把沒建過的那一種也封死
               for (final a in stockAlerts)
-                if (a.isActive && a.triggeredAt == null) a.targetValue,
+                if (a.isActive && a.triggeredAt == null)
+                  (a.alertType, a.targetValue),
             },
             onSelected: (kind, target) =>
                 _createQuickAlert(context, ref, kind, target),
@@ -155,7 +158,12 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
     // 會在無權限時整輪跳過,若這裡不請求,使用者一輩子不會被通知,而且
     // 完全沒有徵兆。既有的 price_alert_dialog 本來就有這一步,個股頁
     // 的兩條路徑都漏了。
-    await ref.read(notificationProvider.notifier).ensurePermission();
+    // 🚨 回傳值不可丟(2026-08-08 三次審查 H-2):它為 false 時提醒仍會
+    // 寫進 DB,但 GUI 輪詢會整輪跳過。若照樣顯示「已設定提醒」,使用者
+    // 會相信盯盤已生效然後永遠等不到通知——謊報成功比報錯更糟。
+    final granted = await ref
+        .read(notificationProvider.notifier)
+        .ensurePermission();
     final ok = await ref
         .read(priceAlertProvider.notifier)
         .createAlert(
@@ -172,14 +180,17 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          ok
+          !ok
+              ? 'alert.createFailed'.tr()
+              : granted
               ? 'alert.quickSet.created'.tr(
                   namedArgs: {
                     'label': label,
                     'price': target.price.toStringAsFixed(2),
                   },
                 )
-              : 'alert.createFailed'.tr(),
+              // 建立成功但系統未授權:提醒存在,只是 App 開著時不會跳通知
+              : 'alert.createdNoPermission'.tr(),
         ),
       ),
     );
@@ -658,7 +669,12 @@ class _AddAlertSheetState extends ConsumerState<_AddAlertSheet> {
     setState(() => _isCreating = true);
 
     // 同快捷鈕:建立時就要拿到權限,否則盤中輪詢會整輪跳過且無徵兆
-    await ref.read(notificationProvider.notifier).ensurePermission();
+    // 🚨 回傳值不可丟(2026-08-08 三次審查 H-2):它為 false 時提醒仍會
+    // 寫進 DB,但 GUI 輪詢會整輪跳過。若照樣顯示「已設定提醒」,使用者
+    // 會相信盯盤已生效然後永遠等不到通知——謊報成功比報錯更糟。
+    final granted = await ref
+        .read(notificationProvider.notifier)
+        .ensurePermission();
 
     final success = await ref
         .read(priceAlertProvider.notifier)
@@ -678,7 +694,9 @@ class _AddAlertSheetState extends ConsumerState<_AddAlertSheet> {
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('alert.created'.tr()),
+          content: Text(
+            granted ? 'alert.created'.tr() : 'alert.createdNoPermission'.tr(),
+          ),
           behavior: SnackBarBehavior.floating,
         ),
       );

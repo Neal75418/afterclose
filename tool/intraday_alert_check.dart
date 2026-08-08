@@ -23,9 +23,18 @@ import 'package:daredevil/domain/services/alert/intraday_poll_schedule.dart';
 Future<void> main(List<String> args) async {
   // 日誌自輪替(2026-08-08):不用 newsyslog——那要在 /etc 放一個未版控、
   // 換機就消失的設定檔,正是今天咬過我們兩次的那類東西
-  LogRotation.rotateIfNeeded(
-    '${Platform.environment['HOME']}/Library/Logs/daredevil-intraday.log',
-  );
+  // ⚠️ stderr 也要輪替(2026-08-08 三次審查 M-3):launchd 的
+  // StandardErrorPath 是另一個檔案,而**故障訊息正好落在那裡**——最需要
+  // 保護的日誌反而沒被保護。本專案已有前例:舊的 daily stderr 一路長到
+  // 153 MB(7 月自動更新靜默斷 13 天的編譯錯誤洪流)。
+  for (final name in [
+    'daredevil-intraday.log',
+    'daredevil-intraday.launchd.log',
+  ]) {
+    LogRotation.rotateIfNeeded(
+      '${Platform.environment['HOME']}/Library/Logs/$name',
+    );
+  }
 
   final now = TaiwanTime.now();
   final force = args.contains('--force');
@@ -47,6 +56,9 @@ Future<void> main(List<String> args) async {
       '${Platform.environment['HOME']}'
       '/Library/Containers/com.neo.afterclose/Data/Documents/afterclose.sqlite';
   if (!File(dbPath).existsSync()) {
+    // 心跳:沒有這行,監控看到的是「零筆匹配」——與「job 沒被排到」
+    // 完全無法區分(2026-08-08 三次審查 M-2)
+    beat('FAIL(DB 不存在)');
     stderr.writeln('[intraday_alert] DB 不存在: $dbPath');
     exit(1);
   }
@@ -71,7 +83,9 @@ Future<void> main(List<String> args) async {
     // check() 會把觸價的提醒標成已觸發且停用;若之後才發現 osascript
     // 發不出去,提醒就被靜默燒掉——使用者沒收到,收盤路徑也看不到它。
     if (!await _notificationChannelWorks()) {
+      beat('FAIL(通知管道不可用)');
       stderr.writeln('[intraday_alert] 通知管道不可用,本輪不檢查(避免燒掉提醒)');
+      await database.close();
       exit(1);
     }
 
@@ -110,9 +124,20 @@ Future<void> main(List<String> args) async {
             '${f.quote.changePercent.toStringAsFixed(2)}%)'
             ' · ${f.quote.time ?? ''}',
       );
-      if (ok) notified++;
+      if (ok) {
+        notified++;
+      } else {
+        // 🚨 認領發生在通知之前(跨 process 去重的代價),所以通知失敗
+        // 必須退回可重試狀態——否則該筆停在 triggeredAt!=null,兩條
+        // 路徑的 pending 過濾都會永久跳過它(2026-08-08 三次審查 C-1)
+        await database.releaseAlertClaim(f.alert.id);
+        stderr.writeln('[intraday_alert] 通知失敗,已釋放認領: ${f.alert.symbol}');
+      }
     }
-    beat('觸價 ${fired.length} 筆,已通知 $notified 筆');
+    // ⚠️ 措辭不可斷言「已送達」:osascript 即使通知被 Focus 模式或系統
+    // 設定抑制也回 exit 0,我們只知道它「接受」了,不知道使用者看到沒
+    beat('觸價 ${fired.length} 筆,osascript 接受 $notified 筆(未確認送達)');
+    await database.close();
     exit(notified == fired.length ? 0 : 1);
   } catch (e, s) {
     // AppLogger 在 `dart run` 下是 no-op(輸出包在 assert 內、asserts
@@ -122,6 +147,10 @@ Future<void> main(List<String> args) async {
     stderr.writeln(s);
     exit(1);
   } finally {
+    // ⚠️ 此區塊在多數路徑**不會執行**:上面每個分支都直接 exit(),而
+    // exit() 立即終止 process(2026-08-08 三次審查 M-5)。留著只為了
+    // 覆蓋「例外向上逃逸」這條路。**不要把非冪等的清理放進來**——
+    // 它讀起來像有清理,實際多半沒跑。真正的關閉在各 exit() 之前。
     await database?.close();
   }
 }

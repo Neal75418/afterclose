@@ -92,10 +92,6 @@ dependencies:
   # Background Tasks
   workmanager: ^0.9.0
 
-  # 沙盒安全的文件目錄解析(診斷紀錄檔用)。**不可**進 tool/ 的 import
-  # 閉包——它是 flutter plugin,守門測試會擋(見 CLAUDE.md tool 鏈純 Dart)
-  path_provider: ^2.1.5
-
   # Connectivity
   connectivity_plus: ^7.0.0
 

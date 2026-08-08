@@ -34,7 +34,13 @@ class AlertQuickSet extends StatelessWidget {
 
   /// 本檔已存在的提醒目標價。命中者停用——同一顆點兩次會建出兩筆一模
   /// 一樣的提醒(2026-08-08 實機重現),而兩筆都會各叫一次。
-  final Set<double> existingTargets;
+  /// 已存在的提醒,以 **(方向, 目標價)** 成對比對。
+  ///
+  /// 🚨 只比價格會出事(2026-08-08 三次審查):`breakBelowMa20` 與
+  /// `breakAboveMa20` 的目標價**完全相同**(都是 ma20),只有方向不同。
+  /// 用 `Set<double>` 去重時,建了停損型的「跌破月線」就會把語意完全
+  /// 相反的「突破月線」(回榜資格)一起停用,而且標籤還謊稱「已設定」。
+  final Set<(String, double)> existingTargets;
 
   /// DB 價格列 → 計算用單位。**明確依日期升冪排序**,不假設 DAO 的
   /// 回傳方向(2026-08-07 實機 bug:接線處誤以為是降冪而多 reversed 一次,
@@ -61,8 +67,9 @@ class AlertQuickSet extends StatelessWidget {
 
   /// 條件是否已成立(向上型:現價已在目標之上;向下型:已在其下)
   /// 已有同價位的提醒?浮點比較用 0.005 容差(顯示精度是兩位小數)
-  bool _alreadySet(AlertTarget t) =>
-      existingTargets.any((e) => (e - t.price).abs() < 0.005);
+  bool _alreadySet(AlertTarget t) => existingTargets.any(
+    (e) => e.$1 == t.alertTypeValue && (e.$2 - t.price).abs() < 0.005,
+  );
 
   bool _isAlreadyMet(AlertTarget t) {
     final p = currentPrice;

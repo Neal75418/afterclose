@@ -34,8 +34,19 @@ abstract final class LogRotation {
 
       // 保留一半:留太少會讓「剛截斷完」的日誌幾乎沒有上下文
       final keep = maxBytes ~/ 2;
-      final bytes = file.readAsBytesSync();
-      var tail = bytes.sublist(bytes.length - keep);
+
+      // ⚠️ 只讀尾端,不可 readAsBytesSync 把整份載入(2026-08-08 三次審查)。
+      // 若哪天某個 bug 讓日誌衝到數 GB,整份讀入會丟 OutOfMemoryError;
+      // 舊版的無型別 catch 連 Error 都接住 → 輪替從此每次靜默失敗 →
+      // 日誌無限成長直到塞爆磁碟。而那正是最需要輪替的時候。
+      final raf = file.openSync();
+      List<int> tail;
+      try {
+        raf.setPositionSync(length - keep);
+        tail = raf.readSync(keep);
+      } finally {
+        raf.closeSync();
+      }
 
       // 從第一個換行之後開始,避免開頭是被切一半的殘句。
       //
@@ -55,8 +66,19 @@ abstract final class LogRotation {
           '--- truncated at ${DateTime.now().toIso8601String()} '
           '(was $length bytes) ---\n';
       file.writeAsBytesSync([...header.codeUnits, ...tail]);
-    } catch (_) {
-      // 輪替失敗不影響本體
+    } on FileSystemException catch (e) {
+      // 輪替失敗不影響本體——但**不可無聲**(2026-08-08 三次審查)。
+      // 舊版是無型別 `catch (_) {}`,正是今天咬人的那個形狀本身。
+      //
+      // 最該留痕跡的情境:`writeAsBytesSync` 預設 O_TRUNC,會先把檔案
+      // 截成 0 再寫入;若寫入失敗(磁碟滿、volume 唯讀、檔案被鎖),
+      // 檔案就停在 **0 bytes**。磁碟滿正是最需要日誌的時候,而這段
+      // 程式碼會在那一刻把日誌完全銷毀。
+      //
+      // 用 stderr 而非 AppLogger:兩支 CLI 由 `dart run` 執行,AppLogger
+      // 的輸出包在 assert 內、asserts 未啟用時是 no-op(見 logger.dart)。
+      // stderr 會落進 launchd 重導的同一份檔案。
+      stderr.writeln('[LogRotation] 輪替失敗 $path: $e');
     }
   }
 }

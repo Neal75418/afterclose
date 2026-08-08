@@ -400,6 +400,21 @@ class TodayNotifier extends Notifier<TodayState> {
         await ref.read(notificationProvider.notifier).initialize();
       }
 
+      // 🚨 先確認能通知,再檢查(2026-08-08 三次審查 C-2)。
+      // checkAndTriggerAlerts 內部走 claimAlertTrigger,會把到價的提醒
+      // 標成 isActive=false + triggeredAt=now。若之後才發現通知發不出去
+      // (showPriceAlertNotification 在無權限時是靜默 return),該筆就
+      // **兩條路徑都撿不到**:使用者沒收到,盤中 CLI 的 pending 過濾也
+      // 會永久跳過它。盤中輪詢與 launchd CLI 都有這道守門,只有這條漏了。
+      if (!ref.read(notificationProvider).hasPermission) {
+        AppLogger.error(
+          'TodayNotifier',
+          '無通知權限,跳過價格警示檢查——不可先認領再發現叫不出來',
+          StateError('notification permission denied'),
+        );
+        return 0;
+      }
+
       final alertNotifier = ref.read(priceAlertProvider.notifier);
       final notificationNotifier = ref.read(notificationProvider.notifier);
 
@@ -409,15 +424,23 @@ class TodayNotifier extends Notifier<TodayState> {
         priceChanges,
       );
 
-      // 為每個被觸發的警示發送通知
+      // 為每個被觸發的警示發送通知。逐筆獨立 try:一筆失敗不可讓後面的
+      // 連 try 都沒 try(它們已經被 claim 掉,漏掉就是永久遺失)。
+      var notified = 0;
       for (final alert in triggered) {
-        await notificationNotifier.showPriceAlertNotification(
-          alert,
-          currentPrice: currentPrices[alert.symbol],
-        );
+        try {
+          await notificationNotifier.showPriceAlertNotification(
+            alert,
+            currentPrice: currentPrices[alert.symbol],
+          );
+          notified++;
+        } catch (e, s) {
+          AppLogger.error('TodayNotifier', '通知失敗,釋放認領:${alert.symbol}', e, s);
+          await ref.read(databaseProvider).releaseAlertClaim(alert.id);
+        }
       }
 
-      return triggered.length;
+      return notified;
     } catch (e) {
       // 非關鍵錯誤：警示檢查失敗不應導致更新失敗
       AppLogger.warning('TodayNotifier', '價格警示檢查失敗', e);

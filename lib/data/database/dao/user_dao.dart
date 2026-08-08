@@ -337,6 +337,24 @@ mixin UserDaoMixin on $AppDatabase {
     return affected > 0;
   }
 
+  /// 釋放 [claimAlertTrigger] 搶到的認領——通知**沒送出去**時必須呼叫。
+  ///
+  /// 🚨 為什麼需要這支(2026-08-08 三次審查 C-1):認領一定要發生在通知
+  /// **之前**,否則 app 內輪詢與 launchd CLI 兩個 process 會重複通知。
+  /// 但代價是「已認領」不等於「已送達」——通知若失敗(osascript 被系統
+  /// 抑制、plugin channel 斷線、設定把該類通知關掉),該筆會停在
+  /// `isActive=false` + `triggeredAt!=null`,而**兩條路徑的 pending 過濾
+  /// 都會永久跳過它**:使用者沒收到通知,收盤那條也再看不到,提醒等於
+  /// 被靜默燒掉。有了釋放,失敗就退回可重試狀態,下一輪(5 分鐘後)再試。
+  Future<void> releaseAlertClaim(int id) async {
+    await (update(priceAlert)..where((t) => t.id.equals(id))).write(
+      const PriceAlertCompanion(
+        isActive: Value(true),
+        triggeredAt: Value(null),
+      ),
+    );
+  }
+
   Future<void> triggerAlert(int id, {DateTime? now}) {
     return (update(priceAlert)..where((t) => t.id.equals(id))).write(
       PriceAlertCompanion(
