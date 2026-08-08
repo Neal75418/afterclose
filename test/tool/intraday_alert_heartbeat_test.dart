@@ -56,4 +56,28 @@ void main() {
           '實際輸出:$out',
     );
   }, timeout: const Timeout(Duration(minutes: 2)));
+
+  test('🚨 時區與台北不符時,心跳必須自己講出來', () async {
+    // launchd 的 StartCalendarInterval 依**系統本地時間**喚醒,盤中判定
+    // 卻用台北時間。macOS 的「自動依位置設定時區」預設開啟,出差時會自己
+    // 改掉,使用者不會做任何動作。實測有效覆蓋:東京/曼谷 78%、倫敦 0%。
+    //
+    // 不修喚醒時段,但**症狀必須可辨識**:漏接提醒長得跟「今天沒股票
+    // 觸價」一模一樣,使用者會得出錯誤結論。這正是本專案反覆吃虧的形狀。
+    final fakeHome = Directory.systemTemp.createTempSync('dd_tz_home');
+    addTearDown(() => fakeHome.deleteSync(recursive: true));
+
+    final result = await Process.run(
+      'dart',
+      ['run', 'tool/intraday_alert_check.dart'],
+      environment: {'HOME': fakeHome.path, 'TZ': 'Asia/Tokyo'},
+      workingDirectory: Directory.current.path,
+    );
+
+    expect(
+      '${result.stdout}',
+      contains('⚠️TZ'),
+      reason: '本地 UTC+9 與台北 UTC+8 不符,心跳必須帶警告',
+    );
+  }, timeout: const Timeout(Duration(minutes: 2)));
 }

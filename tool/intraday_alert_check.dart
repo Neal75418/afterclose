@@ -39,12 +39,28 @@ Future<void> main(List<String> args) async {
   final now = TaiwanTime.now();
   final force = args.contains('--force');
 
+  // ⚠️ launchd 的 StartCalendarInterval 用**系統本地時間**喚醒,而盤中
+  // 判定用台北時間——機器換時區時兩者會錯開(2026-08-08 三次審查)。
+  // macOS 的「自動依位置設定時區」預設開啟,所以出差時它會自己改,
+  // 使用者不會做任何動作。實測覆蓋率:東京/曼谷 78%、倫敦/紐約 0%。
+  //
+  // 不修喚醒時段(那要改 275 條 plist entry 或大幅增加喚醒次數),而是
+  // 讓故障**自己講出來**:漏接提醒的症狀與「今天沒股票觸價」完全一樣,
+  // 使用者會得出錯誤結論。這個專案反覆吃虧的正是這一類偽裝成正常的故障。
+  final localOffset = DateTime.now().timeZoneOffset;
+  const taipeiOffset = Duration(hours: 8);
+  final tzMismatch = localOffset != taipeiOffset;
+
   // 心跳:每輪都留一行帶時戳的紀錄。原本非交易時段靜默 exit,結果
   // 「正常 no-op」與「dart 啟動就炸」在日誌上長得一模一樣——那正是本
   // 專案自動更新靜默斷 13 天的形狀(2026-08-08 端到端驗證指出)。
   // 55 次/日;輪替由 LogRotation 自己做(見檔首 import)。
   void beat(String state) => print(
-    '[intraday_alert] ${now.toIso8601String().substring(0, 16)} $state',
+    '[intraday_alert] ${now.toIso8601String().substring(0, 16)} $state'
+    // 時區不符時每一行都帶警告——只印一次會被埋在 55 行裡面
+    '${tzMismatch ? ' ⚠️TZ(本地 UTC${localOffset.isNegative ? '' : '+'}'
+              '${localOffset.inHours},台北 UTC+8'
+              '——launchd 依本地時間喚醒,喚醒時段已與台股盤中錯開)' : ''}',
   );
 
   if (!force && !IntradayPollSchedule.isMarketHours(now)) {
