@@ -205,7 +205,12 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
                 ...symbolAlerts.asMap().entries.map((entry) {
                   final alertIndex = entry.key;
                   final alert = entry.value;
-                  return _buildAlertTile(alert, theme, alertIndex);
+                  return _buildAlertTile(
+                    alert,
+                    stockNames[alert.symbol],
+                    theme,
+                    alertIndex,
+                  );
                 }),
               ],
             ),
@@ -218,7 +223,12 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
     );
   }
 
-  Widget _buildAlertTile(PriceAlertEntry alert, ThemeData theme, int index) {
+  Widget _buildAlertTile(
+    PriceAlertEntry alert,
+    String? stockName,
+    ThemeData theme,
+    int index,
+  ) {
     final alertType = AlertType.fromValue(alert.alertType);
     final isActive = alert.isActive;
     final wasTriggered = alert.triggeredAt != null;
@@ -262,6 +272,9 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
         onTap: () => showCreatePriceAlertDialog(
           context: context,
           symbol: alert.symbol,
+          // 編輯路徑原本沒傳名稱,於是對話框標題只有代碼——而「新增」
+          // 路徑一直有傳。同一個資訊在兩條路徑不一致(2026-08-08 實機)
+          stockName: stockName,
           existingAlert: alert,
         ),
         leading: Container(

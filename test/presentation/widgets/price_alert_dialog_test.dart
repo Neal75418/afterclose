@@ -93,6 +93,21 @@ void main() {
       );
     });
 
+    testWidgets('有給 stockName 時標題顯示名稱,沒給時只顯示代碼', (tester) async {
+      // 2026-08-08 實機:清單修好了顯示「3231 緯創」,但點進編輯對話框
+      // 又變回只有「3231」——「新增」路徑一直有傳 stockName,只有
+      // 「編輯」路徑漏了。同一個資訊在兩條路徑不一致。
+      widenViewport(tester);
+      await tester.pumpWidget(
+        buildProviderTestApp(
+          const CreatePriceAlertDialog(symbol: '3231', stockName: '緯創'),
+        ),
+      );
+      await tester.pump();
+      expect(find.text('緯創'), findsOneWidget);
+      expect(find.text('3231'), findsOneWidget);
+    });
+
     testWidgets('🚨 窄視窗不得 RenderFlex overflow', (tester) async {
       // 2026-08-08 實機:視窗縮小時對話框出現黃黑斜紋
       // 「OVERFLOWED BY 25 PIXELS」,類型標籤被壓成直排。
