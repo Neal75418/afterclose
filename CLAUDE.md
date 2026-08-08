@@ -8,6 +8,8 @@
 
 **Daredevil** — 本地優先盤後台股掃描 App（Flutter / Dart 3）。所有運算在裝置端完成，無雲端依賴。
 
+> **⚠️ 更名的隱藏代價（2026-08-08 實機踩到）**：`PRODUCT_NAME` 改了會產生**新的 .app bundle 名**，而舊的 `afterclose.app` 仍留在 `build/` 且**與新 bundle 共用同一個 bundle ID**。LaunchServices 會把該 ID 解析到舊的那個 → 新 app 要求通知授權時系統當場回絕（`requestAuthorization` 4ms 回 false、無對話框、無系統日誌）。清法：`lsregister -u <舊.app>`、刪掉舊 bundle、`lsregister -f <新.app>`。另注意 `flutter run` 是由 dartvm 直接啟動、不走 LaunchServices，通知相關問題要用 `open <app>` 啟動才有代表性。
+
 > **命名邊界（2026-08-07 由 AfterClose 更名）**：對外名稱、repo、Dart package 皆為 `daredevil`；但 **bundle ID 仍是 `com.neo.afterclose`、DB 檔名仍是 `afterclose.sqlite`** —— 它們決定 macOS 容器路徑（`~/Library/Containers/com.neo.afterclose/Data/Documents/`），改動等同 App 換家、既有資料庫（約 58.7 萬列價格，2026-08-07 實測）會看似清空。**除非做容器遷移，否則不要動這兩個字串**；文件裡出現它們是實體事實，不是漏改。
 
 ```mermaid
