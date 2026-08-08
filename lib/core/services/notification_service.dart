@@ -1,4 +1,6 @@
 import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'dart:ui' show Color;
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -70,6 +72,33 @@ class NotificationService {
     _isInitialized = true;
 
     AppLogger.debug('NotificationService', '服務已初始化');
+  }
+
+  /// 診斷:回報各平台實作的解析結果與 defaultTargetPlatform。
+  ///
+  /// 2026-08-08:實機顯示 requestPermissions 在 **2 毫秒**內回 false——
+  /// 快到不可能問過系統,高度懷疑 `resolvePlatformSpecificImplementation`
+  /// 回 null(`?.requestPermissions()` → null → `?? false`)。這支把
+  /// 「到底解析到什麼」變成可觀察的事實,不再靠推論。
+  String resolveDiagnostics() {
+    final mac = _notifications
+        .resolvePlatformSpecificImplementation<
+          MacOSFlutterLocalNotificationsPlugin
+        >();
+    final ios = _notifications
+        .resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin
+        >();
+    final android = _notifications
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+    return 'defaultTargetPlatform=$defaultTargetPlatform '
+        'Platform.isMacOS=${Platform.isMacOS} '
+        'macPlugin=${mac == null ? "null" : "OK"} '
+        'iosPlugin=${ios == null ? "null" : "OK"} '
+        'androidPlugin=${android == null ? "null" : "OK"} '
+        'serviceInitialized=$_isInitialized';
   }
 
   /// 檢查是否已取得通知權限（不會請求權限）

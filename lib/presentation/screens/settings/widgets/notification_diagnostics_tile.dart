@@ -39,6 +39,7 @@ class _NotificationDiagnosticsTileState
     Future.microtask(() async {
       await _ensureLogPath();
       _append('◆ 診斷面板開啟(此行由 initState 寫入,與按鈕無關)');
+      _append('   解析狀態:${NotificationService.instance.resolveDiagnostics()}');
       if (mounted) setState(() {});
     });
   }
@@ -207,10 +208,17 @@ class _NotificationDiagnosticsTileState
                 onPressed: _busy
                     ? null
                     : () => _run('請求權限', () async {
+                        _append(
+                          '   請求前解析:'
+                          '${NotificationService.instance.resolveDiagnostics()}',
+                        );
+                        final sw = Stopwatch()..start();
                         final ok = await ref
                             .read(notificationProvider.notifier)
                             .requestPermissions();
-                        return ok ? '已授權' : '未授權(對話框可能未出現)';
+                        return '${ok ? "已授權" : "未授權"} '
+                            '(耗時 ${sw.elapsedMilliseconds}ms'
+                            '${sw.elapsedMilliseconds < 100 ? ",太快=沒問系統" : ""})';
                       }),
                 child: const Text('請求通知權限'),
               ),
