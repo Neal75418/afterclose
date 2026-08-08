@@ -825,8 +825,7 @@
     "backgroundUpdate": "背景更新",
     "autoUpdate": "每日自動更新",
     "autoUpdateDesc": "每日收盤後（15:00）自動更新資料並推送通知",
-    "autoUpdateFailed": "自動更新排程設定失敗，請稍後再試",
-    "notificationDiagnostics": "通知診斷"
+    "autoUpdateFailed": "自動更新排程設定失敗，請稍後再試"
   },
   "alert": {
     "title": "警示",

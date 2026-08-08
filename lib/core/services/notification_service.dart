@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'dart:ui' show Color;
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -74,34 +73,6 @@ class NotificationService {
     AppLogger.debug('NotificationService', '服務已初始化');
   }
 
-  /// 診斷:回報各平台實作的解析結果與 defaultTargetPlatform。
-  ///
-  /// 2026-08-08:實機顯示 requestPermissions 在 **2 毫秒**內回 false——
-  /// 快到不可能問過系統,高度懷疑 `resolvePlatformSpecificImplementation`
-  /// 回 null(`?.requestPermissions()` → null → `?? false`)。這支把
-  /// 「到底解析到什麼」變成可觀察的事實,不再靠推論。
-  String resolveDiagnostics() {
-    // ⚠️ resolvePlatformSpecificImplementation 在平台實作尚未註冊時
-    // **會拋 LateInitializationError**,不是回 null(2026-08-08 實測)。
-    // 這正是 requestPermissions 可能在 2ms 內「失敗」的機制:例外被
-    // 上層 catch 吞成 false。逐項包 try 才看得出是 null 還是拋例外。
-    String probe<T extends FlutterLocalNotificationsPlatform>() {
-      try {
-        final impl = _notifications.resolvePlatformSpecificImplementation<T>();
-        return impl == null ? 'null' : 'OK';
-      } catch (e) {
-        return '拋例外(${e.runtimeType})';
-      }
-    }
-
-    return 'defaultTargetPlatform=$defaultTargetPlatform '
-        'Platform.isMacOS=${Platform.isMacOS} '
-        'macPlugin=${probe<MacOSFlutterLocalNotificationsPlugin>()} '
-        'iosPlugin=${probe<IOSFlutterLocalNotificationsPlugin>()} '
-        'androidPlugin=${probe<AndroidFlutterLocalNotificationsPlugin>()} '
-        'serviceInitialized=$_isInitialized';
-  }
-
   /// 檢查是否已取得通知權限（不會請求權限）
   ///
   /// 🔴 2026-08-08 二次審查:macOS **不能**用 `IOSFlutterLocalNotifications
@@ -144,6 +115,28 @@ class NotificationService {
   /// 請求通知權限（iOS/macOS/Android）
   ///
   /// macOS 走 `MacOSFlutterLocalNotificationsPlugin`,理由同 [hasPermission]。
+  ///
+  /// 🔴 **macOS 上這條路徑已知失效(2026-08-08 實機定案,原因未明)**。
+  /// 系統在 App 行程內就回絕,連通知服務都沒接觸到:
+  /// ```
+  /// 請求前 authorizationStatus = 1 (denied)   ← 從未請求過卻已是 denied
+  /// error = UNErrorDomain Code=1 "Notifications are not allowed for this application"
+  /// ```
+  /// 證據取得方式:暫時改插件原生碼把 `{ (granted, _) in` 丟掉的 error
+  /// 寫出來——**沒有那一步就只看得到一個沒有理由的 false**(0–4ms 回覆、
+  /// 不跳窗、`usernoted` 零日誌,全是 `.denied` 的標準行為)。
+  ///
+  /// 已逐一證偽:插件解析失敗、權限參數全 false 觸發原生早退、使用者曾
+  /// 按拒絕(系統 65 個 app 紀錄裡查無此 app)、簽章無效(正式 Apple
+  /// Development 憑證且 `--verify --deep --strict` 通過)、同 bundle ID
+  /// 的殘留註冊(清掉 1 個 macOS + 2 個 iOS 模擬器死註冊)、`usernoted`
+  /// 記憶體快取(重啟)、執行位置不受信任(複製到 `/Applications` 重測)。
+  ///
+  /// **影響有限,不必修**:macOS 的盤中提醒由 launchd CLI
+  /// (`tool/intraday_alert_check.dart`)以原生 `osascript` 發送,已驗證可用,
+  /// 且無論 App 開著與否都會執行。GUI 這條是冗餘的第二條路——[hasPermission]
+  /// 回 false 會讓 GUI 輪詢在 claim 前就跳過(見 `intraday_monitor_provider`),
+  /// 因此提醒**不會被燒掉**,只會改由 CLI 送出。iOS 不受影響。
   Future<bool> requestPermissions() async {
     if (Platform.isMacOS) {
       final result = await _notifications
