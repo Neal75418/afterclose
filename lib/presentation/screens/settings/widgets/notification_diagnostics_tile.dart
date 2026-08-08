@@ -88,10 +88,17 @@ class _NotificationDiagnosticsTileState
           ),
           const SizedBox(height: DesignTokens.spacing8),
           row('平台', platform()),
+          // 兩個不同的旗標:singleton 在 main() 就初始化,provider 狀態
+          // 只有每日更新後才同步——分開顯示才看得出問題在哪一層
           row(
-            '服務已初始化',
-            state.isInitialized ? '是' : '否',
-            bad: !state.isInitialized,
+            '通知服務(啟動時)',
+            NotificationService.instance.isInitialized ? '已就緒' : '未就緒',
+            bad: !NotificationService.instance.isInitialized,
+          ),
+          row(
+            'Provider 狀態',
+            state.isInitialized ? '已同步' : '未同步(正常,按下方按鈕即同步)',
+            bad: false,
           ),
           row(
             '系統通知權限',

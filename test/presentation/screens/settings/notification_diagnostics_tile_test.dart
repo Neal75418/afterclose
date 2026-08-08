@@ -26,7 +26,8 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.textContaining('服務已初始化'), findsOneWidget);
+    expect(find.textContaining('通知服務(啟動時)'), findsOneWidget);
+    expect(find.textContaining('Provider 狀態'), findsOneWidget);
     expect(find.textContaining('系統通知權限'), findsOneWidget);
     expect(find.textContaining('平台'), findsOneWidget);
 
@@ -42,7 +43,6 @@ void main() {
     );
     await tester.pump();
     // 預設狀態為未初始化/未授權 → 應顯示「否」與「未授權」
-    expect(find.text('否'), findsOneWidget);
     expect(find.text('未授權'), findsOneWidget);
   });
 }

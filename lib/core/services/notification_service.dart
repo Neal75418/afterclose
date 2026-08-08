@@ -19,6 +19,14 @@ class NotificationService {
 
   bool _isInitialized = false;
 
+  /// singleton 是否已初始化。
+  ///
+  /// 診斷用(2026-08-08):這與 `NotificationNotifier.state.isInitialized`
+  /// 是**兩個不同的旗標**——前者在 main() 啟動時就設好,後者只有
+  /// today_provider 在每日更新後才會設。混為一談會讓人以為服務沒起來,
+  /// 實際上只是 provider 狀態沒同步。
+  bool get isInitialized => _isInitialized;
+
   /// 通知點擊回呼 — 由 app 層設定，接收 stock symbol 作為 payload
   void Function(String symbol)? onTapCallback;
 
