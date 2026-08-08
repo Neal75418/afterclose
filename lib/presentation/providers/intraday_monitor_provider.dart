@@ -22,6 +22,9 @@ import 'package:daredevil/presentation/providers/providers.dart';
 /// 只在四個決策時刻各檢查一次。
 class IntradayMonitorNotifier extends Notifier<DateTime?> {
   Timer? _timer;
+
+  /// 「無通知權限」每個 session 只報一次——它是穩態不是事件(五次審查 I-3)
+  bool _permissionDeniedReported = false;
   bool _running = false;
 
   /// 提升為欄位:原本每輪 new 一個(盤中 4.5 小時 ≈ 54 個),每個自帶
@@ -90,14 +93,25 @@ class IntradayMonitorNotifier extends Notifier<DateTime?> {
       final notifier = ref.read(notificationProvider.notifier);
       await notifier.initialize();
       if (!ref.read(notificationProvider).hasPermission) {
-        // warning 而非 debug:這是「功能整個停擺」的狀態,不能只在
-        // debug build 看得到(2026-08-08 二次審查)
-        // ⚠️ 必須先前進 state 再 return(2026-08-08 四次審查 I-2):
-        // 節流條件看的是 state,不前進的話 Timer 每分鐘 tick 都會走到
-        // 這裡 → 270 次/交易日的 error + Sentry event,而「使用者主動
-        // 拒絕通知」是**正常穩態**,不是異常。
+        // ⚠️ 必須先前進 state 再 return(四次審查 I-2):節流條件看的是
+        // state,不前進的話 Timer 每分鐘 tick 都會走到這裡。
         state = now;
-        AppLogger.warning('IntradayMonitor', '無通知權限,盤中提醒全部跳過——使用者不會收到任何通知');
+        // 🔴 error 且**帶例外物件**(五次審查 I-3):`AppLogger._log` 對
+        // 所有等級在 release build 都直接 return(輸出包在 assert 內),
+        // 而 warning 只產生 Sentry breadcrumb——breadcrumb 要等別的 event
+        // 被 capture 才會附帶送出,而這條路徑是乾淨 return、永遠不會有
+        // 那個 event。降成 warning 等於讓「功能整個停擺」完全不可觀察。
+        //
+        // 量的問題不靠降級解決,靠**每個 session 只報一次**:上面補了
+        // state = now 之後節流已生效,再加旗標就不會洗版。
+        if (!_permissionDeniedReported) {
+          _permissionDeniedReported = true;
+          AppLogger.error(
+            'IntradayMonitor',
+            '無通知權限,盤中提醒全部跳過——使用者不會收到任何通知',
+            StateError('notification permission denied'),
+          );
+        }
         return;
       }
 
@@ -110,23 +124,34 @@ class IntradayMonitorNotifier extends Notifier<DateTime?> {
       // 逐筆獨立 try:check() 已把 fired 全部認領掉,若第 3 筆丟例外而
       // 讓迴圈中斷,第 4、5 筆連試都沒試就永久遺失(2026-08-08 三次審查)
       for (final f in fired) {
-        var sent = false;
         try {
-          sent = await ref
+          // 依**回傳值**而非例外決定(四次審查 C-1):最常見的失敗
+          // (無權限、設定關掉)是靜默 return,靠 catch 補償不會啟動。
+          final sent = await ref
               .read(notificationProvider.notifier)
               .showPriceAlertNotification(f.alert, currentPrice: f.quote.price);
+          // ⚠️ DB 寫入必須**也在 try 內**(五次審查 I-2):原本只包住通知,
+          // 而這次改動讓 consume/release 從「只在罕見失敗路徑跑」變成
+          // 「每一筆都跑」,曝險放大一個數量級。SqliteException(5) 在兩
+          // process 共用同一檔的拓撲下是實際風險,一丟出來迴圈就中斷,
+          // 剩餘已認領的提醒全部卡在 (isActive=true, triggeredAt≠null)。
+          if (sent) {
+            await ref
+                .read(databaseProvider)
+                .consumeAlertClaim(f.alert.id, stamp: f.claimStamp);
+          } else {
+            await ref
+                .read(databaseProvider)
+                .releaseAlertClaim(f.alert.id, stamp: f.claimStamp);
+          }
         } catch (e, st) {
-          AppLogger.error('IntradayMonitor', '通知拋例外:${f.alert.symbol}', e, st);
-        }
-        // 依**回傳值**而非例外決定(2026-08-08 四次審查 C-1):最常見的
-        // 失敗(無權限、設定關掉)是靜默 return,靠 catch 補償一次都不會
-        // 啟動。送出成功才消費,否則撤銷認領讓下一輪重試。
-        if (sent) {
-          await ref.read(databaseProvider).consumeAlertClaim(f.alert.id);
-        } else {
-          await ref
-              .read(databaseProvider)
-              .releaseAlertClaim(f.alert.id, stamp: f.claimStamp);
+          AppLogger.error(
+            'IntradayMonitor',
+            '通知或狀態寫入失敗 id=${f.alert.id} ${f.alert.symbol}'
+                '(該筆可能卡在已認領未消費,由 reclaim 回收)',
+            e,
+            st,
+          );
         }
       }
       if (fired.isNotEmpty) {

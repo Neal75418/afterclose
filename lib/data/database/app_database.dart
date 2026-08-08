@@ -224,6 +224,9 @@ class AppDatabase extends $AppDatabase
       // launchd 排程)與 GUI 共用同一份 DB、各開獨立連線,CLI 的 beforeOpen
       // 若無條件清 RUNNING 會誤殺 GUI 正在進行的 run。
       await failOrphanRunningRuns();
+      // 回收逾期未結案的提醒認領——process 被殺會讓該筆卡在
+      // 「已認領未消費」,兩條路徑都撿不到(2026-08-08 五次審查 I-1)
+      await reclaimStaleAlertClaims();
       await customStatement('PRAGMA foreign_keys = ON');
     },
   );

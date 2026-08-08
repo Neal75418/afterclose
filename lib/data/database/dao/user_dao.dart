@@ -348,10 +348,45 @@ mixin UserDaoMixin on $AppDatabase {
   ///
   /// 與 [claimAlertTrigger] 分開的理由見該處:認領只是取得通知權,
   /// 「用掉」是另一件事,必須等真的送出去才發生。
-  Future<void> consumeAlertClaim(int id) async {
-    await (update(priceAlert)..where((t) => t.id.equals(id))).write(
-      const PriceAlertCompanion(isActive: Value(false)),
+  /// 回收逾期未結案的認領(2026-08-08 五次審查 I-1)。
+  ///
+  /// 認領之後、消費或釋放之前 process 被殺/斷電,該筆會卡在
+  /// `(isActive=true, triggeredAt≠null)` ——**兩條路徑都撿不到**,而 UI
+  /// 的開關還顯示 ON。這與 [failOrphanRunningRuns] 處理的孤兒 RUNNING
+  /// 是同一個形狀,解法照抄:`beforeOpen` 時把超過租約的清回待監控。
+  ///
+  /// ⚠️ **必須有 cutoff**:app 內輪詢與 launchd CLI 是兩個 process,
+  /// 無條件清會把對方正在處理中的認領搶走 → 重複通知。
+  ///
+  /// 只回收 `isActive = true` 的:已消費的 `(false, T)` 是正常終點。
+  /// 回傳回收筆數。
+  Future<int> reclaimStaleAlertClaims({DateTime? now}) {
+    final cutoff = (now ?? DateTime.now()).subtract(
+      DataFreshness.alertClaimLease,
     );
+    return (update(priceAlert)..where(
+          (t) =>
+              t.isActive.equals(true) &
+              t.triggeredAt.isNotNull() &
+              t.triggeredAt.isSmallerThanValue(cutoff),
+        ))
+        .write(const PriceAlertCompanion(triggeredAt: Value(null)));
+  }
+
+  /// 🔑 **必須帶 [stamp]**(2026-08-08 五次審查 C-1):否則會覆蓋使用者
+  /// 在「認領到送出」之間手動重新啟用的動作。交錯:CLI 認領(T1)→
+  /// 使用者在 osascript 往返期間(N 筆就是 N 次 Process.run,數秒等級)
+  /// 把提醒關掉再打開 → 通知這時才成功回來 → 無條件 consume 把它靜默
+  /// 關掉,終態與「從未觸發、使用者自己停用」完全無法區分。
+  ///
+  /// 整個重新設計的前提是「機器不可寫使用者意圖欄位」,而我第一版只把
+  /// 這條規則套到 release,consume 這一半原封不動——**同一個 bug 修一半**。
+  Future<bool> consumeAlertClaim(int id, {required DateTime stamp}) async {
+    final affected =
+        await (update(priceAlert)
+              ..where((t) => t.id.equals(id) & t.triggeredAt.equals(stamp)))
+            .write(const PriceAlertCompanion(isActive: Value(false)));
+    return affected > 0;
   }
 
   /// 釋放 [claimAlertTrigger] 搶到的認領——通知**沒送出去**時必須呼叫。
@@ -373,16 +408,18 @@ mixin UserDaoMixin on $AppDatabase {
   /// 也**不碰 `isActive`**:那是使用者意圖,不是機器該寫的欄位。
   ///
   /// 回傳是否真的撤銷了自己的那筆認領(false = 認領已被別人取代)。
-  Future<bool> releaseAlertClaim(int id, {DateTime? stamp}) async {
-    final q = update(priceAlert)
-      ..where(
-        (t) => stamp == null
-            ? t.id.equals(id)
-            : t.id.equals(id) & t.triggeredAt.equals(stamp),
-      );
-    final affected = await q.write(
-      const PriceAlertCompanion(triggeredAt: Value(null)),
-    );
+  /// [stamp] 為**必填**(2026-08-08 五次審查 I-5):舊版設成 optional,
+  /// 而 `stamp == null` 那條 fallback 的行為正是本輪判定為 bug 的舊行為
+  /// (會抹掉別人剛寫的認領)。留著預設值等於留一個「忘了傳就靜默退回
+  /// bug 版」的陷阱——**編譯器擋掉比註解可靠**。
+  ///
+  /// ⚠️ 這個 CAS 的正確性隱性依賴 `storeDateTimeAsText: true`(微秒精度)。
+  /// 若改回預設的 unix 秒儲存,比對會靜默退化成秒粒度。
+  Future<bool> releaseAlertClaim(int id, {required DateTime stamp}) async {
+    final affected =
+        await (update(priceAlert)
+              ..where((t) => t.id.equals(id) & t.triggeredAt.equals(stamp)))
+            .write(const PriceAlertCompanion(triggeredAt: Value(null)));
     return affected > 0;
   }
 

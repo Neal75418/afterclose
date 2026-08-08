@@ -37,7 +37,7 @@ void main() {
     expect(row.isActive, isTrue, reason: '認領 ≠ 消費');
     expect(row.triggeredAt, isNotNull, reason: '互斥鍵已寫入,別人搶不到');
 
-    await db.consumeAlertClaim(id);
+    await db.consumeAlertClaim(id, stamp: row.triggeredAt!);
     final consumed = (await db.getAllAlerts()).firstWhere((a) => a.id == id);
     expect(consumed.isActive, isFalse, reason: '送出成功才停用');
   });

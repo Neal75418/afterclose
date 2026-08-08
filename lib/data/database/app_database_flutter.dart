@@ -30,7 +30,16 @@ QueryExecutor openDriftFlutterConnection() {
       // setup 啟 WAL 進一步降低 reader 受寫鎖影響的時間。setup callback 會被
       // 跨 isolate 發送；用 no-capture closure 確保可序列化。
       shareAcrossIsolates: true,
-      setup: (db) => db.execute('PRAGMA journal_mode=WAL;'),
+      // 🔴 busy_timeout 不可省(2026-08-08 五次審查):CLI 側
+      // (`AppDatabase.forToolFile`)設 5000ms 是因為實機被咬過——GUI 手動
+      // 更新握住寫鎖時,launchd 那輪整個死在 SqliteException(5)。GUI 這側
+      // 是**鏡像曝險**:盤中 CLI 每 5 分鐘持一次寫鎖,此時 app 內的認領/
+      // 釋放寫入會當場拋例外(實測同一 isolate 內確實立刻 BUSY,不等待)。
+      // WAL 只解決讀寫並行,寫寫仍需排隊——給它等,不要當場放棄。
+      setup: (db) {
+        db.execute('PRAGMA journal_mode=WAL;');
+        db.execute('PRAGMA busy_timeout=5000;');
+      },
     ),
   );
 }

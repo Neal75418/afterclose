@@ -121,6 +121,18 @@ abstract final class DataFreshness {
   /// 門檻不影響收斂效果。
   static const orphanRunningCutoff = Duration(hours: 2);
 
+  /// 提醒認領的租約時效(2026-08-08 五次審查 I-1)。
+  ///
+  /// 認領(寫 `triggeredAt`)之後、消費或釋放之前 process 若被殺/斷電,
+  /// 該筆會卡在 `(isActive=true, triggeredAt≠null)`:盤中路徑因
+  /// `triggeredAt != null` 跳過、收盤路徑再認領也拿不到,**兩條都撿不
+  /// 到**,而 UI 的開關還顯示 ON(看起來仍在盯盤)。與 update_run 的
+  /// 孤兒 RUNNING 是同一個形狀,解法照抄:超過時效就回收成待監控。
+  ///
+  /// 15 分鐘:盤中輪詢是 5 分鐘一輪,留三輪餘裕;**必須有 cutoff**,
+  /// 否則會誤殺另一個 process 正在處理中的認領。
+  static const alertClaimLease = Duration(minutes: 15);
+
   /// 股票清單初始化最低股票數
   ///
   /// 低於此數量表示股票清單尚未完整初始化，需要從 TWSE/TPEx 同步。

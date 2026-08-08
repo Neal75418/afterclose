@@ -53,14 +53,18 @@ void main() {
     // 會永久跳過它**,使用者沒收到通知,收盤那條也再看不到。這正是本
     // 專案反覆出現的「副作用先寫、驗證後做」。
     test('🚨 認領後釋放 → 回到可再次認領的狀態', () async {
+      // ⚠️ 舊版這條有兩個毛病(2026-08-08 五次審查 I-4):①不帶 stamp,
+      // 走的是 production 用不到的 fallback 分支;②斷言 `isActive == true`
+      // 是**恆真**的——table default 就是 true,而新版 claim/release 都
+      // 不寫它,把 release 的 body 換成空實作照樣綠。
       final id = await seed();
-      expect(await db.claimAlertTrigger(id), isTrue);
+      final t1 = DateTime(2026, 8, 10, 10, 30);
+      expect(await db.claimAlertTrigger(id, now: t1), isTrue);
 
-      await db.releaseAlertClaim(id);
+      expect(await db.releaseAlertClaim(id, stamp: t1), isTrue);
 
       final a = (await db.getAllAlerts()).firstWhere((x) => x.id == id);
       expect(a.triggeredAt, isNull, reason: '沒送達就不算觸發過');
-      expect(a.isActive, isTrue, reason: '必須重新變回待監控,否則永遠不會再檢查');
       expect(
         await db.claimAlertTrigger(id),
         isTrue,
@@ -68,11 +72,81 @@ void main() {
       );
     });
 
+    test('🚨 consume 不可覆蓋使用者剛重新啟用的提醒', () async {
+      // 與 release 對稱的交錯(五次審查 C-1):CLI 認領(T1)→ 使用者在
+      // osascript 往返期間把提醒關掉再打開(重置 triggeredAt)→ 通知這時
+      // 才成功回來 → 無條件 consume 會把它靜默關掉,終態與「從未觸發、
+      // 使用者自己停用」完全無法區分。
+      final id = await seed();
+      final t1 = DateTime(2026, 8, 10, 10, 30);
+      await db.claimAlertTrigger(id, now: t1);
+
+      // 使用者關掉再打開(toggleAlert(true) 會清 triggeredAt)
+      await db.updatePriceAlert(
+        id,
+        const PriceAlertCompanion(
+          isActive: Value(true),
+          triggeredAt: Value(null),
+        ),
+      );
+
+      expect(
+        await db.consumeAlertClaim(id, stamp: t1),
+        isFalse,
+        reason: '認領已被重置,這次消費不該生效',
+      );
+      final a = (await db.getAllAlerts()).firstWhere((x) => x.id == id);
+      expect(a.isActive, isTrue, reason: '使用者剛按下的重新啟用不可被機器抹掉');
+    });
+
+    test('🚨 逾期未結案的認領會被回收(process 中途被殺)', () async {
+      // 認領之後、消費或釋放之前 process 被殺,該筆卡在
+      // (isActive=true, triggeredAt≠null):盤中因 triggeredAt≠null 跳過、
+      // 收盤再認領也拿不到,兩條都撿不到,而 UI 開關還顯示 ON。
+      final id = await seed();
+      final claimedAt = DateTime(2026, 8, 10, 10, 0);
+      await db.claimAlertTrigger(id, now: claimedAt);
+
+      // 租約內:不可回收(否則會搶走另一個 process 正在處理的認領)
+      expect(
+        await db.reclaimStaleAlertClaims(
+          now: claimedAt.add(const Duration(minutes: 5)),
+        ),
+        0,
+        reason: '必須有 cutoff,無條件清會誤殺對方進行中的認領',
+      );
+
+      // 逾期:回收
+      expect(
+        await db.reclaimStaleAlertClaims(
+          now: claimedAt.add(const Duration(minutes: 20)),
+        ),
+        1,
+      );
+      expect(await db.claimAlertTrigger(id), isTrue, reason: '回收後必須能重新認領');
+    });
+
+    test('已消費的提醒不會被 reclaim 復活', () async {
+      final id = await seed();
+      final t1 = DateTime(2026, 8, 10, 10, 0);
+      await db.claimAlertTrigger(id, now: t1);
+      await db.consumeAlertClaim(id, stamp: t1);
+
+      expect(
+        await db.reclaimStaleAlertClaims(now: t1.add(const Duration(hours: 5))),
+        0,
+        reason: '(false, T) 是正常終點,不是卡住',
+      );
+    });
+
     test('釋放不存在的 id → 安靜跳過,不拋例外', () async {
       // ⚠️ 不可用 `returnsNormally`:releaseAlertClaim 是 async,例外會被
       // 包進回傳的 Future、**永遠不會同步拋出**,那條斷言在任何實作下都
       // 會綠(把整個 body 換成 throw 也照樣過)(2026-08-08 四次審查 I-4)
-      await expectLater(db.releaseAlertClaim(999999), completes);
+      await expectLater(
+        db.releaseAlertClaim(999999, stamp: DateTime(2026, 8, 10)),
+        completes,
+      );
     });
 
     test('🚨 不可複活使用者刻意停用的提醒', () async {
@@ -118,11 +192,12 @@ void main() {
       // isActive 是使用者意圖,triggeredAt 是機器互斥——兩把鑰匙不可共用
       // 一副鎖(Q4)。認領成功但尚未送出時,提醒仍應是 active。
       final id = await seed();
-      await db.claimAlertTrigger(id);
+      final t = DateTime(2026, 8, 10, 10, 30);
+      await db.claimAlertTrigger(id, now: t);
       var a = (await db.getAllAlerts()).firstWhere((x) => x.id == id);
       expect(a.isActive, isTrue, reason: '認領 ≠ 消費,還沒送出就不算用掉');
 
-      await db.consumeAlertClaim(id);
+      expect(await db.consumeAlertClaim(id, stamp: t), isTrue);
       a = (await db.getAllAlerts()).firstWhere((x) => x.id == id);
       expect(a.isActive, isFalse, reason: '送出成功才消費');
     });

@@ -71,14 +71,22 @@ void main() {
     final result = await Process.run(
       'dart',
       ['run', 'tool/intraday_alert_check.dart'],
-      environment: {'HOME': fakeHome.path, 'TZ': 'Asia/Tokyo'},
+      environment: {'HOME': fakeHome.path, 'TZ': 'Asia/Kolkata'},
       workingDirectory: Directory.current.path,
     );
 
     expect(
       '${result.stdout}',
       contains('⚠️TZ'),
-      reason: '本地 UTC+9 與台北 UTC+8 不符,心跳必須帶警告',
+      reason: '本地與台北 UTC+8 不符,心跳必須帶警告',
+    );
+    // ⚠️ 用半小時時區(印度 +5:30)而非東京(+9)(2026-08-08 五次審查 I-6):
+    // 整點時區走不到 _offsetLabel 的半小時分支,那段一行都沒被執行過;
+    // 而只斷言 contains('⚠️TZ') 的話,offset 字串印錯也不會紅。
+    expect(
+      '${result.stdout}',
+      contains('UTC+5:30'),
+      reason: 'inHours 會把 +5:30 截斷成 +5,診斷值必須精確',
     );
   }, timeout: const Timeout(Duration(minutes: 2)));
 }

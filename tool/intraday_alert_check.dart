@@ -160,18 +160,22 @@ Future<void> main(List<String> args) async {
               '${f.quote.changePercent.toStringAsFixed(2)}%)'
               ' · ${f.quote.time ?? ''}',
         );
+        // DB 寫入也要在同一個 try 內(五次審查 I-2):它們現在每一筆
+        // 成功都會跑,SqliteException(5) 逸出會讓剩餘已認領的提醒全卡住
+        if (ok) {
+          notified++;
+          await database.consumeAlertClaim(f.alert.id, stamp: f.claimStamp);
+        } else {
+          // 認領發生在通知之前(跨 process 去重的代價),通知失敗必須退回
+          // 可重試狀態——否則停在 triggeredAt!=null,兩條路徑都跳過它
+          await database.releaseAlertClaim(f.alert.id, stamp: f.claimStamp);
+          stderr.writeln('[intraday_alert] 通知失敗,已釋放認領: ${f.alert.symbol}');
+        }
       } catch (e) {
-        stderr.writeln('[intraday_alert] 通知拋例外 ${f.alert.symbol}: $e');
-      }
-      if (ok) {
-        notified++;
-        await database.consumeAlertClaim(f.alert.id);
-      } else {
-        // 🚨 認領發生在通知之前(跨 process 去重的代價),所以通知失敗
-        // 必須退回可重試狀態——否則該筆停在 triggeredAt!=null,兩條
-        // 路徑的 pending 過濾都會永久跳過它(2026-08-08 三次審查 C-1)
-        await database.releaseAlertClaim(f.alert.id, stamp: f.claimStamp);
-        stderr.writeln('[intraday_alert] 通知失敗,已釋放認領: ${f.alert.symbol}');
+        stderr.writeln(
+          '[intraday_alert] 通知或狀態寫入失敗 id=${f.alert.id} '
+          '${f.alert.symbol}: $e',
+        );
       }
     }
     // ⚠️ 措辭不可斷言「已送達」:osascript 即使通知被 Focus 模式或系統

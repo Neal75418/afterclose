@@ -429,26 +429,32 @@ class TodayNotifier extends Notifier<TodayState> {
       var notified = 0;
       for (final c in triggered) {
         final alert = c.alert;
-        var sent = false;
         try {
-          sent = await notificationNotifier.showPriceAlertNotification(
+          // 依**回傳值**而非例外(四次審查 C-1):最常見的失敗(無權限、
+          // 設定把該類通知關掉)是靜默 return,靠 catch 補償不會啟動。
+          // 舊版還把靜默 no-op 算進 notified,「更新完成」報灌水數字。
+          final sent = await notificationNotifier.showPriceAlertNotification(
             alert,
             currentPrice: currentPrices[alert.symbol],
           );
+          // DB 寫入也要在 try 內(五次審查 I-2),理由見 intraday_monitor
+          if (sent) {
+            notified++;
+            await ref
+                .read(databaseProvider)
+                .consumeAlertClaim(alert.id, stamp: c.claimStamp);
+          } else {
+            await ref
+                .read(databaseProvider)
+                .releaseAlertClaim(alert.id, stamp: c.claimStamp);
+          }
         } catch (e, s) {
-          AppLogger.error('TodayNotifier', '通知拋例外:${alert.symbol}', e, s);
-        }
-        // 依**回傳值**而非例外(2026-08-08 四次審查 C-1):最常見的失敗
-        // (無權限、設定把該類通知關掉)是靜默 return,靠 catch 補償一次
-        // 都不會啟動。舊版還把靜默 no-op 算進 notified,於是「更新完成」
-        // 通知報的是灌水數字,而該筆提醒被無聲燒掉。
-        if (sent) {
-          notified++;
-          await ref.read(databaseProvider).consumeAlertClaim(alert.id);
-        } else {
-          await ref
-              .read(databaseProvider)
-              .releaseAlertClaim(alert.id, stamp: c.claimStamp);
+          AppLogger.error(
+            'TodayNotifier',
+            '通知或狀態寫入失敗 id=${alert.id} ${alert.symbol}',
+            e,
+            s,
+          );
         }
       }
 
