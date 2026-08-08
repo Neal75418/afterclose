@@ -10,6 +10,7 @@ import 'package:daredevil/app/background_update_service.dart';
 import 'package:daredevil/core/theme/app_theme.dart';
 import 'package:daredevil/core/utils/logger.dart';
 import 'package:daredevil/presentation/providers/providers.dart';
+import 'package:daredevil/presentation/screens/settings/widgets/notification_diagnostics_tile.dart';
 import 'package:daredevil/presentation/providers/settings_provider.dart';
 import 'package:daredevil/presentation/screens/settings/widgets/api_token_tile.dart';
 import 'package:daredevil/presentation/screens/settings/widgets/data_management_tile.dart';
@@ -85,6 +86,10 @@ class SettingsScreen extends ConsumerWidget {
                   .read(settingsProvider.notifier)
                   .setDisposalUrgentAlerts(v),
             ),
+            // 通知診斷(2026-08-08):實機發現授權對話框不跳,而排查時
+            // 沒有任何可觀察的狀態——只能猜。把事實攤開,並提供直接
+            // 送測試通知的按鈕。
+            const NotificationDiagnosticsTile(),
           ]),
 
           // 進階功能區段
