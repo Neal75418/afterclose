@@ -938,6 +938,7 @@
     },
     "quickSet": {
       "hint": "Quick alerts — one tap, prices precomputed",
+      "staleDuringMarket": "⚠️ Market hours: levels and the \"already met\" check use yesterday’s close, not today’s move",
       "breakBelowMa5": "Below 5MA",
       "breakBelowMa10": "Below 10MA",
       "breakBelowMa20": "Below 20MA",

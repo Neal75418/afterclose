@@ -220,4 +220,55 @@ void main() {
       expect(chips.every((c) => c.onPressed != null), isTrue);
     });
   });
+
+  group('🚨 盤中的資料陳舊提示(2026-08-08)', () {
+    // 均線與「已成立」判斷都來自最後一根日線(每日更新 15:30 才跑),
+    // 對今天盤中一無所知。盤中設提醒時,一個已經跌破的價位看起來仍可
+    // 點,點下去會在 5 分鐘內立刻觸發、把一次性提醒燒掉。
+    //
+    // 刻意不讓 UI 抓即時報價修正:MIS 限流按 IP 算,launchd 的盤中檢查
+    // (55 次/交易日)靠同一個額度活著。標示限制即可。
+    testWidgets('盤中 → 顯示「以昨收判斷」警語', (tester) async {
+      widen(tester);
+      await tester.pumpWidget(
+        buildTestApp(
+          AlertQuickSet(
+            bars: bars(30),
+            // 2026-08-10 是週一,10:30 在 09:00~13:30 之內
+            now: DateTime(2026, 8, 10, 10, 30),
+            onSelected: (_, __) {},
+          ),
+        ),
+      );
+      expect(find.byKey(AlertQuickSet.staleWarningKey), findsOneWidget);
+    });
+
+    testWidgets('盤前/盤後 → 不顯示(資料本來就是最新的,不打擾)', (tester) async {
+      widen(tester);
+      await tester.pumpWidget(
+        buildTestApp(
+          AlertQuickSet(
+            bars: bars(30),
+            now: DateTime(2026, 8, 10, 20, 0), // 同一天晚上 8 點
+            onSelected: (_, __) {},
+          ),
+        ),
+      );
+      expect(find.byKey(AlertQuickSet.staleWarningKey), findsNothing);
+    });
+
+    testWidgets('週末 → 不顯示', (tester) async {
+      widen(tester);
+      await tester.pumpWidget(
+        buildTestApp(
+          AlertQuickSet(
+            bars: bars(30),
+            now: DateTime(2026, 8, 8, 10, 30), // 週六同一時刻
+            onSelected: (_, __) {},
+          ),
+        ),
+      );
+      expect(find.byKey(AlertQuickSet.staleWarningKey), findsNothing);
+    });
+  });
 }

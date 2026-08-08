@@ -938,6 +938,7 @@
     },
     "quickSet": {
       "hint": "快捷提醒——點一下就掛,價位 app 已算好",
+      "staleDuringMarket": "⚠️ 盤中:以昨收與昨日均線判斷,看不到今天的走勢——已跌破的價位仍會顯示可點",
       "breakBelowMa5": "跌破5MA",
       "breakBelowMa10": "跌破10MA",
       "breakBelowMa20": "跌破月線",

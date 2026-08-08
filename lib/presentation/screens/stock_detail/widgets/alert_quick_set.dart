@@ -2,6 +2,8 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import 'package:daredevil/core/theme/design_tokens.dart';
+import 'package:daredevil/core/utils/taiwan_time.dart';
+import 'package:daredevil/domain/services/alert/intraday_poll_schedule.dart';
 import 'package:daredevil/data/database/app_database.dart';
 import 'package:daredevil/domain/services/alert/alert_target_calculator.dart';
 
@@ -20,6 +22,7 @@ class AlertQuickSet extends StatelessWidget {
     required this.onSelected,
     this.currentPrice,
     this.existingTargets = const {},
+    this.now,
   });
 
   /// 日線(依日期升冪,最後一筆最新)
@@ -41,6 +44,15 @@ class AlertQuickSet extends StatelessWidget {
   /// 用 `Set<double>` 去重時,建了停損型的「跌破月線」就會把語意完全
   /// 相反的「突破月線」(回榜資格)一起停用,而且標籤還謊稱「已設定」。
   final Set<(String, double)> existingTargets;
+
+  /// 判斷「是否盤中」用的時間。**僅供測試注入**——寫死 `TaiwanTime.now()`
+  /// 的話,那條盤中提示的測試結果會取決於跑測試的當下(2026-08-08:
+  /// 心跳測試已經犯過一次同樣的日期依賴)。
+  final DateTime? now;
+
+  /// 盤中警語的定位鍵——測試環境不載入翻譯資產(既有測試只驗數字),
+  /// 用文字內容找會抓到原始 key,改用 Key 才穩定。
+  static const staleWarningKey = Key('alertQuickSet.staleDuringMarket');
 
   /// DB 價格列 → 計算用單位。**明確依日期升冪排序**,不假設 DAO 的
   /// 回傳方向(2026-08-07 實機 bug:接線處誤以為是降冪而多 reversed 一次,
@@ -71,6 +83,11 @@ class AlertQuickSet extends StatelessWidget {
     (e) => e.$1 == t.alertTypeValue && (e.$2 - t.price).abs() < 0.005,
   );
 
+  /// 是否處於台股盤中——只在這段期間顯示「以昨收判斷」的提示,
+  /// 盤後與盤前的資料本來就是最新的,不需要打擾使用者。
+  bool get _isMarketHours =>
+      IntradayPollSchedule.isMarketHours(now ?? TaiwanTime.now());
+
   bool _isAlreadyMet(AlertTarget t) {
     final p = currentPrice;
     if (p == null) return false;
@@ -92,6 +109,25 @@ class AlertQuickSet extends StatelessWidget {
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
+        // 盤中提示(2026-08-08):這排按鈕的均線與「已成立」判斷都來自
+        // **最後一根日線**(每日更新 15:30 才跑),對今天盤中的走勢一無所知。
+        // 盤中設提醒時,一個已經跌破的價位看起來仍可點,點下去會在 5 分鐘
+        // 內立刻觸發、把一次性提醒燒掉。
+        //
+        // 刻意**不**讓 UI 去抓即時報價來修正:MIS 的限流是伺服器端按 IP
+        // 算的,而 launchd 的盤中檢查(55 次/交易日)靠同一個額度活著——
+        // 為了讓守門更準而消耗它,等於讓被守的東西更脆弱。標示限制即可,
+        // 而 v3.4 的流程本來就是「條件單前一晚寫好」。
+        if (_isMarketHours) ...[
+          const SizedBox(height: DesignTokens.spacing4),
+          Text(
+            key: staleWarningKey,
+            'alert.quickSet.staleDuringMarket'.tr(),
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.error,
+            ),
+          ),
+        ],
         const SizedBox(height: DesignTokens.spacing8),
         Wrap(
           spacing: DesignTokens.spacing8,
